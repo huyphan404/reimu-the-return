@@ -38,7 +38,7 @@ def run_web_server():
 threading.Thread(target=run_web_server, daemon=True).start()
 
 # ==============================================================================
-# CẤU HÌNH BOT DISCORD & GEMINI 3.6 FLASH (CÓ DỰ PHÒNG CHỐNG NGHẼN 429)
+# CẤU HÌNH BOT DISCORD & GEMINI 3.6 FLASH (CÙNG DỰ PHÒNG CHỐNG NGHẼN 429)
 # ==============================================================================
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -58,10 +58,10 @@ def _call_gemini_sync(model_name, contents, system_instruction, temperature):
 async def ask_gemini(contents, system_instruction, temperature=0.85):
     """
     Chạy bất đồng bộ qua asyncio.to_thread để KHÔNG LÀM NGHẼN Discord Gateway.
-    Ưu tiên gọi model gemini-3.6-flash. Tự động chuyển gemini-2.5-flash / gemini-2.0-flash
-    khi gặp lỗi 429 (Hết hạn mức Quota) hoặc 404/503 để bot không bao giờ bị nghẽn!
+    Ưu tiên gọi model gemini-3.6-flash. Tự động chuyển gemini-3.5-flash / gemini-3.5-flash-lite
+    khi gặp lỗi 429 (Hết hạn mức Quota) hoặc 404/503 để bot luôn hoạt động mượt mà!
     """
-    models = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+    models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"]
     last_err = None
     for model_name in models:
         for attempt in range(2):
@@ -78,9 +78,9 @@ async def ask_gemini(contents, system_instruction, temperature=0.85):
             except Exception as e:
                 last_err = e
                 err_str = str(e)
-                # Nếu hết hạn mức quota (429 RESOURCE_EXHAUSTED) hoặc model không tìm thấy, lập tức đổi model kế tiếp
-                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "404" in err_str or "NOT_FOUND" in err_str:
-                    print(f"Model {model_name} gặp hạn mức ({err_str[:60]}), chuyển model kế tiếp...", flush=True)
+                # Nếu hết hạn mức quota (429 RESOURCE_EXHAUSTED) hoặc model 404, lập tức đổi model kế tiếp
+                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "404" in err_str or "NOT_FOUND" in err_str or "demand" in err_str:
+                    print(f"Model {model_name} chuyển tiếp do: {err_str[:60]}", flush=True)
                     break
                 if "503" in err_str or "UNAVAILABLE" in err_str:
                     await asyncio.sleep(1.0)
@@ -199,11 +199,12 @@ async def on_message(message: discord.Message):
 
                 await message.reply(reply_text, mention_author=False)
             except Exception as e:
+                print(f"Lỗi phản hồi tin nhắn: {e}", flush=True)
                 err_msg = str(e)
                 if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
                     await message.reply("⛩️ Hòm công đức hôm nay đông khách quá, bùa chú đang bị nghẽn (Hết hạn mức API Google tạm thời). Đợi một chút rồi nói chuyện lại với ta sau nhé!", mention_author=False)
                 else:
-                    await message.reply(f"Hừ, bùa chú bị nghẽn rồi! Lỗi: {err_msg[:200]}", mention_author=False)
+                    await message.reply("⛩️ Hừ, bùa chú đền Hakurei tạm thời bị nhiễu loạn linh lực! Nhà ngươi đợi vài giây rồi gọi lại ta nhé!", mention_author=False)
 
     # Đảm bảo các lệnh prefix như !sync, !clearmem vẫn được xử lý
     await bot.process_commands(message)
@@ -246,11 +247,8 @@ Hãy tóm tắt ngắn gọn và trả về theo cấu trúc:
         embed.set_footer(text="Touhou Project Wiki Database • Gemini 3.6 Flash")
         await interaction.followup.send(embed=embed)
     except Exception as e:
-        err_msg = str(e)
-        if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
-            await interaction.followup.send("⛩️ Hòm công đức hôm nay đông khách quá, bùa chú đang bị nghẽn (Hết hạn mức API Google tạm thời). Bạn hãy đợi 1 chút rồi thử lại nhé!")
-        else:
-            await interaction.followup.send(f"Không thể tra cứu bách khoa lúc này: {err_msg[:250]}")
+        print(f"Lỗi lệnh /wiki: {e}", flush=True)
+        await interaction.followup.send("⛩️ Hòm công đức đông khách, bùa chú đang bị quá tải. Bạn hãy đợi vài giây rồi thử lại nhé!")
 
 # 2. Lệnh quyên góp hòm công đức (/donate)
 @bot.tree.command(name="donate", description="Dâng tiền công đức vào hòm Saisen của đền Hakurei")
@@ -300,11 +298,8 @@ Hãy giải thích ngắn gọn về độ khó, vẻ đẹp của đạn mạc 
         embed.set_footer(text="Quy Tắc Đạn Mạc Gensokyo • Hakurei Reimu")
         await interaction.followup.send(embed=embed)
     except Exception as e:
-        err_msg = str(e)
-        if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
-            await interaction.followup.send("⛩️ Hòm công đức hôm nay đông khách quá, bùa chú đang bị nghẽn (Hết hạn mức API Google tạm thời). Bạn hãy đợi 1 chút rồi thử lại nhé!")
-        else:
-            await interaction.followup.send(f"Lỗi khi triệu hồi Spell Card: {err_msg[:250]}")
+        print(f"Lỗi lệnh /danmaku: {e}", flush=True)
+        await interaction.followup.send("⛩️ Spell Card này linh lực quá mạnh khiến bùa chú bị nghẽn. Bạn hãy đợi vài giây rồi thử lại nhé!")
 
 # 4. Lệnh xóa ký ức hội thoại (/clearmem)
 @bot.tree.command(name="clearmem", description="Xóa sạch ký ức trò chuyện của Reimu với bạn trong kênh này")
