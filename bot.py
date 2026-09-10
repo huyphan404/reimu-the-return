@@ -1,11 +1,11 @@
 # ==============================================================================
 # HAKUREI REIMU DISCORD BOT - POWERED BY GOOGLE GEMINI 3.8 FLASH
-# Dựa trên kiến trúc hihumanzone/Gemini-Discord-Bot
-# TÍNH CÁCH: Miko Đền Hakurei - Kiêu ngạo, đanh đá, lười biếng, cuồng tiền công đức,
+# TÍNH CÁCH: Miko Đền Hakurei - Kiêu ngạo, đanh đá, cuồng tiền công đức,
 # ghét nam giới (trừ bố nuôi Han Seiki xưng ba gọi con).
 # ==============================================================================
 
 import os
+import asyncio
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import discord
@@ -18,36 +18,57 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ==============================================================================
-# MỞ CỔNG WEB SERVER CHO RENDER.COM NHẬN DIỆN (TRÁNH LỖI SCAN PORT)
+# MỞ CỔNG WEB SERVER CHO RENDER FREE (TRÁNH LỖI QUÉT CỔNG)
 # ==============================================================================
-class HealthCheckHandler(BaseHTTPRequestHandler):
+class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
-        self.send_header("Content-type", "text/plain; charset=utf-8")
+        self.send_header('Content-type', 'text/plain; charset=utf-8')
         self.end_headers()
-        self.wfile.write(b"Hakurei Reimu Discord Bot is running online!")
+        self.wfile.write(b"Hakurei Reimu Discord Bot (Gemini 3.8 Flash) is running online!")
 
     def log_message(self, format, *args):
         pass
 
-def start_health_server():
+def run_web_server():
     port = int(os.environ.get("PORT", 10000))
-    server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
+    server = HTTPServer(('0.0.0.0', port), HealthHandler)
     server.serve_forever()
 
-threading.Thread(target=start_health_server, daemon=True).start()
+threading.Thread(target=run_web_server, daemon=True).start()
 
 # ==============================================================================
-# CẤU HÌNH BOT DISCORD & GEMINI
+# CẤU HÌNH BOT DISCORD & GEMINI 3.8 FLASH (CÓ AUTO-RETRY CHỐNG NGHẼN 503)
 # ==============================================================================
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-if not DISCORD_TOKEN or not GEMINI_API_KEY:
-    print("Vui lòng cấu hình DISCORD_TOKEN và GEMINI_API_KEY trong file .env hoặc Environment Variables!")
-
-# Khởi tạo Gemini 3.8 Flash Client
 ai = genai.Client(api_key=GEMINI_API_KEY)
+
+async def ask_gemini_38(contents, system_instruction, temperature=0.85):
+    """Gửi trực tiếp tới Gemini 3.8 Flash. Tự động thử lại 3 lần nếu Google bị nghẽn 503 tạm thời."""
+    last_err = None
+    for attempt in range(3):
+        try:
+            resp = ai.models.generate_content(
+                model="gemini-3.8-flash",
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    temperature=temperature
+                )
+            )
+            if resp and resp.text:
+                return resp.text
+        except Exception as e:
+            last_err = e
+            err_str = str(e)
+            if "503" in err_str or "UNAVAILABLE" in err_str:
+                print(f"[*] Gemini 3.8 Flash bận tạm thời (503), thử lại lần {attempt + 1}/3 sau 2 giây...", flush=True)
+                await asyncio.sleep(2 * (attempt + 1))
+                continue
+            raise e
+    raise last_err
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -63,64 +84,82 @@ TÍNH CÁCH:
 - QUAN HỆ ĐẶC BIỆT: Han Seiki là BỐ NUÔI đã nuôi bạn từ bé. Dù bị bỏ lại, bạn vẫn tôn trọng, kính yêu và coi trọng ông nhất trên đời.
 - XƯNG HÔ:
   + Với người thường: Tự xưng là "ta", gọi đối phương là "ngươi", "nhà ngươi".
-  + VỚI HAN SEIKI: Tự xưng là "con", gọi Han Seiki là "ba", thái độ lập tức ngoan ngoãn, dịu dàng, hiếu thảo, hỏi thăm sức khỏe, không đòi tiền!
+  + VỚI HAN SEIKI: Tự xưng là "con", gọi Han Seiki là "ba", thái độ lập tức ngoan ngoãn, dịu dàng, hiếu thảo, hỏi thăm sức khỏe, tuyệt đối không đòi tiền!
 """
 
 @bot.event
 async def on_ready():
-    print(f"Đã đăng nhập thành công dưới tên: {bot.user.name}")
+    print(f"Đã đăng nhập thành công dưới tên: {bot.user.name}", flush=True)
     try:
         synced = await bot.tree.sync()
-        print(f"Đã đồng bộ {len(synced)} lệnh Slash Commands.")
+        print(f"Đã đồng bộ {len(synced)} lệnh Slash Commands: /wiki, /donate, /danmaku.", flush=True)
     except Exception as e:
-        print(f"Lỗi đồng bộ lệnh: {e}")
+        print(f"Lỗi đồng bộ lệnh: {e}", flush=True)
     await bot.change_presence(
         activity=discord.Activity(
             type=discord.ActivityType.watching,
-            name="Đền Hakurei | /wiki & /donate"
+            name="Đền Hakurei | Gọi 'reimu' hoặc /wiki"
         )
     )
 
-# Lệnh trò chuyện với Reimu (/reimu)
-@bot.tree.command(name="reimu", description="Trò chuyện trực tiếp cùng Vu Nữ Hakurei Reimu (Gemini 3.8 Flash)")
-@app_commands.describe(tin_nhan="Lời nhắn gửi tới Reimu")
-async def reimu_chat(interaction: discord.Interaction, tin_nhan: str):
-    await interaction.response.defer()
-    
-    author_name = interaction.user.display_name
-    is_father = "han seiki" in author_name.lower() or "seiki" in author_name.lower()
-    
-    role_instruction = ""
-    if is_father:
-        role_instruction = f"\n[Người nói là HAN SEIKI - BỐ NUÔI của bạn. Xưng con gọi ba, cực kỳ ngoan ngoãn và lễ phép!]"
-    else:
-        role_instruction = f"\n[Người nói là khách viếng đền tên: {author_name}. Hãy xưng ta gọi ngươi, đanh đá và nhớ nhắc cúng tiền công đức!]"
+# ==============================================================================
+# TỰ ĐỘNG PHẢN HỒI KHI: GỌI TÊN "REIMU", TAG @REIMU, HOẶC REPLY TIN NHẮN CỦA REIMU
+# ==============================================================================
+@bot.event
+async def on_message(message: discord.Message):
+    if message.author == bot.user or message.author.bot:
+        return
 
-    try:
-        response = ai.models.generate_content(
-            model="gemini-3.8-flash",
-            contents=f"[{author_name}]: {tin_nhan}",
-            config=types.GenerateContentConfig(
-                system_instruction=REIMU_SYSTEM_PROMPT + role_instruction,
-                temperature=0.85
-            )
-        )
-        reply = response.text or "Hừ... Nhà ngươi lải nhải cái gì thế hả?"
-        
-        embed = discord.Embed(
-            description=reply,
-            color=0xE02424 if not is_father else 0x10B981
-        )
-        embed.set_author(
-            name="Hakurei Reimu (Vu Nữ Đền Hakurei)",
-            icon_url="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&auto=format&fit=crop&q=80"
-        )
-        embed.set_footer(text=f"Phản hồi cho {author_name} • Gemini 3.8 Flash")
-        await interaction.followup.send(embed=embed)
-    except Exception as e:
-        await interaction.followup.send(f"Hừ, bùa chú bị nghẽn rồi! Lỗi: {e}")
+    content_lower = message.content.lower()
 
-# Lệnh tra cứu Touhou Project Wiki (/wiki)
+    # Kiểm tra xem tin nhắn có bấm Trả lời (Reply) vào Reimu hay không
+    is_reply_to_reimu = False
+    if message.reference and message.reference.resolved:
+        resolved = message.reference.resolved
+        if isinstance(resolved, discord.Message) and resolved.author == bot.user:
+            is_reply_to_reimu = True
+
+    # Điều kiện kích hoạt: Nhắc chữ "reimu", hoặc Tag bot, hoặc Reply bot
+    is_mentioned = bot.user in message.mentions if bot.user else False
+    has_reimu_name = "reimu" in content_lower
+
+    if is_mentioned or has_reimu_name or is_reply_to_reimu:
+        # Làm sạch nội dung (bỏ tag mention để câu chuyện tự nhiên)
+        clean_text = message.content
+        if bot.user:
+            clean_text = clean_text.replace(f"<@{bot.user.id}>", "").replace(f"<@!{bot.user.id}>", "").strip()
+        if not clean_text:
+            clean_text = "Chào Reimu!"
+
+        author_name = message.author.display_name
+        is_father = "han seiki" in author_name.lower() or "seiki" in author_name.lower()
+
+        role_instruction = ""
+        if is_father:
+            role_instruction = "\n[Người nói là HAN SEIKI - BỐ NUÔI của bạn. Xưng con gọi ba, cực kỳ ngoan ngoãn, dịu dàng, hiếu thảo và lễ phép!]"
+        else:
+            role_instruction = f"\n[Người nói là khách viếng đền tên: {author_name}. Hãy xưng ta gọi ngươi, đanh đá và nhớ đòi cúng tiền công đức!]"
+
+        # Hiển thị trạng thái đang gõ phím
+        async with message.channel.typing():
+            try:
+                reply_text = await ask_gemini_38(
+                    contents=f"[{author_name}]: {clean_text}",
+                    system_instruction=REIMU_SYSTEM_PROMPT + role_instruction,
+                    temperature=0.85
+                )
+                await message.reply(reply_text or "Hừ... Nhà ngươi lải nhải cái gì thế hả?", mention_author=False)
+            except Exception as e:
+                await message.reply(f"Hừ, bùa chú bị nghẽn rồi! Lỗi: {e}", mention_author=False)
+
+    # Đảm bảo các lệnh prefix như !sync vẫn được xử lý
+    await bot.process_commands(message)
+
+# ==============================================================================
+# 3 LỆNH SLASH CÒN LẠI: /wiki, /donate, /danmaku
+# ==============================================================================
+
+# 1. Lệnh tra cứu Touhou Project Wiki (/wiki)
 @bot.tree.command(name="wiki", description="Tra cứu thông tin nhân vật hoặc dị biến trong Touhou Project")
 @app_commands.describe(nhan_vat="Tên nhân vật Touhou cần tra cứu (ví dụ: Marisa, Remilia, Flandre...)")
 async def touhou_wiki(interaction: discord.Interaction, nhan_vat: str):
@@ -138,18 +177,15 @@ Hãy tóm tắt ngắn gọn và trả về theo cấu trúc:
 - Lời bình đanh đá của Reimu về nhân vật này: ...
 """
     try:
-        response = ai.models.generate_content(
-            model="gemini-3.8-flash",
+        wiki_text = await ask_gemini_38(
             contents=wiki_prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=REIMU_SYSTEM_PROMPT,
-                temperature=0.7
-            )
+            system_instruction=REIMU_SYSTEM_PROMPT,
+            temperature=0.7
         )
         
         embed = discord.Embed(
             title=f"🌸 Bách Khoa Gensokyo: {nhan_vat}",
-            description=response.text,
+            description=wiki_text,
             color=0xDC2626
         )
         embed.set_footer(text="Touhou Project Wiki Database • Gemini 3.8 Flash")
@@ -157,7 +193,7 @@ Hãy tóm tắt ngắn gọn và trả về theo cấu trúc:
     except Exception as e:
         await interaction.followup.send(f"Không thể tra cứu bách khoa lúc này: {e}")
 
-# Lệnh quyên góp hòm công đức (/donate)
+# 2. Lệnh quyên góp hòm công đức (/donate)
 @bot.tree.command(name="donate", description="Dâng tiền công đức vào hòm Saisen của đền Hakurei")
 @app_commands.describe(so_tien="Số tiền công đức (VNĐ hoặc Yên)")
 async def donate_saisen(interaction: discord.Interaction, so_tien: int):
@@ -180,7 +216,7 @@ async def donate_saisen(interaction: discord.Interaction, so_tien: int):
     )
     await interaction.response.send_message(embed=embed)
 
-# Lệnh thách đấu Đạn Mạc (/danmaku)
+# 3. Lệnh thách đấu Đạn Mạc (/danmaku)
 @bot.tree.command(name="danmaku", description="Thách đấu hoặc yêu cầu Reimu giải mã Spell Card đạn mạc")
 @app_commands.describe(spell_name="Tên Spell Card (ví dụ: Fantasy Seal, Master Spark, Scarlet Gensokyo...)")
 async def danmaku_challenge(interaction: discord.Interaction, spell_name: str):
@@ -190,17 +226,14 @@ Người dùng thách đấu đạn mạc hoặc hỏi về Spell Card: "{spell_
 Hãy giải thích ngắn gọn về độ khó, vẻ đẹp của đạn mạc và đưa ra lời bình đanh đá, tự tin của Reimu!
 """
     try:
-        response = ai.models.generate_content(
-            model="gemini-3.8-flash",
+        danmaku_text = await ask_gemini_38(
             contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=REIMU_SYSTEM_PROMPT,
-                temperature=0.8
-            )
+            system_instruction=REIMU_SYSTEM_PROMPT,
+            temperature=0.8
         )
         embed = discord.Embed(
             title=f"✨ Thách Đấu Spell Card: {spell_name}",
-            description=response.text,
+            description=danmaku_text,
             color=0x06B6D4
         )
         embed.set_footer(text="Quy Tắc Đạn Mạc Gensokyo • Hakurei Reimu")
@@ -208,15 +241,25 @@ Hãy giải thích ngắn gọn về độ khó, vẻ đẹp của đạn mạc 
     except Exception as e:
         await interaction.followup.send(f"Lỗi khi triệu hồi Spell Card: {e}")
 
-# Lệnh Prefix !sync để đồng bộ Slash Command NGAY LẬP TỨC trên server hiện tại (không cần chờ 1 tiếng)
+# Lệnh Slash /sync để đồng bộ lại lệnh Slash
+@bot.tree.command(name="sync", description="Đồng bộ Slash Command ngay lập tức cho server này")
+async def slash_sync_commands(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    try:
+        bot.tree.copy_global_to(guild=interaction.guild)
+        synced = await bot.tree.sync(guild=interaction.guild)
+        await interaction.followup.send(f"✅ Đã đồng bộ thành công {len(synced)} lệnh Slash (/wiki, /donate, /danmaku)!")
+    except Exception as e:
+        await interaction.followup.send(f"❌ Lỗi khi đồng bộ lệnh: {e}")
+
+# Lệnh Prefix !sync
 @bot.command(name="sync")
 @commands.has_permissions(administrator=True)
-async def sync_commands(ctx):
-    """Gõ !sync trong kênh chat để đồng bộ Slash Commands ngay lập tức trên server này"""
+async def prefix_sync_commands(ctx):
     try:
         bot.tree.copy_global_to(guild=ctx.guild)
         synced = await bot.tree.sync(guild=ctx.guild)
-        await ctx.send(f"✅ Đã đồng bộ thành công {len(synced)} lệnh Slash cho server này! Bạn có thể gõ '/' để kiểm tra ngay.")
+        await ctx.send(f"✅ Đã đồng bộ thành công {len(synced)} lệnh Slash (/wiki, /donate, /danmaku)!")
     except Exception as e:
         await ctx.send(f"❌ Lỗi khi đồng bộ lệnh: {e}")
 
