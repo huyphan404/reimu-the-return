@@ -56,7 +56,10 @@ def _call_gemini_sync(model_name, contents, system_instruction, temperature):
     )
 
 async def ask_gemini(contents, system_instruction, temperature=0.85):
-    """Sử dụng chính xác model gemini-3.6-flash theo yêu cầu của Google API"""
+    """
+    Chạy bất đồng bộ qua asyncio.to_thread để KHÔNG LÀM NGHẼN Discord Gateway.
+    Sử dụng chính xác model gemini-3.6-flash theo yêu cầu của Google API.
+    """
     models = ["gemini-3.6-flash", "gemini-3.8-flash"]
     last_err = None
     for model_name in models:
@@ -84,6 +87,18 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# ==============================================================================
+# BỘ NHỚ HỘI THOẠI & SYSTEM PROMPT
+# ==============================================================================
+conversation_history = {}
+
+def get_history_key(channel_id, user_id):
+    return f"{channel_id}_{user_id}"
+
+def reset_memory(channel_id, user_id):
+    key = get_history_key(channel_id, user_id)
+    conversation_history.pop(key, None)
+
 REIMU_SYSTEM_PROMPT = """
 Bạn là Hakurei Reimu (Bác Lệ Linh Mộng), Vu nữ của đền Hakurei ở Gensokyo trong Touhou Project.
 TÍNH CÁCH:
@@ -102,7 +117,7 @@ async def on_ready():
     print(f"Đã đăng nhập thành công dưới tên: {bot.user.name}", flush=True)
     try:
         synced = await bot.tree.sync()
-        print(f"Đã đồng bộ {len(synced)} lệnh Slash Commands: /wiki, /donate, /danmaku.", flush=True)
+        print(f"Đã đồng bộ {len(synced)} lệnh Slash Commands: /wiki, /donate, /danmaku, /clearmem.", flush=True)
     except Exception as e:
         print(f"Lỗi đồng bộ lệnh: {e}", flush=True)
     await bot.change_presence(
@@ -149,11 +164,17 @@ async def on_message(message: discord.Message):
         else:
             role_instruction = f"\n[Người nói là khách viếng đền tên: {author_name}. Hãy xưng ta gọi ngươi, đanh đá và nhớ đòi cúng tiền công đức!]"
 
+        # Lấy lịch sử hội thoại gần đây
+        mem_key = get_history_key(message.channel.id, message.author.id)
+        history_context = ""
+        if mem_key in conversation_history and conversation_history[mem_key]:
+            history_context = "\n[LỊCH SỬ TRÒ CHUYỆN GẦN ĐÂY]:\n" + "\n".join(conversation_history[mem_key][-6:]) + "\n"
+
         # Hiển thị trạng thái bot đang gõ tin nhắn
         async with message.channel.typing():
             try:
                 reply_text = await ask_gemini(
-                    contents=f"[{author_name}]: {clean_text}",
+                    contents=f"{history_context}[{author_name}]: {clean_text}",
                     system_instruction=REIMU_SYSTEM_PROMPT + role_instruction,
                     temperature=0.85
                 )
@@ -162,15 +183,24 @@ async def on_message(message: discord.Message):
                 # Giới hạn an toàn dưới 2000 ký tự của Discord
                 if len(reply_text) > 1950:
                     reply_text = reply_text[:1950] + "..."
+                
+                # Cập nhật lịch sử trò chuyện
+                if mem_key not in conversation_history:
+                    conversation_history[mem_key] = []
+                conversation_history[mem_key].append(f"{author_name}: {clean_text}")
+                conversation_history[mem_key].append(f"Reimu: {reply_text}")
+                if len(conversation_history[mem_key]) > 8:
+                    conversation_history[mem_key] = conversation_history[mem_key][-8:]
+
                 await message.reply(reply_text, mention_author=False)
             except Exception as e:
                 await message.reply(f"Hừ, bùa chú bị nghẽn rồi! Lỗi: {e}", mention_author=False)
 
-    # Đảm bảo các lệnh prefix như !sync vẫn được xử lý
+    # Đảm bảo các lệnh prefix như !sync, !clearmem vẫn được xử lý
     await bot.process_commands(message)
 
 # ==============================================================================
-# 3 LỆNH SLASH: /wiki, /donate, /danmaku
+# CÁC LỆNH SLASH: /wiki, /donate, /danmaku, /clearmem
 # ==============================================================================
 
 # 1. Lệnh tra cứu Touhou Project Wiki (/wiki)
@@ -259,25 +289,55 @@ Hãy giải thích ngắn gọn về độ khó, vẻ đẹp của đạn mạc 
     except Exception as e:
         await interaction.followup.send(f"Lỗi khi triệu hồi Spell Card: {e}")
 
-# Lệnh Slash /sync
+# 4. Lệnh xóa ký ức hội thoại (/clearmem)
+@bot.tree.command(name="clearmem", description="Xóa sạch ký ức trò chuyện của Reimu với bạn trong kênh này")
+async def slash_clear_memory(interaction: discord.Interaction):
+    reset_memory(interaction.channel_id, interaction.user.id)
+    author_name = interaction.user.display_name
+    is_father = "han seiki" in author_name.lower() or "seiki" in author_name.lower()
+    
+    if is_father:
+        desc = "Ba ơi, con đã dọn dẹp và làm mới lại ký ức rồi ạ! Ba muốn nói chuyện gì mới với con không?"
+    else:
+        desc = f"Hừ! **{author_name}**, ta đã dùng bùa tẩy não xoá sạch mọi chuyện nhảm nhí với nhà ngươi rồi đấy! Coi như chưa từng quen biết, mau bỏ tiền vào hòm rồi nói chuyện lại từ đầu!"
+        
+    embed = discord.Embed(
+        title="🧹 Tẩy Não / Xóa Ký Ức Đền Hakurei",
+        description=desc,
+        color=0x10B981
+    )
+    await interaction.response.send_message(embed=embed)
+
+# Lệnh Prefix !clearmem (dự phòng)
+@bot.command(name="clearmem")
+async def prefix_clear_memory(ctx):
+    reset_memory(ctx.channel.id, ctx.author.id)
+    author_name = ctx.author.display_name
+    is_father = "han seiki" in author_name.lower() or "seiki" in author_name.lower()
+    if is_father:
+        await ctx.send("Ba ơi, con đã dọn dẹp và làm mới lại ký ức rồi ạ! Ba muốn nói chuyện gì tiếp với con không?")
+    else:
+        await ctx.send(f"Hừ! {author_name}, ta đã xoá sạch ký ức với nhà ngươi rồi! Bỏ tiền công đức vào hòm rồi hãy nói tiếp!")
+
+# Lệnh Slash /sync để đồng bộ lại Slash Command
 @bot.tree.command(name="sync", description="Đồng bộ Slash Command ngay lập tức cho server này")
 async def slash_sync_commands(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     try:
         bot.tree.copy_global_to(guild=interaction.guild)
         synced = await bot.tree.sync(guild=interaction.guild)
-        await interaction.followup.send(f"✅ Đã đồng bộ thành công {len(synced)} lệnh Slash (/wiki, /donate, /danmaku)!")
+        await interaction.followup.send(f"✅ Đã đồng bộ thành công {len(synced)} lệnh Slash (/wiki, /donate, /danmaku, /clearmem)! Bạn có thể gõ '/' để dùng ngay.")
     except Exception as e:
         await interaction.followup.send(f"❌ Lỗi khi đồng bộ lệnh: {e}")
 
-# Lệnh Prefix !sync
+# Lệnh Prefix !sync (dự phòng)
 @bot.command(name="sync")
 @commands.has_permissions(administrator=True)
 async def prefix_sync_commands(ctx):
     try:
         bot.tree.copy_global_to(guild=ctx.guild)
         synced = await bot.tree.sync(guild=ctx.guild)
-        await ctx.send(f"✅ Đã đồng bộ thành công {len(synced)} lệnh Slash (/wiki, /donate, /danmaku)!")
+        await ctx.send(f"✅ Đã đồng bộ thành công {len(synced)} lệnh Slash (/wiki, /donate, /danmaku, /clearmem)!")
     except Exception as e:
         await ctx.send(f"❌ Lỗi khi đồng bộ lệnh: {e}")
 
