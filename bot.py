@@ -6,6 +6,8 @@
 # ==============================================================================
 
 import os
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -15,11 +17,34 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# ==============================================================================
+# MỞ CỔNG WEB SERVER CHO RENDER.COM NHẬN DIỆN (TRÁNH LỖI SCAN PORT)
+# ==============================================================================
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain; charset=utf-8")
+        self.end_headers()
+        self.wfile.write(b"Hakurei Reimu Discord Bot is running online!")
+
+    def log_message(self, format, *args):
+        pass
+
+def start_health_server():
+    port = int(os.environ.get("PORT", 10000))
+    server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
+    server.serve_forever()
+
+threading.Thread(target=start_health_server, daemon=True).start()
+
+# ==============================================================================
+# CẤU HÌNH BOT DISCORD & GEMINI
+# ==============================================================================
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not DISCORD_TOKEN or not GEMINI_API_KEY:
-    print("Vui lòng cấu hình DISCORD_TOKEN và GEMINI_API_KEY trong file .env!")
+    print("Vui lòng cấu hình DISCORD_TOKEN và GEMINI_API_KEY trong file .env hoặc Environment Variables!")
 
 # Khởi tạo Gemini 3.8 Flash Client
 ai = genai.Client(api_key=GEMINI_API_KEY)
