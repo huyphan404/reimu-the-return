@@ -1,5 +1,5 @@
 # ==============================================================================
-# HAKUREI REIMU DISCORD BOT - POWERED BY GOOGLE GEMINI 3.8 FLASH
+# HAKUREI REIMU DISCORD BOT - POWERED BY GOOGLE GEMINI 3.6 FLASH
 # TÍNH CÁCH: Miko Đền Hakurei - Kiêu ngạo, đanh đá, cuồng tiền công đức,
 # ghét nam giới (trừ bố nuôi Han Seiki xưng ba gọi con).
 # ==============================================================================
@@ -25,7 +25,7 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/plain; charset=utf-8')
         self.end_headers()
-        self.wfile.write(b"Hakurei Reimu Discord Bot (Gemini 3.8 Flash) is running online!")
+        self.wfile.write(b"Hakurei Reimu Discord Bot (Gemini 3.6 Flash) is running online!")
 
     def log_message(self, format, *args):
         pass
@@ -38,7 +38,7 @@ def run_web_server():
 threading.Thread(target=run_web_server, daemon=True).start()
 
 # ==============================================================================
-# CẤU HÌNH BOT DISCORD & GEMINI 3.8 FLASH
+# CẤU HÌNH BOT DISCORD & GEMINI 3.6 FLASH (THEO YÊU CẦU GOOGLE)
 # ==============================================================================
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -55,15 +55,12 @@ def _call_gemini_sync(model_name, contents, system_instruction, temperature):
         )
     )
 
-async def ask_gemini_38(contents, system_instruction, temperature=0.85):
-    """
-    Chạy bất đồng bộ qua asyncio.to_thread để KHÔNG LÀM NGHẼN Discord Gateway.
-    Ưu tiên 100% Gemini 3.8 Flash; nếu Google báo 503 quá tải thì tự động thử lại hoặc chuyển 2.5 Flash ngay lập tức.
-    """
-    models = ["gemini-3.8-flash", "gemini-2.5-flash"]
+async def ask_gemini(contents, system_instruction, temperature=0.85):
+    """Sử dụng chính xác model gemini-3.6-flash theo yêu cầu của Google API"""
+    models = ["gemini-3.6-flash", "gemini-3.8-flash"]
     last_err = None
     for model_name in models:
-        for attempt in range(2):
+        for attempt in range(3):
             try:
                 resp = await asyncio.to_thread(
                     _call_gemini_sync,
@@ -78,7 +75,7 @@ async def ask_gemini_38(contents, system_instruction, temperature=0.85):
                 last_err = e
                 err_str = str(e)
                 if "503" in err_str or "UNAVAILABLE" in err_str:
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(1.5)
                     continue
                 break
     raise last_err
@@ -155,7 +152,7 @@ async def on_message(message: discord.Message):
         # Hiển thị trạng thái bot đang gõ tin nhắn
         async with message.channel.typing():
             try:
-                reply_text = await ask_gemini_38(
+                reply_text = await ask_gemini(
                     contents=f"[{author_name}]: {clean_text}",
                     system_instruction=REIMU_SYSTEM_PROMPT + role_instruction,
                     temperature=0.85
@@ -173,7 +170,7 @@ async def on_message(message: discord.Message):
     await bot.process_commands(message)
 
 # ==============================================================================
-# 3 LỆNH SLASH CHÍNH: /wiki, /donate, /danmaku
+# 3 LỆNH SLASH: /wiki, /donate, /danmaku
 # ==============================================================================
 
 # 1. Lệnh tra cứu Touhou Project Wiki (/wiki)
@@ -194,7 +191,7 @@ Hãy tóm tắt ngắn gọn và trả về theo cấu trúc:
 - Lời bình đanh đá của Reimu về nhân vật này: ...
 """
     try:
-        wiki_text = await ask_gemini_38(
+        wiki_text = await ask_gemini(
             contents=wiki_prompt,
             system_instruction=REIMU_SYSTEM_PROMPT,
             temperature=0.7
@@ -207,7 +204,7 @@ Hãy tóm tắt ngắn gọn và trả về theo cấu trúc:
             description=wiki_text,
             color=0xDC2626
         )
-        embed.set_footer(text="Touhou Project Wiki Database • Gemini 3.8 Flash")
+        embed.set_footer(text="Touhou Project Wiki Database • Gemini 3.6 Flash")
         await interaction.followup.send(embed=embed)
     except Exception as e:
         await interaction.followup.send(f"Không thể tra cứu bách khoa lúc này: {e}")
@@ -245,7 +242,7 @@ Người dùng thách đấu đạn mạc hoặc hỏi về Spell Card: "{spell_
 Hãy giải thích ngắn gọn về độ khó, vẻ đẹp của đạn mạc và đưa ra lời bình đanh đá, tự tin của Reimu!
 """
     try:
-        danmaku_text = await ask_gemini_38(
+        danmaku_text = await ask_gemini(
             contents=prompt,
             system_instruction=REIMU_SYSTEM_PROMPT,
             temperature=0.8
@@ -262,7 +259,7 @@ Hãy giải thích ngắn gọn về độ khó, vẻ đẹp của đạn mạc 
     except Exception as e:
         await interaction.followup.send(f"Lỗi khi triệu hồi Spell Card: {e}")
 
-# Lệnh Slash /sync để cập nhật lại danh sách lệnh trên Server
+# Lệnh Slash /sync
 @bot.tree.command(name="sync", description="Đồng bộ Slash Command ngay lập tức cho server này")
 async def slash_sync_commands(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
@@ -273,7 +270,7 @@ async def slash_sync_commands(interaction: discord.Interaction):
     except Exception as e:
         await interaction.followup.send(f"❌ Lỗi khi đồng bộ lệnh: {e}")
 
-# Lệnh Prefix !sync (dự phòng)
+# Lệnh Prefix !sync
 @bot.command(name="sync")
 @commands.has_permissions(administrator=True)
 async def prefix_sync_commands(ctx):
