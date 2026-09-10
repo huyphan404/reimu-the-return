@@ -38,7 +38,7 @@ def run_web_server():
 threading.Thread(target=run_web_server, daemon=True).start()
 
 # ==============================================================================
-# CẤU HÌNH BOT DISCORD & GEMINI 3.6 FLASH (THEO YÊU CẦU GOOGLE)
+# CẤU HÌNH BOT DISCORD & GEMINI 3.6 FLASH (CÓ DỰ PHÒNG CHỐNG NGHẼN 429)
 # ==============================================================================
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -58,12 +58,13 @@ def _call_gemini_sync(model_name, contents, system_instruction, temperature):
 async def ask_gemini(contents, system_instruction, temperature=0.85):
     """
     Chạy bất đồng bộ qua asyncio.to_thread để KHÔNG LÀM NGHẼN Discord Gateway.
-    Sử dụng chính xác model gemini-3.6-flash theo yêu cầu của Google API.
+    Ưu tiên gọi model gemini-3.6-flash. Tự động chuyển gemini-2.5-flash / gemini-2.0-flash
+    khi gặp lỗi 429 (Hết hạn mức Quota) hoặc 404/503 để bot không bao giờ bị nghẽn!
     """
-    models = ["gemini-3.6-flash", "gemini-3.8-flash"]
+    models = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
     last_err = None
     for model_name in models:
-        for attempt in range(3):
+        for attempt in range(2):
             try:
                 resp = await asyncio.to_thread(
                     _call_gemini_sync,
@@ -77,8 +78,12 @@ async def ask_gemini(contents, system_instruction, temperature=0.85):
             except Exception as e:
                 last_err = e
                 err_str = str(e)
+                # Nếu hết hạn mức quota (429 RESOURCE_EXHAUSTED) hoặc model không tìm thấy, lập tức đổi model kế tiếp
+                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "404" in err_str or "NOT_FOUND" in err_str:
+                    print(f"Model {model_name} gặp hạn mức ({err_str[:60]}), chuyển model kế tiếp...", flush=True)
+                    break
                 if "503" in err_str or "UNAVAILABLE" in err_str:
-                    await asyncio.sleep(1.5)
+                    await asyncio.sleep(1.0)
                     continue
                 break
     raise last_err
@@ -117,7 +122,7 @@ async def on_ready():
     print(f"Đã đăng nhập thành công dưới tên: {bot.user.name}", flush=True)
     try:
         synced = await bot.tree.sync()
-        print(f"Đã đồng bộ {len(synced)} lệnh Slash Commands: /wiki, /donate, /danmaku, /clearmem.", flush=True)
+        print(f"Đã đồng bộ {len(synced)} lệnh Slash Commands: /wiki, /donate, /danmaku, /clearmem, /sync.", flush=True)
     except Exception as e:
         print(f"Lỗi đồng bộ lệnh: {e}", flush=True)
     await bot.change_presence(
@@ -194,13 +199,17 @@ async def on_message(message: discord.Message):
 
                 await message.reply(reply_text, mention_author=False)
             except Exception as e:
-                await message.reply(f"Hừ, bùa chú bị nghẽn rồi! Lỗi: {e}", mention_author=False)
+                err_msg = str(e)
+                if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
+                    await message.reply("⛩️ Hòm công đức hôm nay đông khách quá, bùa chú đang bị nghẽn (Hết hạn mức API Google tạm thời). Đợi một chút rồi nói chuyện lại với ta sau nhé!", mention_author=False)
+                else:
+                    await message.reply(f"Hừ, bùa chú bị nghẽn rồi! Lỗi: {err_msg[:200]}", mention_author=False)
 
     # Đảm bảo các lệnh prefix như !sync, !clearmem vẫn được xử lý
     await bot.process_commands(message)
 
 # ==============================================================================
-# CÁC LỆNH SLASH: /wiki, /donate, /danmaku, /clearmem
+# CÁC LỆNH SLASH: /wiki, /donate, /danmaku, /clearmem, /sync
 # ==============================================================================
 
 # 1. Lệnh tra cứu Touhou Project Wiki (/wiki)
@@ -237,7 +246,11 @@ Hãy tóm tắt ngắn gọn và trả về theo cấu trúc:
         embed.set_footer(text="Touhou Project Wiki Database • Gemini 3.6 Flash")
         await interaction.followup.send(embed=embed)
     except Exception as e:
-        await interaction.followup.send(f"Không thể tra cứu bách khoa lúc này: {e}")
+        err_msg = str(e)
+        if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
+            await interaction.followup.send("⛩️ Hòm công đức hôm nay đông khách quá, bùa chú đang bị nghẽn (Hết hạn mức API Google tạm thời). Bạn hãy đợi 1 chút rồi thử lại nhé!")
+        else:
+            await interaction.followup.send(f"Không thể tra cứu bách khoa lúc này: {err_msg[:250]}")
 
 # 2. Lệnh quyên góp hòm công đức (/donate)
 @bot.tree.command(name="donate", description="Dâng tiền công đức vào hòm Saisen của đền Hakurei")
@@ -287,7 +300,11 @@ Hãy giải thích ngắn gọn về độ khó, vẻ đẹp của đạn mạc 
         embed.set_footer(text="Quy Tắc Đạn Mạc Gensokyo • Hakurei Reimu")
         await interaction.followup.send(embed=embed)
     except Exception as e:
-        await interaction.followup.send(f"Lỗi khi triệu hồi Spell Card: {e}")
+        err_msg = str(e)
+        if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
+            await interaction.followup.send("⛩️ Hòm công đức hôm nay đông khách quá, bùa chú đang bị nghẽn (Hết hạn mức API Google tạm thời). Bạn hãy đợi 1 chút rồi thử lại nhé!")
+        else:
+            await interaction.followup.send(f"Lỗi khi triệu hồi Spell Card: {err_msg[:250]}")
 
 # 4. Lệnh xóa ký ức hội thoại (/clearmem)
 @bot.tree.command(name="clearmem", description="Xóa sạch ký ức trò chuyện của Reimu với bạn trong kênh này")
@@ -319,14 +336,17 @@ async def prefix_clear_memory(ctx):
     else:
         await ctx.send(f"Hừ! {author_name}, ta đã xoá sạch ký ức với nhà ngươi rồi! Bỏ tiền công đức vào hòm rồi hãy nói tiếp!")
 
-# Lệnh Slash /sync để đồng bộ lại Slash Command
-@bot.tree.command(name="sync", description="Đồng bộ Slash Command ngay lập tức cho server này")
+# 5. Lệnh Slash /sync để sửa lỗi trùng lặp và đồng bộ lại 1 bản duy nhất
+@bot.tree.command(name="sync", description="Xóa lệnh trùng lặp và đồng bộ chuẩn 1 bản duy nhất")
 async def slash_sync_commands(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     try:
-        bot.tree.copy_global_to(guild=interaction.guild)
-        synced = await bot.tree.sync(guild=interaction.guild)
-        await interaction.followup.send(f"✅ Đã đồng bộ thành công {len(synced)} lệnh Slash (/wiki, /donate, /danmaku, /clearmem)! Bạn có thể gõ '/' để dùng ngay.")
+        # Xóa bản copy riêng của server để không bị hiện 2 lần
+        bot.tree.clear_commands(guild=interaction.guild)
+        await bot.tree.sync(guild=interaction.guild)
+        # Đồng bộ bản chuẩn toàn cục
+        synced = await bot.tree.sync()
+        await interaction.followup.send(f"✅ Đã dọn sạch trùng lặp! Giờ chỉ còn {len(synced)} lệnh Slash (/wiki, /donate, /danmaku, /clearmem, /sync). Bấm Ctrl+R trên máy tính để Discord cập nhật lại giao diện nhé.")
     except Exception as e:
         await interaction.followup.send(f"❌ Lỗi khi đồng bộ lệnh: {e}")
 
@@ -335,9 +355,11 @@ async def slash_sync_commands(interaction: discord.Interaction):
 @commands.has_permissions(administrator=True)
 async def prefix_sync_commands(ctx):
     try:
-        bot.tree.copy_global_to(guild=ctx.guild)
-        synced = await bot.tree.sync(guild=ctx.guild)
-        await ctx.send(f"✅ Đã đồng bộ thành công {len(synced)} lệnh Slash (/wiki, /donate, /danmaku, /clearmem)!")
+        # Xóa bản copy riêng của server để không bị hiện 2 lần
+        bot.tree.clear_commands(guild=ctx.guild)
+        await bot.tree.sync(guild=ctx.guild)
+        synced = await bot.tree.sync()
+        await ctx.send(f"✅ Đã dọn sạch trùng lặp! Giờ chỉ còn {len(synced)} lệnh Slash (/wiki, /donate, /danmaku, /clearmem, /sync). Bấm Ctrl+R trên máy tính để Discord cập nhật lại giao diện nhé.")
     except Exception as e:
         await ctx.send(f"❌ Lỗi khi đồng bộ lệnh: {e}")
 
