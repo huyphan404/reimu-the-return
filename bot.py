@@ -38,36 +38,49 @@ def run_web_server():
 threading.Thread(target=run_web_server, daemon=True).start()
 
 # ==============================================================================
-# CẤU HÌNH BOT DISCORD & GEMINI 3.8 FLASH (CÓ AUTO-RETRY CHỐNG NGHẼN 503)
+# CẤU HÌNH BOT DISCORD & GEMINI 3.8 FLASH
 # ==============================================================================
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 ai = genai.Client(api_key=GEMINI_API_KEY)
 
+def _call_gemini_sync(model_name, contents, system_instruction, temperature):
+    return ai.models.generate_content(
+        model=model_name,
+        contents=contents,
+        config=types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            temperature=temperature
+        )
+    )
+
 async def ask_gemini_38(contents, system_instruction, temperature=0.85):
-    """Gửi trực tiếp tới Gemini 3.8 Flash. Tự động thử lại 3 lần nếu Google bị nghẽn 503 tạm thời."""
+    """
+    Chạy bất đồng bộ qua asyncio.to_thread để KHÔNG LÀM NGHẼN Discord Gateway.
+    Ưu tiên 100% Gemini 3.8 Flash; nếu Google báo 503 quá tải thì tự động thử lại hoặc chuyển 2.5 Flash ngay lập tức.
+    """
+    models = ["gemini-3.8-flash", "gemini-2.5-flash"]
     last_err = None
-    for attempt in range(3):
-        try:
-            resp = ai.models.generate_content(
-                model="gemini-3.8-flash",
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    temperature=temperature
+    for model_name in models:
+        for attempt in range(2):
+            try:
+                resp = await asyncio.to_thread(
+                    _call_gemini_sync,
+                    model_name,
+                    contents,
+                    system_instruction,
+                    temperature
                 )
-            )
-            if resp and resp.text:
-                return resp.text
-        except Exception as e:
-            last_err = e
-            err_str = str(e)
-            if "503" in err_str or "UNAVAILABLE" in err_str:
-                print(f"[*] Gemini 3.8 Flash bận tạm thời (503), thử lại lần {attempt + 1}/3 sau 2 giây...", flush=True)
-                await asyncio.sleep(2 * (attempt + 1))
-                continue
-            raise e
+                if resp and resp.text:
+                    return resp.text
+            except Exception as e:
+                last_err = e
+                err_str = str(e)
+                if "503" in err_str or "UNAVAILABLE" in err_str:
+                    await asyncio.sleep(1)
+                    continue
+                break
     raise last_err
 
 intents = discord.Intents.default()
@@ -103,7 +116,7 @@ async def on_ready():
     )
 
 # ==============================================================================
-# TỰ ĐỘNG PHẢN HỒI KHI: GỌI TÊN "REIMU", TAG @REIMU, HOẶC REPLY TIN NHẮN CỦA REIMU
+# TỰ ĐỘNG PHẢN HỒI: GỌI TÊN "REIMU", TAG @REIMU, HOẶC REPLY TIN NHẮN CỦA REIMU
 # ==============================================================================
 @bot.event
 async def on_message(message: discord.Message):
@@ -124,7 +137,6 @@ async def on_message(message: discord.Message):
     has_reimu_name = "reimu" in content_lower
 
     if is_mentioned or has_reimu_name or is_reply_to_reimu:
-        # Làm sạch nội dung (bỏ tag mention để câu chuyện tự nhiên)
         clean_text = message.content
         if bot.user:
             clean_text = clean_text.replace(f"<@{bot.user.id}>", "").replace(f"<@!{bot.user.id}>", "").strip()
@@ -140,7 +152,7 @@ async def on_message(message: discord.Message):
         else:
             role_instruction = f"\n[Người nói là khách viếng đền tên: {author_name}. Hãy xưng ta gọi ngươi, đanh đá và nhớ đòi cúng tiền công đức!]"
 
-        # Hiển thị trạng thái đang gõ phím
+        # Hiển thị trạng thái bot đang gõ tin nhắn
         async with message.channel.typing():
             try:
                 reply_text = await ask_gemini_38(
@@ -148,7 +160,12 @@ async def on_message(message: discord.Message):
                     system_instruction=REIMU_SYSTEM_PROMPT + role_instruction,
                     temperature=0.85
                 )
-                await message.reply(reply_text or "Hừ... Nhà ngươi lải nhải cái gì thế hả?", mention_author=False)
+                if not reply_text:
+                    reply_text = "Hừ... Nhà ngươi lải nhải cái gì thế hả?"
+                # Giới hạn an toàn dưới 2000 ký tự của Discord
+                if len(reply_text) > 1950:
+                    reply_text = reply_text[:1950] + "..."
+                await message.reply(reply_text, mention_author=False)
             except Exception as e:
                 await message.reply(f"Hừ, bùa chú bị nghẽn rồi! Lỗi: {e}", mention_author=False)
 
@@ -156,7 +173,7 @@ async def on_message(message: discord.Message):
     await bot.process_commands(message)
 
 # ==============================================================================
-# 3 LỆNH SLASH CÒN LẠI: /wiki, /donate, /danmaku
+# 3 LỆNH SLASH CHÍNH: /wiki, /donate, /danmaku
 # ==============================================================================
 
 # 1. Lệnh tra cứu Touhou Project Wiki (/wiki)
@@ -182,6 +199,8 @@ Hãy tóm tắt ngắn gọn và trả về theo cấu trúc:
             system_instruction=REIMU_SYSTEM_PROMPT,
             temperature=0.7
         )
+        if len(wiki_text) > 4000:
+            wiki_text = wiki_text[:4000] + "..."
         
         embed = discord.Embed(
             title=f"🌸 Bách Khoa Gensokyo: {nhan_vat}",
@@ -231,6 +250,8 @@ Hãy giải thích ngắn gọn về độ khó, vẻ đẹp của đạn mạc 
             system_instruction=REIMU_SYSTEM_PROMPT,
             temperature=0.8
         )
+        if len(danmaku_text) > 4000:
+            danmaku_text = danmaku_text[:4000] + "..."
         embed = discord.Embed(
             title=f"✨ Thách Đấu Spell Card: {spell_name}",
             description=danmaku_text,
@@ -241,7 +262,7 @@ Hãy giải thích ngắn gọn về độ khó, vẻ đẹp của đạn mạc 
     except Exception as e:
         await interaction.followup.send(f"Lỗi khi triệu hồi Spell Card: {e}")
 
-# Lệnh Slash /sync để đồng bộ lại lệnh Slash
+# Lệnh Slash /sync để cập nhật lại danh sách lệnh trên Server
 @bot.tree.command(name="sync", description="Đồng bộ Slash Command ngay lập tức cho server này")
 async def slash_sync_commands(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
@@ -252,7 +273,7 @@ async def slash_sync_commands(interaction: discord.Interaction):
     except Exception as e:
         await interaction.followup.send(f"❌ Lỗi khi đồng bộ lệnh: {e}")
 
-# Lệnh Prefix !sync
+# Lệnh Prefix !sync (dự phòng)
 @bot.command(name="sync")
 @commands.has_permissions(administrator=True)
 async def prefix_sync_commands(ctx):
