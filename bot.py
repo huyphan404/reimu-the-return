@@ -220,7 +220,7 @@ BOSS_CONFIG = {
     "name": "Reimu Dị Hình (Aberrant Reimu)",
     "desc": "Đó không phải Reimu, sẵn sàng giao chiến!",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1549077421624401971/content.png?ex=6aa96245&is=6aa810c5&hm=c0248e497ee5afeed898b457736b39fc71368af3be1630f1cd59b5609c99fbeb&=&format=webp&quality=lossless&width=351&height=512",
-    "hp": 25000,
+    "hp": 18000,
     "power": 10000,
     "max_players": 6
 }
@@ -230,24 +230,48 @@ BOSS_CONFIG = {
 # ==============================================================================
 MONGO_URI = os.getenv("MONGO_URI")
 use_mongo = False
+mongo_client = None
 users_collection = None
 conversations_collection = None
 players_collection = None
+mongo_error_detail = "Biến môi trường MONGO_URI chưa được thiết lập."
 
-if MONGO_URI:
+def test_and_connect_mongo():
+    global use_mongo, mongo_client, users_collection, conversations_collection, players_collection, mongo_error_detail
+    current_uri = os.getenv("MONGO_URI")
+    if not current_uri:
+        mongo_error_detail = "Chưa thiết lập biến môi trường MONGO_URI trong .env hoặc Render Dashboard."
+        use_mongo = False
+        return False, mongo_error_detail
+
+    if "xxxxxx" in current_uri:
+        mongo_error_detail = "Chuỗi MONGO_URI vẫn chứa placeholder 'xxxxxx'. Bạn cần thay thế bằng subdomain cluster thật từ MongoDB Atlas (ví dụ: cluster0.abcde.mongodb.net)."
+        use_mongo = False
+        return False, mongo_error_detail
+
     try:
         from pymongo import MongoClient
-        mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-        db = mongo_client["reimu_database"]
+        client = MongoClient(current_uri, serverSelectionTimeoutMS=5000)
+        client.admin.command('ping')
+        db = client["reimu_database"]
         users_collection = db["users"]
         conversations_collection = db["conversations"]
         players_collection = db["players"]
-        mongo_client.admin.command('ping')
+        mongo_client = client
         use_mongo = True
-        print("✅ Đã kết nối thành công MongoDB Atlas! Ký ức và Game Data Reimu được lưu vĩnh viễn trên đám mây.", flush=True)
+        mongo_error_detail = None
+        print("✅ [DATABASE] Kết nối MONGODB ATLAS thành công! Dữ liệu game và ký ức được bảo toàn vĩnh viễn trên đám mây.", flush=True)
+        return True, "Thành công"
     except Exception as e:
-        print(f"⚠️ Không thể kết nối MongoDB ({e}), chuyển sang SQLite dự phòng.", flush=True)
         use_mongo = False
+        err_msg = f"{type(e).__name__}: {str(e)}"
+        mongo_error_detail = err_msg
+        print(f"⚠️ [DATABASE] Lỗi kết nối MongoDB ({err_msg}). Chuyển sang SQLite tạm thời.", flush=True)
+        return False, err_msg
+
+# Chạy kiểm tra kết nối ban đầu
+if MONGO_URI:
+    test_and_connect_mongo()
 
 if not use_mongo:
     conn = sqlite3.connect('reimu_data.db', check_same_thread=False)
@@ -462,7 +486,16 @@ def _call_gemini_sync(model_name, contents, system_instruction, temperature):
     )
 
 async def ask_gemini(contents, system_instruction, temperature=0.85):
-    models = ["gemini-3.6-flash", "gemini-3.5-flash"]
+    # Chuỗi luân phiên model từ thế hệ Gemini 3.0 đến 3.6 (và 3.8 kèm flash-latest)
+    models = [
+        "gemini-3.8-flash",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash",
+        "gemini-3.1-flash-lite",
+        "gemini-3.1-pro-preview",
+        "gemini-3.0-flash",
+        "gemini-flash-latest"
+    ]
     last_err = None
     for model_name in models:
         for attempt in range(2):
@@ -479,10 +512,11 @@ async def ask_gemini(contents, system_instruction, temperature=0.85):
             except Exception as e:
                 last_err = e
                 err_str = str(e)
-                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                # Nếu model bị 429 (hết quota), 404 (chưa hỗ trợ) hoặc lỗi tương tự -> nhảy ngay sang model tiếp theo
+                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "404" in err_str or "NOT_FOUND" in err_str:
                     break
                 if "503" in err_str or "UNAVAILABLE" in err_str:
-                    await asyncio.sleep(1.0)
+                    await asyncio.sleep(0.5)
                     continue
                 break
     raise last_err
@@ -525,11 +559,26 @@ class RaidJoinView(discord.ui.View):
             await interaction.response.send_message(f"Đội hình đã đầy ({BOSS_CONFIG['max_players']} người)!", ephemeral=True)
             return
 
-        # Kiểm tra player có team chưa
+        # Kiểm tra player có thẻ nào chưa (trong team hoặc kho đồ)
         player = get_player(user_id, interaction.user.display_name)
-        if not player.get("team") or len(player["team"]) == 0:
-            await interaction.response.send_message("⚠️ Bạn chưa có card nào trong đội hình! Dùng `/pull` để quay thẻ và `/team add` để xếp đội hình trước nhé!", ephemeral=True)
+        has_any_card = len(player.get("team", [])) > 0 or any(cnt > 0 for cnt in player.get("inventory", {}).values())
+        if not has_any_card:
+            await interaction.response.send_message("⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` để nhận thẻ Touhou trước nhé!", ephemeral=True)
             return
+
+        # Đảm bảo đội hình có đủ tối đa 3 lá bài mạnh nhất (nếu team < 3 thẻ thì tự động bổ sung thẻ tốt nhất trong kho)
+        current_team = [cid for cid in player.get("team", []) if cid in CARDS_DATA]
+        if len(current_team) < 3:
+            owned_ids = [int(cid) for cid, cnt in player.get("inventory", {}).items() if cnt > 0 and int(cid) in CARDS_DATA]
+            # Sắp xếp thẻ trong kho theo power giảm dần
+            owned_ids.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
+            for cid in owned_ids:
+                if cid not in current_team:
+                    current_team.append(cid)
+                if len(current_team) >= 3:
+                    break
+            player["team"] = current_team
+            save_player(player)
 
         self.raid_data["participants"].append(user_id)
         self.raid_data["names"].append(interaction.user.display_name)
@@ -545,21 +594,6 @@ class RaidJoinView(discord.ui.View):
             inline=False
         )
         await interaction.message.edit(embed=embed, view=self)
-
-    @discord.ui.button(label="🚀 Bắt Đầu Chiến Đấu!", style=discord.ButtonStyle.success)
-    async def start_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if len(self.raid_data["participants"]) == 0:
-            await interaction.response.send_message("Chưa có ai tham gia, không thể đánh!", ephemeral=True)
-            return
-        await interaction.response.defer()
-        self.stop()
-        for child in self.children:
-            child.disabled = True
-        try:
-            await interaction.message.edit(view=self)
-        except Exception:
-            pass
-        await execute_raid(interaction.channel, self.raid_data)
 
     async def on_timeout(self):
         global active_raid
@@ -578,7 +612,7 @@ class RaidJoinView(discord.ui.View):
             channel_id = self.raid_data.get("channel_id")
             channel = bot.get_channel(channel_id)
             if participants and channel:
-                await channel.send(f"⏰ **Đã hết 2 phút chuẩn bị!** Toàn bộ {len(participants)} dũng giả lập tức đồng loạt xông lên khai chiến quyết tử với Reimu Dị Hình!")
+                await channel.send(f"⏰ **Đã hết 2 phút chuẩn bị!** Toàn bộ {len(participants)} dũng giả cùng toàn thể đạo quân thẻ bài đồng loạt xông lên khai chiến quyết tử với Reimu Dị Hình!")
                 await execute_raid(channel, self.raid_data)
             elif channel:
                 active_raid = None
@@ -594,29 +628,52 @@ async def execute_raid(channel, raid_data):
         return
 
     num_players = len(participants)
-    dmg_each = BOSS_CONFIG["power"] // num_players  # Chia đều 10k damage
+    dmg_each = BOSS_CONFIG["power"] // num_players  # Chia đều sát thương phản đòn của Boss
 
-    # Thu thập chỉ số của tất cả người chơi
+    # Thu thập chỉ số của tất cả người chơi - TỐI ĐA ĐỦ 3 LÁ BÀI TRONG ĐỘI HÌNH (3/3 LÁ)
     total_raid_power = 0
     player_reports = []
 
     for uid in participants:
         p = get_player(uid)
         lvl_buff = (p["level"] - 1) * 10
+
+        # Lấy đội hình hiện tại của người chơi
+        team_cids = [cid for cid in p.get("team", []) if cid in CARDS_DATA]
+
+        # Nếu đội hình chưa đủ 3 lá mà trong kho còn thẻ khác -> tự động bổ sung thẻ mạnh nhất vào cho đủ 3/3 lá
+        if len(team_cids) < 3:
+            owned_ids = [int(cid) for cid, cnt in p.get("inventory", {}).items() if cnt > 0 and int(cid) in CARDS_DATA]
+            owned_ids.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
+            for cid in owned_ids:
+                if cid not in team_cids:
+                    team_cids.append(cid)
+                if len(team_cids) >= 3:
+                    break
+            # Lưu lại đội hình hoàn chỉnh 3/3 lá cho người chơi
+            p["team"] = team_cids
+            save_player(p)
+
         team_pwr = 0
         team_hp = 0
         card_names = []
-        for cid in p.get("team", []):
+        for cid in team_cids[:3]:
             card = CARDS_DATA.get(cid)
             if card:
                 team_pwr += card["power"] + lvl_buff
                 team_hp += card["hp"] + lvl_buff
-                card_names.append(card["name"])
+                card_names.append(f"{card['name']} (⚔️{card['power'] + lvl_buff:,} / ❤️{card['hp'] + lvl_buff:,})")
 
         survived = team_hp >= dmg_each
         total_raid_power += team_pwr
-        status_str = f"✅ Sống sót (HP: {team_hp} > {dmg_each} DMG)" if survived else f"💀 Tử trận (HP: {team_hp} < {dmg_each} DMG)"
-        player_reports.append(f"• **{p['username']}** (Lv.{p['level']}): Sát thương {team_pwr:,} | {status_str}")
+        status_str = f"✅ Sống sót (HP: {team_hp:,} > {dmg_each:,} DMG)" if survived else f"💀 Tử trận (HP: {team_hp:,} < {dmg_each:,} DMG)"
+
+        card_desc = ", ".join(card_names) if card_names else "Không có thẻ"
+
+        player_reports.append(
+            f"• **{p['username']}** (Lv.{p['level']}): Sát thương **{team_pwr:,}** DMG | ❤️ Máu đội: **{team_hp:,}** | {status_str}\n"
+            f"  └ *Đội hình ({len(card_names)}/3 lá):* {card_desc}"
+        )
 
     boss_hp_left = max(0, BOSS_CONFIG["hp"] - total_raid_power)
     boss_defeated = boss_hp_left == 0
@@ -672,6 +729,12 @@ async def execute_raid(channel, raid_data):
 @bot.event
 async def on_ready():
     print(f"Bot Hakurei Reimu đã khởi động thành công: {bot.user.name}", flush=True)
+    if use_mongo:
+        print("🌟 [DATABASE STATUS] Đang kết nối MONGODB ATLAS CLOUD (Dữ liệu an toàn vĩnh viễn)!", flush=True)
+    else:
+        print("⚠️ [DATABASE CẢNH BÁO] Đang chạy trên SQLITE TẠM THỜI!", flush=True)
+        print(f"   Chi tiết lỗi: {mongo_error_detail}", flush=True)
+        print("   -> LƯU Ý: Dữ liệu SQLite trên Render sẽ bị xóa sau mỗi lần restart hoặc cập nhật code!", flush=True)
     try:
         synced = await bot.tree.sync()
         print(f"Đã đồng bộ {len(synced)} Slash Commands!", flush=True)
@@ -718,10 +781,10 @@ async def on_message(message: discord.Message):
             )
             embed.add_field(
                 name="⏱️ Thời Gian Giới Hạn (2 Phút):",
-                value="⏳ **Raid sẽ tự động đóng & xuất trận sau 2 phút (120s)!**\nBấm nút bên dưới để tham chiến cùng các dũng giả khác ngay!",
+                value="⏳ **Trận chiến sẽ tự động khai hỏa sau đúng 2 phút (120s)!**\nNếu có người tham gia, đội hình (tối đa 3/3 lá bài) của mỗi dũng giả sẽ xuất trận!",
                 inline=False
             )
-            embed.set_footer(text="Bấm 'Tham Gia' để vào đội hình • Tự động đóng sau 2 phút!")
+            embed.set_footer(text="Bấm 'Tham Gia' để xuất trận đội hình 3/3 thẻ • Tự động chiến đấu sau 2 phút!")
             
             view = RaidJoinView(active_raid)
             msg = await message.channel.send(embed=embed, view=view)
@@ -776,8 +839,12 @@ async def on_message(message: discord.Message):
 
                 await message.reply(reply_text, mention_author=False)
             except Exception as e:
+                err_str = str(e)
                 print(f"Lỗi AI Chat: {e}", flush=True)
-                await message.reply("⛩️ Hừ, bùa chú đền Hakurei tạm thời bị nhiễu loạn linh lực! Đợi vài giây rồi gọi lại ta!", mention_author=False)
+                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                    await message.reply("⛩️ Hừ, linh lực Gemini của đền Hakurei tạm thời bị quá tải (Vượt giới hạn gửi tin/phút hoặc hết quota ngày)! Hãy đợi khoảng 15-30 giây rồi trò chuyện tiếp với ta nhé!", mention_author=False)
+                else:
+                    await message.reply("⛩️ Hừ, bùa chú đền Hakurei tạm thời bị nhiễu loạn linh lực! Đợi vài giây rồi gọi lại ta!", mention_author=False)
 
     await bot.process_commands(message)
 
@@ -1509,6 +1576,7 @@ async def handle_help(ctx_or_interaction):
 • `/collection` hoặc `!collection`: Xem bộ sưu tập 20 nhân vật Touhou.
 • `/battle` hoặc `!battle`: Tự động giao đấu với người chơi khác, nhận 50-100 XP.
 • `/language <vi/en>` hoặc `!lang`: Đổi ngôn ngữ hiển thị.
+• `/dbcheck` hoặc `!db`: Kiểm tra trạng thái lưu trữ MongoDB Atlas (chống mất dữ liệu khi restart/cập nhật).
 
 **👹 DỊ BIẾN REIMU DỊ HÌNH (RAID BOSS):**
 • Xuất hiện ngẫu nhiên **10%** khi trò chuyện trong server!
@@ -1634,6 +1702,100 @@ async def prefix_sync_commands(ctx):
         await ctx.send(f"✅ Đã dọn sạch trùng lặp! Giờ có {len(synced)} lệnh Slash chuẩn.")
     except Exception as e:
         await ctx.send(f"❌ Lỗi khi đồng bộ: {e}")
+
+# --- LỆNH /dbcheck hoặc !db, !status (KIỂM TRA KẾT NỐI MONGODB ATLAS / SQLITE) ---
+async def handle_dbcheck(ctx_or_interaction):
+    is_slash = isinstance(ctx_or_interaction, discord.Interaction)
+    if is_slash:
+        await ctx_or_interaction.response.defer()
+
+    # Thử kết nối / ping lại để có kết quả chính xác theo thời gian thực
+    connected, msg = test_and_connect_mongo()
+    cur_uri = os.getenv("MONGO_URI", "")
+
+    if connected and use_mongo:
+        # MongoDB Atlas đang hoạt động hoàn hảo
+        try:
+            p_count = players_collection.count_documents({}) if players_collection is not None else 0
+            c_count = conversations_collection.count_documents({}) if conversations_collection is not None else 0
+        except Exception:
+            p_count = 0
+            c_count = 0
+
+        masked_host = "MongoDB Atlas Cloud"
+        if "@" in cur_uri:
+            try:
+                host_part = cur_uri.split("@")[1].split("/")[0]
+                masked_host = f"Cluster ({host_part})"
+            except Exception:
+                pass
+
+        embed = discord.Embed(
+            title="☁️ TRẠNG THÁI DATABASE: MONGODB ATLAS (LƯU TRỮ VĨNH VIỄN)",
+            description=(
+                "🎉 **CHÚC MỪNG! DỮ LIỆU ĐANG ĐƯỢC BẢO VỆ AN TOÀN TRÊN ĐÁM MÂY!**\n"
+                "Mọi thẻ bài, cấp độ, số vé gacha và ký ức hội thoại đều được lưu trực tiếp vào MongoDB Atlas.\n"
+                "Dù bạn **cập nhật code**, **restart bot** hay **redeploy trên Render**, dữ liệu **KHÔNG BAO GIỜ BỊ MẤT!**"
+            ),
+            color=0x10B981
+        )
+        embed.add_field(name="🟢 Trạng Thái:", value="`ĐÃ KẾT NỐI (ONLINE & SẴN SÀNG)`", inline=True)
+        embed.add_field(name="🌐 Máy Chủ Đích:", value=f"`{masked_host}`", inline=True)
+        embed.add_field(
+            name="💾 Dữ Liệu Đang Được Bảo Toàn:",
+            value=f"• Tổng số người chơi: **{p_count}**\n• Lịch sử ký ức hội thoại: **{c_count}**",
+            inline=False
+        )
+        embed.set_footer(text="Hakurei Shrine • MongoDB Atlas Cloud Storage Active")
+    else:
+        # Đang chạy trên SQLite tạm thời - Nguy cơ mất dữ liệu sau mỗi lần restart
+        err_display = mongo_error_detail or msg or "Chưa cấu hình hoặc kết nối bị từ chối"
+        embed = discord.Embed(
+            title="🚨 CẢNH BÁO: CHƯA KẾT NỐI MONGODB (ĐANG DÙNG SQLITE TẠM THỜI)",
+            description=(
+                "⚠️ **TẠI SAO DỮ LIỆU BỊ RESET SAU KHI CẬP NHẬT HOẶC RESTART?**\n"
+                "Các hosting đám mây (như Render, Railway, Heroku...) có ổ đĩa **TẠM THỜI (Ephemeral)**. "
+                "Khi bot chưa kết nối được với MongoDB Atlas, bot buộc phải lưu dữ liệu vào file cục bộ `reimu_data.db`. "
+                "Mỗi khi bạn **cập nhật code mới** hoặc **bot khởi động lại**, máy chủ Render sẽ xóa sạch file này và tạo lại container mới từ đầu, khiến toàn bộ tiến trình bị reset!"
+            ),
+            color=0xEF4444
+        )
+        embed.add_field(
+            name="❌ Chi Tiết Lỗi Kết Nối Hiện Tại:",
+            value=f"```{err_display[:900]}```",
+            inline=False
+        )
+        embed.add_field(
+            name="🛠️ 3 BƯỚC KHẮC PHỤC NGAY ĐỂ LƯU VĨNH VIỄN (HẾT BỊ RESET):",
+            value=(
+                "**1️⃣ Mở Quyền IP Truy Cập (Lỗi 95% người dùng mắc phải):**\n"
+                "• Đăng nhập vào [MongoDB Atlas](https://cloud.mongodb.com).\n"
+                "• Ở menu bên trái, chọn **Security** ➔ **Network Access**.\n"
+                "• Nhấn **+ Add IP Address** ➔ Bấm nút **Allow Access from Anywhere** (nó sẽ điền `0.0.0.0/0`) ➔ Bấm **Confirm**.\n"
+                "*(Bắt buộc vì Render dùng IP động, nếu không mở bước này thì Atlas sẽ chặn mọi kết nối!)*\n\n"
+                "**2️⃣ Lấy chuỗi kết nối chuẩn (Không để 'xxxxxx'):**\n"
+                "• Vào **Database** ➔ Bấm **Connect** ➔ Chọn **Drivers (Python)**.\n"
+                "• Copy chuỗi URI (thay `xxxxxx` bằng subdomain thật của cluster, và thay mật khẩu đúng).\n\n"
+                "**3️⃣ Cài đặt biến môi trường trên Render:**\n"
+                "• Vào **Render Dashboard** của bot ➔ Chọn tab **Environment**.\n"
+                "• Thêm Key: `MONGO_URI` với Value là chuỗi kết nối ở bước 2 ➔ Bấm **Save Changes**."
+            ),
+            inline=False
+        )
+        embed.set_footer(text="Sau khi cấu hình trên Render xong, hãy gõ lại /dbcheck để kiểm tra xem đã chuyển sang màu xanh chưa nhé!")
+
+    if is_slash:
+        await ctx_or_interaction.followup.send(embed=embed)
+    else:
+        await ctx_or_interaction.send(embed=embed)
+
+@bot.tree.command(name="dbcheck", description="Kiểm tra trạng thái kết nối MongoDB Atlas (bảo vệ dữ liệu vĩnh viễn)")
+async def slash_dbcheck(interaction: discord.Interaction):
+    await handle_dbcheck(interaction)
+
+@bot.command(name="dbcheck", aliases=["db", "status", "dbstatus"])
+async def prefix_dbcheck(ctx):
+    await handle_dbcheck(ctx)
 
 if __name__ == "__main__":
     if not DISCORD_TOKEN:
