@@ -220,7 +220,7 @@ BOSS_CONFIG = {
     "name": "Reimu Dị Hình (Aberrant Reimu)",
     "desc": "Đó không phải Reimu, sẵn sàng giao chiến!",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1549077421624401971/content.png?ex=6aa96245&is=6aa810c5&hm=c0248e497ee5afeed898b457736b39fc71368af3be1630f1cd59b5609c99fbeb&=&format=webp&quality=lossless&width=351&height=512",
-    "hp": 18000,
+    "hp": 20000,
     "power": 10000,
     "max_players": 6
 }
@@ -627,13 +627,8 @@ async def execute_raid(channel, raid_data):
         await channel.send("⛩️ Reimu Dị Hình đã biến mất vào hư không vì không ai dám đối đầu...")
         return
 
-    num_players = len(participants)
-    dmg_each = BOSS_CONFIG["power"] // num_players  # Chia đều sát thương phản đòn của Boss
-
-    # Thu thập chỉ số của tất cả người chơi - TỐI ĐA ĐỦ 3 LÁ BÀI TRONG ĐỘI HÌNH (3/3 LÁ)
-    total_raid_power = 0
-    player_reports = []
-
+    # Chuẩn bị đội hình chiến đấu cho từng dũng giả (tối đa 3/3 thẻ bài mạnh nhất)
+    combatants = []
     for uid in participants:
         p = get_player(uid)
         lvl_buff = (p["level"] - 1) * 10
@@ -650,7 +645,6 @@ async def execute_raid(channel, raid_data):
                     team_cids.append(cid)
                 if len(team_cids) >= 3:
                     break
-            # Lưu lại đội hình hoàn chỉnh 3/3 lá cho người chơi
             p["team"] = team_cids
             save_player(p)
 
@@ -662,42 +656,127 @@ async def execute_raid(channel, raid_data):
             if card:
                 team_pwr += card["power"] + lvl_buff
                 team_hp += card["hp"] + lvl_buff
-                card_names.append(f"{card['name']} (⚔️{card['power'] + lvl_buff:,} / ❤️{card['hp'] + lvl_buff:,})")
+                card_names.append(f"{card['name']} (⚔️{card['power'] + lvl_buff:,}/❤️{card['hp'] + lvl_buff:,})")
 
-        survived = team_hp >= dmg_each
-        total_raid_power += team_pwr
-        status_str = f"✅ Sống sót (HP: {team_hp:,} > {dmg_each:,} DMG)" if survived else f"💀 Tử trận (HP: {team_hp:,} < {dmg_each:,} DMG)"
+        combatants.append({
+            "uid": uid,
+            "username": p["username"],
+            "level": p["level"],
+            "power": team_pwr,
+            "max_hp": team_hp,
+            "current_hp": team_hp,
+            "is_alive": True,
+            "total_dmg": 0,
+            "cards": card_names,
+            "death_round": None
+        })
 
-        card_desc = ", ".join(card_names) if card_names else "Không có thẻ"
+    boss_max_hp = BOSS_CONFIG["hp"]
+    boss_hp = boss_max_hp
+    boss_power = BOSS_CONFIG["power"]
 
-        player_reports.append(
-            f"• **{p['username']}** (Lv.{p['level']}): Sát thương **{team_pwr:,}** DMG | ❤️ Máu đội: **{team_hp:,}** | {status_str}\n"
-            f"  └ *Đội hình ({len(card_names)}/3 lá):* {card_desc}"
+    # =========================================================================
+    # VÒNG LẶP CHIẾN ĐẤU THEO HIỆP (TURN-BASED BATTLE ĐẾN KHI 1 TRONG 2 BÊN GỤC NGÃ)
+    # =========================================================================
+    round_num = 0
+    max_rounds = 30
+    battle_history = []
+
+    while boss_hp > 0 and round_num < max_rounds:
+        alive_players = [c for c in combatants if c["is_alive"]]
+        if not alive_players:
+            break  # Toàn bộ người chơi đã tử trận -> Boss chiến thắng!
+
+        round_num += 1
+
+        # 1. Các dũng giả còn sống đồng loạt tấn công Boss
+        round_player_dmg = sum(c["power"] for c in alive_players)
+        boss_hp = max(0, boss_hp - round_player_dmg)
+        for c in alive_players:
+            c["total_dmg"] += c["power"]
+
+        # Kiểm tra nếu Boss bị tiêu diệt ngay sau đòn đánh của dũng giả
+        if boss_hp <= 0:
+            battle_history.append(
+                f"**⚔️ Hiệp {round_num}:** {len(alive_players)} dũng giả đồng loạt tung đòn tất sát gây **{round_player_dmg:,} DMG**! 💥 **Reimu Dị Hình đã bị tiêu diệt hoàn toàn!**"
+            )
+            break
+
+        # 2. Boss chưa chết -> Phản đòn lên các dũng giả còn sống (chia đều sát thương)
+        dmg_per_player = max(350, boss_power // len(alive_players))
+        fallen_names = []
+
+        for c in alive_players:
+            c["current_hp"] -= dmg_per_player
+            if c["current_hp"] <= 0:
+                c["current_hp"] = 0
+                c["is_alive"] = False
+                c["death_round"] = round_num
+                fallen_names.append(c["username"])
+
+        log_msg = (
+            f"**⚔️ Hiệp {round_num}:** Dũng giả gây **{round_player_dmg:,} DMG** (Boss còn **{boss_hp:,}/{boss_max_hp:,} HP**). "
+            f"Boss cuồng bạo phản kích giáng **{dmg_per_player:,} DMG** lên mỗi dũng giả!"
         )
+        if fallen_names:
+            log_msg += f" 💀 *Tử trận hiệp này: {', '.join(fallen_names)}*"
+        battle_history.append(log_msg)
 
-    boss_hp_left = max(0, BOSS_CONFIG["hp"] - total_raid_power)
-    boss_defeated = boss_hp_left == 0
+    boss_defeated = (boss_hp <= 0)
+    total_raid_dmg = sum(c["total_dmg"] for c in combatants)
 
+    # Tạo bảng tổng kết Embed
     embed = discord.Embed(
-        title="⚔️ KẾT QUẢ TRẬN TẬP KÍCH: REIMU DỊ HÌNH!",
-        description=f"**Máu Boss:** {BOSS_CONFIG['hp']:,} HP\n**Tổng Sát Thương Quân Đoàn Gây Ra:** {total_raid_power:,} DMG\n**Sát thương Boss phản đòn mỗi người:** {dmg_each:,} DMG",
+        title="⚔️ KẾT QUẢ ĐẠI CHIẾN QUYẾT TỬ: REIMU DỊ HÌNH!",
+        description=(
+            f"Trận kịch chiến diễn ra gay cấn qua **{round_num} hiệp** quyết đấu!\n"
+            f"**Kết quả:** {'🎉 QUÂN ĐOÀN CHIẾN THẮNG (Boss 0 HP)' if boss_defeated else f'❌ THẤT THỦ (Boss còn {boss_hp:,}/{boss_max_hp:,} HP)'}\n"
+            f"**Tổng Sát Thương Quân Đoàn Gây Ra:** **{total_raid_dmg:,} DMG**"
+        ),
         color=0x10B981 if boss_defeated else 0xEF4444
     )
     embed.set_thumbnail(url=BOSS_CONFIG["image"])
-    embed.add_field(name="📋 Báo Cáo Chiến Binh:", value="\n".join(player_reports), inline=False)
 
+    # Rút gọn nhật ký nếu số hiệp quá dài để không vượt quá giới hạn ký tự Discord
+    if len(battle_history) > 6:
+        display_history = battle_history[:3] + [f"*... (giằng co ác liệt {len(battle_history)-5} hiệp) ...*"] + battle_history[-2:]
+    else:
+        display_history = battle_history
+
+    embed.add_field(
+        name="📜 Diễn Biến Trận Đánh Qua Các Hiệp:",
+        value="\n".join(display_history) if display_history else "Trận đấu kết thúc chớp nhoáng!",
+        inline=False
+    )
+
+    # Báo cáo chi tiết từng dũng giả
+    player_reports = []
+    for c in combatants:
+        card_desc = ", ".join(c["cards"]) if c["cards"] else "Không có thẻ"
+        if c["is_alive"]:
+            status_str = f"✅ Sống sót (Máu còn: **{c['current_hp']:,}/{c['max_hp']:,} HP**)"
+        else:
+            status_str = f"💀 Tử trận ở hiệp {c['death_round']} (0/{c['max_hp']:,} HP)"
+
+        player_reports.append(
+            f"• **{c['username']}** (Lv.{c['level']}): Sát thương cống hiến **{c['total_dmg']:,} DMG** | {status_str}\n"
+            f"  └ *Đội hình (3/3 lá):* {card_desc}"
+        )
+
+    embed.add_field(name="📋 Tình Trạng Quân Đoàn Dũng Giả:", value="\n".join(player_reports), inline=False)
+
+    # Phát thưởng hoặc thông báo thua
     if boss_defeated:
         embed.add_field(
-            name="🎉 CHIẾN THẮNG HUY HOÀNG!",
-            value=f"Reimu Dị Hình đã bị tiêu diệt tan tác!\n**Phần thưởng Rương Rơi Cho Mỗi Chiến Binh (Tổng 3 rương card):**\n- Tỉ lệ mỗi rương: 10% Thẻ S, 40% Thẻ A, 50% Thẻ B!",
+            name="🎉 TOÀN THẮNG HUY HOÀNG!",
+            value=f"Reimu Dị Hình đã bị hạ gục sau **{round_num} hiệp** chiến đấu ngoan cường!\n**Chiến lợi phẩm mỗi dũng giả nhận được (Mỗi người 3 rương card Touhou):**\n- Tỉ lệ mỗi rương: 10% Thẻ S, 40% Thẻ A, 50% Thẻ B!",
             inline=False
         )
-        # Phát thưởng cho từng người chơi: mở 3 rương
         reward_summaries = []
         for uid in participants:
             p = get_player(uid)
             p_rewards = []
-            for chest_idx in range(3):
+            for _ in range(3):
                 roll = random.random()
                 if roll < 0.10:
                     chosen = random.choice(CARDS_BY_RANK["S"])
@@ -708,7 +787,6 @@ async def execute_raid(channel, raid_data):
                 cid_str = str(chosen["id"])
                 p["inventory"][cid_str] = p["inventory"].get(cid_str, 0) + 1
                 p_rewards.append(f"[{chosen['rank']}] {chosen['name']}")
-            # Thêm XP thắng boss
             p["xp"] += 150
             save_player(p)
             reward_summaries.append(f"🎁 **{p['username']}** nhận: {', '.join(p_rewards)} (+150 XP)")
@@ -716,8 +794,8 @@ async def execute_raid(channel, raid_data):
         embed.add_field(name="💎 Mở Rương Chiến Lợi Phẩm:", value="\n".join(reward_summaries), inline=False)
     else:
         embed.add_field(
-            name="❌ THẤT BẠI!",
-            value=f"Reimu Dị Hình còn sót lại **{boss_hp_left:,} HP** và đã xé rách không gian trốn thoát! Hãy nâng cấp đội hình và quay lại phục thù!",
+            name="❌ QUÂN ĐOÀN THẤT THỦ!",
+            value=f"Toàn bộ dũng giả đã kiệt sức tử trận trước sự cuồng bạo của Reimu Dị Hình sau {round_num} hiệp!\nBoss còn sót lại **{boss_hp:,} HP** và đã xé rách không gian trốn thoát. Hãy rèn luyện thêm đội hình và quay lại phục thù!",
             inline=False
         )
 
