@@ -4,6 +4,7 @@
 # ==============================================================================
 
 import os
+import time
 import json
 import random
 import asyncio
@@ -292,7 +293,9 @@ def get_default_player(user_id, username):
         "team": [],           # [card_id_1, card_id_2, card_id_3]
         "language": "vi",     # "vi" hoặc "en"
         "battles_won": 0,
-        "battles_total": 0
+        "battles_total": 0,
+        "last_battle_time": 0.0,
+        "recent_opponents": []
     }
 
 def get_player(user_id, username="Visitor"):
@@ -508,7 +511,7 @@ active_raid = None  # Lưu trữ thông tin boss raid đang diễn ra: {"channel
 
 class RaidJoinView(discord.ui.View):
     def __init__(self, raid_data):
-        super().__init__(timeout=60)
+        super().__init__(timeout=120)  # Tự động đóng / xuất trận sau 2 phút (120 giây)
         self.raid_data = raid_data
 
     @discord.ui.button(label="⚔️ Tham Gia / Join Raid (Miễn phí)", style=discord.ButtonStyle.danger, emoji="💥")
@@ -550,7 +553,36 @@ class RaidJoinView(discord.ui.View):
             return
         await interaction.response.defer()
         self.stop()
+        for child in self.children:
+            child.disabled = True
+        try:
+            await interaction.message.edit(view=self)
+        except Exception:
+            pass
         await execute_raid(interaction.channel, self.raid_data)
+
+    async def on_timeout(self):
+        global active_raid
+        for child in self.children:
+            child.disabled = True
+
+        if self.raid_data.get("msg"):
+            try:
+                await self.raid_data["msg"].edit(view=self)
+            except Exception:
+                pass
+
+        # Nếu raid này vẫn đang hoạt động
+        if active_raid is self.raid_data:
+            participants = self.raid_data.get("participants", [])
+            channel_id = self.raid_data.get("channel_id")
+            channel = bot.get_channel(channel_id)
+            if participants and channel:
+                await channel.send(f"⏰ **Đã hết 2 phút chuẩn bị!** Toàn bộ {len(participants)} dũng giả lập tức đồng loạt xông lên khai chiến quyết tử với Reimu Dị Hình!")
+                await execute_raid(channel, self.raid_data)
+            elif channel:
+                active_raid = None
+                await channel.send("⌛ **Đã hết 2 phút!** Không có dũng giả nào dám bước tới nghênh chiến. Reimu Dị Hình cười khẩy rồi xé rách không gian trốn thoát...")
 
 async def execute_raid(channel, raid_data):
     global active_raid
@@ -684,7 +716,12 @@ async def on_message(message: discord.Message):
                 value="• 10% Rơi Card Rank S\n• 40% Rơi Card Rank A\n• 50% Rơi Card Rank B\n*Tham gia hoàn toàn MIỄN PHÍ!*",
                 inline=False
             )
-            embed.set_footer(text="Bấm 'Tham Gia' và chuẩn bị đội hình để chiến đấu!")
+            embed.add_field(
+                name="⏱️ Thời Gian Giới Hạn (2 Phút):",
+                value="⏳ **Raid sẽ tự động đóng & xuất trận sau 2 phút (120s)!**\nBấm nút bên dưới để tham chiến cùng các dũng giả khác ngay!",
+                inline=False
+            )
+            embed.set_footer(text="Bấm 'Tham Gia' để vào đội hình • Tự động đóng sau 2 phút!")
             
             view = RaidJoinView(active_raid)
             msg = await message.channel.send(embed=embed, view=view)
@@ -887,123 +924,278 @@ async def prefix_daily(ctx):
 
 
 # --- LỆNH /team hoặc !team ---
+def build_team_guide_embed(player, user, lang="vi", error_msg=None):
+    cur_lvl = player.get("level", 1)
+    lvl_buff = (cur_lvl - 1) * 10
+    xp_in_level = player.get("xp", 0) % 100
+    embed = discord.Embed(
+        title="🛡️ HƯỚNG DẪN CHI TIẾT: CƠ CHẾ XẾP ĐỘI HÌNH (/team add)",
+        color=0xEF4444 if error_msg else 0x3B82F6
+    )
+    if error_msg:
+        embed.description = f"⚠️ **Chú Ý:** {error_msg}\n\nĐội hình chiến đấu của bạn gồm tối đa **3 thẻ Touhou**. Sức mạnh toàn đội sẽ quyết định thắng bại trong **/battle** và **Boss Raid**!\n"
+    else:
+        embed.description = "Đội hình chiến đấu gồm tối đa **3 thẻ Touhou**. Sức mạnh toàn đội sẽ quyết định thắng bại trong **/battle** và **Boss Raid**!\n"
+
+    # Hiển thị Cấp Độ Người Chơi
+    embed.add_field(
+        name=f"⭐ Cấp Độ Người Chơi: Lv.{cur_lvl}",
+        value=f"• Tiến trình: **{xp_in_level}/100 XP**\n• Buff cấp độ cho mỗi thẻ trong đội: **+{lvl_buff:,} Power & +{lvl_buff:,} HP**",
+        inline=False
+    )
+
+    # 1. Trạng thái 3 Slot đội hình hiện tại
+    team_ids = player.get("team", [])
+    slots_text = []
+    for i in range(3):
+        if i < len(team_ids):
+            cid = team_ids[i]
+            c = CARDS_DATA.get(cid)
+            if c:
+                pwr = c["power"] + lvl_buff
+                hp = c["hp"] + lvl_buff
+                slots_text.append(f"• **Slot {i+1}:** `[{c['rank']}]` **#{c['id']:02d} {c['name']}** (⚔️ {pwr:,} | ❤️ {hp:,})")
+            else:
+                slots_text.append(f"• **Slot {i+1}:** Thẻ #{cid}")
+        else:
+            slots_text.append(f"• **Slot {i+1}:** 🔲 *[Trống - Chưa xếp thẻ]*")
+    embed.add_field(name=f"📋 Trạng Thái Đội Hình Hiện Tại ({len(team_ids)}/3 Thẻ):", value="\n".join(slots_text), inline=False)
+
+    # 2. Danh sách thẻ trong túi đồ của bạn
+    inv = player.get("inventory", {})
+    owned_lines = []
+    for cid in range(1, 21):
+        cnt = inv.get(str(cid), 0)
+        if cnt > 0:
+            c = CARDS_DATA[cid]
+            pwr = c["power"] + lvl_buff
+            hp = c["hp"] + lvl_buff
+            in_team_tag = " ⭐ *(Đang ra trận)*" if cid in team_ids else ""
+            owned_lines.append(f"`#{c['id']:02d}` `[{c['rank']}]` **{c['name']}** ×{cnt} (⚔️{pwr:,} | ❤️{hp:,}){in_team_tag}")
+
+    if owned_lines:
+        display_lines = "\n".join(owned_lines[:10])
+        if len(owned_lines) > 10:
+            display_lines += f"\n*...và còn {len(owned_lines) - 10} loại thẻ khác (gõ `/inv` để xem toàn bộ)*"
+        embed.add_field(name=f"🎒 Thẻ Bạn Đang Sở Hữu ({len(owned_lines)} loại) - Dùng ID để Add:", value=display_lines, inline=False)
+    else:
+        embed.add_field(
+            name="🎒 Thẻ Bạn Đang Sở Hữu:",
+            value="❌ Bạn chưa sở hữu thẻ nào! Gõ ngay `/pull` hoặc `!pull` để nhận 5 lượt quay miễn phí mỗi ngày!",
+            inline=False
+        )
+
+    # 3. Cú pháp thao tác cực kỳ dễ hiểu
+    syntax_guide = (
+        "**👉 Cách 1: Gõ lệnh Chat (Nhanh nhất)**\n"
+        "• Thêm thẻ: `!team add <ID>` (Ví dụ: `!team add 1` hoặc `!team add 5`)\n"
+        "• Gỡ thẻ: `!team remove <ID>` (Ví dụ: `!team remove 1`)\n\n"
+        "**👉 Cách 2: Dùng Slash Command**\n"
+        "• Thêm thẻ: Gõ `/team` ➔ chọn `Thêm thẻ (add)` ➔ điền `id_the: <ID>`\n"
+        "• Gỡ thẻ: Gõ `/team` ➔ chọn `Gỡ thẻ (remove)` ➔ điền `id_the: <ID>`\n\n"
+        "**⚔️ Sau khi xếp đủ 3 thẻ:**\n"
+        "• Gõ `/battle` để bắt đầu chiến đấu kiếm 50-100 XP (hồi chiêu 2 phút)!"
+    )
+    embed.add_field(name="⚡ Hướng Dẫn Cú Pháp Thao Tác:", value=syntax_guide, inline=False)
+    embed.set_footer(text="Gensokyo Team Builder • Hakurei Shrine")
+    return embed
+
 async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = None):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
     lang = player.get("language", "vi")
     lvl_buff = (player["level"] - 1) * 10
+    act = action.lower().strip() if action else "view"
 
-    if action.lower() == "add":
+    # NẾU YÊU CẦU HƯỚNG DẪN HOẶC GÕ LỆNH CHƯA RÕ RÀNG
+    if act in ["guide", "help", "huongdan"]:
+        guide_embed = build_team_guide_embed(player, user, lang)
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=guide_embed)
+        else:
+            await ctx_or_interaction.send(embed=guide_embed)
+        return
+
+    if act == "add":
         if not card_id or card_id not in CARDS_DATA:
-            msg = "Vui lòng nhập số ID thẻ hợp lệ (từ 1 đến 20)!" if lang == "vi" else "Please enter a valid card ID (1 to 20)!"
+            err = "Bạn chưa nhập số ID thẻ hợp lệ (từ 1 đến 20)! Vui lòng xem danh sách ID thẻ bên dưới:"
+            guide_embed = build_team_guide_embed(player, user, lang, error_msg=err)
             if isinstance(ctx_or_interaction, discord.Interaction):
-                await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+                await ctx_or_interaction.response.send_message(embed=guide_embed, ephemeral=True)
             else:
-                await ctx_or_interaction.send(msg)
+                await ctx_or_interaction.send(embed=guide_embed)
             return
 
         cid_str = str(card_id)
         if player["inventory"].get(cid_str, 0) < 1:
-            msg = f"Bạn chưa sở hữu thẻ **#{card_id} {CARDS_DATA[card_id]['name']}**! Hãy dùng `/pull` để quay nhé." if lang == "vi" else f"You don't own card **#{card_id} {CARDS_DATA[card_id]['name']}**! Pull cards via `/pull`."
+            err = f"Bạn chưa sở hữu thẻ **#{card_id:02d} {CARDS_DATA[card_id]['name']}**! Hãy kiểm tra danh sách thẻ bạn có hoặc gõ `/pull` để quay."
+            guide_embed = build_team_guide_embed(player, user, lang, error_msg=err)
             if isinstance(ctx_or_interaction, discord.Interaction):
-                await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+                await ctx_or_interaction.response.send_message(embed=guide_embed, ephemeral=True)
             else:
-                await ctx_or_interaction.send(msg)
+                await ctx_or_interaction.send(embed=guide_embed)
             return
 
         if card_id in player["team"]:
-            msg = "Thẻ này đã có trong đội hình của bạn rồi!" if lang == "vi" else "This card is already in your team!"
+            err = f"Thẻ **#{card_id:02d} {CARDS_DATA[card_id]['name']}** đã có sẵn trong đội hình của bạn rồi!"
+            guide_embed = build_team_guide_embed(player, user, lang, error_msg=err)
             if isinstance(ctx_or_interaction, discord.Interaction):
-                await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+                await ctx_or_interaction.response.send_message(embed=guide_embed, ephemeral=True)
             else:
-                await ctx_or_interaction.send(msg)
+                await ctx_or_interaction.send(embed=guide_embed)
             return
 
         if len(player["team"]) >= 3:
-            msg = "Đội hình chỉ tối đa 3 thẻ! Hãy dùng `/team remove` trước khi thêm thẻ mới." if lang == "vi" else "Team limit is 3 cards! Use `/team remove` first."
+            err = "Đội hình đã đầy tối đa **3 thẻ**! Bạn hãy gõ `!team remove <ID>` để gỡ bớt 1 thẻ trước khi thêm thẻ mới."
+            guide_embed = build_team_guide_embed(player, user, lang, error_msg=err)
             if isinstance(ctx_or_interaction, discord.Interaction):
-                await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+                await ctx_or_interaction.response.send_message(embed=guide_embed, ephemeral=True)
             else:
-                await ctx_or_interaction.send(msg)
+                await ctx_or_interaction.send(embed=guide_embed)
             return
 
         player["team"].append(card_id)
         save_player(player)
         card = CARDS_DATA[card_id]
-        msg = f"✅ Đã thêm **[{card['rank']}] {card['name']}** vào đội hình! ({len(player['team'])}/3)" if lang == "vi" else f"✅ Added **[{card['rank']}] {card['name']}** to your team! ({len(player['team'])}/3)"
-        if isinstance(ctx_or_interaction, discord.Interaction):
-            await ctx_or_interaction.response.send_message(msg)
+        tot_pwr = sum(CARDS_DATA[cid]["power"] + lvl_buff for cid in player["team"])
+        tot_hp = sum(CARDS_DATA[cid]["hp"] + lvl_buff for cid in player["team"])
+
+        embed_succ = discord.Embed(
+            title="✅ ĐÃ THÊM THÀNH CÔNG VÀO ĐỘI HÌNH!",
+            description=f"Chiến binh **[{card['rank']}] #{card['id']:02d} {card['name']}** đã chính thức gia nhập đội hình của **{user.display_name}**!",
+            color=0x10B981
+        )
+        embed_succ.set_thumbnail(url=card["image"])
+
+        slots_info = []
+        for idx, cid in enumerate(player["team"], 1):
+            c = CARDS_DATA[cid]
+            p = c["power"] + lvl_buff
+            h = c["hp"] + lvl_buff
+            slots_info.append(f"• **Slot {idx}:** `[{c['rank']}]` **#{c['id']:02d} {c['name']}** (⚔️ {p:,} | ❤️ {h:,})")
+        for idx in range(len(player["team"]) + 1, 4):
+            slots_info.append(f"• **Slot {idx}:** 🔲 *[Trống - Thêm bằng !team add <ID>]*")
+
+        embed_succ.add_field(name=f"📋 Đội Hình Sau Khi Thêm ({len(player['team'])}/3 Thẻ):", value="\n".join(slots_info), inline=False)
+        embed_succ.add_field(name="📊 Tổng Lực Chiến Toàn Đội:", value=f"⚔️ Tổng Power: **{tot_pwr:,}** | ❤️ Tổng HP: **{tot_hp:,}**", inline=False)
+        if len(player["team"]) == 3:
+            embed_succ.add_field(name="🚀 Đội Hình Đã Sẵn Sàng!", value="Đội hình của bạn đã đủ 3 thẻ! Hãy gõ ngay `/battle` để bắt đầu khiêu chiến kiếm XP (hồi chiêu 2 phút)!", inline=False)
         else:
-            await ctx_or_interaction.send(msg)
+            embed_succ.add_field(name="💡 Vị Trí Còn Lại:", value=f"Đội hình còn trống {3 - len(player['team'])} vị trí! Tiếp tục gõ `!team add <ID>` để thêm thẻ.", inline=False)
+        embed_succ.set_footer(text="Lệnh: /team add <id> | /team remove <id> | /battle")
+
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=embed_succ)
+        else:
+            await ctx_or_interaction.send(embed=embed_succ)
         return
 
-    elif action.lower() == "remove":
+    elif act == "remove":
         if not card_id or card_id not in player["team"]:
-            msg = "Vui lòng nhập ID thẻ đang có trong đội hình để gỡ!" if lang == "vi" else "Please specify a card ID currently in your team to remove!"
+            err = "Vui lòng nhập chính xác số ID thẻ đang có trong đội hình của bạn để gỡ!"
+            guide_embed = build_team_guide_embed(player, user, lang, error_msg=err)
             if isinstance(ctx_or_interaction, discord.Interaction):
-                await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+                await ctx_or_interaction.response.send_message(embed=guide_embed, ephemeral=True)
             else:
-                await ctx_or_interaction.send(msg)
+                await ctx_or_interaction.send(embed=guide_embed)
             return
 
         player["team"].remove(card_id)
         save_player(player)
         card = CARDS_DATA[card_id]
-        msg = f"🗑️ Đã gỡ **{card['name']}** khỏi đội hình! ({len(player['team'])}/3)" if lang == "vi" else f"🗑️ Removed **{card['name']}** from your team! ({len(player['team'])}/3)"
+        msg = f"🗑️ Đã gỡ thành công **[{card['rank']}] #{card['id']:02d} {card['name']}** khỏi đội hình! (Hiện còn {len(player['team'])}/3 thẻ)"
         if isinstance(ctx_or_interaction, discord.Interaction):
             await ctx_or_interaction.response.send_message(msg)
         else:
             await ctx_or_interaction.send(msg)
         return
 
-    # Mặc định là action = "view"
+    # Mặc định là act = "view"
+    cur_lvl = player.get("level", 1)
+    cur_xp = player.get("xp", 0)
+    xp_in_level = cur_xp % 100
+    xp_needed = 100 - xp_in_level
+    filled_bars = int((xp_in_level / 100) * 10)
+    bar_str = "▰" * filled_bars + "▱" * (10 - filled_bars)
+
     embed = discord.Embed(
-        title=f"🛡️ ĐỘI HÌNH CỦA {user.display_name.upper()} (Lv.{player['level']})" if lang == "vi" else f"🛡️ {user.display_name.upper()}'S TEAM (Lv.{player['level']})",
-        description=f"**Cấp Độ:** Lv.{player['level']} (XP: {player['xp'] % 100}/100)\n**Buff Chỉ Số Mỗi Cấp:** +{lvl_buff} Power & HP cho mỗi thẻ!" if lang == "vi" else f"**Level:** Lv.{player['level']} (XP: {player['xp'] % 100}/100)\n**Level Buff:** +{lvl_buff} Power & HP per card!",
+        title=f"🛡️ ĐỘI HÌNH CHIẾN ĐẤU - {user.display_name.upper()}",
         color=0x3B82F6
     )
+
+    # 1. Khung hiển thị Cấp độ (Player Level) nổi bật
+    embed.add_field(
+        name=f"⭐ CẤP ĐỘ CHIẾN BINH: Lv.{cur_lvl}",
+        value=(
+            f"• **Tiến Trình Cấp:** `{bar_str}` **{xp_in_level}/100 XP** *(Còn {xp_needed} XP để lên Lv.{cur_lvl + 1})*\n"
+            f"• **Hiệu Ứng Cấp Độ (Level Buff):** **+{lvl_buff:,} Power** & **+{lvl_buff:,} HP**\n"
+            f"*(Chỉ số buff cấp độ này tự động gia tăng sức mạnh cho TOÀN BỘ thẻ trong đội hình)*"
+        ),
+        inline=False
+    )
+
     if not player["team"]:
-        embed.add_field(name="Đội hình trống!", value="Dùng `/team add [id]` để đưa thẻ vào đội hình chiến đấu!", inline=False)
+        embed.add_field(
+            name="📋 Trạng Thái 3 Vị Trí (0/3 Thẻ):",
+            value="❌ Đội hình hiện đang trống!\n👉 Hãy dùng `!team add <id>` hoặc `/team add` để đưa thẻ vào đội chiến đấu!\n*(Gõ `!team guide` để xem hướng dẫn và ID thẻ bạn sở hữu)*",
+            inline=False
+        )
     else:
         tot_pwr = 0
         tot_hp = 0
-        for idx, cid in enumerate(player["team"], 1):
-            c = CARDS_DATA[cid]
-            pwr = c["power"] + lvl_buff
-            hp = c["hp"] + lvl_buff
-            tot_pwr += pwr
-            tot_hp += hp
-            embed.add_field(
-                name=f"Vị trí #{idx}: [{c['rank']}] {c['name']} (ID: {c['id']})",
-                value=f"⚔️ Power: **{pwr:,}** (Gốc {c['power']} + {lvl_buff})\n❤️ HP: **{hp:,}** (Gốc {c['hp']} + {lvl_buff})",
-                inline=False
-            )
+        for idx in range(1, 4):
+            if idx <= len(player["team"]):
+                cid = player["team"][idx - 1]
+                c = CARDS_DATA[cid]
+                pwr = c["power"] + lvl_buff
+                hp = c["hp"] + lvl_buff
+                tot_pwr += pwr
+                tot_hp += hp
+                embed.add_field(
+                    name=f"Vị trí #{idx}: [{c['rank']}] #{c['id']:02d} {c['name']} (Hưởng Buff Lv.{cur_lvl})",
+                    value=f"⚔️ Power: **{pwr:,}** *(Gốc: {c['power']} + Buff Lv.{cur_lvl}: +{lvl_buff})*\n❤️ HP: **{hp:,}** *(Gốc: {c['hp']} + Buff Lv.{cur_lvl}: +{lvl_buff})*",
+                    inline=False
+                )
+            else:
+                embed.add_field(
+                    name=f"Vị trí #{idx}: 🔲 [Trống - Chưa xếp thẻ]",
+                    value="Dùng `!team add <ID>` để bổ sung thẻ vào vị trí này.",
+                    inline=False
+                )
+
         embed.add_field(
-            name="📊 Tổng Lực Chiến Đội Hình:",
+            name="📊 TỔNG LỰC CHIẾN TOÀN ĐỘI (ĐÃ TÍNH BUFF CẤP ĐỘ):",
             value=f"⚔️ Tổng Power: **{tot_pwr:,}** | ❤️ Tổng HP: **{tot_hp:,}**",
             inline=False
         )
         first_card = CARDS_DATA[player["team"][0]]
         embed.set_thumbnail(url=first_card["image"])
 
-    embed.set_footer(text="Lệnh: /team add <id> | /team remove <id> | /battle")
+    embed.add_field(
+        name="💡 Thao Tác Nhanh:",
+        value="• Thêm thẻ: `!team add <ID>`\n• Gỡ thẻ: `!team remove <ID>`\n• Xem ID thẻ: `!team guide`\n• Đấu thử thách kiếm XP: `/battle` *(Hồi chiêu 2 phút)*",
+        inline=False
+    )
+    embed.set_footer(text=f"Hakurei Shrine • Cấp Người Chơi: Lv.{cur_lvl} (+{lvl_buff} stats) • Thắng {player.get('battles_won', 0)} trận")
     if isinstance(ctx_or_interaction, discord.Interaction):
         await ctx_or_interaction.response.send_message(embed=embed)
     else:
         await ctx_or_interaction.send(embed=embed)
 
-@bot.tree.command(name="team", description="Xem hoặc sắp xếp đội hình 3 thẻ chiến đấu")
+@bot.tree.command(name="team", description="Xem, sắp xếp hoặc nhận hướng dẫn chi tiết đội hình 3 thẻ")
 @app_commands.describe(
-    hanh_dong="Hành động: view (xem), add (thêm), remove (gỡ)",
-    id_the="ID thẻ từ 1 đến 20 (khi dùng add hoặc remove)"
+    hanh_dong="view (xem đội), add (thêm thẻ), remove (gỡ thẻ), guide (hướng dẫn chi tiết)",
+    id_the="Số ID thẻ từ 1 đến 20 (khi dùng add hoặc remove)"
 )
 @app_commands.choices(hanh_dong=[
-    app_commands.Choice(name="Xem đội hình (view)", value="view"),
-    app_commands.Choice(name="Thêm thẻ (add)", value="add"),
-    app_commands.Choice(name="Gỡ thẻ (remove)", value="remove"),
+    app_commands.Choice(name="👁️ Xem đội hình hiện tại (view)", value="view"),
+    app_commands.Choice(name="➕ Thêm thẻ vào đội (add)", value="add"),
+    app_commands.Choice(name="➖ Gỡ thẻ khỏi đội (remove)", value="remove"),
+    app_commands.Choice(name="📖 Hướng dẫn chi tiết (guide)", value="guide"),
 ])
-async def slash_team(interaction: discord.Interaction, hanh_dong: app_commands.Choice[str], id_the: int = None):
-    await handle_team(interaction, hanh_dong.value, id_the)
+async def slash_team(interaction: discord.Interaction, hanh_dong: app_commands.Choice[str] = None, id_the: int = None):
+    action = hanh_dong.value if hanh_dong else "view"
+    await handle_team(interaction, action, id_the)
 
 @bot.command(name="team")
 async def prefix_team(ctx, action: str = "view", card_id: int = None):
@@ -1047,32 +1239,140 @@ async def prefix_collection(ctx):
     await handle_collection(ctx)
 
 
-# --- LỆNH /battle hoặc !battle (AUTO BATTLE KIẾM 50-100 XP) ---
+# DANH SÁCH NPC GENSOKYO ĐA DẠNG CHO HỆ THỐNG BATTLE RANDOM
+GENSOKYO_NPCS = [
+    {"name": "Cirno Đệ Nhất", "title": "Băng Tinh Tự Xưng Vô Địch Gensokyo", "badge": "❄️ Băng Tinh", "preferred": [17, 18, 19]},
+    {"name": "Marisa Đạo Tặc", "title": "Phù Thủy Ánh Sáng Rừng Ma Thuật", "badge": "⭐ Tinh Linh", "preferred": [6, 12, 16]},
+    {"name": "Alice Ma Đạo", "title": "Nghệ Nhân Điều Khiển Búp Bê Thượng Hải", "badge": "🪆 Búp Bê", "preferred": [11, 14, 20]},
+    {"name": "Aya Phóng Viên", "title": "Ký Giả Tốc Độ Bão Cuộn Bunbunmaru", "badge": "🌪️ Phong Thần", "preferred": [12, 13, 15]},
+    {"name": "Nitori Kỹ Sư", "title": "Thiên Tài Cơ Giới Thung Lũng Suối Reo", "badge": "🌊 Kappa", "preferred": [16, 18, 20]},
+    {"name": "Youmu Kiếm Hồn", "title": "Hộ Vệ Nửa Người Nửa Ma Bạch Ngọc Lâu", "badge": "⚔️ Song Kiếm", "preferred": [8, 13, 14]},
+    {"name": "Yuyuko U Linh", "title": "Công Nương Vong Hồn Rừng Anh Đào", "badge": "🌸 U Hồn", "preferred": [7, 8, 10]},
+    {"name": "Sakuya Thời Gian", "title": "Hầu Gái Trưởng Dinh Thự Hồng Ma", "badge": "⏱️ Thời Không", "preferred": [9, 13, 15]},
+    {"name": "Remilia Huyết Ma", "title": "Chúa Tể Huyết Nguyệt Tươi Thắm", "badge": "🦇 Huyết Tộc", "preferred": [3, 4, 9]},
+    {"name": "Flandre Hủy Diệt", "title": "Cuồng Nộ Tầng Hầm Cấm Địa Laevateinn", "badge": "💎 Hủy Diệt", "preferred": [3, 5, 8]},
+    {"name": "Reisen Nguyệt Nhãn", "title": "Xạ Thủ Ánh Mắt Thần Bí Nguyệt Cung", "badge": "🌙 Nguyệt Thỏ", "preferred": [10, 11, 15]},
+    {"name": "Ran Cửu Vĩ", "title": "Thức Thần Toán Học Huyền Thuật Đại Tài", "badge": "🦊 Cửu Vĩ", "preferred": [4, 7, 12]},
+    {"name": "Suika Quỷ Vương", "title": "Đại Quỷ Bách Quỷ Dạ Hành Mê Tửu", "badge": "🍶 Đại Quỷ", "preferred": [5, 6, 8]},
+    {"name": "Sanae Vu Nữ", "title": "Thánh Nữ Tạo Nên Phép Màu Đền Moriya", "badge": "⛩️ Thần Tích", "preferred": [5, 10, 14]},
+    {"name": "Satori Thấu Tâm", "title": "Chủ Nhân Đọc Suy Nghĩ Cung Điện Địa Linh", "badge": "👁️ Thấu Tâm", "preferred": [7, 9, 11]},
+    {"name": "Koishi Vô Thức", "title": "Bản Năng Vô Niệm Lang Thang Hư Ảo", "badge": "💭 Vô Thức", "preferred": [8, 10, 13]},
+    {"name": "Mokou Phượng Hoàng", "title": "Ngọn Lửa Bất Tử Bất Diệt Rừng Tre Lạc Lối", "badge": "🔥 Bất Tử", "preferred": [6, 9, 12]},
+    {"name": "Kaguya Nguyệt Nữ", "title": "Công Chúa Bất Tử Lưu Đày Từ Mặt Trăng", "badge": "🎍 Vĩnh Hằng", "preferred": [1, 2, 7]},
+    {"name": "Tenshi Thiên Sứ", "title": "Tiểu Thư Thiên Giới Kiêu Kỳ Đất Trời", "badge": "🍑 Thiên Nhân", "preferred": [6, 11, 15]},
+    {"name": "Kasen Tiên Nhân", "title": "Ẩn Sĩ Một Tay Dạy Dỗ Yêu Quái", "badge": "🐉 Tiên Gia", "preferred": [4, 8, 14]},
+    {"name": "Eiki Thẩm Phán", "title": "Diêm Vương Tội Phước Sông Sanzu", "badge": "⚖️ Diêm La", "preferred": [2, 5, 10]},
+    {"name": "Dark Doppelgänger", "title": "Ảo Ảnh Gương Soi Nhân Tâm Gensokyo", "badge": "🔮 Hắc Ám", "preferred": [1, 2, 3]},
+    {"name": "Tewi Thỏ Rừng", "title": "Thủ Lĩnh Bầy Thỏ Tinh Quái Mê Tung Trận", "badge": "🥕 Cạm Bẫy", "preferred": [14, 18, 20]},
+    {"name": "Hecatia Hỗn Mang", "title": "Nữ Thần Địa Ngục Ba Hành Tinh Thần Bí", "badge": "🌌 Hỗn Mang", "preferred": [1, 2, 4]}
+]
+
+# --- LỆNH /battle hoặc !battle (AUTO BATTLE KIẾM 50-100 XP - COOLDOWN 2 PHÚT) ---
 async def handle_battle(ctx_or_interaction):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
     lang = player.get("language", "vi")
 
     if not player.get("team") or len(player["team"]) == 0:
-        msg = "⚠️ Bạn chưa thiết lập đội hình! Hãy dùng `/team add <id>` để đưa thẻ vào đội trước khi khiêu chiến!" if lang == "vi" else "⚠️ You haven't set up a team! Use `/team add <id>` first!"
+        err = "Bạn chưa thiết lập đội hình chiến đấu! Vui lòng gõ `!team add <ID>` để đưa thẻ vào đội trước khi khiêu chiến."
+        guide_embed = build_team_guide_embed(player, user, lang, error_msg=err)
         if isinstance(ctx_or_interaction, discord.Interaction):
-            await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+            await ctx_or_interaction.response.send_message(embed=guide_embed, ephemeral=True)
         else:
-            await ctx_or_interaction.send(msg)
+            await ctx_or_interaction.send(embed=guide_embed)
         return
 
-    # Lấy đối thủ (từ player khác hoặc sinh team ảo tương đương)
-    opponents = get_all_opponents(exclude_id=user.id)
-    if opponents:
-        target = random.choice(opponents)
-        opp_name = target.get("username", "Đối thủ Gensokyo")
+    # KIỂM TRA COOLDOWN 2 PHÚT (120 GIÂY)
+    now = time.time()
+    last_battle = player.get("last_battle_time", 0)
+    cooldown = 120  # 2 phút
+    if now - last_battle < cooldown:
+        remaining = int(cooldown - (now - last_battle))
+        mins = remaining // 60
+        secs = remaining % 60
+        time_str = f"{mins} phút {secs} giây" if mins > 0 else f"{secs} giây"
+        embed_cd = discord.Embed(
+            title="⏳ ĐANG TRONG THỜI GIAN HỒI SỨC!",
+            description=f"Chiến binh **{user.display_name}**, bạn vừa trải qua một trận chiến kịch liệt!\nVui lòng nghỉ ngơi thêm **{time_str}** nữa trước khi bước vào trận chiến tiếp theo.\n*(Hồi chiêu lệnh /battle: 2 phút)*",
+            color=0xF59E0B
+        )
+        embed_cd.set_footer(text="Gợi ý: Trong lúc chờ hồi sức, hãy gõ !team hoặc !inv để tối ưu đội hình!")
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=embed_cd, ephemeral=True)
+        else:
+            await ctx_or_interaction.send(embed=embed_cd)
+        return
+
+    # LẤY LỊCH SỬ ĐỐI THỦ GẦN ĐÂY ĐỂ TRÁNH TRÙNG LẶP LIÊN TỤC
+    recent_opponents = player.get("recent_opponents", [])
+    if not isinstance(recent_opponents, list):
+        recent_opponents = []
+
+    # 1. Tìm ứng viên người chơi thật thỏa mãn: chưa đấu gần đây
+    all_opponents = get_all_opponents(exclude_id=user.id)
+    eligible_real = [
+        op for op in all_opponents
+        if op.get("username", "") not in recent_opponents and str(op.get("user_id")) not in recent_opponents
+    ]
+
+    # Quyết định chọn người chơi thật hay NPC Gensokyo
+    # Tỉ lệ: 25% chọn người chơi thật (chỉ khi có người chưa đấu gần đây), 75% chọn NPC ngẫu hứng
+    choose_real = False
+    if eligible_real and random.random() < 0.25:
+        choose_real = True
+
+    pl_lvl = player.get("level", 1)
+
+    if choose_real:
+        target = random.choice(eligible_real)
+        opp_raw_name = target.get("username", "Dũng Giả Gensokyo")
+        opp_name = f"👤 {opp_raw_name}"
         opp_level = target.get("level", 1)
+        opp_title = f"Người chơi Gensokyo (Thắng {target.get('battles_won', 0)} trận)"
+        opp_badge = "⚔️ [Người Chơi Thật]"
         opp_team_ids = target.get("team", [17, 18, 20])
     else:
-        # Đội hình bóng ma Gensokyo
-        opp_name = "Ảo Ảnh Gensokyo (Ghost Team)"
-        opp_level = max(1, player["level"] + random.randint(-1, 1))
-        opp_team_ids = random.sample(list(CARDS_DATA.keys()), min(3, len(CARDS_DATA)))
+        # Lọc danh sách NPC chưa gặp gần đây để người chơi luôn gặp nhân vật mới
+        available_npcs = [n for n in GENSOKYO_NPCS if n["name"] not in recent_opponents]
+        if not available_npcs:
+            available_npcs = GENSOKYO_NPCS
+        npc = random.choice(available_npcs)
+        opp_raw_name = npc["name"]
+        opp_name = f"{npc['badge']} {npc['name']}"
+        opp_title = npc["title"]
+
+        # CƠ CHẾ LEVEL NGẪU HỨNG (SPONTANEOUS DYNAMIC LEVEL)
+        roll_lvl = random.random()
+        if roll_lvl < 0.25:
+            # Tân Binh / Dễ thở (cấp thấp hơn 1-3 cấp, tối thiểu Lv.1)
+            delta = -random.randint(1, 3)
+            opp_badge = "🌱 [Tân Binh]"
+        elif roll_lvl < 0.65:
+            # Cân sức (ngang cơ: -1, 0, hoặc +1 cấp)
+            delta = random.choice([-1, 0, 1])
+            opp_badge = "⚖️ [Cân Sức]"
+        elif roll_lvl < 0.88:
+            # Tinh anh (thử thách kịch tính: +2 đến +4 cấp)
+            delta = random.randint(2, 4)
+            opp_badge = "🔥 [Tinh Anh]"
+        else:
+            # Cao thủ xuất thế (boss ẩn: +4 đến +7 cấp)
+            delta = random.randint(4, 7)
+            opp_badge = "👑 [Cao Thủ]"
+
+        opp_level = max(1, min(100, pl_lvl + delta))
+
+        # Sinh đội hình cho NPC: lấy từ preferred + random thẻ để tạo sự bất ngờ
+        pref = npc.get("preferred", [])
+        all_cids = list(CARDS_DATA.keys())
+        team_set = list(pref)
+        random.shuffle(all_cids)
+        for cid in all_cids:
+            if len(team_set) >= 3:
+                break
+            if cid not in team_set:
+                team_set.append(cid)
+        opp_team_ids = team_set[:3]
 
     # Tính chỉ số của 2 đội
     player_buff = (player["level"] - 1) * 10
@@ -1097,40 +1397,56 @@ async def handle_battle(ctx_or_interaction):
     else:
         win = (player_surv_hp / player_hp) >= (opp_surv_hp / opp_hp)
 
-    # Thưởng XP (50-100 XP mỗi trận)
+    # Thưởng XP (50-100 XP mỗi trận) và lưu thời điểm battle
     gained_xp = random.randint(50, 100)
     old_lvl = player["level"]
+    player["last_battle_time"] = now
     player["xp"] += gained_xp
     player["battles_total"] = player.get("battles_total", 0) + 1
     if win:
         player["battles_won"] = player.get("battles_won", 0) + 1
+
+    # Cập nhật lịch sử đối thủ gần đây (chống lặp lại người cũ)
+    if "recent_opponents" not in player or not isinstance(player["recent_opponents"], list):
+        player["recent_opponents"] = []
+    player["recent_opponents"].append(opp_raw_name)
+    player["recent_opponents"] = player["recent_opponents"][-6:]
     save_player(player)
 
     new_lvl = player["level"]
     lvl_up_msg = f"\n🎉 **CHÚC MỪNG BẠN ĐÃ LÊN CẤP {new_lvl}!** (+10 Power & HP buff)" if new_lvl > old_lvl else ""
 
-    result_title = f"⚔️ TRẬN CHIẾN: {user.display_name} VS {opp_name}"
+    result_title = f"⚔️ TRẬN CHIẾN: {user.display_name} (Lv.{player['level']}) VS {opp_name} (Lv.{opp_level})"
     embed = discord.Embed(
         title=result_title,
         color=0x10B981 if win else 0xEF4444
     )
     embed.add_field(
         name=f"🔵 {user.display_name} (Lv.{player['level']})",
-        value=f"⚔️ Power: {player_pwr:,} | ❤️ HP: {player_hp:,}\n*Máu còn lại:* {max(0, player_surv_hp):,}",
+        value=f"⚔️ Power: **{player_pwr:,}**\n❤️ HP: **{player_hp:,}**\n*Máu còn:* `{max(0, player_surv_hp):,}` HP",
         inline=True
     )
     embed.add_field(
-        name=f"🔴 {opp_name} (Lv.{opp_level})",
-        value=f"⚔️ Power: {opp_pwr:,} | ❤️ HP: {opp_hp:,}\n*Máu còn lại:* {max(0, opp_surv_hp):,}",
+        name=f"🔴 {opp_name} (Lv.{opp_level}) {opp_badge}",
+        value=f"*{opp_title}*\n⚔️ Power: **{opp_pwr:,}**\n❤️ HP: **{opp_hp:,}**\n*Máu còn:* `{max(0, opp_surv_hp):,}` HP",
         inline=True
     )
-    res_str = "🏆 **CHIẾN THẮNG!**" if win else "💀 **THẤT BẠI!**"
+
+    p_cards_str = " • ".join([f"[{CARDS_DATA[cid]['rank']}] {CARDS_DATA[cid]['name']}" for cid in player["team"] if cid in CARDS_DATA])
+    opp_cards_str = " • ".join([f"[{CARDS_DATA[cid]['rank']}] {CARDS_DATA[cid]['name']}" for cid in opp_team_ids if cid in CARDS_DATA])
+    embed.add_field(
+        name="🎴 Thẻ Ra Trận Hai Bên:",
+        value=f"• **Phe Bạn:** {p_cards_str}\n• **Đối Thủ:** {opp_cards_str}",
+        inline=False
+    )
+
+    res_str = "🏆 **CHIẾN THẮNG TUYỆT ĐỐI!**" if win else "💀 **THẤT BẠI TIẾC NUỐI!**"
     embed.add_field(
         name="Kết Quả Trận Đấu:",
         value=f"{res_str}\nNhận được: **+{gained_xp} XP** (Tổng XP: {player['xp']}, Lv.{new_lvl}){lvl_up_msg}",
         inline=False
     )
-    embed.set_footer(text="Mỗi cấp cần 100 XP để thăng tiến, tối đa Lv.100 (+1000 chỉ số)")
+    embed.set_footer(text="Hồi chiêu lệnh chiến đấu: 2 phút • Đối thủ & Cấp độ được biến hóa liên tục!")
 
     if isinstance(ctx_or_interaction, discord.Interaction):
         await ctx_or_interaction.response.send_message(embed=embed)
