@@ -459,7 +459,7 @@ def _call_gemini_sync(model_name, contents, system_instruction, temperature):
     )
 
 async def ask_gemini(contents, system_instruction, temperature=0.85):
-    models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"]
+    models = ["gemini-3.6-flash", "gemini-3.5-flash"]
     last_err = None
     for model_name in models:
         for attempt in range(2):
@@ -476,7 +476,7 @@ async def ask_gemini(contents, system_instruction, temperature=0.85):
             except Exception as e:
                 last_err = e
                 err_str = str(e)
-                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "404" in err_str or "NOT_FOUND" in err_str:
+                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
                     break
                 if "503" in err_str or "UNAVAILABLE" in err_str:
                     await asyncio.sleep(1.0)
@@ -499,7 +499,7 @@ TÍNH CÁCH:
 
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 # ==============================================================================
 # 5. QUẢN LÝ BOSS RAID (REIMU DỊ HÌNH - 10% TỰ ĐỘNG XUẤT HIỆN KHI CHAT)
