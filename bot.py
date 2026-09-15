@@ -18,6 +18,7 @@ import asyncio
 import threading
 import sqlite3
 from datetime import datetime
+from typing import Optional, Union, List, Dict
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import discord
 from discord import app_commands
@@ -372,6 +373,42 @@ BOSS_PHASE2_CONFIG = {
 boss_cooldown_until = 0.0
 
 # ==============================================================================
+# 3.1 CƠ CHẾ TIẾN HÓA ACE 2 (EVOLUTION & THỨC TỈNH NỘI TẠI TOUHOU)
+# ==============================================================================
+EVOL_CONFIG = {
+    "13": {
+        "id": 13,
+        "key": "reimu",
+        "name": "Reimu Hakurei",
+        "title": "Ace 2 ⭐⭐",
+        "required_cards": 20,
+        "evol_gif": "https://klipy.com/gifs/reimu-reimu-hakurei-7",
+        "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh (Miễn Thương)",
+        "skill_desc": "Miễn toàn bộ sát thương duy nhất 1 lần trong trận (30% xác suất mỗi hiệp khi ra trận nhận đòn, chỉ bảo vệ riêng Reimu).",
+        "skill_gif": "https://klipy.com/gifs/touhou-reimu-31"
+    },
+    "16": {
+        "id": 16,
+        "key": "sakuya",
+        "name": "Sakuya Izayoi",
+        "title": "Ace 2 ⭐⭐",
+        "required_cards": 30,
+        "evol_gif": "https://klipy.com/gifs/sakuya-sakuya-izayoi",
+        "skill_name": "Thời Gian Đóng Băng (Stun Boss)",
+        "skill_desc": "Khiến Boss/đối thủ bị đóng băng (Stun) mất lượt duy nhất 1 lần trong trận (30% xác suất mỗi hiệp khi ở tiền tuyến).",
+        "skill_gif": "https://klipy.com/gifs/sakuya-maid-2"
+    }
+}
+
+BOSS_SKILL_CONFIG = {
+    "name": "Dị Hình Bùa Chú",
+    "chance": 0.20,
+    "damage": 5000,
+    "desc": "Gây 5,000 DMG cho mỗi lá bài đang ở tiền tuyến (không chia sát thương, khi kích hoạt Boss không đánh thường)",
+    "gif": "https://klipy.com/gifs/checkerboard-emo"
+}
+
+# ==============================================================================
 # 4. DATABASE SETUP: MONGODB ATLAS + SQLITE DỰ PHÒNG
 # ==============================================================================
 MONGO_URI = os.getenv("MONGO_URI")
@@ -460,6 +497,8 @@ def get_default_player(user_id, username):
         "free_pulls_remaining": 5,
         "last_daily_date": "",
         "inventory": {},      # { "card_id_str": count }
+        "pull_stats": {},     # { "card_id_str": total_pulls_count }
+        "evolutions": {},     # { "card_id_str": ace_level (ví dụ: "13": 2 cho Reimu Ace 2) }
         "team": [],           # [card_id_1, card_id_2, card_id_3]
         "language": "vi",     # "vi" hoặc "en"
         "battles_won": 0,
@@ -467,6 +506,18 @@ def get_default_player(user_id, username):
         "last_battle_time": 0.0,
         "recent_opponents": []
     }
+
+def get_card_pulled_count(player: dict, card_id: Union[int, str]) -> int:
+    """Trả về số lần người chơi đã từng sở hữu hoặc pull được thẻ bài này."""
+    cid_str = str(card_id)
+    inv_cnt = player.get("inventory", {}).get(cid_str, 0)
+    pull_cnt = player.get("pull_stats", {}).get(cid_str, 0)
+    return max(inv_cnt, pull_cnt)
+
+def is_card_ace2(player: dict, card_id: Union[int, str]) -> bool:
+    """Kiểm tra thẻ bài này đã được người chơi tiến hóa lên Ace 2 hay chưa."""
+    cid_str = str(card_id)
+    return player.get("evolutions", {}).get(cid_str, 0) >= 2
 
 def get_player(user_id, username="Visitor"):
     uid_str = str(user_id)
@@ -493,6 +544,8 @@ def get_player(user_id, username="Visitor"):
 
     # Đảm bảo các field bắt buộc có mặt
     if "inventory" not in data: data["inventory"] = {}
+    if "pull_stats" not in data: data["pull_stats"] = {}
+    if "evolutions" not in data: data["evolutions"] = {}
     if "team" not in data: data["team"] = []
     if "xp" not in data: data["xp"] = 0
     if "pull_tickets" not in data: data["pull_tickets"] = 0.0
@@ -825,26 +878,35 @@ async def execute_raid(channel, raid_data):
             p["team"] = team_cids
             save_player(p)
 
-        team_pwr = 0
-        team_hp = 0
-        card_names = []
+        team_cards = []
         for cid in team_cids[:3]:
             card = CARDS_DATA.get(cid)
             if card:
-                team_pwr += card["power"] + lvl_buff
-                team_hp += card["hp"] + lvl_buff
-                card_names.append(f"{card['name']} (⚔️{card['power'] + lvl_buff:,}/❤️{card['hp'] + lvl_buff:,})")
+                is_ace2 = is_card_ace2(p, cid)
+                card_pwr = card["power"] + lvl_buff
+                card_hp = card["hp"] + lvl_buff
+                card_name = f"[Ace 2 ⭐⭐] {card['name']}" if is_ace2 else card["name"]
+                team_cards.append({
+                    "cid": cid,
+                    "name": card_name,
+                    "base_name": card["name"],
+                    "rank": card["rank"],
+                    "power": card_pwr,
+                    "max_hp": card_hp,
+                    "current_hp": card_hp,
+                    "is_ace2": is_ace2
+                })
 
         combatants.append({
             "uid": uid,
             "username": p["username"],
             "level": p["level"],
-            "power": team_pwr,
-            "max_hp": team_hp,
-            "current_hp": team_hp,
-            "is_alive": True,
+            "team_cards": team_cards,
+            "current_card_index": 0,
+            "is_alive": len(team_cards) > 0,
             "total_dmg": 0,
-            "cards": card_names,
+            "sakuya_stun_used": False,
+            "reimu_invul_used": False,
             "death_round": None
         })
 
@@ -858,43 +920,109 @@ async def execute_raid(channel, raid_data):
     p1_battle_history = []
 
     while p1_hp > 0 and p1_rounds < max_rounds:
-        alive_players = [c for c in combatants if c["is_alive"]]
-        if not alive_players:
+        active_combatants = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
+        if not active_combatants:
             break
 
         p1_rounds += 1
+        frontline_cards = [c["team_cards"][c["current_card_index"]] for c in active_combatants]
 
-        # 1. Các dũng giả còn sống tấn công Boss Phase 1
-        round_player_dmg = sum(c["power"] for c in alive_players)
+        # A. Kỹ năng Sakuya Ace 2 (Stun Boss 30% mỗi hiệp, 1 lần duy nhất trong trận)
+        boss_stunned = False
+        sakuya_stun_notif = None
+        for c in active_combatants:
+            ac = c["team_cards"][c["current_card_index"]]
+            if ac["cid"] == 16 and ac["is_ace2"] and not c["sakuya_stun_used"]:
+                if random.random() < 0.30:
+                    c["sakuya_stun_used"] = True
+                    boss_stunned = True
+                    sakuya_stun_notif = (
+                        f"⏳ **[Ace 2] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (30%)! "
+                        f"❄️ Boss bị **STUN HOÀN TOÀN** mất lượt! [Hoạt ảnh](https://klipy.com/gifs/sakuya-maid-2)"
+                    )
+                    break
+
+        # B. Tiền tuyến các dũng giả tấn công Boss
+        round_player_dmg = sum(ac["power"] for ac in frontline_cards)
         p1_hp = max(0, p1_hp - round_player_dmg)
-        for c in alive_players:
-            c["total_dmg"] += c["power"]
+        for c in active_combatants:
+            c["total_dmg"] += c["team_cards"][c["current_card_index"]]["power"]
 
         if p1_hp <= 0:
             p1_battle_history.append(
-                f"**⚔️ Hiệp {p1_rounds} (Phase 1):** {len(alive_players)} dũng giả đồng loạt tung đòn tất sát gây **{round_player_dmg:,} DMG**! 💥 **Reimu Dị Hình Phase 1 đã bị đánh gục!**"
+                f"**⚔️ Hiệp {p1_rounds} (Phase 1):** Tiền tuyến đồng loạt công kích gây **{round_player_dmg:,} DMG**! 💥 **Reimu Dị Hình Phase 1 đã bị đánh gục!**"
             )
             break
 
-        # 2. Boss Phase 1 phản đòn (10,000 DMG chia đều cho người sống)
-        dmg_per_player = max(300, p1_power // len(alive_players))
-        fallen_names = []
+        # C. Boss Phase 1 hành động (Nếu không bị stun)
+        boss_action_log = ""
+        if boss_stunned:
+            boss_action_log = "❄️ Boss bị đóng băng thời gian, bất lực không thể phản công!"
+        else:
+            # 20% Boss skill "Dị hình bùa chú": 5,000 DMG trực tiếp cho mỗi lá bài tiền tuyến (không chia, Boss không đánh thường)
+            if random.random() < 0.20:
+                boss_action_log = (
+                    f"👹 **[NỘI TẠI BOSS] Reimu Dị Hình** thi triển **Dị Hình Bùa Chú** (20%)! "
+                    f"🔮 Giáng **5,000 DMG** lên TOÀN BỘ lá bài tiền tuyến! [Hoạt ảnh](https://klipy.com/gifs/checkerboard-emo)"
+                )
+                for c in active_combatants:
+                    ac = c["team_cards"][c["current_card_index"]]
+                    invul = False
+                    if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                        if random.random() < 0.30:
+                            c["reimu_invul_used"] = True
+                            invul = True
+                            boss_action_log += (
+                                f"\n🛡️ **[Ace 2] Reimu Hakurei** ({c['username']}) kích hoạt **Bùa Chú Vô Tưởng Chuyển Sinh** (30%)! "
+                                f"MIỄN TOÀN BỘ SÁT THƯƠNG! [Hoạt ảnh](https://klipy.com/gifs/touhou-reimu-31)"
+                            )
+                    if not invul:
+                        ac["current_hp"] -= 5000
+            else:
+                dmg_per_card = max(300, p1_power // len(frontline_cards))
+                boss_action_log = f"⚔️ Boss đánh thường giáng **{dmg_per_card:,} DMG** lên mỗi lá bài tiền tuyến!"
+                for c in active_combatants:
+                    ac = c["team_cards"][c["current_card_index"]]
+                    invul = False
+                    if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                        if random.random() < 0.30:
+                            c["reimu_invul_used"] = True
+                            invul = True
+                            boss_action_log += (
+                                f"\n🛡️ **[Ace 2] Reimu Hakurei** ({c['username']}) kích hoạt **Bùa Chú Vô Tưởng Chuyển Sinh** (30%)! "
+                                f"MIỄN TOÀN BỘ {dmg_per_card:,} SÁT THƯƠNG! [Hoạt ảnh](https://klipy.com/gifs/touhou-reimu-31)"
+                            )
+                    if not invul:
+                        ac["current_hp"] -= dmg_per_card
 
-        for c in alive_players:
-            c["current_hp"] -= dmg_per_player
-            if c["current_hp"] <= 0:
-                c["current_hp"] = 0
-                c["is_alive"] = False
-                c["death_round"] = p1_rounds
-                fallen_names.append(c["username"])
+        # D. Kiểm tra lá bài gục ngã và đẩy lá tiếp theo lên
+        push_logs = []
+        for c in active_combatants:
+            ac = c["team_cards"][c["current_card_index"]]
+            if ac["current_hp"] <= 0:
+                ac["current_hp"] = 0
+                dead_name = ac["name"]
+                c["current_card_index"] += 1
+                if c["current_card_index"] < len(c["team_cards"]):
+                    next_card = c["team_cards"][c["current_card_index"]]
+                    push_logs.append(
+                        f"💀 Thẻ **{dead_name}** ({c['username']}) đã gục! ➡️ Đẩy tiếp **{next_card['name']}** (❤️{next_card['current_hp']:,} HP) lên tiền tuyến!"
+                    )
+                else:
+                    c["is_alive"] = False
+                    c["death_round"] = p1_rounds
+                    push_logs.append(f"☠️ **{c['username']}** đã cạn kiệt thẻ bài và tử trận!")
 
-        log_msg = (
-            f"**⚔️ Hiệp {p1_rounds}:** Dũng giả gây **{round_player_dmg:,} DMG** (Boss còn **{p1_hp:,}/{p1_max_hp:,} HP**). "
-            f"Boss giáng **{dmg_per_player:,} DMG** lên mỗi dũng giả!"
+        round_entry = (
+            f"**⚔️ Hiệp {p1_rounds}:** Tiền tuyến gây **{round_player_dmg:,} DMG** (Boss còn **{p1_hp:,}/{p1_max_hp:,} HP**).\n"
+            f"{boss_action_log}"
         )
-        if fallen_names:
-            log_msg += f" 💀 *Tử trận: {', '.join(fallen_names)}*"
-        p1_battle_history.append(log_msg)
+        if sakuya_stun_notif:
+            round_entry = sakuya_stun_notif + "\n" + round_entry
+        if push_logs:
+            round_entry += "\n" + "\n".join(push_logs)
+
+        p1_battle_history.append(round_entry)
 
     p1_defeated = (p1_hp <= 0)
 
@@ -962,9 +1090,13 @@ async def execute_raid(channel, raid_data):
 
     # LẬP TỨC HỒI PHỤC TOÀN BỘ LÁ BÀI THAM CHIẾN CỦA NGƯỜI THAM GIA RAID (100% HP & HỒI SINH)
     for c in combatants:
-        c["current_hp"] = c["max_hp"]
-        c["is_alive"] = True
+        c["current_card_index"] = 0
+        c["is_alive"] = len(c["team_cards"]) > 0
         c["death_round"] = None
+        c["sakuya_stun_used"] = False
+        c["reimu_invul_used"] = False
+        for card in c["team_cards"]:
+            card["current_hp"] = card["max_hp"]
 
     # GIAI ĐOẠN 2 (PHASE 2): 50,000 HP, 22,000 POWER
     p2_max_hp = BOSS_PHASE2_CONFIG["hp"]
@@ -974,43 +1106,109 @@ async def execute_raid(channel, raid_data):
     p2_battle_history = []
 
     while p2_hp > 0 and p2_rounds < max_rounds:
-        alive_players = [c for c in combatants if c["is_alive"]]
-        if not alive_players:
+        active_combatants = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
+        if not active_combatants:
             break
 
         p2_rounds += 1
+        frontline_cards = [c["team_cards"][c["current_card_index"]] for c in active_combatants]
 
-        # 1. Dũng giả tấn công Boss Phase 2
-        round_player_dmg = sum(c["power"] for c in alive_players)
+        # A. Kỹ năng Sakuya Ace 2 (Stun Boss 30% mỗi hiệp, 1 lần duy nhất trong Phase)
+        boss_stunned = False
+        sakuya_stun_notif = None
+        for c in active_combatants:
+            ac = c["team_cards"][c["current_card_index"]]
+            if ac["cid"] == 16 and ac["is_ace2"] and not c["sakuya_stun_used"]:
+                if random.random() < 0.30:
+                    c["sakuya_stun_used"] = True
+                    boss_stunned = True
+                    sakuya_stun_notif = (
+                        f"⏳ **[Ace 2] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (30%)! "
+                        f"❄️ Boss Phase 2 bị **STUN HOÀN TOÀN**! [Hoạt ảnh](https://klipy.com/gifs/sakuya-maid-2)"
+                    )
+                    break
+
+        # B. Dũng giả tấn công Boss Phase 2
+        round_player_dmg = sum(ac["power"] for ac in frontline_cards)
         p2_hp = max(0, p2_hp - round_player_dmg)
-        for c in alive_players:
-            c["total_dmg"] += c["power"]
+        for c in active_combatants:
+            c["total_dmg"] += c["team_cards"][c["current_card_index"]]["power"]
 
         if p2_hp <= 0:
             p2_battle_history.append(
-                f"**⚡ Hiệp {p2_rounds} (Phase 2):** {len(alive_players)} dũng giả đồng lòng tung chiêu thức tối thượng gây **{round_player_dmg:,} DMG**! 💥 **Reimu Dị Hình Phase 2 đã bị tiêu diệt hoàn toàn!**"
+                f"**⚡ Hiệp {p2_rounds} (Phase 2):** Tiền tuyến đồng lòng tung chiêu thức tối thượng gây **{round_player_dmg:,} DMG**! 💥 **Reimu Dị Hình Phase 2 đã bị tiêu diệt hoàn toàn!**"
             )
             break
 
-        # 2. Boss Phase 2 phản đòn (22,000 DMG chia đều cho người sống)
-        dmg_per_player = max(600, p2_power // len(alive_players))
-        fallen_names = []
+        # C. Boss Phase 2 phản đòn (Nếu không bị stun)
+        boss_action_log = ""
+        if boss_stunned:
+            boss_action_log = "❄️ Boss Phase 2 bị đóng băng thời gian, không thể phát động đòn công kích!"
+        else:
+            # 20% Boss skill "Dị hình bùa chú": 5,000 DMG trực tiếp cho mỗi lá bài tiền tuyến (không chia, Boss không đánh thường)
+            if random.random() < 0.20:
+                boss_action_log = (
+                    f"👹 **[NỘI TẠI BOSS] Reimu Dị Hình** phát động **Dị Hình Bùa Chú** (20%)! "
+                    f"🔮 Oanh tạc **5,000 DMG** lên TOÀN BỘ lá bài tiền tuyến! [Hoạt ảnh](https://klipy.com/gifs/checkerboard-emo)"
+                )
+                for c in active_combatants:
+                    ac = c["team_cards"][c["current_card_index"]]
+                    invul = False
+                    if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                        if random.random() < 0.30:
+                            c["reimu_invul_used"] = True
+                            invul = True
+                            boss_action_log += (
+                                f"\n🛡️ **[Ace 2] Reimu Hakurei** ({c['username']}) kích hoạt **Bùa Chú Vô Tưởng Chuyển Sinh** (30%)! "
+                                f"MIỄN TOÀN BỘ SÁT THƯƠNG! [Hoạt ảnh](https://klipy.com/gifs/touhou-reimu-31)"
+                            )
+                    if not invul:
+                        ac["current_hp"] -= 5000
+            else:
+                dmg_per_card = max(600, p2_power // len(frontline_cards))
+                boss_action_log = f"⚔️ Boss Phase 2 giáng đòn **{dmg_per_card:,} DMG** lên mỗi lá bài tiền tuyến!"
+                for c in active_combatants:
+                    ac = c["team_cards"][c["current_card_index"]]
+                    invul = False
+                    if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                        if random.random() < 0.30:
+                            c["reimu_invul_used"] = True
+                            invul = True
+                            boss_action_log += (
+                                f"\n🛡️ **[Ace 2] Reimu Hakurei** ({c['username']}) kích hoạt **Bùa Chú Vô Tưởng Chuyển Sinh** (30%)! "
+                                f"MIỄN TOÀN BỘ {dmg_per_card:,} SÁT THƯƠNG! [Hoạt ảnh](https://klipy.com/gifs/touhou-reimu-31)"
+                            )
+                    if not invul:
+                        ac["current_hp"] -= dmg_per_card
 
-        for c in alive_players:
-            c["current_hp"] -= dmg_per_player
-            if c["current_hp"] <= 0:
-                c["current_hp"] = 0
-                c["is_alive"] = False
-                c["death_round"] = p2_rounds
-                fallen_names.append(c["username"])
+        # D. Kiểm tra lá bài gục ngã và đẩy lá tiếp theo lên
+        push_logs = []
+        for c in active_combatants:
+            ac = c["team_cards"][c["current_card_index"]]
+            if ac["current_hp"] <= 0:
+                ac["current_hp"] = 0
+                dead_name = ac["name"]
+                c["current_card_index"] += 1
+                if c["current_card_index"] < len(c["team_cards"]):
+                    next_card = c["team_cards"][c["current_card_index"]]
+                    push_logs.append(
+                        f"💀 Thẻ **{dead_name}** ({c['username']}) đã gục! ➡️ Đẩy tiếp **{next_card['name']}** (❤️{next_card['current_hp']:,} HP) lên tiền tuyến!"
+                    )
+                else:
+                    c["is_alive"] = False
+                    c["death_round"] = p2_rounds
+                    push_logs.append(f"☠️ **{c['username']}** đã cạn kiệt thẻ bài và tử trận!")
 
-        log_msg = (
-            f"**⚡ Hiệp {p2_rounds} (Phase 2):** Dũng giả gây **{round_player_dmg:,} DMG** (Boss Phase 2 còn **{p2_hp:,}/{p2_max_hp:,} HP**). "
-            f"Boss giáng đòn 22,000 DMG gây **{dmg_per_player:,} DMG** lên mỗi dũng giả!"
+        round_entry = (
+            f"**⚡ Hiệp {p2_rounds} (Phase 2):** Tiền tuyến gây **{round_player_dmg:,} DMG** (Boss Phase 2 còn **{p2_hp:,}/{p2_max_hp:,} HP**).\n"
+            f"{boss_action_log}"
         )
-        if fallen_names:
-            log_msg += f" 💀 *Tử trận: {', '.join(fallen_names)}*"
-        p2_battle_history.append(log_msg)
+        if sakuya_stun_notif:
+            round_entry = sakuya_stun_notif + "\n" + round_entry
+        if push_logs:
+            round_entry += "\n" + "\n".join(push_logs)
+
+        p2_battle_history.append(round_entry)
 
     p2_defeated = (p2_hp <= 0)
     total_raid_dmg = sum(c["total_dmg"] for c in combatants)
@@ -1273,6 +1471,7 @@ def execute_single_pull(player):
     is_duplicate = already_owned > 0
 
     player["inventory"][cid_str] = already_owned + 1
+    player.setdefault("pull_stats", {})[cid_str] = player.get("pull_stats", {}).get(cid_str, 0) + 1
 
     converted_pulls = 0.0
     if is_duplicate:
@@ -1523,6 +1722,7 @@ async def slash_admin_add_card(interaction: discord.Interaction, id_the: int, so
     old_cnt = inv.get(cid_str, 0)
     new_cnt = old_cnt + so_luong
     inv[cid_str] = new_cnt
+    target_player.setdefault("pull_stats", {})[cid_str] = target_player.get("pull_stats", {}).get(cid_str, 0) + so_luong
     save_player(target_player)
 
     embed = discord.Embed(
@@ -1562,6 +1762,7 @@ async def prefix_admin_add_card(ctx, card_id: int, quantity: int = 1, member: di
     old_cnt = inv.get(cid_str, 0)
     new_cnt = old_cnt + quantity
     inv[cid_str] = new_cnt
+    target_player.setdefault("pull_stats", {})[cid_str] = target_player.get("pull_stats", {}).get(cid_str, 0) + quantity
     save_player(target_player)
 
     embed = discord.Embed(
@@ -2063,21 +2264,93 @@ async def handle_battle(ctx_or_interaction):
     player_buff = (player["level"] - 1) * 10
     opp_buff = (opp_level - 1) * 10
 
-    player_pwr = sum(CARDS_DATA[cid]["power"] + player_buff for cid in player["team"])
-    player_hp = sum(CARDS_DATA[cid]["hp"] + player_buff for cid in player["team"])
+    # Khởi tạo danh sách thẻ theo đội hình (tối đa 3 thẻ) để thi đấu theo hiệp (thẻ gục thì thẻ sau thế chỗ)
+    player_cards = []
+    for cid in player["team"][:3]:
+        card = CARDS_DATA.get(cid)
+        if card:
+            is_ace2 = is_card_ace2(player, cid)
+            cname = f"[Ace 2 ⭐⭐] {card['name']}" if is_ace2 else card["name"]
+            player_cards.append({
+                "cid": cid,
+                "name": cname,
+                "base_name": card["name"],
+                "power": card["power"] + player_buff,
+                "max_hp": card["hp"] + player_buff,
+                "current_hp": card["hp"] + player_buff,
+                "is_ace2": is_ace2
+            })
 
-    opp_pwr = sum(CARDS_DATA[cid]["power"] + opp_buff for cid in opp_team_ids)
-    opp_hp = sum(CARDS_DATA[cid]["hp"] + opp_buff for cid in opp_team_ids)
+    opp_cards = []
+    for cid in opp_team_ids[:3]:
+        card = CARDS_DATA.get(cid)
+        if card:
+            opp_cards.append({
+                "cid": cid,
+                "name": card["name"],
+                "base_name": card["name"],
+                "power": card["power"] + opp_buff,
+                "max_hp": card["hp"] + opp_buff,
+                "current_hp": card["hp"] + opp_buff,
+                "is_ace2": False
+            })
 
-    player_surv_hp = player_hp - opp_pwr
-    opp_surv_hp = opp_hp - player_pwr
+    # Đấu theo lượt từng thẻ (thẻ gục thì đẩy thẻ kế tiếp lên)
+    p_idx = 0
+    o_idx = 0
+    round_cnt = 0
+    battle_logs = []
+    p_sakuya_stun_used = False
+    p_reimu_invul_used = False
 
-    if opp_surv_hp <= 0 and player_surv_hp > 0:
-        win = True
-    elif player_surv_hp <= 0 and opp_surv_hp > 0:
-        win = False
-    else:
-        win = (player_surv_hp / player_hp) >= (opp_surv_hp / opp_hp)
+    while p_idx < len(player_cards) and o_idx < len(opp_cards) and round_cnt < 30:
+        round_cnt += 1
+        pc = player_cards[p_idx]
+        oc = opp_cards[o_idx]
+
+        # Kỹ năng Sakuya Ace 2 (Stun 30% mỗi hiệp, 1 lần duy nhất)
+        opp_stunned = False
+        if pc["cid"] == 16 and pc["is_ace2"] and not p_sakuya_stun_used:
+            if random.random() < 0.30:
+                p_sakuya_stun_used = True
+                opp_stunned = True
+                battle_logs.append(f"⏳ **[Ace 2] Sakuya** kích hoạt **Thời Gian Đóng Băng** (30%)! ❄️ {oc['name']} bị STUN mất lượt!")
+
+        # Người chơi tấn công trước
+        oc["current_hp"] -= pc["power"]
+
+        # Đối thủ phản công (nếu không bị stun)
+        if not opp_stunned:
+            invul = False
+            if pc["cid"] == 13 and pc["is_ace2"] and not p_reimu_invul_used:
+                if random.random() < 0.30:
+                    p_reimu_invul_used = True
+                    invul = True
+                    battle_logs.append(f"🛡️ **[Ace 2] Reimu** kích hoạt **Bùa Chú Vô Tưởng Chuyển Sinh** (30%)! MIỄN SÁT THƯƠNG!")
+            if not invul:
+                pc["current_hp"] -= oc["power"]
+
+        # Đẩy thẻ kế tiếp nếu có thẻ tử trận
+        if pc["current_hp"] <= 0:
+            pc["current_hp"] = 0
+            p_idx += 1
+            if p_idx < len(player_cards):
+                battle_logs.append(f"💀 **{pc['name']}** đã gục! ➡️ Đẩy tiếp **{player_cards[p_idx]['name']}** lên!")
+        if oc["current_hp"] <= 0:
+            oc["current_hp"] = 0
+            o_idx += 1
+            if o_idx < len(opp_cards):
+                battle_logs.append(f"💥 Đã hạ **{oc['name']}**! ➡️ Đối thủ đưa **{opp_cards[o_idx]['name']}** lên!")
+
+    win = (o_idx >= len(opp_cards))
+
+    player_pwr = sum(c["power"] for c in player_cards)
+    player_hp = sum(c["max_hp"] for c in player_cards)
+    player_surv_hp = sum(max(0, c["current_hp"]) for c in player_cards)
+
+    opp_pwr = sum(c["power"] for c in opp_cards)
+    opp_hp = sum(c["max_hp"] for c in opp_cards)
+    opp_surv_hp = sum(max(0, c["current_hp"]) for c in opp_cards)
 
     gained_xp = random.randint(50, 100)
     old_lvl = player["level"]
@@ -2096,21 +2369,27 @@ async def handle_battle(ctx_or_interaction):
     new_lvl = player["level"]
     lvl_up_msg = f"\n🎉 **CHÚC MỪNG BẠN ĐÃ LÊN CẤP {new_lvl}!** (+10 Power & HP buff)" if new_lvl > old_lvl else ""
 
-    result_title = f"⚔️ TRẬN CHIẾN: {user.display_name} (Lv.{player['level']}) VS {opp_name} (Lv.{opp_level})"
+    result_title = f"⚔️ TRẬN CHIẾN ({round_cnt} HIỆP): {user.display_name} (Lv.{player['level']}) VS {opp_name} (Lv.{opp_level})"
     embed = discord.Embed(
         title=result_title,
         color=0x10B981 if win else 0xEF4444
     )
     embed.add_field(
         name=f"🔵 {user.display_name} (Lv.{player['level']})",
-        value=f"⚔️ Power: **{player_pwr:,}**\n❤️ HP: **{player_hp:,}**\n*Máu còn:* `{max(0, player_surv_hp):,}` HP",
+        value=f"⚔️ Power: **{player_pwr:,}**\n❤️ HP: **{player_hp:,}**\n*Máu còn:* `{max(0, player_surv_hp):,}` HP ({len(player_cards) - p_idx}/{len(player_cards)} thẻ)",
         inline=True
     )
     embed.add_field(
         name=f"🔴 {opp_name} (Lv.{opp_level}) {opp_badge}",
-        value=f"*{opp_title}*\n⚔️ Power: **{opp_pwr:,}**\n❤️ HP: **{opp_hp:,}**\n*Máu còn:* `{max(0, opp_surv_hp):,}` HP",
+        value=f"*{opp_title}*\n⚔️ Power: **{opp_pwr:,}**\n❤️ HP: **{opp_hp:,}**\n*Máu còn:* `{max(0, opp_surv_hp):,}` HP ({len(opp_cards) - o_idx}/{len(opp_cards)} thẻ)",
         inline=True
     )
+
+    if battle_logs:
+        disp_logs = battle_logs[:6]
+        if len(battle_logs) > 6:
+            disp_logs.append(f"*... (giằng co ác liệt thêm {len(battle_logs)-6} hiệp)*")
+        embed.add_field(name="📜 Diễn Biến Lượt Đấu:", value="\n".join(disp_logs), inline=False)
 
     res_str = "🏆 **CHIẾN THẮNG TUYỆT ĐỐI!**" if win else "💀 **THẤT BẠI TIẾC NUỐI!**"
     cur_lvl, xp_in_lvl, needed_xp, _ = get_level_progress(player["xp"])
@@ -2133,6 +2412,183 @@ async def slash_battle(interaction: discord.Interaction):
 @bot.command(name="battle")
 async def prefix_battle(ctx):
     await handle_battle(ctx)
+
+
+# ==============================================================================
+# 11. CƠ CHẾ TIẾN HÓA /evol (ACE 2 REIMU & SAKUYA)
+# ==============================================================================
+
+class EvolSelectView(discord.ui.View):
+    def __init__(self, player, user_id):
+        super().__init__(timeout=120)
+        self.player = player
+        self.user_id = user_id
+
+    @discord.ui.button(label="⛩️ Tiến Hóa Reimu Ace 2 (Cần 20 Thẻ)", style=discord.ButtonStyle.danger, emoji="🌸")
+    async def button_evol_reimu(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
+            return
+        await do_evolve_interaction(interaction, self.player, 13)
+
+    @discord.ui.button(label="🕰️ Tiến Hóa Sakuya Ace 2 (Cần 30 Thẻ)", style=discord.ButtonStyle.primary, emoji="⏳")
+    async def button_evol_sakuya(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
+            return
+        await do_evolve_interaction(interaction, self.player, 16)
+
+
+def execute_card_evolution(player, cid: int):
+    """
+    Xử lý kiểm tra và tiến hóa Ace 2 cho Reimu (13) hoặc Sakuya (16).
+    Trả về (thành_công: bool, thông_điệp_lỗi: str, embed_thành_công: discord.Embed)
+    """
+    cfg = EVOL_CONFIG.get(cid)
+    if not cfg:
+        return False, "❌ Thẻ này hiện chưa hỗ trợ tính năng tiến hóa Ace 2!", None
+
+    is_ace = is_card_ace2(player, cid)
+    if is_ace:
+        return False, f"⚠️ Thẻ **{cfg['name']}** của bạn đã đạt cảnh giới **{cfg['ace_level']}** từ trước rồi!", None
+
+    pulled_cnt = get_card_pulled_count(player, cid)
+    req_pulls = cfg["required_pulls"]
+
+    if pulled_cnt < req_pulls:
+        return (
+            False,
+            f"❌ Bạn chưa đủ số lần pull **{cfg['name']}**!\n"
+            f"• Số lần đã sở hữu/pull: **{pulled_cnt}/{req_pulls}** thẻ\n"
+            f"• Cần thêm: **{req_pulls - pulled_cnt}** thẻ nữa để đạt điều kiện tiến hóa!",
+            None
+        )
+
+    # Thỏa mãn điều kiện: Tiến hóa lên Ace 2
+    if "evolutions" not in player or not isinstance(player["evolutions"], dict):
+        player["evolutions"] = {}
+    player["evolutions"][str(cid)] = 2
+    save_player(player)
+
+    embed = discord.Embed(
+        title=f"🌟 TIẾN HÓA THÀNH CÔNG: [{cfg['ace_level']}] {cfg['name'].upper()}!",
+        description=(
+            f"⚡ **TIẾN TRÌNH ĐẠT CẢNH GIỚI TỐI THƯỢNG:**\n"
+            f"🎴 **Nhân vật:** **{cfg['name']}**\n"
+            f"⭐ **Cấp bậc mới:** `{cfg['ace_level']}`\n"
+            f"✨ **Số lần triệu hồi đã đạt:** `{pulled_cnt}/{req_pulls}` thẻ\n\n"
+            f"🔮 **KỸ NĂNG ĐỘC NHẤT ĐÃ KHAI MỞ:**\n"
+            f"**{cfg['skill_name']}**\n"
+            f"*{cfg['skill_desc']}*\n\n"
+            f"🎬 **Hoạt ảnh tiến hóa:** [Bấm vào đây để xem hoạt ảnh]({cfg['evol_gif']})\n"
+            f"✨ **Hoạt ảnh kỹ năng:** [Xem hoạt ảnh thi triển chiêu]({cfg['skill_gif']})"
+        ),
+        color=0xEC4899 if cid == 13 else 0x3B82F6
+    )
+    card_info = CARDS_DATA.get(cid, {})
+    if card_info.get("image"):
+        embed.set_thumbnail(url=card_info["image"])
+    embed.set_footer(text=f"Touhou Evolution System • Ace 2 Activated")
+    return True, "", embed
+
+
+async def do_evolve_interaction(interaction: discord.Interaction, player, cid: int):
+    success, err_msg, embed = execute_card_evolution(player, cid)
+    if not success:
+        await interaction.response.send_message(err_msg, ephemeral=True)
+    else:
+        await interaction.response.send_message(embed=embed)
+
+
+async def handle_evol(ctx_or_interaction, nhan_vat: str = None):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+
+    cid_target = None
+    if nhan_vat:
+        nv_clean = nhan_vat.lower().strip()
+        if "reimu" in nv_clean or "13" in nv_clean:
+            cid_target = 13
+        elif "sakuya" in nv_clean or "16" in nv_clean:
+            cid_target = 16
+
+    if cid_target:
+        success, err_msg, embed = execute_card_evolution(player, cid_target)
+        if not success:
+            if isinstance(ctx_or_interaction, discord.Interaction):
+                await ctx_or_interaction.response.send_message(err_msg, ephemeral=True)
+            else:
+                await ctx_or_interaction.send(err_msg)
+        else:
+            if isinstance(ctx_or_interaction, discord.Interaction):
+                await ctx_or_interaction.response.send_message(embed=embed)
+            else:
+                await ctx_or_interaction.send(embed=embed)
+        return
+
+    # Nếu không chỉ định nhân vật: hiển thị tổng quan tiến trình và nút chọn
+    reimu_cnt = get_card_pulled_count(player, 13)
+    reimu_ace = is_card_ace2(player, 13)
+    reimu_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐" if reimu_ace else ("🟢 SẴN SÀNG TIẾN HÓA!" if reimu_cnt >= 20 else f"🔴 Chưa đủ ({reimu_cnt}/20)")
+
+    sakuya_cnt = get_card_pulled_count(player, 16)
+    sakuya_ace = is_card_ace2(player, 16)
+    sakuya_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐" if sakuya_ace else ("🟢 SẴN SÀNG TIẾN HÓA!" if sakuya_cnt >= 30 else f"🔴 Chưa đủ ({sakuya_cnt}/30)")
+
+    embed = discord.Embed(
+        title="🌟 PHÒNG TIẾN HÓA NHÂN VẬT TOUHOU (EVOLUTION - ACE 2)",
+        description=(
+            "Triệu hồi đủ số lượng thẻ yêu cầu để tiến hóa nhân vật lên **Ace 2 ⭐⭐** và mở khóa kỹ năng chiến đấu siêu cấp trong Boss Raid và Battle!\n\n"
+            "Cú pháp nhanh: `/evol nhan_vat:Reimu` hoặc `/evol nhan_vat:Sakuya`\n"
+            "Hoặc bấm các nút bên dưới để tiến hóa ngay:"
+        ),
+        color=0x8B5CF6
+    )
+
+    reimu_cfg = EVOL_CONFIG[13]
+    embed.add_field(
+        name="⛩️ Reimu Hakurei (Yêu cầu 20 thẻ):",
+        value=(
+            f"• Trạng thái: **{reimu_status}**\n"
+            f"• Tiến trình triệu hồi: **{reimu_cnt}/20** lá\n"
+            f"• Kỹ năng Ace 2: **{reimu_cfg['skill_name']}** (Miễn thương 1 lần trong trận, 30% mỗi hiệp)\n"
+            f"• [Hoạt ảnh tiến hóa]({reimu_cfg['evol_gif']}) | [Hoạt ảnh chiêu thức]({reimu_cfg['skill_gif']})"
+        ),
+        inline=False
+    )
+
+    sakuya_cfg = EVOL_CONFIG[16]
+    embed.add_field(
+        name="🕰️ Sakuya Izayoi (Yêu cầu 30 thẻ):",
+        value=(
+            f"• Trạng thái: **{sakuya_status}**\n"
+            f"• Tiến trình triệu hồi: **{sakuya_cnt}/30** lá\n"
+            f"• Kỹ năng Ace 2: **{sakuya_cfg['skill_name']}** (Stun Boss 1 lần trong trận, 30% mỗi hiệp)\n"
+            f"• [Hoạt ảnh tiến hóa]({sakuya_cfg['evol_gif']}) | [Hoạt ảnh chiêu thức]({sakuya_cfg['skill_gif']})"
+        ),
+        inline=False
+    )
+    embed.set_footer(text="Chọn nút bên dưới để tiến hóa nhân vật!")
+
+    view = EvolSelectView(player, user.id)
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed, view=view)
+    else:
+        await ctx_or_interaction.send(embed=embed, view=view)
+
+@bot.tree.command(name="evol", description="Tiến hóa nhân vật Touhou lên Ace 2 (Reimu: 20 thẻ, Sakuya: 30 thẻ)")
+@app_commands.describe(nhan_vat="Chọn nhân vật muốn tiến hóa (Reimu hoặc Sakuya)")
+@app_commands.choices(nhan_vat=[
+    app_commands.Choice(name="Reimu Hakurei (Ace 2 - Cần 20 thẻ)", value="Reimu"),
+    app_commands.Choice(name="Sakuya Izayoi (Ace 2 - Cần 30 thẻ)", value="Sakuya")
+])
+async def slash_evol(interaction: discord.Interaction, nhan_vat: str = None):
+    await handle_evol(interaction, nhan_vat)
+
+@bot.command(name="evol", aliases=["tienhoa", "ace2"])
+async def prefix_evol(ctx, nhan_vat: str = None):
+    await handle_evol(ctx, nhan_vat)
+
 
 
 # --- LỆNH /boss_status hoặc !boss (KIỂM TRA THỜI GIAN HỒI CHIÊU BOSS RAID) ---
@@ -2209,13 +2665,20 @@ async def handle_help(ctx_or_interaction):
 **🎮 HỆ THỐNG GACHA & CARD BATTLE:**
 • `/pull [số_lượng]`: Quay thẻ Touhou (Free 5 lượt/ngày, nerf tỷ lệ S xuống đúng 10%).
 • `/daily`: Điểm danh nhận 1 vé pull mỗi ngày.
+• `/evol [nhan_vat]`: Tiến hóa Reimu (20 thẻ) & Sakuya (30 thẻ) lên Ace 2 ⭐⭐ mở khóa kỹ năng độc nhất!
 • `Team <hanh_dong><thêm thẻ><id>` hoặc `/team [hanh_dong] [id_the]`: Quản lý đội hình 3 thẻ chiến đấu (view: xem đội hình & tiến trình cấp độ, add: thêm thẻ theo ID, remove: gỡ thẻ, guide: hướng dẫn chi tiết).
 • `/collection`: Xem bộ sưu tập 26 nhân vật Touhou (SS, S, A, B, C).
-• `/battle`: Giao đấu tự động nhận 50-100 XP.
+• `/battle`: Giao đấu theo lượt character-by-character nhận 50-100 XP.
 • `/boss_status`: Kiểm tra thời gian hồi chiêu 15 phút của Boss.
 
+**⭐ CƠ CHẾ TIẾN HÓA ACE 2 ⭐⭐:**
+• **Reimu Hakurei (Ace 2):** Kỹ năng *Bùa Chú Vô Tưởng Chuyển Sinh* (30% cơ hội miễn thương 1 lần trong trận).
+• **Sakuya Izayoi (Ace 2):** Kỹ năng *Thời Gian Đóng Băng* (30% cơ hội STUN Boss 1 lần trong trận).
+
 **👹 DỊ BIẾN REIMU DỊ HÌNH (RAID BOSS 2 PHASE ĐỘT PHÁ):**
-• **Phase 1 (30k HP / 10k DMG):** Nhận 3 quà tặng (40% ra 0.5 vé pull, 60% ra 0.33 vé pull).
+• **Phase 1 (30k HP / 10k DMG):**
+  - Nội tại Boss *Dị Hình Bùa Chú* (20% tung đòn 5k DMG diện rộng lên mọi thẻ tiền tuyến).
+  - Nhận 3 quà tặng (40% ra 0.5 vé pull, 60% ra 0.33 vé pull).
 • **Phase 2 Thức Tỉnh (50k HP / 22k DMG):**
   - "Dị hình đang biến đổi, bùa chú của chúng ta đang rung động dữ dội"
   - Lập tức hồi sinh & hồi 100% sinh lực toàn bộ lá bài tham chiến của tất cả người chơi!
