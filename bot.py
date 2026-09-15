@@ -455,7 +455,7 @@ def get_default_player(user_id, username):
         "username": username,
         "xp": 0,
         "level": 1,
-        "pull_tickets": 5.0,  # Bắt đầu với 5 vé pull
+        "pull_tickets": 0.0,  # Bắt đầu với 0 vé vĩnh viễn (chỉ có 5 lượt pull free mỗi ngày)
         "free_pulls_date": "",
         "free_pulls_remaining": 5,
         "last_daily_date": "",
@@ -495,10 +495,10 @@ def get_player(user_id, username="Visitor"):
     if "inventory" not in data: data["inventory"] = {}
     if "team" not in data: data["team"] = []
     if "xp" not in data: data["xp"] = 0
-    if "pull_tickets" not in data: data["pull_tickets"] = 5.0
+    if "pull_tickets" not in data: data["pull_tickets"] = 0.0
     if "language" not in data: data["language"] = "vi"
 
-    # Reset 5 lượt pull free mỗi ngày
+    # Reset 5 lượt pull free mỗi ngày (không cộng dồn qua ngày, ngày nào không dùng sẽ tự mất và reset về 5)
     if data.get("free_pulls_date") != now_date:
         data["free_pulls_date"] = now_date
         data["free_pulls_remaining"] = 5
