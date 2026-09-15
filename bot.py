@@ -3,7 +3,7 @@
 # GEMINI FLASH CHATBOT + MONGODB ATLAS CLOUD + TOUHOU GACHA & AUTO-BATTLE & RAID
 # ==============================================================================
 # CÁC TÍNH NĂNG MỚI ĐÃ ĐƯỢC CẬP NHẬT:
-# 1. BOSS STATS: Máu tăng lên 35,000 HP, DMG tăng lên 15,000 DMG
+# 1. BOSS STATS: Phase 1 (30k HP, 10k DMG) & Phase 2 Thức Tỉnh (50k HP, 22k DMG)
 # 2. BOSS DROP: Rương chiến lợi phẩm (3 rương) quy đổi 100% thành Vé Pull (giữ nguyên tỉ lệ S: 10% -> 2 vé, A: 40% -> 0.5 vé, B: 50% -> 1/3 vé)
 # 3. BOSS COOLDOWN: Hồi chiêu 15 phút tính từ lúc có bất kỳ người chơi nào tham gia raid
 # 4. ADMIN COMMANDS: /admin_set_level (set cấp và đồng bộ XP) & /admin_confiscate (tước đoạt thẻ phạt cheat)
@@ -348,14 +348,14 @@ CARDS_BY_RANK = {
 }
 
 # ==============================================================================
-# BOSS REIMU DỊ HÌNH - CHỈ SỐ MỚI (HP 35K, DMG 15K, COOLDOWN 15 PHÚT)
+# BOSS REIMU DỊ HÌNH - CHỈ SỐ MỚI (PHASE 1: 30K HP, 10K DMG | PHASE 2: 50K HP, 22K DMG)
 # ==============================================================================
 BOSS_CONFIG = {
     "name": "Reimu Dị Hình - Phase 1",
     "desc": "Đó không phải Reimu, sẵn sàng giao chiến!",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1549077421624401971/content.png?ex=6aa96245&is=6aa810c5&hm=c0248e497ee5afeed898b457736b39fc71368af3be1630f1cd59b5609c99fbeb&=&format=webp&quality=lossless&width=351&height=512",
-    "hp": 35000,      # Phase 1: 35,000 HP
-    "power": 15000,   # Phase 1: 15,000 DMG chia đều
+    "hp": 30000,      # Phase 1: 30,000 HP (Nerf xuống 30k máu)
+    "power": 10000,   # Phase 1: 10,000 DMG chia đều (Nerf xuống 10k dmg)
     "max_players": 6,
     "cooldown_seconds": 15 * 60  # 15 phút (900s) sau khi có bất kỳ ai tham gia raid
 }
@@ -848,7 +848,7 @@ async def execute_raid(channel, raid_data):
             "death_round": None
         })
 
-    # GIAI ĐOẠN 1 (PHASE 1): 35,000 HP, 15,000 POWER
+    # GIAI ĐOẠN 1 (PHASE 1): 30,000 HP, 10,000 POWER
     p1_max_hp = BOSS_CONFIG["hp"]
     p1_hp = p1_max_hp
     p1_power = BOSS_CONFIG["power"]
@@ -876,8 +876,8 @@ async def execute_raid(channel, raid_data):
             )
             break
 
-        # 2. Boss Phase 1 phản đòn (15,000 DMG chia đều cho người sống)
-        dmg_per_player = max(400, p1_power // len(alive_players))
+        # 2. Boss Phase 1 phản đòn (10,000 DMG chia đều cho người sống)
+        dmg_per_player = max(300, p1_power // len(alive_players))
         fallen_names = []
 
         for c in alive_players:
@@ -903,7 +903,7 @@ async def execute_raid(channel, raid_data):
         embed_fail = discord.Embed(
             title="❌ QUÂN ĐOÀN THẤT THỦ TẠI PHASE 1!",
             description=(
-                f"Toàn bộ dũng giả đã tử trận trước Reimu Dị Hình (35k HP / 15k DMG) sau {p1_rounds} hiệp!\n"
+                f"Toàn bộ dũng giả đã tử trận trước Reimu Dị Hình (30k HP / 10k DMG) sau {p1_rounds} hiệp!\n"
                 f"Boss Phase 1 còn sót lại **{p1_hp:,} HP** và đã xé rách không gian trốn thoát.\n"
                 f"⏳ Hồi chiêu **15 phút** đã bắt đầu kích hoạt!"
             ),
@@ -1134,7 +1134,7 @@ async def on_ready():
     await bot.change_presence(
         activity=discord.Activity(
             type=discord.ActivityType.watching,
-            name="Đền Hakurei | /help | /pull | /battle | Boss 35k HP"
+            name="Đền Hakurei | /help | /pull | /battle | Boss 30k HP"
         )
     )
 
@@ -1167,8 +1167,8 @@ async def on_message(message: discord.Message):
                 color=0xDC2626
             )
             embed.set_image(url=BOSS_CONFIG["image"])
-            embed.add_field(name="❤️ Máu Boss (HP):", value=f"{BOSS_CONFIG['hp']:,} HP *(Tăng cường 35k HP)*", inline=True)
-            embed.add_field(name="⚔️ Sát Thương (Power):", value=f"{BOSS_CONFIG['power']:,} DMG *(15k DMG chia đều)*", inline=True)
+            embed.add_field(name="❤️ Máu Boss (HP):", value=f"{BOSS_CONFIG['hp']:,} HP *(30k HP)*", inline=True)
+            embed.add_field(name="⚔️ Sát Thương (Power):", value=f"{BOSS_CONFIG['power']:,} DMG *(10k DMG chia đều)*", inline=True)
             embed.add_field(name=f"👥 Người Tham Gia (0/{BOSS_CONFIG['max_players']}):", value="Chưa có ai", inline=False)
             embed.add_field(
                 name="🎁 Cơ Chế 2 Phase & Phần Thưởng Đột Phá:",
@@ -2215,7 +2215,7 @@ async def handle_help(ctx_or_interaction):
 • `/boss_status`: Kiểm tra thời gian hồi chiêu 15 phút của Boss.
 
 **👹 DỊ BIẾN REIMU DỊ HÌNH (RAID BOSS 2 PHASE ĐỘT PHÁ):**
-• **Phase 1 (35k HP / 15k DMG):** Nhận 3 quà tặng (40% ra 0.5 vé pull, 60% ra 0.33 vé pull).
+• **Phase 1 (30k HP / 10k DMG):** Nhận 3 quà tặng (40% ra 0.5 vé pull, 60% ra 0.33 vé pull).
 • **Phase 2 Thức Tỉnh (50k HP / 22k DMG):**
   - "Dị hình đang biến đổi, bùa chú của chúng ta đang rung động dữ dội"
   - Lập tức hồi sinh & hồi 100% sinh lực toàn bộ lá bài tham chiến của tất cả người chơi!
