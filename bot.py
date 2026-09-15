@@ -376,12 +376,40 @@ boss_cooldown_until = 0.0
 # 3.1 CƠ CHẾ TIẾN HÓA ACE 2 (EVOLUTION & THỨC TỈNH NỘI TẠI TOUHOU)
 # ==============================================================================
 EVOL_CONFIG = {
+    13: {
+        "id": 13,
+        "key": "reimu",
+        "name": "Reimu Hakurei",
+        "title": "Ace 2 ⭐⭐",
+        "ace_level": "Ace 2 ⭐⭐",
+        "required_cards": 20,
+        "required_pulls": 20,
+        "evol_gif": "https://klipy.com/gifs/reimu-reimu-hakurei-7",
+        "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh (Miễn Thương)",
+        "skill_desc": "Miễn toàn bộ sát thương duy nhất 1 lần trong trận (30% xác suất mỗi hiệp khi ra trận nhận đòn, chỉ bảo vệ riêng Reimu).",
+        "skill_gif": "https://klipy.com/gifs/touhou-reimu-31"
+    },
+    16: {
+        "id": 16,
+        "key": "sakuya",
+        "name": "Sakuya Izayoi",
+        "title": "Ace 2 ⭐⭐",
+        "ace_level": "Ace 2 ⭐⭐",
+        "required_cards": 30,
+        "required_pulls": 30,
+        "evol_gif": "https://klipy.com/gifs/sakuya-sakuya-izayoi",
+        "skill_name": "Thời Gian Đóng Băng (Stun Boss)",
+        "skill_desc": "Khiến Boss/đối thủ bị đóng băng (Stun) mất lượt duy nhất 1 lần trong trận (30% xác suất mỗi hiệp khi ở tiền tuyến).",
+        "skill_gif": "https://klipy.com/gifs/sakuya-maid-2"
+    },
     "13": {
         "id": 13,
         "key": "reimu",
         "name": "Reimu Hakurei",
         "title": "Ace 2 ⭐⭐",
+        "ace_level": "Ace 2 ⭐⭐",
         "required_cards": 20,
+        "required_pulls": 20,
         "evol_gif": "https://klipy.com/gifs/reimu-reimu-hakurei-7",
         "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh (Miễn Thương)",
         "skill_desc": "Miễn toàn bộ sát thương duy nhất 1 lần trong trận (30% xác suất mỗi hiệp khi ra trận nhận đòn, chỉ bảo vệ riêng Reimu).",
@@ -392,7 +420,9 @@ EVOL_CONFIG = {
         "key": "sakuya",
         "name": "Sakuya Izayoi",
         "title": "Ace 2 ⭐⭐",
+        "ace_level": "Ace 2 ⭐⭐",
         "required_cards": 30,
+        "required_pulls": 30,
         "evol_gif": "https://klipy.com/gifs/sakuya-sakuya-izayoi",
         "skill_name": "Thời Gian Đóng Băng (Stun Boss)",
         "skill_desc": "Khiến Boss/đối thủ bị đóng băng (Stun) mất lượt duy nhất 1 lần trong trận (30% xác suất mỗi hiệp khi ở tiền tuyến).",
