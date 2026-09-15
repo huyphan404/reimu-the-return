@@ -302,13 +302,21 @@ CARDS_BY_RANK = {
 # BOSS REIMU DỊ HÌNH - CHỈ SỐ MỚI (HP 35K, DMG 15K, COOLDOWN 15 PHÚT)
 # ==============================================================================
 BOSS_CONFIG = {
-    "name": "Reimu Dị Hình (Aberrant Reimu)",
+    "name": "Reimu Dị Hình - Phase 1",
     "desc": "Đó không phải Reimu, sẵn sàng giao chiến!",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1549077421624401971/content.png?ex=6aa96245&is=6aa810c5&hm=c0248e497ee5afeed898b457736b39fc71368af3be1630f1cd59b5609c99fbeb&=&format=webp&quality=lossless&width=351&height=512",
-    "hp": 35000,      # Cập nhật: Máu tăng lên 35,000 HP theo yêu cầu
-    "power": 15000,   # Cập nhật: DMG tăng lên 15,000 DMG theo yêu cầu
+    "hp": 35000,      # Phase 1: 35,000 HP
+    "power": 15000,   # Phase 1: 15,000 DMG chia đều
     "max_players": 6,
     "cooldown_seconds": 15 * 60  # 15 phút (900s) sau khi có bất kỳ ai tham gia raid
+}
+
+BOSS_PHASE2_CONFIG = {
+    "name": "Reimu Dị Hình - Thức Tỉnh (Phase 2)",
+    "desc": "Dị hình đang biến đổi, bùa chú của chúng ta đang rung động dữ dội!",
+    "image": "https://media.discordapp.net/attachments/1549063334781911070/1549275653239472148/artwork.png?ex=6aaa1ae3&is=6aa8c963&hm=7187404882d4b8b0fcef91ef64aee3c73711924e971fb7b28b6fb3bf394a47d3&=&format=webp&quality=lossless&width=640&height=336",
+    "hp": 50000,      # Phase 2: 50,000 HP
+    "power": 22000    # Phase 2: 22,000 DMG chia đều
 }
 
 # Biến toàn cục theo dõi thời gian hồi chiêu Boss tiếp theo
@@ -760,36 +768,36 @@ async def execute_raid(channel, raid_data):
             "death_round": None
         })
 
-    # CẬP NHẬT CHỈ SỐ BOSS: 35K HP, 15K POWER
-    boss_max_hp = BOSS_CONFIG["hp"]
-    boss_hp = boss_max_hp
-    boss_power = BOSS_CONFIG["power"]
+    # GIAI ĐOẠN 1 (PHASE 1): 35,000 HP, 15,000 POWER
+    p1_max_hp = BOSS_CONFIG["hp"]
+    p1_hp = p1_max_hp
+    p1_power = BOSS_CONFIG["power"]
 
-    round_num = 0
+    p1_rounds = 0
     max_rounds = 35
-    battle_history = []
+    p1_battle_history = []
 
-    while boss_hp > 0 and round_num < max_rounds:
+    while p1_hp > 0 and p1_rounds < max_rounds:
         alive_players = [c for c in combatants if c["is_alive"]]
         if not alive_players:
             break
 
-        round_num += 1
+        p1_rounds += 1
 
-        # 1. Các dũng giả còn sống đồng loạt tấn công Boss
+        # 1. Các dũng giả còn sống tấn công Boss Phase 1
         round_player_dmg = sum(c["power"] for c in alive_players)
-        boss_hp = max(0, boss_hp - round_player_dmg)
+        p1_hp = max(0, p1_hp - round_player_dmg)
         for c in alive_players:
             c["total_dmg"] += c["power"]
 
-        if boss_hp <= 0:
-            battle_history.append(
-                f"**⚔️ Hiệp {round_num}:** {len(alive_players)} dũng giả đồng loạt tung đòn tất sát gây **{round_player_dmg:,} DMG**! 💥 **Reimu Dị Hình đã bị tiêu diệt hoàn toàn!**"
+        if p1_hp <= 0:
+            p1_battle_history.append(
+                f"**⚔️ Hiệp {p1_rounds} (Phase 1):** {len(alive_players)} dũng giả đồng loạt tung đòn tất sát gây **{round_player_dmg:,} DMG**! 💥 **Reimu Dị Hình Phase 1 đã bị đánh gục!**"
             )
             break
 
-        # 2. Boss phản đòn (sát thương 15,000 DMG chia đều cho người sống)
-        dmg_per_player = max(400, boss_power // len(alive_players))
+        # 2. Boss Phase 1 phản đòn (15,000 DMG chia đều cho người sống)
+        dmg_per_player = max(400, p1_power // len(alive_players))
         fallen_names = []
 
         for c in alive_players:
@@ -797,117 +805,229 @@ async def execute_raid(channel, raid_data):
             if c["current_hp"] <= 0:
                 c["current_hp"] = 0
                 c["is_alive"] = False
-                c["death_round"] = round_num
+                c["death_round"] = p1_rounds
                 fallen_names.append(c["username"])
 
         log_msg = (
-            f"**⚔️ Hiệp {round_num}:** Dũng giả gây **{round_player_dmg:,} DMG** (Boss còn **{boss_hp:,}/{boss_max_hp:,} HP**). "
-            f"Boss cuồng bạo phản kích giáng **{dmg_per_player:,} DMG** lên mỗi dũng giả!"
+            f"**⚔️ Hiệp {p1_rounds}:** Dũng giả gây **{round_player_dmg:,} DMG** (Boss còn **{p1_hp:,}/{p1_max_hp:,} HP**). "
+            f"Boss giáng **{dmg_per_player:,} DMG** lên mỗi dũng giả!"
         )
         if fallen_names:
             log_msg += f" 💀 *Tử trận: {', '.join(fallen_names)}*"
-        battle_history.append(log_msg)
+        p1_battle_history.append(log_msg)
 
-    boss_defeated = (boss_hp <= 0)
+    p1_defeated = (p1_hp <= 0)
+
+    # TRƯỜNG HỢP 1: THẤT THỦ NGAY TẠI PHASE 1
+    if not p1_defeated:
+        embed_fail = discord.Embed(
+            title="❌ QUÂN ĐOÀN THẤT THỦ TẠI PHASE 1!",
+            description=(
+                f"Toàn bộ dũng giả đã tử trận trước Reimu Dị Hình (35k HP / 15k DMG) sau {p1_rounds} hiệp!\n"
+                f"Boss Phase 1 còn sót lại **{p1_hp:,} HP** và đã xé rách không gian trốn thoát.\n"
+                f"⏳ Hồi chiêu **15 phút** đã bắt đầu kích hoạt!"
+            ),
+            color=0xEF4444
+        )
+        embed_fail.set_thumbnail(url=BOSS_CONFIG["image"])
+        if len(p1_battle_history) > 6:
+            disp = p1_battle_history[:3] + [f"*... (giằng co ác liệt {len(p1_battle_history)-5} hiệp) ...*"] + p1_battle_history[-2:]
+        else:
+            disp = p1_battle_history
+        embed_fail.add_field(name="📜 Diễn Biến Phase 1:", value="\n".join(disp), inline=False)
+        await channel.send(embed=embed_fail)
+        return
+
+    # PHASE 1 CHIẾN THẮNG: TRAO QUÀ PHASE 1 (3 QUÀ: 40% RA 0.5 VÉ, 60% RA 0.33 VÉ)
+    p1_rewards_data = {}
+    for uid in participants:
+        p = get_player(uid)
+        p1_total = 0.0
+        p1_items = []
+        for g_idx in range(1, 4):
+            roll = random.random()
+            if roll < 0.40:
+                ticket_val = 0.5
+                desc_str = "+0.5 Vé Pull (40%)"
+            else:
+                ticket_val = 1.0 / 3.0
+                desc_str = "+0.33 Vé Pull (60%)"
+            p1_total += ticket_val
+            p1_items.append(f"Quà {g_idx}: {desc_str}")
+        p["pull_tickets"] += p1_total
+        p["xp"] += 100
+        save_player(p)
+        p1_rewards_data[uid] = {
+            "total_pulls": p1_total,
+            "items": p1_items,
+            "username": p["username"]
+        }
+
+    # GỬI THÔNG BÁO CHUYỂN PHASE 2:
+    # "Dị hình đang biến đổi, bùa chú của chúng ta đang rung động giữ dội"
+    phase2_alert_embed = discord.Embed(
+        title="🚨 DỊ BIẾN BIẾN ĐỔI - BÙA CHÚ RUNG ĐỘNG DỮ DỘI! (PHASE 2 BẮT ĐẦU)",
+        description=(
+            "⚡ **Dị hình đang biến đổi, bùa chú của chúng ta đang rung động giữ dội!**\n\n"
+            f"👺 **{BOSS_PHASE2_CONFIG['name']}** đã thức tỉnh với ma lực kinh hoàng!\n"
+            f"❤️ **Máu tăng lên:** **`50,000 HP`**\n"
+            f"⚔️ **Power tăng lên:** **`22,000 DMG`** *(chia đều cho dũng giả còn sống)*\n\n"
+            f"✨ **PHÉP MÀU BÙA CHÚ THANH TẨY:**\n"
+            f"**Lập tức hồi sinh và hồi phục 100% sinh lực toàn bộ lá bài tham chiến của tất cả người chơi tham gia raid!**"
+        ),
+        color=0x9333EA
+    )
+    phase2_alert_embed.set_image(url=BOSS_PHASE2_CONFIG["image"])
+    await channel.send(embed=phase2_alert_embed)
+
+    # LẬP TỨC HỒI PHỤC TOÀN BỘ LÁ BÀI THAM CHIẾN CỦA NGƯỜI THAM GIA RAID (100% HP & HỒI SINH)
+    for c in combatants:
+        c["current_hp"] = c["max_hp"]
+        c["is_alive"] = True
+        c["death_round"] = None
+
+    # GIAI ĐOẠN 2 (PHASE 2): 50,000 HP, 22,000 POWER
+    p2_max_hp = BOSS_PHASE2_CONFIG["hp"]
+    p2_hp = p2_max_hp
+    p2_power = BOSS_PHASE2_CONFIG["power"]
+    p2_rounds = 0
+    p2_battle_history = []
+
+    while p2_hp > 0 and p2_rounds < max_rounds:
+        alive_players = [c for c in combatants if c["is_alive"]]
+        if not alive_players:
+            break
+
+        p2_rounds += 1
+
+        # 1. Dũng giả tấn công Boss Phase 2
+        round_player_dmg = sum(c["power"] for c in alive_players)
+        p2_hp = max(0, p2_hp - round_player_dmg)
+        for c in alive_players:
+            c["total_dmg"] += c["power"]
+
+        if p2_hp <= 0:
+            p2_battle_history.append(
+                f"**⚡ Hiệp {p2_rounds} (Phase 2):** {len(alive_players)} dũng giả đồng lòng tung chiêu thức tối thượng gây **{round_player_dmg:,} DMG**! 💥 **Reimu Dị Hình Phase 2 đã bị tiêu diệt hoàn toàn!**"
+            )
+            break
+
+        # 2. Boss Phase 2 phản đòn (22,000 DMG chia đều cho người sống)
+        dmg_per_player = max(600, p2_power // len(alive_players))
+        fallen_names = []
+
+        for c in alive_players:
+            c["current_hp"] -= dmg_per_player
+            if c["current_hp"] <= 0:
+                c["current_hp"] = 0
+                c["is_alive"] = False
+                c["death_round"] = p2_rounds
+                fallen_names.append(c["username"])
+
+        log_msg = (
+            f"**⚡ Hiệp {p2_rounds} (Phase 2):** Dũng giả gây **{round_player_dmg:,} DMG** (Boss Phase 2 còn **{p2_hp:,}/{p2_max_hp:,} HP**). "
+            f"Boss giáng đòn 22,000 DMG gây **{dmg_per_player:,} DMG** lên mỗi dũng giả!"
+        )
+        if fallen_names:
+            log_msg += f" 💀 *Tử trận: {', '.join(fallen_names)}*"
+        p2_battle_history.append(log_msg)
+
+    p2_defeated = (p2_hp <= 0)
     total_raid_dmg = sum(c["total_dmg"] for c in combatants)
 
+    # TRAO THƯỞNG PHASE 2 NẾU HẠ GỤC PHASE 2:
+    # 20% ra 10 pull, 40% ra 5 pull, 60% ra 3 pull (tổng cộng 3 quà tặng ngẫu nhiên)
+    p2_rewards_data = {}
+    if p2_defeated:
+        for uid in participants:
+            p = get_player(uid)
+            old_lvl = p["level"]
+            p2_total = 0.0
+            p2_items = []
+            for g_idx in range(1, 4):
+                roll = random.random()
+                if roll < 0.20:
+                    ticket_val = 10.0
+                    desc_str = "🔥 **+10 Vé Pull** (20%)"
+                elif roll < 0.60:
+                    ticket_val = 5.0
+                    desc_str = "💎 **+5 Vé Pull** (40%)"
+                else:
+                    ticket_val = 3.0
+                    desc_str = "✨ **+3 Vé Pull** (60%)"
+                p2_total += ticket_val
+                p2_items.append(f"Quà {g_idx}: {desc_str}")
+            p["pull_tickets"] += p2_total
+            p["xp"] += 150  # Thưởng thêm 150 XP cho Phase 2 (Tổng 250 XP cả 2 phase)
+            save_player(p)
+            p2_rewards_data[uid] = {
+                "total_pulls": p2_total,
+                "items": p2_items,
+                "username": p["username"],
+                "new_level": p["level"],
+                "old_level": old_lvl,
+                "total_tickets": p["pull_tickets"]
+            }
+
+    # TỔNG KẾT TRẬN ĐẤU VÀ PHẦN THƯỞNG
     embed = discord.Embed(
-        title="⚔️ KẾT QUẢ ĐẠI CHIẾN QUYẾT TỬ: REIMU DỊ HÌNH!",
+        title="⚔️ KẾT QUẢ ĐẠI CHIẾN QUYẾT TỬ: REIMU DỊ HÌNH (FULL 2 PHASES)!",
         description=(
-            f"Trận kịch chiến diễn ra gay cấn qua **{round_num} hiệp** quyết đấu!\n"
-            f"**Kết quả:** {'🎉 QUÂN ĐOÀN CHIẾN THẮNG (Boss 0 HP)' if boss_defeated else f'❌ THẤT THỦ (Boss còn {boss_hp:,}/{boss_max_hp:,} HP)'}\n"
-            f"**Tổng Sát Thương Quân Đoàn Gây Ra:** **{total_raid_dmg:,} DMG**\n"
-            f"⏳ **Hồi chiêu Boss tiếp theo:** **15 phút** kể từ thời điểm dũng giả tham chiến!"
+            f"**Phase 1:** 🎉 Hạ gục sau **{p1_rounds} hiệp**\n"
+            f"**Phase 2:** {'🎉 TOÀN THẮNG HUY HOÀNG (Boss 0 HP)' if p2_defeated else f'❌ THẤT THỦ (Boss còn {p2_hp:,}/{p2_max_hp:,} HP)'} sau **{p2_rounds} hiệp**\n"
+            f"**Tổng Sát Thương Cả 2 Phase:** **{total_raid_dmg:,} DMG**\n"
+            f"⏳ **Hồi chiêu Boss tiếp theo:** **15 phút**"
         ),
-        color=0x10B981 if boss_defeated else 0xEF4444
+        color=0x10B981 if p2_defeated else 0xF59E0B
     )
-    embed.set_thumbnail(url=BOSS_CONFIG["image"])
+    embed.set_thumbnail(url=BOSS_PHASE2_CONFIG["image"] if p2_defeated else BOSS_CONFIG["image"])
 
-    if len(battle_history) > 6:
-        display_history = battle_history[:3] + [f"*... (giằng co ác liệt {len(battle_history)-5} hiệp) ...*"] + battle_history[-2:]
+    # Diễn biến
+    if len(p2_battle_history) > 5:
+        disp_p2 = p2_battle_history[:2] + [f"*... (giằng co Phase 2 {len(p2_battle_history)-3} hiệp) ...*"] + p2_battle_history[-2:]
     else:
-        display_history = battle_history
+        disp_p2 = p2_battle_history
+    embed.add_field(name="⚡ Diễn Biến Kịch Chiến Phase 2:", value="\n".join(disp_p2) if disp_p2 else "Phase 2 kết thúc chớp nhoáng!", inline=False)
 
-    embed.add_field(
-        name="📜 Diễn Biến Trận Đánh Qua Các Hiệp:",
-        value="\n".join(display_history) if display_history else "Trận đấu kết thúc chớp nhoáng!",
-        inline=False
-    )
-
+    # Báo cáo tình trạng
     player_reports = []
     for c in combatants:
         card_desc = ", ".join(c["cards"]) if c["cards"] else "Không có thẻ"
         if c["is_alive"]:
-            status_str = f"✅ Sống sót (Máu còn: **{c['current_hp']:,}/{c['max_hp']:,} HP**)"
+            status_str = f"✅ Sống sót (**{c['current_hp']:,}/{c['max_hp']:,} HP**)"
         else:
-            status_str = f"💀 Tử trận ở hiệp {c['death_round']} (0/{c['max_hp']:,} HP)"
-
+            status_str = f"💀 Tử trận Phase 2 ở hiệp {c['death_round']} (0/{c['max_hp']:,} HP)"
         player_reports.append(
-            f"• **{c['username']}** (Lv.{c['level']}): Sát thương cống hiến **{c['total_dmg']:,} DMG** | {status_str}\n"
-            f"  └ *Đội hình:* {card_desc}"
+            f"• **{c['username']}** (Lv.{c['level']}): Gây **{c['total_dmg']:,} DMG** | {status_str}"
         )
+    embed.add_field(name="📋 Tình Trạng Dũng Giả:", value="\n".join(player_reports), inline=False)
 
-    embed.add_field(name="📋 Tình Trạng Quân Đoàn Dũng Giả:", value="\n".join(player_reports), inline=False)
+    # Tổng kết quà tặng Phase 1
+    p1_summary_lines = []
+    for uid, r in p1_rewards_data.items():
+        p1_summary_lines.append(f"🎁 **{r['username']}**: +{r['total_pulls']:.2f} Vé Pull ({', '.join(r['items'])}) + 100 XP")
+    embed.add_field(name="📦 Phần Thưởng Phase 1 (40% ra 0.5 vé, 60% ra 0.33 vé):", value="\n".join(p1_summary_lines), inline=False)
 
-    # CẬP NHẬT: PHẦN THƯỞNG RƯƠNG BOSS QUY ĐỔI 100% THÀNH VÉ PULL (GIỮ NGUYÊN TỈ LỆ)
-    # Tỉ lệ mỗi rương:
-    # 10% Hạng S -> 2.0 vé pull
-    # 40% Hạng A -> 0.5 vé pull
-    # 50% Hạng B -> 1/3 vé pull (~0.33 vé)
-    if boss_defeated:
+    # Tổng kết quà tặng Phase 2
+    if p2_defeated:
+        p2_summary_lines = []
+        for uid, r in p2_rewards_data.items():
+            lvl_up = f" 🌟 **LÊN CẤP {r['new_level']}!**" if r['new_level'] > r['old_level'] else ""
+            p2_summary_lines.append(
+                f"🏆 **{r['username']}**: Nhận **+{r['total_pulls']:.0f} Vé Pull** ({', '.join(r['items'])}) + 150 XP!{lvl_up}\n"
+                f"   └ *Tổng vé tích lũy hiện có: {r['total_tickets']:.2f} vé*"
+            )
         embed.add_field(
-            name="🎉 TOÀN THẮNG HUY HOÀNG!",
-            value=(
-                f"Reimu Dị Hình đã bị hạ gục sau **{round_num} hiệp** chiến đấu ngoan cường!\n"
-                f"**Chiến lợi phẩm mỗi dũng giả nhận được (Mở 3 Rương quy đổi vé pull):**\n"
-                f"• 10% Rương Rank S ➔ Quy đổi **+2.0 Vé Pull**\n"
-                f"• 40% Rương Rank A ➔ Quy đổi **+0.5 Vé Pull**\n"
-                f"• 50% Rương Rank B ➔ Quy đổi **+0.33 Vé Pull** (1/3 vé)\n"
-                f"*Toàn bộ rương được quy đổi tự động thành vé gacha tích lũy thẳng vào túi đồ!*"
-            ),
+            name="💎 Phần Thưởng Siêu Cấp Phase 2 (20% ra 10 vé, 40% ra 5 vé, 60% ra 3 vé):",
+            value="\n".join(p2_summary_lines),
             inline=False
         )
-        reward_summaries = []
-        for uid in participants:
-            p = get_player(uid)
-            old_lvl = p["level"]
-            total_pulls_from_chests = 0.0
-            chest_breakdowns = []
-            
-            for c_idx in range(1, 4):
-                roll = random.random()
-                if roll < 0.10:
-                    rank = "S"
-                    ticket_val = 2.0
-                elif roll < 0.50:
-                    rank = "A"
-                    ticket_val = 0.5
-                else:
-                    rank = "B"
-                    ticket_val = 1.0 / 3.0
-
-                total_pulls_from_chests += ticket_val
-                chest_breakdowns.append(f"Rương {c_idx}: [{rank}] +{ticket_val:.2f} vé")
-
-            p["pull_tickets"] += total_pulls_from_chests
-            p["xp"] += 150  # Thưởng thêm 150 XP
-            save_player(p)
-            new_lvl = p["level"]
-
-            lvl_up_text = f" 🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
-            reward_summaries.append(
-                f"🎁 **{p['username']}**: Nhận **+{total_pulls_from_chests:.2f} Vé Pull** ({', '.join(chest_breakdowns)}) + 150 XP!{lvl_up_text}\n"
-                f"   └ *Tổng vé hiện có: {p['pull_tickets']:.2f} vé | Cấp độ: Lv.{p['level']}*"
-            )
-
-        embed.add_field(name="💎 Mở Rương Quy Đổi Vé Pull:", value="\n".join(reward_summaries), inline=False)
     else:
         embed.add_field(
-            name="❌ QUÂN ĐOÀN THẤT THỦ!",
+            name="⚠️ Kết Quả Phase 2:",
             value=(
-                f"Toàn bộ dũng giả đã kiệt sức tử trận trước sự cuồng bạo của Reimu Dị Hình (35k HP / 15k DMG) sau {round_num} hiệp!\n"
-                f"Boss còn sót lại **{boss_hp:,} HP** và đã xé rách không gian trốn thoát.\n"
-                f"Lượt xuất hiện tiếp theo sẽ cần chờ **15 phút hồi chiêu**!"
+                f"Quân đoàn chưa hạ gục được Reimu Dị Hình Phase 2 (còn sót lại {p2_hp:,} HP)!\n"
+                f"Tất cả người chơi vẫn **bảo lưu toàn bộ quà tặng Phase 1** đã nhận được ở trên."
             ),
             inline=False
         )
@@ -971,13 +1091,12 @@ async def on_message(message: discord.Message):
             embed.add_field(name="⚔️ Sát Thương (Power):", value=f"{BOSS_CONFIG['power']:,} DMG *(15k DMG chia đều)*", inline=True)
             embed.add_field(name=f"👥 Người Tham Gia (0/{BOSS_CONFIG['max_players']}):", value="Chưa có ai", inline=False)
             embed.add_field(
-                name="🎁 Phần Thưởng Rương Quy Đổi Vé Pull (3 Rương):",
+                name="🎁 Cơ Chế 2 Phase & Phần Thưởng Đột Phá:",
                 value=(
-                    "• 10% Rương Rank S ➔ Quy đổi **+2.0 Vé Pull**\n"
-                    "• 40% Rương Rank A ➔ Quy đổi **+0.5 Vé Pull**\n"
-                    "• 50% Rương Rank B ➔ Quy đổi **+0.33 Vé Pull**\n"
-                    "• Thưởng thêm: **+150 XP** cho mỗi dũng giả!\n"
-                    "*Quy đổi thẳng thành vé gacha tích lũy vào tài khoản!*"
+                    "• **Phase 1 (3 Quà):** 40% ra **0.5 Vé**, 60% ra **0.33 Vé** (1/3 vé)!\n"
+                    "• **Chuyển Phase 2 (50k HP / 22k DMG):** Hồi sinh & phục hồi **100% HP toàn bộ lá bài** tham chiến!\n"
+                    "• **Phase 2 (3 Quà Siêu Cấp):** 20% ra **10 Vé Pull**, 40% ra **5 Vé Pull**, 60% ra **3 Vé Pull**!\n"
+                    "*Tất cả phần thưởng được quy đổi tự động thành vé gacha tích lũy!*"
                 ),
                 inline=False
             )
@@ -1058,13 +1177,13 @@ async def on_message(message: discord.Message):
 # ==============================================================================
 def execute_single_pull(player):
     roll = random.random()
-    if roll < 0.0001:  # 0.01%
+    if roll < 0.0001:  # 0.01% Hạng SS
         chosen = random.choice(CARDS_BY_RANK["SS"])
-    elif roll < 0.0201:  # 2%
+    elif roll < 0.1001:  # 10.0% Hạng S (Cập nhật: Nerf tỷ lệ pull ra S xuống đúng 10%)
         chosen = random.choice(CARDS_BY_RANK["S"])
-    elif roll < 0.2201:  # 20%
+    elif roll < 0.3501:  # 25.0% Hạng A
         chosen = random.choice(CARDS_BY_RANK["A"])
-    else:  # 77.99%
+    else:  # 64.99% Hạng B
         chosen = random.choice(CARDS_BY_RANK["B"])
 
     cid_str = str(chosen["id"])
@@ -1850,10 +1969,25 @@ async def slash_boss_status(interaction: discord.Interaction):
     global boss_cooldown_until, active_raid
     now = time.time()
     
-    embed = discord.Embed(title="👹 TRẠNG THÁI BOSS RAID: REIMU DỊ HÌNH", color=0xDC2626)
+    embed = discord.Embed(title="👹 TRẠNG THÁI BOSS RAID: REIMU DỊ HÌNH (2 PHASE)", color=0xDC2626)
     embed.set_thumbnail(url=BOSS_CONFIG["image"])
-    embed.add_field(name="❤️ Chỉ Số Boss:", value=f"• HP: **{BOSS_CONFIG['hp']:,}**\n• Power: **{BOSS_CONFIG['power']:,}**", inline=True)
-    embed.add_field(name="🎁 Phần Thưởng Rương:", value="3 Rương quy đổi 100% Vé Pull\n(10% S = 2 vé, 40% A = 0.5 vé, 50% B = 0.33 vé)", inline=True)
+    embed.add_field(
+        name="❤️ Chỉ Số 2 Phase:",
+        value=(
+            f"• **Phase 1:** HP **{BOSS_CONFIG['hp']:,}** | Power **{BOSS_CONFIG['power']:,}**\n"
+            f"• **Phase 2:** HP **{BOSS_PHASE2_CONFIG['hp']:,}** | Power **{BOSS_PHASE2_CONFIG['power']:,}**"
+        ),
+        inline=True
+    )
+    embed.add_field(
+        name="🎁 Phần Thưởng 2 Phase:",
+        value=(
+            "• **Phase 1 (3 quà):** 40% 0.5 vé, 60% 0.33 vé\n"
+            "• **Phase 2 (3 quà):** 20% 10 vé, 40% 5 vé, 60% 3 vé\n"
+            "*(Vào Phase 2: Hồi phục 100% HP toàn bộ bài)*"
+        ),
+        inline=True
+    )
 
     if active_raid is not None:
         p_count = len(active_raid.get("participants", []))
@@ -1901,7 +2035,7 @@ async def handle_help(ctx_or_interaction):
 ⛩️ **HAKUREI REIMU DISCORD BOT - BẢN ĐỒ LỆNH CẬP NHẬT**
 
 **🎮 HỆ THỐNG GACHA & CARD BATTLE:**
-• `/pull [số_lượng]` hoặc `!pull`: Quay thẻ Touhou (Free 5 lượt/ngày).
+• `/pull [số_lượng]` hoặc `!pull`: Quay thẻ Touhou (Free 5 lượt/ngày, nerf tỷ lệ S xuống đúng 10%).
 • `/daily` hoặc `!daily`: Điểm danh nhận 1 vé pull mỗi ngày.
 • `/team view` hoặc `!team`: Xem đội hình 3 thẻ và tiến trình cấp độ mới.
 • `/team add <id>`: Thêm thẻ vào đội hình.
@@ -1910,10 +2044,13 @@ async def handle_help(ctx_or_interaction):
 • `/battle` hoặc `!battle`: Giao đấu tự động nhận 50-100 XP.
 • `/boss_status` hoặc `!boss`: Kiểm tra thời gian hồi chiêu 15 phút của Boss.
 
-**👹 DỊ BIẾN REIMU DỊ HÌNH (RAID BOSS 35K HP / 15K DMG):**
-• Máu Boss tăng lên **35,000 HP**, DMG tăng lên **15,000 DMG**!
-• Phần thưởng: **3 Rương quy đổi 100% thành Vé Pull** (S: 2 vé, A: 0.5 vé, B: 0.33 vé)!
-• **Hồi chiêu 15 phút:** Mỗi khi có bất kỳ người chơi nào tham gia raid, boss tiếp theo sẽ đợi 15 phút!
+**👹 DỊ BIẾN REIMU DỊ HÌNH (RAID BOSS 2 PHASE ĐỘT PHÁ):**
+• **Phase 1 (35k HP / 15k DMG):** Nhận 3 quà tặng (40% ra 0.5 vé pull, 60% ra 0.33 vé pull).
+• **Phase 2 Thức Tỉnh (50k HP / 22k DMG):**
+  - "Dị hình đang biến đổi, bùa chú của chúng ta đang rung động dữ dội"
+  - Lập tức hồi sinh & hồi 100% sinh lực toàn bộ lá bài tham chiến của tất cả người chơi!
+  - 3 quà tặng ngẫu nhiên: 20% ra 10 pull, 40% ra 5 pull, 60% ra 3 pull!
+• **Hồi chiêu 15 phút:** Kích hoạt sau mỗi đợt có người tham gia raid!
 
 **👑 LỆNH QUẢN TRỊ VIÊN (CHỈ DUY NHẤT CHỦ BOT ID: 1502579398560317441):**
 • `/admin_set_level <user> <level>` hoặc `!setlevel @user <level>`: Đặt cấp độ cho người chơi, đồng bộ XP chuẩn xác không bug.
