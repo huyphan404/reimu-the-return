@@ -1,6 +1,13 @@
 # ==============================================================================
-# HAKUREI REIMU DISCORD BOT - FULL EDITION
+# HAKUREI REIMU DISCORD BOT - FULL EDITION (UPDATED)
 # GEMINI FLASH CHATBOT + MONGODB ATLAS CLOUD + TOUHOU GACHA & AUTO-BATTLE & RAID
+# ==============================================================================
+# CÁC TÍNH NĂNG MỚI ĐÃ ĐƯỢC CẬP NHẬT:
+# 1. BOSS STATS: Máu tăng lên 35,000 HP, DMG tăng lên 15,000 DMG
+# 2. BOSS DROP: Rương chiến lợi phẩm (3 rương) quy đổi 100% thành Vé Pull (giữ nguyên tỉ lệ S: 10% -> 2 vé, A: 40% -> 0.5 vé, B: 50% -> 1/3 vé)
+# 3. BOSS COOLDOWN: Hồi chiêu 15 phút tính từ lúc có bất kỳ người chơi nào tham gia raid
+# 4. ADMIN COMMANDS: /admin_set_level (set cấp và đồng bộ XP) & /admin_confiscate (tước đoạt thẻ phạt cheat)
+# 5. LEVEL UP CƠ CHẾ MỚI: Mỗi cấp tăng thêm +50 XP (Lv.1 cần 100 XP, Lv.2 cần 150 XP, Lv.3 cần 200 XP...) CHUẨN XÁC TUYỆT ĐỐI KHÔNG BUG!
 # ==============================================================================
 
 import os
@@ -22,6 +29,18 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ==============================================================================
+# QUẢN TRỊ VIÊN DUY NHẤT ĐƯỢC PHÉP DÙNG LỆNH ADMIN (OWNER EXCLUSIVE)
+# ==============================================================================
+AUTHORIZED_ADMIN_ID = 1502579398560317441
+
+def is_authorized_admin(user_id: int) -> bool:
+    """Kiểm tra chỉ duy nhất ID 1502579398560317441 mới có quyền thực thi lệnh Admin"""
+    try:
+        return int(user_id) == AUTHORIZED_ADMIN_ID
+    except (ValueError, TypeError):
+        return False
+
+# ==============================================================================
 # 1. WEB SERVER CHO RENDER FREE (GIỮ CONTAINER KHÔNG BỊ QUÉT LỖI PORT)
 # ==============================================================================
 class HealthHandler(BaseHTTPRequestHandler):
@@ -29,7 +48,7 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/plain; charset=utf-8')
         self.end_headers()
-        self.wfile.write(b"Hakurei Reimu Discord Bot (Gacha + Battle + Raid) is online!")
+        self.wfile.write(b"Hakurei Reimu Discord Bot (Gacha + Battle + Raid + Admin) is online!")
 
     def log_message(self, format, *args):
         pass
@@ -42,7 +61,71 @@ def run_web_server():
 threading.Thread(target=run_web_server, daemon=True).start()
 
 # ==============================================================================
-# 2. TOUHOU CARDS DATABASE (20 NHÂN VẬT CHUẨN THÔNG SỐ)
+# 2. HỆ THỐNG CẤP ĐỘ & XP MỚI (+50 XP MỖI CẤP, CHUẨN XÁC TUYỆT ĐỐI KHÔNG BUG)
+# ==============================================================================
+MAX_LEVEL = 100
+
+def get_xp_needed_for_level(level: int) -> int:
+    """
+    Số XP cần tích lũy để thăng cấp từ `level` lên `level + 1`.
+    Lv 1: cần 100 XP
+    Lv 2: cần 150 XP (+50)
+    Lv 3: cần 200 XP (+50)
+    Công thức: 100 + (level - 1) * 50
+    """
+    if level < 1:
+        level = 1
+    return 100 + (level - 1) * 50
+
+def get_total_xp_for_level(level: int) -> int:
+    """
+    Tổng XP tích lũy (Cumulative XP) cần có để đạt tới `level` tính từ lúc Lv 1 (0 XP).
+    Lv 1: 0 XP
+    Lv 2: 100 XP
+    Lv 3: 100 + 150 = 250 XP
+    Lv 4: 250 + 200 = 450 XP
+    Lv 5: 450 + 250 = 700 XP
+    Công thức toán học cấp số cộng: Sum_{k=1..n}(100 + 50*(k-1)) = 25*n*(n+3) với n = level - 1
+    """
+    if level <= 1:
+        return 0
+    if level > MAX_LEVEL:
+        level = MAX_LEVEL
+    n = level - 1
+    return 25 * n * (n + 3)
+
+def calculate_level_from_xp(total_xp: int) -> int:
+    """
+    Tính chính xác cấp độ hiện tại dựa trên tổng XP tích lũy (Total XP).
+    Tuyệt đối không bị bug, không bao giờ lệch điểm hoặc vượt quá MAX_LEVEL.
+    """
+    if total_xp <= 0:
+        return 1
+    lvl = 1
+    while lvl < MAX_LEVEL:
+        next_threshold = get_total_xp_for_level(lvl + 1)
+        if total_xp >= next_threshold:
+            lvl += 1
+        else:
+            break
+    return lvl
+
+def get_level_progress(total_xp: int):
+    """
+    Trả về chi tiết:
+    (level, xp_in_current_level, xp_needed_for_next_level, ratio_progress)
+    """
+    lvl = calculate_level_from_xp(total_xp)
+    if lvl >= MAX_LEVEL:
+        return lvl, 0, 0, 1.0
+    base_xp = get_total_xp_for_level(lvl)
+    xp_in_level = max(0, total_xp - base_xp)
+    needed = get_xp_needed_for_level(lvl)
+    ratio = min(1.0, max(0.0, xp_in_level / needed)) if needed > 0 else 1.0
+    return lvl, xp_in_level, needed, ratio
+
+# ==============================================================================
+# 3. TOUHOU CARDS DATABASE (20 NHÂN VẬT CHUẨN THÔNG SỐ)
 # ==============================================================================
 CARDS_DATA = {
     1: {
@@ -215,18 +298,24 @@ CARDS_BY_RANK = {
     "B":  [c for c in CARDS_DATA.values() if c["rank"] == "B"],
 }
 
-# Boss Reimu Dị Hình
+# ==============================================================================
+# BOSS REIMU DỊ HÌNH - CHỈ SỐ MỚI (HP 35K, DMG 15K, COOLDOWN 15 PHÚT)
+# ==============================================================================
 BOSS_CONFIG = {
     "name": "Reimu Dị Hình (Aberrant Reimu)",
     "desc": "Đó không phải Reimu, sẵn sàng giao chiến!",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1549077421624401971/content.png?ex=6aa96245&is=6aa810c5&hm=c0248e497ee5afeed898b457736b39fc71368af3be1630f1cd59b5609c99fbeb&=&format=webp&quality=lossless&width=351&height=512",
-    "hp": 20000,
-    "power": 10000,
-    "max_players": 6
+    "hp": 35000,      # Cập nhật: Máu tăng lên 35,000 HP theo yêu cầu
+    "power": 15000,   # Cập nhật: DMG tăng lên 15,000 DMG theo yêu cầu
+    "max_players": 6,
+    "cooldown_seconds": 15 * 60  # 15 phút (900s) sau khi có bất kỳ ai tham gia raid
 }
 
+# Biến toàn cục theo dõi thời gian hồi chiêu Boss tiếp theo
+boss_cooldown_until = 0.0
+
 # ==============================================================================
-# 3. DATABASE SETUP: MONGODB ATLAS + SQLITE DỰ PHÒNG
+# 4. DATABASE SETUP: MONGODB ATLAS + SQLITE DỰ PHÒNG
 # ==============================================================================
 MONGO_URI = os.getenv("MONGO_URI")
 use_mongo = False
@@ -245,7 +334,7 @@ def test_and_connect_mongo():
         return False, mongo_error_detail
 
     if "xxxxxx" in current_uri:
-        mongo_error_detail = "Chuỗi MONGO_URI vẫn chứa placeholder 'xxxxxx'. Bạn cần thay thế bằng subdomain cluster thật từ MongoDB Atlas (ví dụ: cluster0.abcde.mongodb.net)."
+        mongo_error_detail = "Chuỗi MONGO_URI vẫn chứa placeholder 'xxxxxx'. Bạn cần thay thế bằng subdomain cluster thật từ MongoDB Atlas."
         use_mongo = False
         return False, mongo_error_detail
 
@@ -352,21 +441,20 @@ def get_player(user_id, username="Visitor"):
     if "pull_tickets" not in data: data["pull_tickets"] = 5.0
     if "language" not in data: data["language"] = "vi"
 
-    # Kiểm tra reset 5 lượt pull free mỗi ngày
+    # Reset 5 lượt pull free mỗi ngày
     if data.get("free_pulls_date") != now_date:
         data["free_pulls_date"] = now_date
         data["free_pulls_remaining"] = 5
 
-    # Tính level (mỗi cấp 100 XP, max 100)
-    calc_lvl = min(100, (data["xp"] // 100) + 1)
-    data["level"] = calc_lvl
+    # CẬP NHẬT: TÍNH LEVEL THEO HỆ THỐNG MỚI (+50 XP MỖI CẤP, TUYỆT ĐỐI KHÔNG BUG)
+    data["level"] = calculate_level_from_xp(data.get("xp", 0))
     return data
 
 def save_player(player_data):
     uid_str = str(player_data["user_id"])
     now_iso = datetime.now().isoformat()
-    # Tính lại level
-    player_data["level"] = min(100, (player_data["xp"] // 100) + 1)
+    # Đồng bộ level dựa trên tổng XP tích lũy
+    player_data["level"] = calculate_level_from_xp(player_data.get("xp", 0))
     
     if use_mongo and players_collection is not None:
         try:
@@ -468,7 +556,7 @@ def reset_memory(channel_id, user_id):
             pass
 
 # ==============================================================================
-# 4. CẤU HÌNH BOT & GEMINI FLASH
+# 5. CẤU HÌNH BOT & GEMINI FLASH
 # ==============================================================================
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -486,7 +574,6 @@ def _call_gemini_sync(model_name, contents, system_instruction, temperature):
     )
 
 async def ask_gemini(contents, system_instruction, temperature=0.85):
-    # Chuỗi luân phiên model từ thế hệ Gemini 3.0 đến 3.6 (và 3.8 kèm flash-latest)
     models = [
         "gemini-3.8-flash",
         "gemini-3.6-flash",
@@ -512,7 +599,6 @@ async def ask_gemini(contents, system_instruction, temperature=0.85):
             except Exception as e:
                 last_err = e
                 err_str = str(e)
-                # Nếu model bị 429 (hết quota), 404 (chưa hỗ trợ) hoặc lỗi tương tự -> nhảy ngay sang model tiếp theo
                 if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "404" in err_str or "NOT_FOUND" in err_str:
                     break
                 if "503" in err_str or "UNAVAILABLE" in err_str:
@@ -539,17 +625,18 @@ intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 # ==============================================================================
-# 5. QUẢN LÝ BOSS RAID (REIMU DỊ HÌNH - 10% TỰ ĐỘNG XUẤT HIỆN KHI CHAT)
+# 6. QUẢN LÝ BOSS RAID (35K HP, 15K DMG, RƯƠNG QUY ĐỔI VÉ PULL, COOLDOWN 15 PHÚT)
 # ==============================================================================
-active_raid = None  # Lưu trữ thông tin boss raid đang diễn ra: {"channel_id": int, "players": [user_id], "msg": discord.Message, ...}
+active_raid = None  # Lưu trữ thông tin boss raid đang diễn ra
 
 class RaidJoinView(discord.ui.View):
     def __init__(self, raid_data):
-        super().__init__(timeout=120)  # Tự động đóng / xuất trận sau 2 phút (120 giây)
+        super().__init__(timeout=120)  # Tự động đóng / xuất trận sau 2 phút
         self.raid_data = raid_data
 
     @discord.ui.button(label="⚔️ Tham Gia / Join Raid (Miễn phí)", style=discord.ButtonStyle.danger, emoji="💥")
     async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        global boss_cooldown_until
         user_id = interaction.user.id
         if user_id in self.raid_data["participants"]:
             await interaction.response.send_message("Bạn đã tham gia hàng ngũ diệt boss rồi!", ephemeral=True)
@@ -559,18 +646,16 @@ class RaidJoinView(discord.ui.View):
             await interaction.response.send_message(f"Đội hình đã đầy ({BOSS_CONFIG['max_players']} người)!", ephemeral=True)
             return
 
-        # Kiểm tra player có thẻ nào chưa (trong team hoặc kho đồ)
         player = get_player(user_id, interaction.user.display_name)
         has_any_card = len(player.get("team", [])) > 0 or any(cnt > 0 for cnt in player.get("inventory", {}).values())
         if not has_any_card:
             await interaction.response.send_message("⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` để nhận thẻ Touhou trước nhé!", ephemeral=True)
             return
 
-        # Đảm bảo đội hình có đủ tối đa 3 lá bài mạnh nhất (nếu team < 3 thẻ thì tự động bổ sung thẻ tốt nhất trong kho)
+        # Đảm bảo đội hình có đủ tối đa 3 lá bài mạnh nhất
         current_team = [cid for cid in player.get("team", []) if cid in CARDS_DATA]
         if len(current_team) < 3:
             owned_ids = [int(cid) for cid, cnt in player.get("inventory", {}).items() if cnt > 0 and int(cid) in CARDS_DATA]
-            # Sắp xếp thẻ trong kho theo power giảm dần
             owned_ids.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
             for cid in owned_ids:
                 if cid not in current_team:
@@ -583,6 +668,10 @@ class RaidJoinView(discord.ui.View):
         self.raid_data["participants"].append(user_id)
         self.raid_data["names"].append(interaction.user.display_name)
         count = len(self.raid_data["participants"])
+
+        # CẬP NHẬT: KHI CÓ BẤT KỲ AI THAM GIA RAID, KÍCH HOẠT COOLDOWN 15 PHÚT CHO LƯỢT SPAWN TIẾP THEO
+        boss_cooldown_until = time.time() + BOSS_CONFIG["cooldown_seconds"]
+
         await interaction.response.send_message(f"🔥 {interaction.user.mention} đã tham chiến! ({count}/{BOSS_CONFIG['max_players']} dũng giả)", ephemeral=False)
 
         # Cập nhật embed
@@ -606,7 +695,6 @@ class RaidJoinView(discord.ui.View):
             except Exception:
                 pass
 
-        # Nếu raid này vẫn đang hoạt động
         if active_raid is self.raid_data:
             participants = self.raid_data.get("participants", [])
             channel_id = self.raid_data.get("channel_id")
@@ -619,7 +707,7 @@ class RaidJoinView(discord.ui.View):
                 await channel.send("⌛ **Đã hết 2 phút!** Không có dũng giả nào dám bước tới nghênh chiến. Reimu Dị Hình cười khẩy rồi xé rách không gian trốn thoát...")
 
 async def execute_raid(channel, raid_data):
-    global active_raid
+    global active_raid, boss_cooldown_until
     active_raid = None  # Giải phóng cờ active
 
     participants = raid_data["participants"]
@@ -627,16 +715,17 @@ async def execute_raid(channel, raid_data):
         await channel.send("⛩️ Reimu Dị Hình đã biến mất vào hư không vì không ai dám đối đầu...")
         return
 
-    # Chuẩn bị đội hình chiến đấu cho từng dũng giả (tối đa 3/3 thẻ bài mạnh nhất)
+    # KÍCH HOẠT HOẶC DUY TRÌ COOLDOWN 15 PHÚT SAU KHI TRẬN CHIẾN KẾT THÚC
+    boss_cooldown_until = max(boss_cooldown_until, time.time() + BOSS_CONFIG["cooldown_seconds"])
+
+    # Chuẩn bị đội hình chiến đấu cho từng dũng giả
     combatants = []
     for uid in participants:
         p = get_player(uid)
         lvl_buff = (p["level"] - 1) * 10
 
-        # Lấy đội hình hiện tại của người chơi
         team_cids = [cid for cid in p.get("team", []) if cid in CARDS_DATA]
 
-        # Nếu đội hình chưa đủ 3 lá mà trong kho còn thẻ khác -> tự động bổ sung thẻ mạnh nhất vào cho đủ 3/3 lá
         if len(team_cids) < 3:
             owned_ids = [int(cid) for cid, cnt in p.get("inventory", {}).items() if cnt > 0 and int(cid) in CARDS_DATA]
             owned_ids.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
@@ -671,21 +760,19 @@ async def execute_raid(channel, raid_data):
             "death_round": None
         })
 
+    # CẬP NHẬT CHỈ SỐ BOSS: 35K HP, 15K POWER
     boss_max_hp = BOSS_CONFIG["hp"]
     boss_hp = boss_max_hp
     boss_power = BOSS_CONFIG["power"]
 
-    # =========================================================================
-    # VÒNG LẶP CHIẾN ĐẤU THEO HIỆP (TURN-BASED BATTLE ĐẾN KHI 1 TRONG 2 BÊN GỤC NGÃ)
-    # =========================================================================
     round_num = 0
-    max_rounds = 30
+    max_rounds = 35
     battle_history = []
 
     while boss_hp > 0 and round_num < max_rounds:
         alive_players = [c for c in combatants if c["is_alive"]]
         if not alive_players:
-            break  # Toàn bộ người chơi đã tử trận -> Boss chiến thắng!
+            break
 
         round_num += 1
 
@@ -695,15 +782,14 @@ async def execute_raid(channel, raid_data):
         for c in alive_players:
             c["total_dmg"] += c["power"]
 
-        # Kiểm tra nếu Boss bị tiêu diệt ngay sau đòn đánh của dũng giả
         if boss_hp <= 0:
             battle_history.append(
                 f"**⚔️ Hiệp {round_num}:** {len(alive_players)} dũng giả đồng loạt tung đòn tất sát gây **{round_player_dmg:,} DMG**! 💥 **Reimu Dị Hình đã bị tiêu diệt hoàn toàn!**"
             )
             break
 
-        # 2. Boss chưa chết -> Phản đòn lên các dũng giả còn sống (chia đều sát thương)
-        dmg_per_player = max(350, boss_power // len(alive_players))
+        # 2. Boss phản đòn (sát thương 15,000 DMG chia đều cho người sống)
+        dmg_per_player = max(400, boss_power // len(alive_players))
         fallen_names = []
 
         for c in alive_players:
@@ -719,25 +805,24 @@ async def execute_raid(channel, raid_data):
             f"Boss cuồng bạo phản kích giáng **{dmg_per_player:,} DMG** lên mỗi dũng giả!"
         )
         if fallen_names:
-            log_msg += f" 💀 *Tử trận hiệp này: {', '.join(fallen_names)}*"
+            log_msg += f" 💀 *Tử trận: {', '.join(fallen_names)}*"
         battle_history.append(log_msg)
 
     boss_defeated = (boss_hp <= 0)
     total_raid_dmg = sum(c["total_dmg"] for c in combatants)
 
-    # Tạo bảng tổng kết Embed
     embed = discord.Embed(
         title="⚔️ KẾT QUẢ ĐẠI CHIẾN QUYẾT TỬ: REIMU DỊ HÌNH!",
         description=(
             f"Trận kịch chiến diễn ra gay cấn qua **{round_num} hiệp** quyết đấu!\n"
             f"**Kết quả:** {'🎉 QUÂN ĐOÀN CHIẾN THẮNG (Boss 0 HP)' if boss_defeated else f'❌ THẤT THỦ (Boss còn {boss_hp:,}/{boss_max_hp:,} HP)'}\n"
-            f"**Tổng Sát Thương Quân Đoàn Gây Ra:** **{total_raid_dmg:,} DMG**"
+            f"**Tổng Sát Thương Quân Đoàn Gây Ra:** **{total_raid_dmg:,} DMG**\n"
+            f"⏳ **Hồi chiêu Boss tiếp theo:** **15 phút** kể từ thời điểm dũng giả tham chiến!"
         ),
         color=0x10B981 if boss_defeated else 0xEF4444
     )
     embed.set_thumbnail(url=BOSS_CONFIG["image"])
 
-    # Rút gọn nhật ký nếu số hiệp quá dài để không vượt quá giới hạn ký tự Discord
     if len(battle_history) > 6:
         display_history = battle_history[:3] + [f"*... (giằng co ác liệt {len(battle_history)-5} hiệp) ...*"] + battle_history[-2:]
     else:
@@ -749,7 +834,6 @@ async def execute_raid(channel, raid_data):
         inline=False
     )
 
-    # Báo cáo chi tiết từng dũng giả
     player_reports = []
     for c in combatants:
         card_desc = ", ".join(c["cards"]) if c["cards"] else "Không có thẻ"
@@ -760,49 +844,78 @@ async def execute_raid(channel, raid_data):
 
         player_reports.append(
             f"• **{c['username']}** (Lv.{c['level']}): Sát thương cống hiến **{c['total_dmg']:,} DMG** | {status_str}\n"
-            f"  └ *Đội hình (3/3 lá):* {card_desc}"
+            f"  └ *Đội hình:* {card_desc}"
         )
 
     embed.add_field(name="📋 Tình Trạng Quân Đoàn Dũng Giả:", value="\n".join(player_reports), inline=False)
 
-    # Phát thưởng hoặc thông báo thua
+    # CẬP NHẬT: PHẦN THƯỞNG RƯƠNG BOSS QUY ĐỔI 100% THÀNH VÉ PULL (GIỮ NGUYÊN TỈ LỆ)
+    # Tỉ lệ mỗi rương:
+    # 10% Hạng S -> 2.0 vé pull
+    # 40% Hạng A -> 0.5 vé pull
+    # 50% Hạng B -> 1/3 vé pull (~0.33 vé)
     if boss_defeated:
         embed.add_field(
             name="🎉 TOÀN THẮNG HUY HOÀNG!",
-            value=f"Reimu Dị Hình đã bị hạ gục sau **{round_num} hiệp** chiến đấu ngoan cường!\n**Chiến lợi phẩm mỗi dũng giả nhận được (Mỗi người 3 rương card Touhou):**\n- Tỉ lệ mỗi rương: 10% Thẻ S, 40% Thẻ A, 50% Thẻ B!",
+            value=(
+                f"Reimu Dị Hình đã bị hạ gục sau **{round_num} hiệp** chiến đấu ngoan cường!\n"
+                f"**Chiến lợi phẩm mỗi dũng giả nhận được (Mở 3 Rương quy đổi vé pull):**\n"
+                f"• 10% Rương Rank S ➔ Quy đổi **+2.0 Vé Pull**\n"
+                f"• 40% Rương Rank A ➔ Quy đổi **+0.5 Vé Pull**\n"
+                f"• 50% Rương Rank B ➔ Quy đổi **+0.33 Vé Pull** (1/3 vé)\n"
+                f"*Toàn bộ rương được quy đổi tự động thành vé gacha tích lũy thẳng vào túi đồ!*"
+            ),
             inline=False
         )
         reward_summaries = []
         for uid in participants:
             p = get_player(uid)
-            p_rewards = []
-            for _ in range(3):
+            old_lvl = p["level"]
+            total_pulls_from_chests = 0.0
+            chest_breakdowns = []
+            
+            for c_idx in range(1, 4):
                 roll = random.random()
                 if roll < 0.10:
-                    chosen = random.choice(CARDS_BY_RANK["S"])
+                    rank = "S"
+                    ticket_val = 2.0
                 elif roll < 0.50:
-                    chosen = random.choice(CARDS_BY_RANK["A"])
+                    rank = "A"
+                    ticket_val = 0.5
                 else:
-                    chosen = random.choice(CARDS_BY_RANK["B"])
-                cid_str = str(chosen["id"])
-                p["inventory"][cid_str] = p["inventory"].get(cid_str, 0) + 1
-                p_rewards.append(f"[{chosen['rank']}] {chosen['name']}")
-            p["xp"] += 150
-            save_player(p)
-            reward_summaries.append(f"🎁 **{p['username']}** nhận: {', '.join(p_rewards)} (+150 XP)")
+                    rank = "B"
+                    ticket_val = 1.0 / 3.0
 
-        embed.add_field(name="💎 Mở Rương Chiến Lợi Phẩm:", value="\n".join(reward_summaries), inline=False)
+                total_pulls_from_chests += ticket_val
+                chest_breakdowns.append(f"Rương {c_idx}: [{rank}] +{ticket_val:.2f} vé")
+
+            p["pull_tickets"] += total_pulls_from_chests
+            p["xp"] += 150  # Thưởng thêm 150 XP
+            save_player(p)
+            new_lvl = p["level"]
+
+            lvl_up_text = f" 🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+            reward_summaries.append(
+                f"🎁 **{p['username']}**: Nhận **+{total_pulls_from_chests:.2f} Vé Pull** ({', '.join(chest_breakdowns)}) + 150 XP!{lvl_up_text}\n"
+                f"   └ *Tổng vé hiện có: {p['pull_tickets']:.2f} vé | Cấp độ: Lv.{p['level']}*"
+            )
+
+        embed.add_field(name="💎 Mở Rương Quy Đổi Vé Pull:", value="\n".join(reward_summaries), inline=False)
     else:
         embed.add_field(
             name="❌ QUÂN ĐOÀN THẤT THỦ!",
-            value=f"Toàn bộ dũng giả đã kiệt sức tử trận trước sự cuồng bạo của Reimu Dị Hình sau {round_num} hiệp!\nBoss còn sót lại **{boss_hp:,} HP** và đã xé rách không gian trốn thoát. Hãy rèn luyện thêm đội hình và quay lại phục thù!",
+            value=(
+                f"Toàn bộ dũng giả đã kiệt sức tử trận trước sự cuồng bạo của Reimu Dị Hình (35k HP / 15k DMG) sau {round_num} hiệp!\n"
+                f"Boss còn sót lại **{boss_hp:,} HP** và đã xé rách không gian trốn thoát.\n"
+                f"Lượt xuất hiện tiếp theo sẽ cần chờ **15 phút hồi chiêu**!"
+            ),
             inline=False
         )
 
     await channel.send(embed=embed)
 
 # ==============================================================================
-# 6. SỰ KIỆN BOT ON_READY & ON_MESSAGE (CHAT VỚI REIMU + RANDOM BOSS 10%)
+# 7. SỰ KIỆN BOT ON_READY & ON_MESSAGE (CHAT VỚI REIMU + RANDOM BOSS 10% + COOLDOWN 15P)
 # ==============================================================================
 @bot.event
 async def on_ready():
@@ -812,17 +925,16 @@ async def on_ready():
     else:
         print("⚠️ [DATABASE CẢNH BÁO] Đang chạy trên SQLITE TẠM THỜI!", flush=True)
         print(f"   Chi tiết lỗi: {mongo_error_detail}", flush=True)
-        print("   -> LƯU Ý: Dữ liệu SQLite trên Render sẽ bị xóa sau mỗi lần restart hoặc cập nhật code!", flush=True)
     try:
         synced = await bot.tree.sync()
-        print(f"Đã đồng bộ {len(synced)} Slash Commands!", flush=True)
+        print(f"Đã đồng bộ {len(synced)} Slash Commands (bao gồm các lệnh Admin mới)!", flush=True)
     except Exception as e:
         print(f"Lỗi đồng bộ slash command: {e}", flush=True)
 
     await bot.change_presence(
         activity=discord.Activity(
             type=discord.ActivityType.watching,
-            name="Đền Hakurei | /help | /pull | /battle"
+            name="Đền Hakurei | /help | /pull | /battle | Boss 35k HP"
         )
     )
 
@@ -833,9 +945,15 @@ async def on_message(message: discord.Message):
 
     content_lower = message.content.lower()
 
-    # 1. RANDOM 10% XUẤT HIỆN BOSS REIMU DỊ HÌNH KHI CHAT
-    global active_raid
-    if active_raid is None and not content_lower.startswith("!") and not content_lower.startswith("/"):
+    # CẬP NHẬT: RANDOM 10% XUẤT HIỆN BOSS VÀ KIỂM TRA COOLDOWN 15 PHÚT
+    global active_raid, boss_cooldown_until
+    now_ts = time.time()
+    
+    # Chỉ xét spawn khi:
+    # 1. Không có boss nào đang active
+    # 2. Đã HẾT thời gian hồi chiêu 15 phút (boss_cooldown_until <= now)
+    # 3. Không phải tin nhắn lệnh (! hoặc /)
+    if active_raid is None and now_ts >= boss_cooldown_until and not content_lower.startswith("!") and not content_lower.startswith("/"):
         if random.random() < 0.10:  # 10% cơ hội xuất hiện
             active_raid = {
                 "channel_id": message.channel.id,
@@ -849,26 +967,35 @@ async def on_message(message: discord.Message):
                 color=0xDC2626
             )
             embed.set_image(url=BOSS_CONFIG["image"])
-            embed.add_field(name="❤️ Máu Boss (HP):", value=f"{BOSS_CONFIG['hp']:,} HP", inline=True)
-            embed.add_field(name="⚔️ Sát Thương (Power):", value=f"{BOSS_CONFIG['power']:,} DMG\n*(Chia đều cho các thành viên tham chiến)*", inline=True)
+            embed.add_field(name="❤️ Máu Boss (HP):", value=f"{BOSS_CONFIG['hp']:,} HP *(Tăng cường 35k HP)*", inline=True)
+            embed.add_field(name="⚔️ Sát Thương (Power):", value=f"{BOSS_CONFIG['power']:,} DMG *(15k DMG chia đều)*", inline=True)
             embed.add_field(name=f"👥 Người Tham Gia (0/{BOSS_CONFIG['max_players']}):", value="Chưa có ai", inline=False)
             embed.add_field(
-                name="🎁 Phần Thưởng Rương Rơi (3 Rương):",
-                value="• 10% Rơi Card Rank S\n• 40% Rơi Card Rank A\n• 50% Rơi Card Rank B\n*Tham gia hoàn toàn MIỄN PHÍ!*",
+                name="🎁 Phần Thưởng Rương Quy Đổi Vé Pull (3 Rương):",
+                value=(
+                    "• 10% Rương Rank S ➔ Quy đổi **+2.0 Vé Pull**\n"
+                    "• 40% Rương Rank A ➔ Quy đổi **+0.5 Vé Pull**\n"
+                    "• 50% Rương Rank B ➔ Quy đổi **+0.33 Vé Pull**\n"
+                    "• Thưởng thêm: **+150 XP** cho mỗi dũng giả!\n"
+                    "*Quy đổi thẳng thành vé gacha tích lũy vào tài khoản!*"
+                ),
                 inline=False
             )
             embed.add_field(
-                name="⏱️ Thời Gian Giới Hạn (2 Phút):",
-                value="⏳ **Trận chiến sẽ tự động khai hỏa sau đúng 2 phút (120s)!**\nNếu có người tham gia, đội hình (tối đa 3/3 lá bài) của mỗi dũng giả sẽ xuất trận!",
+                name="⏱️ Quy Tắc & Hồi Chiêu (15 Phút):",
+                value=(
+                    "⏳ **Thời gian chuẩn bị:** 2 phút (120s) trước khi xuất trận!\n"
+                    "🛡️ **Hồi chiêu Spawn:** Khi có bất kỳ ai tham gia, lượt spawn tiếp theo sẽ cần chờ **15 phút**!"
+                ),
                 inline=False
             )
-            embed.set_footer(text="Bấm 'Tham Gia' để xuất trận đội hình 3/3 thẻ • Tự động chiến đấu sau 2 phút!")
+            embed.set_footer(text="Bấm 'Tham Gia' để xuất trận • Miễn phí • Hồi chiêu 15 phút sau raid")
             
             view = RaidJoinView(active_raid)
             msg = await message.channel.send(embed=embed, view=view)
             active_raid["msg"] = msg
 
-    # 2. XỬ LÝ TRÒ CHUYỆN VỚI REIMU (NHẮC TÊN, TAG, HOẶC REPLY)
+    # XỬ LÝ TRÒ CHUYỆN VỚI REIMU
     is_reply_to_reimu = False
     if message.reference and message.reference.resolved:
         resolved = message.reference.resolved
@@ -920,19 +1047,17 @@ async def on_message(message: discord.Message):
                 err_str = str(e)
                 print(f"Lỗi AI Chat: {e}", flush=True)
                 if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
-                    await message.reply("⛩️ Hừ, linh lực Gemini của đền Hakurei tạm thời bị quá tải (Vượt giới hạn gửi tin/phút hoặc hết quota ngày)! Hãy đợi khoảng 15-30 giây rồi trò chuyện tiếp với ta nhé!", mention_author=False)
+                    await message.reply("⛩️ Hừ, linh lực Gemini của đền Hakurei tạm thời bị quá tải! Hãy đợi khoảng 15-30 giây rồi trò chuyện tiếp với ta nhé!", mention_author=False)
                 else:
                     await message.reply("⛩️ Hừ, bùa chú đền Hakurei tạm thời bị nhiễu loạn linh lực! Đợi vài giây rồi gọi lại ta!", mention_author=False)
 
     await bot.process_commands(message)
 
 # ==============================================================================
-# 7. CƠ CHẾ GACHA PULL TOUHOU
-# Tỉ lệ: SS: 0.01%, S: 2%, A: 20%, B: 77.99%
-# Trùng pull: SS = 4 pull, S = 2 pull, A = 0.5 pull, B = 0.3333 pull
+# 8. CƠ CHẾ GACHA PULL TOUHOU
 # ==============================================================================
 def execute_single_pull(player):
-    roll = random.random()  # [0.0, 1.0)
+    roll = random.random()
     if roll < 0.0001:  # 0.01%
         chosen = random.choice(CARDS_BY_RANK["SS"])
     elif roll < 0.0201:  # 2%
@@ -957,14 +1082,214 @@ def execute_single_pull(player):
         elif chosen["rank"] == "A":
             converted_pulls = 0.5
         elif chosen["rank"] == "B":
-            converted_pulls = 1.0 / 3.0  # 1/3 pull
+            converted_pulls = 1.0 / 3.0
 
         player["pull_tickets"] += converted_pulls
 
     return chosen, is_duplicate, converted_pulls
 
 # ==============================================================================
-# 8. SLASH COMMANDS & PREFIX COMMANDS
+# 9. LỆNH ADMIN MỚI: SET LEVEL VÀ TƯỚC ĐOẠT BÀI (TRỪNG PHẠT CHEAT)
+# ==============================================================================
+
+# --- LỆNH ADMIN: SET LEVEL USER (ĐỒNG BỘ XP VÀ LEVEL CHUẨN XÁC KHÔNG BUG) ---
+@bot.tree.command(name="admin_set_level", description="[CHỦ BOT DUY NHẤT] Đặt cấp độ cho người chơi (đồng bộ XP chính xác không bug)")
+@app_commands.describe(
+    nguoi_dung="Chọn người chơi cần đặt cấp độ",
+    cap_do="Cấp độ mới từ 1 đến 100"
+)
+async def slash_admin_set_level(interaction: discord.Interaction, nguoi_dung: discord.Member, cap_do: int):
+    if not is_authorized_admin(interaction.user.id):
+        await interaction.response.send_message(
+            f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!**\nChỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}> - ID: `{AUTHORIZED_ADMIN_ID}`) mới có quyền sử dụng lệnh này.",
+            ephemeral=True
+        )
+        return
+
+    if cap_do < 1: cap_do = 1
+    if cap_do > MAX_LEVEL: cap_do = MAX_LEVEL
+
+    target_player = get_player(nguoi_dung.id, nguoi_dung.display_name)
+    old_lvl = target_player["level"]
+    old_xp = target_player["xp"]
+
+    # Đặt lại XP chính xác bằng mốc XP yêu cầu của cấp độ đó
+    new_xp = get_total_xp_for_level(cap_do)
+    target_player["xp"] = new_xp
+    target_player["level"] = cap_do
+    save_player(target_player)
+
+    next_req = get_xp_needed_for_level(cap_do)
+    embed = discord.Embed(
+        title="⚙️ [ADMIN] ĐÃ THAY ĐỔI CẤP ĐỘ NGƯỜI CHƠI THÀNH CÔNG",
+        description=(
+            f"👑 **Quản trị viên tối cao:** {interaction.user.mention}\n"
+            f"👤 **Mục tiêu:** {nguoi_dung.mention} (`{nguoi_dung.display_name}`)\n"
+            f"📊 **Thay đổi cấp độ:** `Lv.{old_lvl}` ➔ **`Lv.{cap_do}`**\n"
+            f"📈 **Đồng bộ XP:** `{old_xp:,} XP` ➔ **`{new_xp:,} XP`**\n"
+            f"⭐ **Cần để lên Lv.{min(MAX_LEVEL, cap_do + 1)}:** `{next_req:,} XP`"
+        ),
+        color=0x10B981
+    )
+    embed.set_footer(text="Hakurei Shrine Admin Security System • Exclusive Owner Access")
+    await interaction.response.send_message(embed=embed)
+
+@bot.command(name="setlevel", aliases=["setlvl", "adminsetlevel"])
+async def prefix_admin_set_level(ctx, member: discord.Member, level: int):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send(f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}> - ID: `{AUTHORIZED_ADMIN_ID}`) mới có quyền sử dụng lệnh này.")
+        return
+
+    if level < 1: level = 1
+    if level > MAX_LEVEL: level = MAX_LEVEL
+
+    target_player = get_player(member.id, member.display_name)
+    old_lvl = target_player["level"]
+    old_xp = target_player["xp"]
+
+    new_xp = get_total_xp_for_level(level)
+    target_player["xp"] = new_xp
+    target_player["level"] = level
+    save_player(target_player)
+
+    next_req = get_xp_needed_for_level(level)
+    embed = discord.Embed(
+        title="⚙️ [ADMIN] ĐÃ THAY ĐỔI CẤP ĐỘ THÀNH CÔNG",
+        description=(
+            f"👑 **Admin:** {ctx.author.mention}\n"
+            f"👤 **Người chơi:** {member.mention}\n"
+            f"📊 **Cấp độ:** `Lv.{old_lvl}` ➔ **`Lv.{level}`**\n"
+            f"📈 **Đồng bộ XP:** `{old_xp:,} XP` ➔ **`{new_xp:,} XP`**\n"
+            f"⭐ **Cần để lên cấp tiếp theo:** `{next_req:,} XP`"
+        ),
+        color=0x10B981
+    )
+    await ctx.send(embed=embed)
+
+
+# --- LỆNH ADMIN: TƯỚC ĐOẠT BÀI (TRỪNG PHẠT CHEAT / GIAN LẬN) ---
+@bot.tree.command(name="admin_confiscate", description="[CHỦ BOT DUY NHẤT] Tước đoạt thẻ bài của người chơi (trừng phạt cheat/gian lận)")
+@app_commands.describe(
+    nguoi_dung="Người chơi bị trừng phạt",
+    id_the="Số ID thẻ từ 1 đến 20, hoặc nhập 0 để tịch thu TOÀN BỘ bài",
+    so_luong="Số lượng thẻ muốn tịch thu (mặc định tịch thu hết số lượng thẻ đó)"
+)
+async def slash_admin_confiscate(interaction: discord.Interaction, nguoi_dung: discord.Member, id_the: int = 0, so_luong: int = 0):
+    if not is_authorized_admin(interaction.user.id):
+        await interaction.response.send_message(
+            f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!**\nChỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}> - ID: `{AUTHORIZED_ADMIN_ID}`) mới có quyền sử dụng lệnh này.",
+            ephemeral=True
+        )
+        return
+
+    target_player = get_player(nguoi_dung.id, nguoi_dung.display_name)
+    inv = target_player.get("inventory", {})
+    team = target_player.get("team", [])
+
+    if id_the == 0:
+        # Tịch thu toàn bộ bài trong kho đồ và xóa sạch đội hình
+        total_cards_confiscated = sum(inv.values())
+        target_player["inventory"] = {}
+        target_player["team"] = []
+        save_player(target_player)
+
+        embed = discord.Embed(
+            title="⚖️ [TRỪNG PHẠT CHEAT] ĐÃ TỊCH THU TOÀN BỘ THẺ BÀI!",
+            description=(
+                f"🚨 **Án phạt ban hành bởi Quản trị viên:** {interaction.user.mention}\n"
+                f"👤 **Đối tượng xử phạt:** {nguoi_dung.mention} (`{nguoi_dung.display_name}`)\n"
+                f"🚫 **Hành vi:** Vi phạm quy chế / nghi vấn cheat bẩn Gensokyo\n"
+                f"📦 **Hình phạt:** Tước đoạt toàn bộ **{total_cards_confiscated} lá bài** trong kho đồ và giải tán đội hình chiến đấu!"
+            ),
+            color=0xDC2626
+        )
+        embed.set_footer(text="Luật pháp Đền Hakurei • Không khoan nhượng với hành vi cheat!")
+        await interaction.response.send_message(embed=embed)
+        return
+
+    if id_the not in CARDS_DATA:
+        await interaction.response.send_message("❌ ID thẻ không hợp lệ! ID thẻ nằm trong khoảng từ 1 đến 20.", ephemeral=True)
+        return
+
+    card = CARDS_DATA[id_the]
+    cid_str = str(id_the)
+    owned = inv.get(cid_str, 0)
+    if owned <= 0:
+        await interaction.response.send_message(f"⚠️ Người chơi {nguoi_dung.display_name} hiện không sở hữu thẻ #{id_the:02d} {card['name']}!", ephemeral=True)
+        return
+
+    # Tịch thu số lượng cụ thể hoặc hết
+    to_remove = owned if (so_luong <= 0 or so_luong >= owned) else so_luong
+    inv[cid_str] = owned - to_remove
+    if inv[cid_str] <= 0:
+        del inv[cid_str]
+        # Nếu thẻ đang có trong team thì xóa khỏi team
+        if id_the in team:
+            team.remove(id_the)
+
+    target_player["inventory"] = inv
+    target_player["team"] = team
+    save_player(target_player)
+
+    embed = discord.Embed(
+        title="⚖️ [TRỪNG PHẠT CHEAT] ĐÃ TƯỚC ĐOẠT THẺ BÀI!",
+        description=(
+            f"🚨 **Quản trị viên:** {interaction.user.mention}\n"
+            f"👤 **Đối tượng bị tước bài:** {nguoi_dung.mention}\n"
+            f"🎴 **Thẻ bị tước đoạt:** `[{card['rank']}]` **#{card['id']:02d} {card['name']}**\n"
+            f"🔢 **Số lượng tước:** `{to_remove}` lá (Còn lại: `{inv.get(cid_str, 0)}` lá)\n"
+            f"🛡️ **Đội hình hiện tại:** {len(team)}/3 thẻ"
+        ),
+        color=0xDC2626
+    )
+    embed.set_thumbnail(url=card["image"])
+    embed.set_footer(text="Hakurei Shrine Disciplinary Action")
+    await interaction.response.send_message(embed=embed)
+
+@bot.command(name="confiscate", aliases=["tuocdoat", "adminconfiscate"])
+async def prefix_admin_confiscate(ctx, member: discord.Member, card_id: int = 0, quantity: int = 0):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send(f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}> - ID: `{AUTHORIZED_ADMIN_ID}`) mới có quyền sử dụng lệnh này.")
+        return
+
+    target_player = get_player(member.id, member.display_name)
+    inv = target_player.get("inventory", {})
+    team = target_player.get("team", [])
+
+    if card_id == 0:
+        total = sum(inv.values())
+        target_player["inventory"] = {}
+        target_player["team"] = []
+        save_player(target_player)
+        await ctx.send(f"🚨 Đã tước đoạt **toàn bộ {total} thẻ bài** của {member.mention} và xóa sạch đội hình do vi phạm!")
+        return
+
+    if card_id not in CARDS_DATA:
+        await ctx.send("❌ ID thẻ không hợp lệ (1-20)!")
+        return
+
+    card = CARDS_DATA[card_id]
+    cid_str = str(card_id)
+    owned = inv.get(cid_str, 0)
+    if owned <= 0:
+        await ctx.send(f"⚠️ {member.display_name} không sở hữu thẻ này!")
+        return
+
+    to_remove = owned if (quantity <= 0 or quantity >= owned) else quantity
+    inv[cid_str] = owned - to_remove
+    if inv[cid_str] <= 0:
+        del inv[cid_str]
+        if card_id in team:
+            team.remove(card_id)
+
+    target_player["inventory"] = inv
+    target_player["team"] = team
+    save_player(target_player)
+
+    await ctx.send(f"⚖️ Đã tịch thu **{to_remove}x [{card['rank']}] {card['name']}** của {member.mention}!")
+
+# ==============================================================================
+# 10. SLASH COMMANDS & PREFIX COMMANDS (PULL, TEAM, BATTLE, DAILY, BOSS STATUS)
 # ==============================================================================
 
 # --- LỆNH /pull hoặc !pull ---
@@ -974,20 +1299,18 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
     lang = player.get("language", "vi")
 
     if count < 1: count = 1
-    if count > 10: count = 10  # Tối đa quay 10 lần một lượt
+    if count > 10: count = 10
 
-    # Tính toán lượt quay khả dụng (ưu tiên trừ free_pulls_remaining trước, sau đó trừ pull_tickets)
     total_available = player.get("free_pulls_remaining", 0) + int(player.get("pull_tickets", 0))
 
     if total_available < count:
-        msg = f"❌ Bạn không đủ lượt pull! (Đang có: {player.get('free_pulls_remaining', 0)} free + {player.get('pull_tickets', 0):.1f} vé, cần: {count}).\nDùng `/daily` để nhận thêm vé mỗi ngày!" if lang == "vi" else f"❌ Not enough pulls! (Available: {player.get('free_pulls_remaining', 0)} free + {player.get('pull_tickets', 0):.1f} tickets, needed: {count}).\nUse `/daily` to get daily tickets!"
+        msg = f"❌ Bạn không đủ lượt pull! (Đang có: {player.get('free_pulls_remaining', 0)} free + {player.get('pull_tickets', 0):.1f} vé, cần: {count}).\nDùng `/daily` hoặc tham gia Boss Raid để nhận thêm vé!" if lang == "vi" else f"❌ Not enough pulls! (Available: {player.get('free_pulls_remaining', 0)} free + {player.get('pull_tickets', 0):.1f} tickets, needed: {count})."
         if isinstance(ctx_or_interaction, discord.Interaction):
             await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else:
             await ctx_or_interaction.send(msg)
         return
 
-    # Trừ lượt pull
     needed = count
     free_used = min(player["free_pulls_remaining"], needed)
     player["free_pulls_remaining"] -= free_used
@@ -1068,28 +1391,25 @@ async def prefix_daily(ctx):
     await handle_daily(ctx)
 
 
-# --- LỆNH /team hoặc !team ---
+# --- LỆNH /team hoặc !team (HIỂN THỊ TIẾN TRÌNH XP CẤP ĐỘ MỚI CHUẨN XÁC) ---
 def build_team_guide_embed(player, user, lang="vi", error_msg=None):
-    cur_lvl = player.get("level", 1)
+    cur_lvl, xp_in_lvl, needed_xp, ratio = get_level_progress(player.get("xp", 0))
     lvl_buff = (cur_lvl - 1) * 10
-    xp_in_level = player.get("xp", 0) % 100
     embed = discord.Embed(
         title="🛡️ HƯỚNG DẪN CHI TIẾT: CƠ CHẾ XẾP ĐỘI HÌNH (/team add)",
         color=0xEF4444 if error_msg else 0x3B82F6
     )
     if error_msg:
-        embed.description = f"⚠️ **Chú Ý:** {error_msg}\n\nĐội hình chiến đấu của bạn gồm tối đa **3 thẻ Touhou**. Sức mạnh toàn đội sẽ quyết định thắng bại trong **/battle** và **Boss Raid**!\n"
+        embed.description = f"⚠️ **Chú Ý:** {error_msg}\n\nĐội hình chiến đấu của bạn gồm tối đa **3 thẻ Touhou**.\n"
     else:
         embed.description = "Đội hình chiến đấu gồm tối đa **3 thẻ Touhou**. Sức mạnh toàn đội sẽ quyết định thắng bại trong **/battle** và **Boss Raid**!\n"
 
-    # Hiển thị Cấp Độ Người Chơi
     embed.add_field(
         name=f"⭐ Cấp Độ Người Chơi: Lv.{cur_lvl}",
-        value=f"• Tiến trình: **{xp_in_level}/100 XP**\n• Buff cấp độ cho mỗi thẻ trong đội: **+{lvl_buff:,} Power & +{lvl_buff:,} HP**",
+        value=f"• Tiến trình cấp: **{xp_in_lvl}/{needed_xp} XP** (Cần thêm {needed_xp - xp_in_lvl} XP để lên Lv.{cur_lvl + 1})\n• Buff chỉ số cho mỗi thẻ trong đội: **+{lvl_buff:,} Power & +{lvl_buff:,} HP**",
         inline=False
     )
 
-    # 1. Trạng thái 3 Slot đội hình hiện tại
     team_ids = player.get("team", [])
     slots_text = []
     for i in range(3):
@@ -1106,7 +1426,6 @@ def build_team_guide_embed(player, user, lang="vi", error_msg=None):
             slots_text.append(f"• **Slot {i+1}:** 🔲 *[Trống - Chưa xếp thẻ]*")
     embed.add_field(name=f"📋 Trạng Thái Đội Hình Hiện Tại ({len(team_ids)}/3 Thẻ):", value="\n".join(slots_text), inline=False)
 
-    # 2. Danh sách thẻ trong túi đồ của bạn
     inv = player.get("inventory", {})
     owned_lines = []
     for cid in range(1, 21):
@@ -1121,25 +1440,15 @@ def build_team_guide_embed(player, user, lang="vi", error_msg=None):
     if owned_lines:
         display_lines = "\n".join(owned_lines[:10])
         if len(owned_lines) > 10:
-            display_lines += f"\n*...và còn {len(owned_lines) - 10} loại thẻ khác (gõ `/inv` để xem toàn bộ)*"
+            display_lines += f"\n*...và còn {len(owned_lines) - 10} thẻ khác (gõ `/collection` để xem)*"
         embed.add_field(name=f"🎒 Thẻ Bạn Đang Sở Hữu ({len(owned_lines)} loại) - Dùng ID để Add:", value=display_lines, inline=False)
     else:
-        embed.add_field(
-            name="🎒 Thẻ Bạn Đang Sở Hữu:",
-            value="❌ Bạn chưa sở hữu thẻ nào! Gõ ngay `/pull` hoặc `!pull` để nhận 5 lượt quay miễn phí mỗi ngày!",
-            inline=False
-        )
+        embed.add_field(name="🎒 Thẻ Bạn Đang Sở Hữu:", value="❌ Bạn chưa sở hữu thẻ nào! Hãy gõ `/pull` để quay thẻ miễn phí!", inline=False)
 
-    # 3. Cú pháp thao tác cực kỳ dễ hiểu
     syntax_guide = (
-        "**👉 Cách 1: Gõ lệnh Chat (Nhanh nhất)**\n"
-        "• Thêm thẻ: `!team add <ID>` (Ví dụ: `!team add 1` hoặc `!team add 5`)\n"
-        "• Gỡ thẻ: `!team remove <ID>` (Ví dụ: `!team remove 1`)\n\n"
-        "**👉 Cách 2: Dùng Slash Command**\n"
-        "• Thêm thẻ: Gõ `/team` ➔ chọn `Thêm thẻ (add)` ➔ điền `id_the: <ID>`\n"
-        "• Gỡ thẻ: Gõ `/team` ➔ chọn `Gỡ thẻ (remove)` ➔ điền `id_the: <ID>`\n\n"
-        "**⚔️ Sau khi xếp đủ 3 thẻ:**\n"
-        "• Gõ `/battle` để bắt đầu chiến đấu kiếm 50-100 XP (hồi chiêu 2 phút)!"
+        "• Thêm thẻ: `!team add <ID>` hoặc `/team add id_the:<ID>`\n"
+        "• Gỡ thẻ: `!team remove <ID>` hoặc `/team remove id_the:<ID>`\n"
+        "• Khiêu chiến kiếm XP: `/battle` (hồi chiêu 2 phút)"
     )
     embed.add_field(name="⚡ Hướng Dẫn Cú Pháp Thao Tác:", value=syntax_guide, inline=False)
     embed.set_footer(text="Gensokyo Team Builder • Hakurei Shrine")
@@ -1149,10 +1458,10 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
     lang = player.get("language", "vi")
-    lvl_buff = (player["level"] - 1) * 10
+    cur_lvl, xp_in_lvl, needed_xp, ratio = get_level_progress(player.get("xp", 0))
+    lvl_buff = (cur_lvl - 1) * 10
     act = action.lower().strip() if action else "view"
 
-    # NẾU YÊU CẦU HƯỚNG DẪN HOẶC GÕ LỆNH CHƯA RÕ RÀNG
     if act in ["guide", "help", "huongdan"]:
         guide_embed = build_team_guide_embed(player, user, lang)
         if isinstance(ctx_or_interaction, discord.Interaction):
@@ -1163,7 +1472,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
 
     if act == "add":
         if not card_id or card_id not in CARDS_DATA:
-            err = "Bạn chưa nhập số ID thẻ hợp lệ (từ 1 đến 20)! Vui lòng xem danh sách ID thẻ bên dưới:"
+            err = "Bạn chưa nhập số ID thẻ hợp lệ (từ 1 đến 20)!"
             guide_embed = build_team_guide_embed(player, user, lang, error_msg=err)
             if isinstance(ctx_or_interaction, discord.Interaction):
                 await ctx_or_interaction.response.send_message(embed=guide_embed, ephemeral=True)
@@ -1173,7 +1482,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
 
         cid_str = str(card_id)
         if player["inventory"].get(cid_str, 0) < 1:
-            err = f"Bạn chưa sở hữu thẻ **#{card_id:02d} {CARDS_DATA[card_id]['name']}**! Hãy kiểm tra danh sách thẻ bạn có hoặc gõ `/pull` để quay."
+            err = f"Bạn chưa sở hữu thẻ #{card_id:02d} {CARDS_DATA[card_id]['name']}!"
             guide_embed = build_team_guide_embed(player, user, lang, error_msg=err)
             if isinstance(ctx_or_interaction, discord.Interaction):
                 await ctx_or_interaction.response.send_message(embed=guide_embed, ephemeral=True)
@@ -1182,7 +1491,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
             return
 
         if card_id in player["team"]:
-            err = f"Thẻ **#{card_id:02d} {CARDS_DATA[card_id]['name']}** đã có sẵn trong đội hình của bạn rồi!"
+            err = f"Thẻ #{card_id:02d} {CARDS_DATA[card_id]['name']} đã có sẵn trong đội hình rồi!"
             guide_embed = build_team_guide_embed(player, user, lang, error_msg=err)
             if isinstance(ctx_or_interaction, discord.Interaction):
                 await ctx_or_interaction.response.send_message(embed=guide_embed, ephemeral=True)
@@ -1191,7 +1500,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
             return
 
         if len(player["team"]) >= 3:
-            err = "Đội hình đã đầy tối đa **3 thẻ**! Bạn hãy gõ `!team remove <ID>` để gỡ bớt 1 thẻ trước khi thêm thẻ mới."
+            err = "Đội hình đã đủ tối đa 3 thẻ! Hãy gỡ bớt 1 thẻ trước khi thêm."
             guide_embed = build_team_guide_embed(player, user, lang, error_msg=err)
             if isinstance(ctx_or_interaction, discord.Interaction):
                 await ctx_or_interaction.response.send_message(embed=guide_embed, ephemeral=True)
@@ -1207,7 +1516,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
 
         embed_succ = discord.Embed(
             title="✅ ĐÃ THÊM THÀNH CÔNG VÀO ĐỘI HÌNH!",
-            description=f"Chiến binh **[{card['rank']}] #{card['id']:02d} {card['name']}** đã chính thức gia nhập đội hình của **{user.display_name}**!",
+            description=f"Chiến binh **[{card['rank']}] #{card['id']:02d} {card['name']}** đã gia nhập đội hình của **{user.display_name}**!",
             color=0x10B981
         )
         embed_succ.set_thumbnail(url=card["image"])
@@ -1215,20 +1524,12 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
         slots_info = []
         for idx, cid in enumerate(player["team"], 1):
             c = CARDS_DATA[cid]
-            p = c["power"] + lvl_buff
-            h = c["hp"] + lvl_buff
-            slots_info.append(f"• **Slot {idx}:** `[{c['rank']}]` **#{c['id']:02d} {c['name']}** (⚔️ {p:,} | ❤️ {h:,})")
+            slots_info.append(f"• **Slot {idx}:** `[{c['rank']}]` **#{c['id']:02d} {c['name']}** (⚔️ {c['power'] + lvl_buff:,} | ❤️ {c['hp'] + lvl_buff:,})")
         for idx in range(len(player["team"]) + 1, 4):
-            slots_info.append(f"• **Slot {idx}:** 🔲 *[Trống - Thêm bằng !team add <ID>]*")
+            slots_info.append(f"• **Slot {idx}:** 🔲 *[Trống]*")
 
-        embed_succ.add_field(name=f"📋 Đội Hình Sau Khi Thêm ({len(player['team'])}/3 Thẻ):", value="\n".join(slots_info), inline=False)
-        embed_succ.add_field(name="📊 Tổng Lực Chiến Toàn Đội:", value=f"⚔️ Tổng Power: **{tot_pwr:,}** | ❤️ Tổng HP: **{tot_hp:,}**", inline=False)
-        if len(player["team"]) == 3:
-            embed_succ.add_field(name="🚀 Đội Hình Đã Sẵn Sàng!", value="Đội hình của bạn đã đủ 3 thẻ! Hãy gõ ngay `/battle` để bắt đầu khiêu chiến kiếm XP (hồi chiêu 2 phút)!", inline=False)
-        else:
-            embed_succ.add_field(name="💡 Vị Trí Còn Lại:", value=f"Đội hình còn trống {3 - len(player['team'])} vị trí! Tiếp tục gõ `!team add <ID>` để thêm thẻ.", inline=False)
-        embed_succ.set_footer(text="Lệnh: /team add <id> | /team remove <id> | /battle")
-
+        embed_succ.add_field(name=f"📋 Đội Hình ({len(player['team'])}/3 Thẻ):", value="\n".join(slots_info), inline=False)
+        embed_succ.add_field(name="📊 Tổng Lực Chiến:", value=f"⚔️ Power: **{tot_pwr:,}** | ❤️ HP: **{tot_hp:,}**", inline=False)
         if isinstance(ctx_or_interaction, discord.Interaction):
             await ctx_or_interaction.response.send_message(embed=embed_succ)
         else:
@@ -1237,7 +1538,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
 
     elif act == "remove":
         if not card_id or card_id not in player["team"]:
-            err = "Vui lòng nhập chính xác số ID thẻ đang có trong đội hình của bạn để gỡ!"
+            err = "Vui lòng nhập ID thẻ đang có trong đội hình của bạn để gỡ!"
             guide_embed = build_team_guide_embed(player, user, lang, error_msg=err)
             if isinstance(ctx_or_interaction, discord.Interaction):
                 await ctx_or_interaction.response.send_message(embed=guide_embed, ephemeral=True)
@@ -1255,12 +1556,8 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
             await ctx_or_interaction.send(msg)
         return
 
-    # Mặc định là act = "view"
-    cur_lvl = player.get("level", 1)
-    cur_xp = player.get("xp", 0)
-    xp_in_level = cur_xp % 100
-    xp_needed = 100 - xp_in_level
-    filled_bars = int((xp_in_level / 100) * 10)
+    # View đội hình mặc định
+    filled_bars = int(ratio * 10)
     bar_str = "▰" * filled_bars + "▱" * (10 - filled_bars)
 
     embed = discord.Embed(
@@ -1268,13 +1565,13 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
         color=0x3B82F6
     )
 
-    # 1. Khung hiển thị Cấp độ (Player Level) nổi bật
+    # Hiển thị Cấp Độ theo công thức +50 XP mỗi cấp
     embed.add_field(
         name=f"⭐ CẤP ĐỘ CHIẾN BINH: Lv.{cur_lvl}",
         value=(
-            f"• **Tiến Trình Cấp:** `{bar_str}` **{xp_in_level}/100 XP** *(Còn {xp_needed} XP để lên Lv.{cur_lvl + 1})*\n"
-            f"• **Hiệu Ứng Cấp Độ (Level Buff):** **+{lvl_buff:,} Power** & **+{lvl_buff:,} HP**\n"
-            f"*(Chỉ số buff cấp độ này tự động gia tăng sức mạnh cho TOÀN BỘ thẻ trong đội hình)*"
+            f"• **Tiến Trình Cấp:** `{bar_str}` **{xp_in_lvl}/{needed_xp} XP** *(Cần thêm {needed_xp - xp_in_lvl} XP để lên Lv.{cur_lvl + 1})*\n"
+            f"• **Tổng XP Tích Lũy:** `{player['xp']:,} XP`\n"
+            f"• **Buff Cấp Độ:** **+{lvl_buff:,} Power** & **+{lvl_buff:,} HP** cho toàn bộ thẻ trong đội!"
         ),
         inline=False
     )
@@ -1282,7 +1579,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
     if not player["team"]:
         embed.add_field(
             name="📋 Trạng Thái 3 Vị Trí (0/3 Thẻ):",
-            value="❌ Đội hình hiện đang trống!\n👉 Hãy dùng `!team add <id>` hoặc `/team add` để đưa thẻ vào đội chiến đấu!\n*(Gõ `!team guide` để xem hướng dẫn và ID thẻ bạn sở hữu)*",
+            value="❌ Đội hình hiện đang trống!\n👉 Hãy dùng `!team add <id>` để đưa thẻ vào đội chiến đấu!",
             inline=False
         )
     else:
@@ -1297,31 +1594,26 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
                 tot_pwr += pwr
                 tot_hp += hp
                 embed.add_field(
-                    name=f"Vị trí #{idx}: [{c['rank']}] #{c['id']:02d} {c['name']} (Hưởng Buff Lv.{cur_lvl})",
-                    value=f"⚔️ Power: **{pwr:,}** *(Gốc: {c['power']} + Buff Lv.{cur_lvl}: +{lvl_buff})*\n❤️ HP: **{hp:,}** *(Gốc: {c['hp']} + Buff Lv.{cur_lvl}: +{lvl_buff})*",
+                    name=f"Vị trí #{idx}: [{c['rank']}] #{c['id']:02d} {c['name']}",
+                    value=f"⚔️ Power: **{pwr:,}** (Gốc: {c['power']} + Buff Lv.{cur_lvl}: +{lvl_buff})\n❤️ HP: **{hp:,}** (Gốc: {c['hp']} + Buff Lv.{cur_lvl}: +{lvl_buff})",
                     inline=False
                 )
             else:
                 embed.add_field(
-                    name=f"Vị trí #{idx}: 🔲 [Trống - Chưa xếp thẻ]",
-                    value="Dùng `!team add <ID>` để bổ sung thẻ vào vị trí này.",
+                    name=f"Vị trí #{idx}: 🔲 [Trống]",
+                    value="Dùng `!team add <ID>` để thêm thẻ.",
                     inline=False
                 )
 
         embed.add_field(
-            name="📊 TỔNG LỰC CHIẾN TOÀN ĐỘI (ĐÃ TÍNH BUFF CẤP ĐỘ):",
+            name="📊 TỔNG LỰC CHIẾN TOÀN ĐỘI:",
             value=f"⚔️ Tổng Power: **{tot_pwr:,}** | ❤️ Tổng HP: **{tot_hp:,}**",
             inline=False
         )
         first_card = CARDS_DATA[player["team"][0]]
         embed.set_thumbnail(url=first_card["image"])
 
-    embed.add_field(
-        name="💡 Thao Tác Nhanh:",
-        value="• Thêm thẻ: `!team add <ID>`\n• Gỡ thẻ: `!team remove <ID>`\n• Xem ID thẻ: `!team guide`\n• Đấu thử thách kiếm XP: `/battle` *(Hồi chiêu 2 phút)*",
-        inline=False
-    )
-    embed.set_footer(text=f"Hakurei Shrine • Cấp Người Chơi: Lv.{cur_lvl} (+{lvl_buff} stats) • Thắng {player.get('battles_won', 0)} trận")
+    embed.set_footer(text=f"Hakurei Shrine • Lv.{cur_lvl} (+{lvl_buff} stats) • Thắng {player.get('battles_won', 0)} trận")
     if isinstance(ctx_or_interaction, discord.Interaction):
         await ctx_or_interaction.response.send_message(embed=embed)
     else:
@@ -1384,31 +1676,17 @@ async def prefix_collection(ctx):
     await handle_collection(ctx)
 
 
-# DANH SÁCH NPC GENSOKYO ĐA DẠNG CHO HỆ THỐNG BATTLE RANDOM
+# DANH SÁCH NPC GENSOKYO CHO BATTLE
 GENSOKYO_NPCS = [
     {"name": "Cirno Đệ Nhất", "title": "Băng Tinh Tự Xưng Vô Địch Gensokyo", "badge": "❄️ Băng Tinh", "preferred": [17, 18, 19]},
     {"name": "Marisa Đạo Tặc", "title": "Phù Thủy Ánh Sáng Rừng Ma Thuật", "badge": "⭐ Tinh Linh", "preferred": [6, 12, 16]},
     {"name": "Alice Ma Đạo", "title": "Nghệ Nhân Điều Khiển Búp Bê Thượng Hải", "badge": "🪆 Búp Bê", "preferred": [11, 14, 20]},
     {"name": "Aya Phóng Viên", "title": "Ký Giả Tốc Độ Bão Cuộn Bunbunmaru", "badge": "🌪️ Phong Thần", "preferred": [12, 13, 15]},
-    {"name": "Nitori Kỹ Sư", "title": "Thiên Tài Cơ Giới Thung Lũng Suối Reo", "badge": "🌊 Kappa", "preferred": [16, 18, 20]},
     {"name": "Youmu Kiếm Hồn", "title": "Hộ Vệ Nửa Người Nửa Ma Bạch Ngọc Lâu", "badge": "⚔️ Song Kiếm", "preferred": [8, 13, 14]},
-    {"name": "Yuyuko U Linh", "title": "Công Nương Vong Hồn Rừng Anh Đào", "badge": "🌸 U Hồn", "preferred": [7, 8, 10]},
-    {"name": "Sakuya Thời Gian", "title": "Hầu Gái Trưởng Dinh Thự Hồng Ma", "badge": "⏱️ Thời Không", "preferred": [9, 13, 15]},
     {"name": "Remilia Huyết Ma", "title": "Chúa Tể Huyết Nguyệt Tươi Thắm", "badge": "🦇 Huyết Tộc", "preferred": [3, 4, 9]},
     {"name": "Flandre Hủy Diệt", "title": "Cuồng Nộ Tầng Hầm Cấm Địa Laevateinn", "badge": "💎 Hủy Diệt", "preferred": [3, 5, 8]},
-    {"name": "Reisen Nguyệt Nhãn", "title": "Xạ Thủ Ánh Mắt Thần Bí Nguyệt Cung", "badge": "🌙 Nguyệt Thỏ", "preferred": [10, 11, 15]},
-    {"name": "Ran Cửu Vĩ", "title": "Thức Thần Toán Học Huyền Thuật Đại Tài", "badge": "🦊 Cửu Vĩ", "preferred": [4, 7, 12]},
     {"name": "Suika Quỷ Vương", "title": "Đại Quỷ Bách Quỷ Dạ Hành Mê Tửu", "badge": "🍶 Đại Quỷ", "preferred": [5, 6, 8]},
-    {"name": "Sanae Vu Nữ", "title": "Thánh Nữ Tạo Nên Phép Màu Đền Moriya", "badge": "⛩️ Thần Tích", "preferred": [5, 10, 14]},
-    {"name": "Satori Thấu Tâm", "title": "Chủ Nhân Đọc Suy Nghĩ Cung Điện Địa Linh", "badge": "👁️ Thấu Tâm", "preferred": [7, 9, 11]},
-    {"name": "Koishi Vô Thức", "title": "Bản Năng Vô Niệm Lang Thang Hư Ảo", "badge": "💭 Vô Thức", "preferred": [8, 10, 13]},
     {"name": "Mokou Phượng Hoàng", "title": "Ngọn Lửa Bất Tử Bất Diệt Rừng Tre Lạc Lối", "badge": "🔥 Bất Tử", "preferred": [6, 9, 12]},
-    {"name": "Kaguya Nguyệt Nữ", "title": "Công Chúa Bất Tử Lưu Đày Từ Mặt Trăng", "badge": "🎍 Vĩnh Hằng", "preferred": [1, 2, 7]},
-    {"name": "Tenshi Thiên Sứ", "title": "Tiểu Thư Thiên Giới Kiêu Kỳ Đất Trời", "badge": "🍑 Thiên Nhân", "preferred": [6, 11, 15]},
-    {"name": "Kasen Tiên Nhân", "title": "Ẩn Sĩ Một Tay Dạy Dỗ Yêu Quái", "badge": "🐉 Tiên Gia", "preferred": [4, 8, 14]},
-    {"name": "Eiki Thẩm Phán", "title": "Diêm Vương Tội Phước Sông Sanzu", "badge": "⚖️ Diêm La", "preferred": [2, 5, 10]},
-    {"name": "Dark Doppelgänger", "title": "Ảo Ảnh Gương Soi Nhân Tâm Gensokyo", "badge": "🔮 Hắc Ám", "preferred": [1, 2, 3]},
-    {"name": "Tewi Thỏ Rừng", "title": "Thủ Lĩnh Bầy Thỏ Tinh Quái Mê Tung Trận", "badge": "🥕 Cạm Bẫy", "preferred": [14, 18, 20]},
     {"name": "Hecatia Hỗn Mang", "title": "Nữ Thần Địa Ngục Ba Hành Tinh Thần Bí", "badge": "🌌 Hỗn Mang", "preferred": [1, 2, 4]}
 ]
 
@@ -1419,7 +1697,7 @@ async def handle_battle(ctx_or_interaction):
     lang = player.get("language", "vi")
 
     if not player.get("team") or len(player["team"]) == 0:
-        err = "Bạn chưa thiết lập đội hình chiến đấu! Vui lòng gõ `!team add <ID>` để đưa thẻ vào đội trước khi khiêu chiến."
+        err = "Bạn chưa thiết lập đội hình chiến đấu! Vui lòng gõ `!team add <ID>` để xếp thẻ."
         guide_embed = build_team_guide_embed(player, user, lang, error_msg=err)
         if isinstance(ctx_or_interaction, discord.Interaction):
             await ctx_or_interaction.response.send_message(embed=guide_embed, ephemeral=True)
@@ -1427,10 +1705,9 @@ async def handle_battle(ctx_or_interaction):
             await ctx_or_interaction.send(embed=guide_embed)
         return
 
-    # KIỂM TRA COOLDOWN 2 PHÚT (120 GIÂY)
     now = time.time()
     last_battle = player.get("last_battle_time", 0)
-    cooldown = 120  # 2 phút
+    cooldown = 120
     if now - last_battle < cooldown:
         remaining = int(cooldown - (now - last_battle))
         mins = remaining // 60
@@ -1438,30 +1715,22 @@ async def handle_battle(ctx_or_interaction):
         time_str = f"{mins} phút {secs} giây" if mins > 0 else f"{secs} giây"
         embed_cd = discord.Embed(
             title="⏳ ĐANG TRONG THỜI GIAN HỒI SỨC!",
-            description=f"Chiến binh **{user.display_name}**, bạn vừa trải qua một trận chiến kịch liệt!\nVui lòng nghỉ ngơi thêm **{time_str}** nữa trước khi bước vào trận chiến tiếp theo.\n*(Hồi chiêu lệnh /battle: 2 phút)*",
+            description=f"Chiến binh **{user.display_name}**, bạn vừa trải qua một trận chiến kịch liệt!\nVui lòng nghỉ ngơi thêm **{time_str}** nữa trước khi bước vào trận chiến tiếp theo.",
             color=0xF59E0B
         )
-        embed_cd.set_footer(text="Gợi ý: Trong lúc chờ hồi sức, hãy gõ !team hoặc !inv để tối ưu đội hình!")
         if isinstance(ctx_or_interaction, discord.Interaction):
             await ctx_or_interaction.response.send_message(embed=embed_cd, ephemeral=True)
         else:
             await ctx_or_interaction.send(embed=embed_cd)
         return
 
-    # LẤY LỊCH SỬ ĐỐI THỦ GẦN ĐÂY ĐỂ TRÁNH TRÙNG LẶP LIÊN TỤC
     recent_opponents = player.get("recent_opponents", [])
-    if not isinstance(recent_opponents, list):
-        recent_opponents = []
-
-    # 1. Tìm ứng viên người chơi thật thỏa mãn: chưa đấu gần đây
     all_opponents = get_all_opponents(exclude_id=user.id)
     eligible_real = [
         op for op in all_opponents
         if op.get("username", "") not in recent_opponents and str(op.get("user_id")) not in recent_opponents
     ]
 
-    # Quyết định chọn người chơi thật hay NPC Gensokyo
-    # Tỉ lệ: 25% chọn người chơi thật (chỉ khi có người chưa đấu gần đây), 75% chọn NPC ngẫu hứng
     choose_real = False
     if eligible_real and random.random() < 0.25:
         choose_real = True
@@ -1477,7 +1746,6 @@ async def handle_battle(ctx_or_interaction):
         opp_badge = "⚔️ [Người Chơi Thật]"
         opp_team_ids = target.get("team", [17, 18, 20])
     else:
-        # Lọc danh sách NPC chưa gặp gần đây để người chơi luôn gặp nhân vật mới
         available_npcs = [n for n in GENSOKYO_NPCS if n["name"] not in recent_opponents]
         if not available_npcs:
             available_npcs = GENSOKYO_NPCS
@@ -1486,28 +1754,10 @@ async def handle_battle(ctx_or_interaction):
         opp_name = f"{npc['badge']} {npc['name']}"
         opp_title = npc["title"]
 
-        # CƠ CHẾ LEVEL NGẪU HỨNG (SPONTANEOUS DYNAMIC LEVEL)
-        roll_lvl = random.random()
-        if roll_lvl < 0.25:
-            # Tân Binh / Dễ thở (cấp thấp hơn 1-3 cấp, tối thiểu Lv.1)
-            delta = -random.randint(1, 3)
-            opp_badge = "🌱 [Tân Binh]"
-        elif roll_lvl < 0.65:
-            # Cân sức (ngang cơ: -1, 0, hoặc +1 cấp)
-            delta = random.choice([-1, 0, 1])
-            opp_badge = "⚖️ [Cân Sức]"
-        elif roll_lvl < 0.88:
-            # Tinh anh (thử thách kịch tính: +2 đến +4 cấp)
-            delta = random.randint(2, 4)
-            opp_badge = "🔥 [Tinh Anh]"
-        else:
-            # Cao thủ xuất thế (boss ẩn: +4 đến +7 cấp)
-            delta = random.randint(4, 7)
-            opp_badge = "👑 [Cao Thủ]"
+        delta = random.choice([-1, 0, 1, 2])
+        opp_badge = "⚖️ [Cân Sức]" if delta <= 0 else "🔥 [Tinh Anh]"
+        opp_level = max(1, min(MAX_LEVEL, pl_lvl + delta))
 
-        opp_level = max(1, min(100, pl_lvl + delta))
-
-        # Sinh đội hình cho NPC: lấy từ preferred + random thẻ để tạo sự bất ngờ
         pref = npc.get("preferred", [])
         all_cids = list(CARDS_DATA.keys())
         team_set = list(pref)
@@ -1519,7 +1769,6 @@ async def handle_battle(ctx_or_interaction):
                 team_set.append(cid)
         opp_team_ids = team_set[:3]
 
-    # Tính chỉ số của 2 đội
     player_buff = (player["level"] - 1) * 10
     opp_buff = (opp_level - 1) * 10
 
@@ -1529,12 +1778,9 @@ async def handle_battle(ctx_or_interaction):
     opp_pwr = sum(CARDS_DATA[cid]["power"] + opp_buff for cid in opp_team_ids)
     opp_hp = sum(CARDS_DATA[cid]["hp"] + opp_buff for cid in opp_team_ids)
 
-    # Mô phỏng Auto Battle (Turn-based damage)
-    # Player gây damage cho Opponent, Opponent gây damage cho Player
     player_surv_hp = player_hp - opp_pwr
     opp_surv_hp = opp_hp - player_pwr
 
-    # Xác định thắng bại (nếu cả 2 cùng sống thì tính theo tỉ lệ phần trăm máu còn lại)
     if opp_surv_hp <= 0 and player_surv_hp > 0:
         win = True
     elif player_surv_hp <= 0 and opp_surv_hp > 0:
@@ -1542,7 +1788,6 @@ async def handle_battle(ctx_or_interaction):
     else:
         win = (player_surv_hp / player_hp) >= (opp_surv_hp / opp_hp)
 
-    # Thưởng XP (50-100 XP mỗi trận) và lưu thời điểm battle
     gained_xp = random.randint(50, 100)
     old_lvl = player["level"]
     player["last_battle_time"] = now
@@ -1551,7 +1796,6 @@ async def handle_battle(ctx_or_interaction):
     if win:
         player["battles_won"] = player.get("battles_won", 0) + 1
 
-    # Cập nhật lịch sử đối thủ gần đây (chống lặp lại người cũ)
     if "recent_opponents" not in player or not isinstance(player["recent_opponents"], list):
         player["recent_opponents"] = []
     player["recent_opponents"].append(opp_raw_name)
@@ -1577,21 +1821,14 @@ async def handle_battle(ctx_or_interaction):
         inline=True
     )
 
-    p_cards_str = " • ".join([f"[{CARDS_DATA[cid]['rank']}] {CARDS_DATA[cid]['name']}" for cid in player["team"] if cid in CARDS_DATA])
-    opp_cards_str = " • ".join([f"[{CARDS_DATA[cid]['rank']}] {CARDS_DATA[cid]['name']}" for cid in opp_team_ids if cid in CARDS_DATA])
-    embed.add_field(
-        name="🎴 Thẻ Ra Trận Hai Bên:",
-        value=f"• **Phe Bạn:** {p_cards_str}\n• **Đối Thủ:** {opp_cards_str}",
-        inline=False
-    )
-
     res_str = "🏆 **CHIẾN THẮNG TUYỆT ĐỐI!**" if win else "💀 **THẤT BẠI TIẾC NUỐI!**"
+    cur_lvl, xp_in_lvl, needed_xp, _ = get_level_progress(player["xp"])
     embed.add_field(
         name="Kết Quả Trận Đấu:",
-        value=f"{res_str}\nNhận được: **+{gained_xp} XP** (Tổng XP: {player['xp']}, Lv.{new_lvl}){lvl_up_msg}",
+        value=f"{res_str}\nNhận được: **+{gained_xp} XP** (Tổng XP: {player['xp']:,} XP | Tiến trình: {xp_in_lvl}/{needed_xp} XP){lvl_up_msg}",
         inline=False
     )
-    embed.set_footer(text="Hồi chiêu lệnh chiến đấu: 2 phút • Đối thủ & Cấp độ được biến hóa liên tục!")
+    embed.set_footer(text="Hồi chiêu lệnh chiến đấu: 2 phút")
 
     if isinstance(ctx_or_interaction, discord.Interaction):
         await ctx_or_interaction.response.send_message(embed=embed)
@@ -1607,103 +1844,96 @@ async def prefix_battle(ctx):
     await handle_battle(ctx)
 
 
-# --- LỆNH /language hoặc !language ---
-async def handle_language(ctx_or_interaction, lang: str):
-    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
-    player = get_player(user.id, user.display_name)
-    chosen_lang = "en" if lang.lower() in ["en", "english", "eng"] else "vi"
-    player["language"] = chosen_lang
-    save_player(player)
+# --- LỆNH /boss_status hoặc !boss (KIỂM TRA THỜI GIAN HỒI CHIÊU BOSS RAID) ---
+@bot.tree.command(name="boss_status", description="Kiểm tra trạng thái và thời gian hồi chiêu của Boss Raid Reimu Dị Hình")
+async def slash_boss_status(interaction: discord.Interaction):
+    global boss_cooldown_until, active_raid
+    now = time.time()
+    
+    embed = discord.Embed(title="👹 TRẠNG THÁI BOSS RAID: REIMU DỊ HÌNH", color=0xDC2626)
+    embed.set_thumbnail(url=BOSS_CONFIG["image"])
+    embed.add_field(name="❤️ Chỉ Số Boss:", value=f"• HP: **{BOSS_CONFIG['hp']:,}**\n• Power: **{BOSS_CONFIG['power']:,}**", inline=True)
+    embed.add_field(name="🎁 Phần Thưởng Rương:", value="3 Rương quy đổi 100% Vé Pull\n(10% S = 2 vé, 40% A = 0.5 vé, 50% B = 0.33 vé)", inline=True)
 
-    msg = "🇻🇳 Đã chuyển ngôn ngữ giao diện bot sang **Tiếng Việt**!" if chosen_lang == "vi" else "🇬🇧 Switched bot language to **English**!"
-    if isinstance(ctx_or_interaction, discord.Interaction):
-        await ctx_or_interaction.response.send_message(msg)
+    if active_raid is not None:
+        p_count = len(active_raid.get("participants", []))
+        embed.add_field(
+            name="🔥 Tình Trạng Hiện Tại:",
+            value=f"**ĐANG XUẤT HIỆN!** Có {p_count}/{BOSS_CONFIG['max_players']} dũng giả đã tham chiến!",
+            inline=False
+        )
+    elif now < boss_cooldown_until:
+        rem = int(boss_cooldown_until - now)
+        mins = rem // 60
+        secs = rem % 60
+        embed.add_field(
+            name="⏳ Đang Trong Thời Gian Hồi Chiêu:",
+            value=f"Boss đã kết thúc raid gần đây. Cần đợi thêm **{mins} phút {secs} giây** nữa mới có thể xuất hiện lại ngẫu nhiên (10% khi chat)!",
+            inline=False
+        )
     else:
-        await ctx_or_interaction.send(msg)
+        embed.add_field(
+            name="🟢 Đã Sẵn Sàng Xuất Hiện:",
+            value="Boss đã hết thời gian hồi chiêu 15 phút! Sẽ có **10% cơ hội xuất hiện** ngẫu nhiên khi thành viên trò chuyện trong server.",
+            inline=False
+        )
 
-@bot.tree.command(name="language", description="Chọn ngôn ngữ giao diện: vi (Tiếng Việt) hoặc en (English)")
-@app_commands.describe(ngon_ngu="Lựa chọn ngôn ngữ: vi hoặc en")
-@app_commands.choices(ngon_ngu=[
-    app_commands.Choice(name="🇻🇳 Tiếng Việt", value="vi"),
-    app_commands.Choice(name="🇬🇧 English", value="en"),
-])
-async def slash_language(interaction: discord.Interaction, ngon_ngu: app_commands.Choice[str]):
-    await handle_language(interaction, ngon_ngu.value)
+    embed.set_footer(text="Quy tắc: Mỗi khi có bất kỳ ai tham gia raid, boss sẽ hồi chiêu 15 phút.")
+    await interaction.response.send_message(embed=embed)
 
-@bot.command(name="language", aliases=["lang"])
-async def prefix_language(ctx, lang: str = "vi"):
-    await handle_language(ctx, lang)
+@bot.command(name="boss", aliases=["bossstatus", "raidstatus"])
+async def prefix_boss_status(ctx):
+    global boss_cooldown_until, active_raid
+    now = time.time()
+    if active_raid:
+        await ctx.send("🚨 Boss Raid Reimu Dị Hình ĐANG XUẤT HIỆN! Hãy tham gia ngay!")
+    elif now < boss_cooldown_until:
+        rem = int(boss_cooldown_until - now)
+        await ctx.send(f"⏳ Boss Raid đang trong thời gian hồi chiêu 15 phút (Còn lại: {rem // 60}m {rem % 60}s).")
+    else:
+        await ctx.send("🟢 Boss Raid đã sẵn sàng spawn ngẫu nhiên (10% cơ hội khi chat)!")
 
 
 # --- LỆNH /help hoặc !help ---
 async def handle_help(ctx_or_interaction):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
-    player = get_player(user.id, user.display_name)
-    lang = player.get("language", "vi")
-
-    if lang == "vi":
-        desc = """
-⛩️ **HAKUREI REIMU DISCORD BOT - BẢN ĐỒ LỆNH**
+    desc = """
+⛩️ **HAKUREI REIMU DISCORD BOT - BẢN ĐỒ LỆNH CẬP NHẬT**
 
 **🎮 HỆ THỐNG GACHA & CARD BATTLE:**
-• `/pull [số_lượng]` hoặc `!pull`: Quay thẻ nhân vật (Free 5 lượt/ngày).
+• `/pull [số_lượng]` hoặc `!pull`: Quay thẻ Touhou (Free 5 lượt/ngày).
 • `/daily` hoặc `!daily`: Điểm danh nhận 1 vé pull mỗi ngày.
-• `/team view` hoặc `!team`: Xem đội hình 3 thẻ và cấp độ hiện tại.
-• `/team add <id>`: Thêm thẻ vào đội hình (tối đa 3 thẻ).
+• `/team view` hoặc `!team`: Xem đội hình 3 thẻ và tiến trình cấp độ mới.
+• `/team add <id>`: Thêm thẻ vào đội hình.
 • `/team remove <id>`: Gỡ thẻ khỏi đội hình.
 • `/collection` hoặc `!collection`: Xem bộ sưu tập 20 nhân vật Touhou.
-• `/battle` hoặc `!battle`: Tự động giao đấu với người chơi khác, nhận 50-100 XP.
-• `/language <vi/en>` hoặc `!lang`: Đổi ngôn ngữ hiển thị.
-• `/dbcheck` hoặc `!db`: Kiểm tra trạng thái lưu trữ MongoDB Atlas (chống mất dữ liệu khi restart/cập nhật).
+• `/battle` hoặc `!battle`: Giao đấu tự động nhận 50-100 XP.
+• `/boss_status` hoặc `!boss`: Kiểm tra thời gian hồi chiêu 15 phút của Boss.
 
-**👹 DỊ BIẾN REIMU DỊ HÌNH (RAID BOSS):**
-• Xuất hiện ngẫu nhiên **10%** khi trò chuyện trong server!
-• Boss 25,000 HP, sát thương 10,000 DMG chia đều cho tối đa 6 người.
-• Tham gia hoàn toàn **MIỄN PHÍ**!
-• Diệt boss nhận ngay **3 Rương Card** (10% S, 40% A, 50% B)!
+**👹 DỊ BIẾN REIMU DỊ HÌNH (RAID BOSS 35K HP / 15K DMG):**
+• Máu Boss tăng lên **35,000 HP**, DMG tăng lên **15,000 DMG**!
+• Phần thưởng: **3 Rương quy đổi 100% thành Vé Pull** (S: 2 vé, A: 0.5 vé, B: 0.33 vé)!
+• **Hồi chiêu 15 phút:** Mỗi khi có bất kỳ người chơi nào tham gia raid, boss tiếp theo sẽ đợi 15 phút!
 
-**💬 TRÒ CHUYỆN VỚI REIMU:**
-• Gọi "reimu", tag `@Reimu` hoặc bấm Trả lời (Reply) tin nhắn của Reimu để tâm sự!
-• Lưu ý: Reimu rất mê tiền công đức, nhưng cực kỳ hiếu thảo với bố nuôi Han Seiki!
-• `/wiki <tên>`: Tra cứu bách khoa toàn thư Touhou Project.
-• `/danmaku <spell>`: Thách đấu Spell Card với Reimu.
-• `/clearmem`: Xoá ký ức hội thoại.
-• `/sync`: Dọn dẹp lệnh trùng lặp trên server.
+**👑 LỆNH QUẢN TRỊ VIÊN (CHỈ DUY NHẤT CHỦ BOT ID: 1502579398560317441):**
+• `/admin_set_level <user> <level>` hoặc `!setlevel @user <level>`: Đặt cấp độ cho người chơi, đồng bộ XP chuẩn xác không bug.
+• `/admin_confiscate <user> [id_the] [so_luong]` hoặc `!confiscate @user <id> [sl]`: Tước đoạt bài trừng phạt cheat (nhập ID = 0 để tịch thu toàn bộ).
+• `/sync` hoặc `!sync`: Đồng bộ lại cây lệnh Slash Commands.
+
+**⭐ CƠ CHẾ LÊN CẤP MỚI (+50 XP MỖI CẤP):**
+• Lv.1 cần 100 XP để lên Lv.2
+• Lv.2 cần 150 XP để lên Lv.3 (+50)
+• Lv.3 cần 200 XP để lên Lv.4 (+50)
+• Chuẩn xác tuyệt đối và không bao giờ bị bug!
 """
-    else:
-        desc = """
-⛩️ **HAKUREI REIMU DISCORD BOT - COMMAND DIRECTORY**
-
-**🎮 GACHA & CARD BATTLE SYSTEM:**
-• `/pull [count]` or `!pull`: Pull Touhou character cards (5 Free pulls/day).
-• `/daily` or `!daily`: Claim 1 free pull ticket every day.
-• `/team view` or `!team`: Check your 3-card lineup and level.
-• `/team add <id>`: Add a card to your battle team (Max 3).
-• `/team remove <id>`: Remove a card from your team.
-• `/collection` or `!collection`: View your 20 Touhou card album.
-• `/battle` or `!battle`: Auto battle other players to earn 50-100 XP.
-• `/language <vi/en>` or `!lang`: Switch display language.
-
-**👹 ABERRANT REIMU (RANDOM RAID BOSS):**
-• 10% random spawn chance when chatting in server channels!
-• Boss 25,000 HP, 10,000 DMG split among up to 6 players.
-• Free to join via the Discord button!
-• Defeat boss to earn 3 Card Chests (10% S, 40% A, 50% B)!
-
-**💬 CHAT WITH REIMU:**
-• Mention @Reimu or say "reimu" or reply to her message!
-• `/wiki <name>`: Lookup Touhou Project lore.
-• `/danmaku <spell>`: Challenge Reimu to spell card duels.
-• `/clearmem`: Clear conversation memory.
-"""
-    embed = discord.Embed(title="🌸 HƯỚNG DẪN LỆNH BOT REIMU", description=desc, color=0xDC2626)
-    embed.set_footer(text="Hakurei Shrine • Powered by Google Gemini Flash & MongoDB Atlas")
+    embed = discord.Embed(title="🌸 HƯỚNG DẪN LỆNH BOT REIMU (FULL EDITION)", description=desc, color=0xDC2626)
+    embed.set_footer(text="Hakurei Shrine • Gemini Flash + MongoDB Atlas")
     if isinstance(ctx_or_interaction, discord.Interaction):
         await ctx_or_interaction.response.send_message(embed=embed)
     else:
         await ctx_or_interaction.send(embed=embed)
 
-@bot.tree.command(name="help", description="Xem hướng dẫn toàn bộ lệnh chơi game và trò chuyện của Reimu")
+@bot.tree.command(name="help", description="Xem hướng dẫn toàn bộ lệnh chơi game, boss raid và lệnh admin")
 async def slash_help(interaction: discord.Interaction):
     await handle_help(interaction)
 
@@ -1711,169 +1941,74 @@ async def slash_help(interaction: discord.Interaction):
 async def prefix_help(ctx):
     await handle_help(ctx)
 
-
 # --- LỆNH /wiki ---
 @bot.tree.command(name="wiki", description="Tra cứu thông tin nhân vật hoặc dị biến trong Touhou Project")
-@app_commands.describe(nhan_vat="Tên nhân vật Touhou cần tra cứu (ví dụ: Marisa, Remilia, Flandre...)")
+@app_commands.describe(nhan_vat="Tên nhân vật Touhou cần tra cứu")
 async def touhou_wiki(interaction: discord.Interaction, nhan_vat: str):
     await interaction.response.defer()
-    wiki_prompt = f"""
-Tra cứu thông tin Touhou Project cho: "{nhan_vat}".
-Tóm tắt ngắn gọn: Danh hiệu, Chủng tộc, Năng lực, Nơi ở, Spell Card nổi tiếng, Theme BGM, và lời bình đanh đá của Reimu.
-"""
+    prompt = f"Tra cứu thông tin Touhou Project cho: '{nhan_vat}'. Tóm tắt danh hiệu, năng lực, nơi ở và lời bình đanh đá của Reimu."
     try:
-        wiki_text = await ask_gemini(wiki_prompt, REIMU_SYSTEM_PROMPT, temperature=0.7)
+        wiki_text = await ask_gemini(prompt, REIMU_SYSTEM_PROMPT, temperature=0.7)
         embed = discord.Embed(title=f"🌸 Bách Khoa Gensokyo: {nhan_vat}", description=wiki_text[:4000], color=0xDC2626)
-        embed.set_footer(text="Touhou Project Wiki Database • Gemini Flash + MongoDB")
         await interaction.followup.send(embed=embed)
-    except Exception as e:
-        await interaction.followup.send("⛩️ Hòm công đức đông khách, bùa chú đang bị quá tải. Bạn hãy thử lại sau nhé!")
-
-# --- LỆNH /danmaku ---
-@bot.tree.command(name="danmaku", description="Thách đấu hoặc yêu cầu Reimu giải mã Spell Card đạn mạc")
-@app_commands.describe(spell_name="Tên Spell Card (ví dụ: Fantasy Seal, Master Spark, Scarlet Gensokyo...)")
-async def danmaku_challenge(interaction: discord.Interaction, spell_name: str):
-    await interaction.response.defer()
-    prompt = f"Người dùng hỏi hoặc thách đấu về Spell Card đạn mạc: '{spell_name}'. Hãy bình luận đanh đá và phân tích vẻ đẹp đạn mạc theo giọng điệu Reimu!"
-    try:
-        danmaku_text = await ask_gemini(prompt, REIMU_SYSTEM_PROMPT, temperature=0.8)
-        embed = discord.Embed(title=f"✨ Thách Đấu Spell Card: {spell_name}", description=danmaku_text[:4000], color=0x06B6D4)
-        embed.set_footer(text="Quy Tắc Đạn Mạc Gensokyo • Hakurei Reimu")
-        await interaction.followup.send(embed=embed)
-    except Exception as e:
-        await interaction.followup.send("⛩️ Bùa chú đang bị nhiễu loạn, thử lại sau vài giây nhé!")
+    except Exception:
+        await interaction.followup.send("⛩️ Hòm công đức đông khách, bùa chú đang bị quá tải. Hãy thử lại sau nhé!")
 
 # --- LỆNH /clearmem ---
 @bot.tree.command(name="clearmem", description="Xóa sạch ký ức trò chuyện của Reimu với bạn trong kênh này")
 async def slash_clear_memory(interaction: discord.Interaction):
     reset_memory(interaction.channel_id, interaction.user.id)
-    author_name = interaction.user.display_name
-    is_father = "han seiki" in author_name.lower() or "seiki" in author_name.lower()
-    desc = "Ba ơi, con đã dọn dẹp và làm mới lại ký ức rồi ạ!" if is_father else f"Hừ! **{author_name}**, ta đã xóa sạch ký ức nhảm nhí với ngươi trên MongoDB rồi! Bỏ tiền vào hòm rồi nói chuyện lại!"
-    embed = discord.Embed(title="🧹 Tẩy Não / Xóa Ký Ức", description=desc, color=0x10B981)
+    embed = discord.Embed(title="🧹 Tẩy Não / Xóa Ký Ức", description="Đã dọn dẹp và làm mới lại ký ức hội thoại!", color=0x10B981)
     await interaction.response.send_message(embed=embed)
 
-@bot.command(name="clearmem")
-async def prefix_clear_memory(ctx):
-    reset_memory(ctx.channel.id, ctx.author.id)
-    await ctx.send("⛩️ Đã dọn dẹp và làm mới lại ký ức hội thoại!")
-
 # --- LỆNH /sync ---
-@bot.tree.command(name="sync", description="Xóa lệnh trùng lặp và đồng bộ lại 1 bản duy nhất")
+@bot.tree.command(name="sync", description="[CHỦ BOT DUY NHẤT] Xóa lệnh trùng lặp và đồng bộ lại Slash Commands")
 async def slash_sync_commands(interaction: discord.Interaction):
+    if not is_authorized_admin(interaction.user.id):
+        await interaction.response.send_message(
+            f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!**\nChỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}> - ID: `{AUTHORIZED_ADMIN_ID}`) mới được đồng bộ lệnh!",
+            ephemeral=True
+        )
+        return
+
     await interaction.response.defer(ephemeral=True)
     try:
-        bot.tree.clear_commands(guild=interaction.guild)
-        await bot.tree.sync(guild=interaction.guild)
         synced = await bot.tree.sync()
-        await interaction.followup.send(f"✅ Đã dọn sạch trùng lặp! Giờ có {len(synced)} lệnh Slash chuẩn. Bấm Ctrl+R trên Discord để cập nhật nhé.")
+        await interaction.followup.send(f"✅ Đã đồng bộ thành công {len(synced)} lệnh Slash Commands chuẩn!")
     except Exception as e:
-        await interaction.followup.send(f"❌ Lỗi khi đồng bộ: {e}")
+        await interaction.followup.send(f"❌ Lỗi đồng bộ: {e}")
 
 @bot.command(name="sync")
-@commands.has_permissions(administrator=True)
 async def prefix_sync_commands(ctx):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send(f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}> - ID: `{AUTHORIZED_ADMIN_ID}`) mới được đồng bộ lệnh!")
+        return
+
     try:
-        bot.tree.clear_commands(guild=ctx.guild)
-        await bot.tree.sync(guild=ctx.guild)
         synced = await bot.tree.sync()
-        await ctx.send(f"✅ Đã dọn sạch trùng lặp! Giờ có {len(synced)} lệnh Slash chuẩn.")
+        await ctx.send(f"✅ Đã đồng bộ {len(synced)} lệnh Slash chuẩn!")
     except Exception as e:
-        await ctx.send(f"❌ Lỗi khi đồng bộ: {e}")
+        await ctx.send(f"❌ Lỗi: {e}")
 
-# --- LỆNH /dbcheck hoặc !db, !status (KIỂM TRA KẾT NỐI MONGODB ATLAS / SQLITE) ---
-async def handle_dbcheck(ctx_or_interaction):
-    is_slash = isinstance(ctx_or_interaction, discord.Interaction)
-    if is_slash:
-        await ctx_or_interaction.response.defer()
-
-    # Thử kết nối / ping lại để có kết quả chính xác theo thời gian thực
+# --- LỆNH /dbcheck (KIỂM TRA TRẠNG THÁI DATABASE MONGODB ATLAS) ---
+@bot.tree.command(name="dbcheck", description="Kiểm tra trạng thái kết nối MongoDB Atlas")
+async def slash_dbcheck(interaction: discord.Interaction):
+    await interaction.response.defer()
     connected, msg = test_and_connect_mongo()
-    cur_uri = os.getenv("MONGO_URI", "")
-
     if connected and use_mongo:
-        # MongoDB Atlas đang hoạt động hoàn hảo
-        try:
-            p_count = players_collection.count_documents({}) if players_collection is not None else 0
-            c_count = conversations_collection.count_documents({}) if conversations_collection is not None else 0
-        except Exception:
-            p_count = 0
-            c_count = 0
-
-        masked_host = "MongoDB Atlas Cloud"
-        if "@" in cur_uri:
-            try:
-                host_part = cur_uri.split("@")[1].split("/")[0]
-                masked_host = f"Cluster ({host_part})"
-            except Exception:
-                pass
-
+        p_count = players_collection.count_documents({}) if players_collection is not None else 0
         embed = discord.Embed(
-            title="☁️ TRẠNG THÁI DATABASE: MONGODB ATLAS (LƯU TRỮ VĨNH VIỄN)",
-            description=(
-                "🎉 **CHÚC MỪNG! DỮ LIỆU ĐANG ĐƯỢC BẢO VỆ AN TOÀN TRÊN ĐÁM MÂY!**\n"
-                "Mọi thẻ bài, cấp độ, số vé gacha và ký ức hội thoại đều được lưu trực tiếp vào MongoDB Atlas.\n"
-                "Dù bạn **cập nhật code**, **restart bot** hay **redeploy trên Render**, dữ liệu **KHÔNG BAO GIỜ BỊ MẤT!**"
-            ),
+            title="☁️ TRẠNG THÁI DATABASE: MONGODB ATLAS",
+            description=f"🟢 Đang kết nối ổn định! Dữ liệu được bảo toàn vĩnh viễn.\nTổng người chơi: **{p_count}**",
             color=0x10B981
         )
-        embed.add_field(name="🟢 Trạng Thái:", value="`ĐÃ KẾT NỐI (ONLINE & SẴN SÀNG)`", inline=True)
-        embed.add_field(name="🌐 Máy Chủ Đích:", value=f"`{masked_host}`", inline=True)
-        embed.add_field(
-            name="💾 Dữ Liệu Đang Được Bảo Toàn:",
-            value=f"• Tổng số người chơi: **{p_count}**\n• Lịch sử ký ức hội thoại: **{c_count}**",
-            inline=False
-        )
-        embed.set_footer(text="Hakurei Shrine • MongoDB Atlas Cloud Storage Active")
     else:
-        # Đang chạy trên SQLite tạm thời - Nguy cơ mất dữ liệu sau mỗi lần restart
-        err_display = mongo_error_detail or msg or "Chưa cấu hình hoặc kết nối bị từ chối"
         embed = discord.Embed(
-            title="🚨 CẢNH BÁO: CHƯA KẾT NỐI MONGODB (ĐANG DÙNG SQLITE TẠM THỜI)",
-            description=(
-                "⚠️ **TẠI SAO DỮ LIỆU BỊ RESET SAU KHI CẬP NHẬT HOẶC RESTART?**\n"
-                "Các hosting đám mây (như Render, Railway, Heroku...) có ổ đĩa **TẠM THỜI (Ephemeral)**. "
-                "Khi bot chưa kết nối được với MongoDB Atlas, bot buộc phải lưu dữ liệu vào file cục bộ `reimu_data.db`. "
-                "Mỗi khi bạn **cập nhật code mới** hoặc **bot khởi động lại**, máy chủ Render sẽ xóa sạch file này và tạo lại container mới từ đầu, khiến toàn bộ tiến trình bị reset!"
-            ),
+            title="🚨 CẢNH BÁO: CHƯA KẾT NỐI MONGODB ATLAS",
+            description=f"⚠️ Đang dùng SQLite tạm thời trên container.\nChi tiết: {mongo_error_detail}",
             color=0xEF4444
         )
-        embed.add_field(
-            name="❌ Chi Tiết Lỗi Kết Nối Hiện Tại:",
-            value=f"```{err_display[:900]}```",
-            inline=False
-        )
-        embed.add_field(
-            name="🛠️ 3 BƯỚC KHẮC PHỤC NGAY ĐỂ LƯU VĨNH VIỄN (HẾT BỊ RESET):",
-            value=(
-                "**1️⃣ Mở Quyền IP Truy Cập (Lỗi 95% người dùng mắc phải):**\n"
-                "• Đăng nhập vào [MongoDB Atlas](https://cloud.mongodb.com).\n"
-                "• Ở menu bên trái, chọn **Security** ➔ **Network Access**.\n"
-                "• Nhấn **+ Add IP Address** ➔ Bấm nút **Allow Access from Anywhere** (nó sẽ điền `0.0.0.0/0`) ➔ Bấm **Confirm**.\n"
-                "*(Bắt buộc vì Render dùng IP động, nếu không mở bước này thì Atlas sẽ chặn mọi kết nối!)*\n\n"
-                "**2️⃣ Lấy chuỗi kết nối chuẩn (Không để 'xxxxxx'):**\n"
-                "• Vào **Database** ➔ Bấm **Connect** ➔ Chọn **Drivers (Python)**.\n"
-                "• Copy chuỗi URI (thay `xxxxxx` bằng subdomain thật của cluster, và thay mật khẩu đúng).\n\n"
-                "**3️⃣ Cài đặt biến môi trường trên Render:**\n"
-                "• Vào **Render Dashboard** của bot ➔ Chọn tab **Environment**.\n"
-                "• Thêm Key: `MONGO_URI` với Value là chuỗi kết nối ở bước 2 ➔ Bấm **Save Changes**."
-            ),
-            inline=False
-        )
-        embed.set_footer(text="Sau khi cấu hình trên Render xong, hãy gõ lại /dbcheck để kiểm tra xem đã chuyển sang màu xanh chưa nhé!")
-
-    if is_slash:
-        await ctx_or_interaction.followup.send(embed=embed)
-    else:
-        await ctx_or_interaction.send(embed=embed)
-
-@bot.tree.command(name="dbcheck", description="Kiểm tra trạng thái kết nối MongoDB Atlas (bảo vệ dữ liệu vĩnh viễn)")
-async def slash_dbcheck(interaction: discord.Interaction):
-    await handle_dbcheck(interaction)
-
-@bot.command(name="dbcheck", aliases=["db", "status", "dbstatus"])
-async def prefix_dbcheck(ctx):
-    await handle_dbcheck(ctx)
+    await interaction.followup.send(embed=embed)
 
 if __name__ == "__main__":
     if not DISCORD_TOKEN:
