@@ -1737,8 +1737,8 @@ def build_team_guide_embed(player, user, lang="vi", error_msg=None):
 
     syntax_guide = (
         "• Thêm thẻ vào đội: `Team <hanh_dong><thêm thẻ><id>` hoặc `/team add id_the:<ID>` (ví dụ: `/team add 8`)\n"
-        "• Gỡ thẻ khỏi đội: `/team remove id_the:<ID>` hoặc `!team remove <ID>`\n"
-        "• Xem đội hình hiện tại: `/team view` hoặc `!team`\n"
+        "• Gỡ thẻ khỏi đội: `/team remove id_the:<ID>`\n"
+        "• Xem đội hình hiện tại: `/team view`\n"
         "• Khiêu chiến kiếm XP: `/battle` (hồi chiêu 2 phút)"
     )
     embed.add_field(name="⚡ Hướng Dẫn Cú Pháp Thao Tác:", value=syntax_guide, inline=False)
@@ -2207,12 +2207,12 @@ async def handle_help(ctx_or_interaction):
 ⛩️ **HAKUREI REIMU DISCORD BOT - BẢN ĐỒ LỆNH CẬP NHẬT**
 
 **🎮 HỆ THỐNG GACHA & CARD BATTLE:**
-• `/pull [số_lượng]` hoặc `!pull`: Quay thẻ Touhou (Free 5 lượt/ngày, nerf tỷ lệ S xuống đúng 10%).
-• `/daily` hoặc `!daily`: Điểm danh nhận 1 vé pull mỗi ngày.
-• `Team <hanh_dong><thêm thẻ><id>` hoặc `/team [hanh_dong] [id_the]` / `!team [action] [id]`: Quản lý đội hình 3 thẻ chiến đấu (view: xem đội hình & tiến trình cấp độ, add: thêm thẻ theo ID, remove: gỡ thẻ, guide: hướng dẫn chi tiết).
-• `/collection` hoặc `!collection`: Xem bộ sưu tập 26 nhân vật Touhou (SS, S, A, B, C).
-• `/battle` hoặc `!battle`: Giao đấu tự động nhận 50-100 XP.
-• `/boss_status` hoặc `!boss`: Kiểm tra thời gian hồi chiêu 15 phút của Boss.
+• `/pull [số_lượng]`: Quay thẻ Touhou (Free 5 lượt/ngày, nerf tỷ lệ S xuống đúng 10%).
+• `/daily`: Điểm danh nhận 1 vé pull mỗi ngày.
+• `Team <hanh_dong><thêm thẻ><id>` hoặc `/team [hanh_dong] [id_the]`: Quản lý đội hình 3 thẻ chiến đấu (view: xem đội hình & tiến trình cấp độ, add: thêm thẻ theo ID, remove: gỡ thẻ, guide: hướng dẫn chi tiết).
+• `/collection`: Xem bộ sưu tập 26 nhân vật Touhou (SS, S, A, B, C).
+• `/battle`: Giao đấu tự động nhận 50-100 XP.
+• `/boss_status`: Kiểm tra thời gian hồi chiêu 15 phút của Boss.
 
 **👹 DỊ BIẾN REIMU DỊ HÌNH (RAID BOSS 2 PHASE ĐỘT PHÁ):**
 • **Phase 1 (35k HP / 15k DMG):** Nhận 3 quà tặng (40% ra 0.5 vé pull, 60% ra 0.33 vé pull).
@@ -2223,10 +2223,10 @@ async def handle_help(ctx_or_interaction):
 • **Hồi chiêu 15 phút:** Kích hoạt sau mỗi đợt có người tham gia raid!
 
 **👑 LỆNH QUẢN TRỊ VIÊN (CHỈ DUY NHẤT CHỦ BOT ID: 1502579398560317441):**
-• `/admin_add_card <id_the> [so_luong] [user]` hoặc `!addcard <id> [sl] [@user]`: Cấp/lấy thẻ nhân vật Touhou vào kho đồ người chơi (chủ bot dùng để lấy bất kỳ thẻ nào).
-• `/admin_set_level <user> <level>` hoặc `!setlevel @user <level>`: Đặt cấp độ cho người chơi, đồng bộ XP chuẩn xác không bug.
-• `/admin_confiscate <user> [id_the] [so_luong]` hoặc `!confiscate @user <id> [sl]`: Tước đoạt bài trừng phạt cheat (nhập ID = 0 để tịch thu toàn bộ).
-• `/sync` hoặc `!sync`: Đồng bộ lại cây lệnh Slash Commands.
+• `/admin_add_card <id_the> [so_luong] [user]`: Cấp/lấy thẻ nhân vật Touhou vào kho đồ người chơi (chủ bot dùng để lấy bất kỳ thẻ nào).
+• `/admin_set_level <user> <level>`: Đặt cấp độ cho người chơi, đồng bộ XP chuẩn xác không bug.
+• `/admin_confiscate <user> [id_the] [so_luong]`: Tước đoạt bài trừng phạt cheat (nhập ID = 0 để tịch thu toàn bộ).
+• `/sync`: Đồng bộ lại cây lệnh Slash Commands.
 
 **⭐ CƠ CHẾ LÊN CẤP MỚI (+50 XP MỖI CẤP):**
 • Lv.1 cần 100 XP để lên Lv.2
