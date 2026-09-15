@@ -159,7 +159,7 @@ BOSS_CONFIG = {
     "desc": "Đó không phải Reimu, sẵn sàng giao chiến!",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1549077421624401971/content.png?ex=6aa96245&is=6aa810c5&hm=c0248e497ee5afeed898b457736b39fc71368af3be1630f1cd59b5609c99fbeb&=&format=webp&quality=lossless&width=351&height=512",
     "hp": 35000,      # Phase 1: 35,000 HP
-    "power": 15000,   # Phase 1: 15,000 DMG chia đều
+    "power": 3000,    # Phase 1: 3,000 DMG đánh thường
     "max_players": 6,
     "cooldown_seconds": 15 * 60  # 15 phút (900s) sau khi có bất kỳ ai tham gia raid
 }
@@ -169,7 +169,7 @@ BOSS_PHASE2_CONFIG = {
     "desc": "Dị hình đang biến đổi, bùa chú của chúng ta đang rung động dữ dội!",
     "image": "https://media.discordapp.net/attachments/1549063334781911070/1549275653239472148/artwork.png?ex=6aaa1ae3&is=6aa8c963&hm=7187404882d4b8b0fcef91ef64aee3c73711924e971fb7b28b6fb3bf394a47d3&=&format=webp&quality=lossless&width=640&height=336",
     "hp": 50000,      # Phase 2: 50,000 HP
-    "power": 22000    # Phase 2: 22,000 DMG chia đều
+    "power": 10000    # Phase 2: 10,000 DMG đánh thường chia đều
 }
 
 boss_cooldown_until = 0.0
@@ -686,8 +686,9 @@ async def execute_raid(channel, raid_data):
                     if not invul:
                         ac["current_hp"] -= 5000
             else:
-                dmg_per_card = max(300, p1_power // len(frontline_cards))
-                boss_action_log = f"⚔️ Boss đánh thường giáng **{dmg_per_card:,} DMG** lên mỗi lá bài tiền tuyến!"
+                num_front = len(frontline_cards)
+                dmg_per_card = max(100, p1_power // num_front)
+                boss_action_log = f"⚔️ Boss đánh thường tổng **{p1_power:,} DMG**, chia đều **{dmg_per_card:,} DMG** lên mỗi lá bài tiền tuyến ({num_front} lá)!"
                 for c in active_combatants:
                     ac = c["team_cards"][c["current_card_index"]]
                     invul = False
@@ -706,6 +707,13 @@ async def execute_raid(channel, raid_data):
             if ac["current_hp"] <= 0:
                 ac["current_hp"] = 0
                 dead_name = ac["name"]
+
+                # Lá bài trước khi chết đều thành công đổi sát thương vs Boss
+                trade_dmg = ac["power"]
+                p1_hp = max(0, p1_hp - trade_dmg)
+                c["total_dmg"] += trade_dmg
+                push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{dead_name}** ({c['username']}) trước khi gục ngã đã thành công đổi **{trade_dmg:,} DMG** lên Boss!")
+
                 c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     next_card = c["team_cards"][c["current_card_index"]]
@@ -790,7 +798,7 @@ async def execute_raid(channel, raid_data):
             "⚡ **Dị hình đang biến đổi, bùa chú của chúng ta đang rung động dữ dội!**\n\n"
             f"👺 **{BOSS_PHASE2_CONFIG['name']}** đã thức tỉnh ma lực tối thượng!\n"
             f"❤️ **Máu tăng lên:** **`50,000 HP`**\n"
-            f"⚔️ **Power tăng lên:** **`22,000 DMG`**\n\n"
+            f"⚔️ **Sát thương đánh thường:** **`10,000 DMG`** *(chia đều cho tiền tuyến)*\n\n"
             f"✨ **PHÉP MÀU THANH TẨY:**\n"
             f"**Lập tức hồi sinh và hồi 100% sinh lực toàn bộ thẻ bài của tất cả dũng giả!**"
         ),
@@ -865,8 +873,9 @@ async def execute_raid(channel, raid_data):
                     if not invul:
                         ac["current_hp"] -= 5000
             else:
-                dmg_per_card = max(600, p2_power // len(frontline_cards))
-                boss_action_log = f"⚔️ Boss Phase 2 giáng **{dmg_per_card:,} DMG** lên mỗi lá bài tiền tuyến!"
+                num_front = len(frontline_cards)
+                dmg_per_card = max(100, p2_power // num_front)
+                boss_action_log = f"⚔️ Boss Phase 2 đánh thường tổng **{p2_power:,} DMG**, chia đều **{dmg_per_card:,} DMG** lên mỗi lá bài tiền tuyến ({num_front} lá)!"
                 for c in active_combatants:
                     ac = c["team_cards"][c["current_card_index"]]
                     invul = False
@@ -885,6 +894,13 @@ async def execute_raid(channel, raid_data):
             if ac["current_hp"] <= 0:
                 ac["current_hp"] = 0
                 dead_name = ac["name"]
+
+                # Lá bài trước khi chết đều thành công đổi sát thương vs Boss Phase 2
+                trade_dmg = ac["power"]
+                p2_hp = max(0, p2_hp - trade_dmg)
+                c["total_dmg"] += trade_dmg
+                push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{dead_name}** ({c['username']}) trước khi gục ngã đã thành công đổi **{trade_dmg:,} DMG** lên Boss Phase 2!")
+
                 c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     next_card = c["team_cards"][c["current_card_index"]]
@@ -1034,13 +1050,13 @@ async def on_message(message: discord.Message):
             )
             embed.set_image(url=BOSS_CONFIG["image"])
             embed.add_field(name="❤️ Máu Boss (HP):", value=f"{BOSS_CONFIG['hp']:,} HP *(35k HP)*", inline=True)
-            embed.add_field(name="⚔️ Sát Thương (Power):", value=f"{BOSS_CONFIG['power']:,} DMG *(15k DMG chia đều)*", inline=True)
+            embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{BOSS_CONFIG['power']:,} DMG** *(chia đều)*\n• Phase 2: **{BOSS_PHASE2_CONFIG['power']:,} DMG** *(chia đều)*", inline=True)
             embed.add_field(name=f"👥 Người Tham Gia (0/{BOSS_CONFIG['max_players']}):", value="Chưa có ai", inline=False)
             embed.add_field(
                 name="🎁 Cơ Chế 2 Phase & Phần Thưởng Đột Phá:",
                 value=(
                     "• **Phase 1:** 40% ra **0.5 Vé**, 60% ra **0.33 Vé**!\n"
-                    "• **Chuyển Phase 2 (50k HP / 22k DMG):** Hồi sinh & phục hồi **100% HP toàn bộ thẻ bài**!\n"
+                    f"• **Chuyển Phase 2 ({BOSS_PHASE2_CONFIG['hp']:,} HP / {BOSS_PHASE2_CONFIG['power']:,} DMG chia đều):** Hồi sinh & phục hồi **100% HP toàn bộ thẻ bài**!\n"
                     "• **Phase 2:** 20% ra **10 Vé Pull**, 40% ra **5 Vé Pull**, 60% ra **3 Vé Pull**!\n"
                     "• **Trận đấu trực tiếp:** Diễn biến từng hiệp được phát sóng trực tiếp!"
                 ),
@@ -1800,7 +1816,7 @@ async def slash_boss_status(interaction: discord.Interaction):
     now = time.time()
     embed = discord.Embed(title="👹 TRẠNG THÁI BOSS RAID: REIMU DỊ HÌNH (2 PHASE)", color=0xDC2626)
     embed.set_thumbnail(url=BOSS_CONFIG["image"])
-    embed.add_field(name="❤️ Chỉ Số 2 Phase:", value=f"• Phase 1: HP {BOSS_CONFIG['hp']:,} | Power {BOSS_CONFIG['power']:,}\n• Phase 2: HP {BOSS_PHASE2_CONFIG['hp']:,} | Power {BOSS_PHASE2_CONFIG['power']:,}", inline=True)
+    embed.add_field(name="❤️ Chỉ Số 2 Phase:", value=f"• Phase 1: HP {BOSS_CONFIG['hp']:,} | Đánh thường {BOSS_CONFIG['power']:,} DMG (chia đều)\n• Phase 2: HP {BOSS_PHASE2_CONFIG['hp']:,} | Đánh thường {BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều)", inline=True)
     embed.add_field(name="🎁 Phần Thưởng:", value="100% Quy đổi thành Vé Pull tích lũy!", inline=True)
     if active_raid:
         embed.add_field(name="🔥 Tình Trạng:", value=f"**ĐANG XUẤT HIỆN!** Có {len(active_raid.get('participants', []))}/{BOSS_CONFIG['max_players']} dũng giả!", inline=False)
