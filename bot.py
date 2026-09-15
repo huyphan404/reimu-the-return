@@ -125,7 +125,7 @@ def get_level_progress(total_xp: int):
     return lvl, xp_in_level, needed, ratio
 
 # ==============================================================================
-# 3. TOUHOU CARDS DATABASE (20 NHÂN VẬT CHUẨN THÔNG SỐ)
+# 3. TOUHOU CARDS DATABASE (26 NHÂN VẬT CHUẨN THÔNG SỐ)
 # ==============================================================================
 CARDS_DATA = {
     1: {
@@ -186,107 +186,155 @@ CARDS_DATA = {
     },
     8: {
         "id": 8,
+        "name": "Yuyuko Saigyouji",
+        "rank": "S",
+        "power": 620,
+        "hp": 6200,
+        "image": "https://media.discordapp.net/attachments/1527157582115111077/1549361604234313839/images.png?ex=6aaa6af0&is=6aa91970&hm=674ea5e76356fcd1cea0a0545f5eb9a5ea5d9513216ebf6bccbc175569ab934b&=&format=webp&quality=lossless"
+    },
+    9: {
+        "id": 9,
         "name": "Flandre Scarlet",
         "rank": "S",
         "power": 610,
         "hp": 5700,
         "image": "https://media.discordapp.net/attachments/1533528571509866497/1549082626147483798/y4nci1hurauf1.png?ex=6aa9671e&is=6aa8159e&hm=a2b7e911c0855f2715e551e3ebfb0299758a3461ba0d6b14222e130bb2160ce2&=&format=webp&quality=lossless&width=361&height=512"
     },
-    9: {
-        "id": 9,
+    10: {
+        "id": 10,
         "name": "Kaguya Houraisan",
         "rank": "S",
         "power": 590,
         "hp": 6400,
         "image": "https://media.discordapp.net/attachments/1533528571509866497/1549082450930696282/images.png?ex=6aa966f4&is=6aa81574&hm=363a0b7d509db06c3773fba176ede9646cfef4a95c5d2515703120d30bfc4e94&=&format=webp&quality=lossless&width=361&height=512"
     },
-    10: {
-        "id": 10,
+    11: {
+        "id": 11,
         "name": "Remilia Scarlet",
         "rank": "S",
         "power": 560,
         "hp": 5600,
         "image": "https://media.discordapp.net/attachments/1533528571509866497/1549079793461633065/images.png?ex=6aa9647b&is=6aa812fb&hm=19fc0f72cd5fca597f9eeae493b1c7c663d11ffc98fff679bfd2dfdb588950e1&=&format=webp&quality=lossless"
     },
-    11: {
-        "id": 11,
+    12: {
+        "id": 12,
         "name": "Utsuho Reiuji (Okuu)",
         "rank": "S",
         "power": 550,
         "hp": 5300,
         "image": "https://media.discordapp.net/attachments/1533528571509866497/1549081971169304647/images.png?ex=6aa96682&is=6aa81502&hm=6f7668c4db22133f1aa0bdc07ec7fa2c050ff4e4d220f744cd02e8cc04662c0f&=&format=webp&quality=lossless"
     },
-    12: {
-        "id": 12,
+    13: {
+        "id": 13,
         "name": "Reimu Hakurei",
         "rank": "A",
         "power": 500,
         "hp": 5000,
         "image": "https://media.discordapp.net/attachments/1533528571509866497/1549078962746171463/images.png?ex=6aa963b5&is=6aa81235&hm=3fa720bd7311e4ca45789c6a0112327878135e9d9944c31c6ed2ea1f60885853&=&format=webp&quality=lossless"
     },
-    13: {
-        "id": 13,
+    14: {
+        "id": 14,
         "name": "Fujiwara no Mokou",
         "rank": "A",
         "power": 490,
         "hp": 5200,
         "image": "https://media.discordapp.net/attachments/1533528571509866497/1549080689079754812/images.png?ex=6aa96550&is=6aa813d0&hm=962822a973a1e1535007f1597c0c7b468a287ec0f3d212dcf58c7ca1d9a0c5a3&=&format=webp&quality=lossless"
     },
-    14: {
-        "id": 14,
+    15: {
+        "id": 15,
         "name": "Kasen Ibaraki",
         "rank": "A",
         "power": 480,
         "hp": 4900,
         "image": "https://media.discordapp.net/attachments/1533528571509866497/1549080849083924531/images.png?ex=6aa96576&is=6aa813f6&hm=802e894777a879074a59fa3dcae74394f73523e31d9b9272f19e4aff95ec36aa&=&format=webp&quality=lossless"
     },
-    15: {
-        "id": 15,
+    16: {
+        "id": 16,
         "name": "Sakuya Izayoi",
         "rank": "A",
         "power": 460,
         "hp": 4500,
         "image": "https://media.discordapp.net/attachments/1533528571509866497/1549079438719844372/images.png?ex=6aa96426&is=6aa812a6&hm=263f21e095ef7f36f411473590d92012d350ab3e7b8ea13e72a443a0672a719a&=&format=webp&quality=lossless&width=307&height=512"
     },
-    16: {
-        "id": 16,
+    17: {
+        "id": 17,
         "name": "Marisa Kirisame",
         "rank": "A",
         "power": 450,
         "hp": 4400,
         "image": "https://media.discordapp.net/attachments/1533528571509866497/1549081039660654612/images.png?ex=6aa965a4&is=6aa81424&hm=0ff6e9df5e0d49e483e0560bba442927385b8fa930187276b921012ad16071ad&=&format=webp&quality=lossless"
     },
-    17: {
-        "id": 17,
+    18: {
+        "id": 18,
         "name": "Youmu Konpaku",
         "rank": "B",
         "power": 410,
         "hp": 4100,
         "image": "https://media.discordapp.net/attachments/1533528571509866497/1549081249036116059/images.png?ex=6aa965d6&is=6aa81456&hm=2dc107dd368c53b9c1a94c54e1cfe4a1d9b7ff6ac224dc830d6c9297d5b19e53&=&format=webp&quality=lossless"
     },
-    18: {
-        "id": 18,
+    19: {
+        "id": 19,
         "name": "Reisen Udongein Inaba",
         "rank": "B",
         "power": 390,
         "hp": 3900,
         "image": "https://media.discordapp.net/attachments/1533528571509866497/1549081419777577130/images.png?ex=6aa965ff&is=6aa8147f&hm=8948e38a77f4c00d21819a6e34e2fd1a13b1853e4c92886d1e6ac3ccae6afd75&=&format=webp&quality=lossless"
     },
-    19: {
-        "id": 19,
+    20: {
+        "id": 20,
         "name": "Patchouli Knowledge",
         "rank": "B",
         "power": 380,
         "hp": 3200,
         "image": "https://media.discordapp.net/attachments/1533528571509866497/1549081654948134994/images.png?ex=6aa96637&is=6aa814b7&hm=7e444589e6db73d24fb53445ea713ddb5e5bcc7c75e58ea91a619a694f0d23eb&=&format=webp&quality=lossless&width=385&height=512"
     },
-    20: {
-        "id": 20,
+    21: {
+        "id": 21,
         "name": "Cirno",
         "rank": "B",
         "power": 300,
         "hp": 3000,
         "image": "https://media.discordapp.net/attachments/1533528571509866497/1549080400742195260/images.png?ex=6aa9650c&is=6aa8138c&hm=e3d3d5bf2196f4a3b0fdafcc37063c5ad16897726bdf5514be92b3f3b7719cc4&=&format=webp&quality=lossless"
+    },
+    22: {
+        "id": 22,
+        "name": "Hong Meiling",
+        "rank": "C",
+        "power": 260,
+        "hp": 2800,
+        "image": "https://media.discordapp.net/attachments/1527157582115111077/1549362028601417869/images.png?ex=6aaa6b55&is=6aa919d5&hm=95498119b7d8e5f7563f28bde4efabe919878bcd40b70bf4037edb73eac009aa&=&format=webp&quality=lossless&width=363&height=512"
+    },
+    23: {
+        "id": 23,
+        "name": "Rumia",
+        "rank": "C",
+        "power": 220,
+        "hp": 2200,
+        "image": "https://media.discordapp.net/attachments/1527157582115111077/1549362134440485004/images.png?ex=6aaa6b6e&is=6aa919ee&hm=860b0ede2ccf2585fb605cdef8864b141980395e5eee9d3f4f78c5692fa3827b&=&format=webp&quality=lossless&width=361&height=512"
+    },
+    24: {
+        "id": 24,
+        "name": "Mystia Lorelei",
+        "rank": "C",
+        "power": 200,
+        "hp": 2000,
+        "image": "https://media.discordapp.net/attachments/1527157582115111077/1549362390641020948/84f96d0ce2f04a42a63cff967b6ec6bf.png?ex=6aaa6bab&is=6aa91a2b&hm=9c09d786873a4a70d3dbc27e10934ee7e8463964d89acc42cc1214e29e3185a2&=&format=webp&quality=lossless&width=385&height=512"
+    },
+    25: {
+        "id": 25,
+        "name": "Wriggle Nightbug",
+        "rank": "C",
+        "power": 180,
+        "hp": 1800,
+        "image": "https://media.discordapp.net/attachments/1527157582115111077/1549362613421351043/images.png?ex=6aaa6be0&is=6aa91a60&hm=56779b03181c9c34cb7de4974bfdc60dc452be7d450818daeaeddbf8f36250d0&=&format=webp&quality=lossless"
+    },
+    26: {
+        "id": 26,
+        "name": "Tewi Inaba",
+        "rank": "C",
+        "power": 150,
+        "hp": 1500,
+        "image": "https://media.discordapp.net/attachments/1527157582115111077/1549362906154410034/images.png?ex=6aaa6c26&is=6aa91aa6&hm=ac3b4dca861840ea6c0c5b41288fb528b56543df60081fe62ff774f75449e847&=&format=webp&quality=lossless"
     }
 }
 
@@ -296,6 +344,7 @@ CARDS_BY_RANK = {
     "S":  [c for c in CARDS_DATA.values() if c["rank"] == "S"],
     "A":  [c for c in CARDS_DATA.values() if c["rank"] == "A"],
     "B":  [c for c in CARDS_DATA.values() if c["rank"] == "B"],
+    "C":  [c for c in CARDS_DATA.values() if c["rank"] == "C"],
 }
 
 # ==============================================================================
@@ -453,6 +502,37 @@ def get_player(user_id, username="Visitor"):
     if data.get("free_pulls_date") != now_date:
         data["free_pulls_date"] = now_date
         data["free_pulls_remaining"] = 5
+
+    # Âm thầm dịch chuyển ID thẻ cũ (>= 8 tăng 1 bậc do thêm #08 Yuyuko Saigyouji)
+    # Không làm ảnh hưởng hay sai lệch lá bài người chơi đã lắp trong team và kho đồ
+    if data.get("schema_version", 1) < 2:
+        new_team = []
+        for cid in data.get("team", []):
+            try:
+                cid_int = int(cid)
+                if cid_int >= 8:
+                    new_team.append(cid_int + 1)
+                else:
+                    new_team.append(cid_int)
+            except Exception:
+                new_team.append(cid)
+        data["team"] = new_team
+
+        old_inv = data.get("inventory", {})
+        new_inv = {}
+        for k, v in old_inv.items():
+            try:
+                k_int = int(k)
+                if k_int >= 8:
+                    new_inv[str(k_int + 1)] = v
+                else:
+                    new_inv[str(k_int)] = v
+            except Exception:
+                new_inv[str(k)] = v
+        data["inventory"] = new_inv
+
+        data["schema_version"] = 2
+        save_player(data)
 
     # CẬP NHẬT: TÍNH LEVEL THEO HỆ THỐNG MỚI (+50 XP MỖI CẤP, TUYỆT ĐỐI KHÔNG BUG)
     data["level"] = calculate_level_from_xp(data.get("xp", 0))
@@ -1179,12 +1259,14 @@ def execute_single_pull(player):
     roll = random.random()
     if roll < 0.0001:  # 0.01% Hạng SS
         chosen = random.choice(CARDS_BY_RANK["SS"])
-    elif roll < 0.1001:  # 10.0% Hạng S (Cập nhật: Nerf tỷ lệ pull ra S xuống đúng 10%)
+    elif roll < 0.1001:  # 10.0% Hạng S (Nerf tỷ lệ pull ra S xuống đúng 10%)
         chosen = random.choice(CARDS_BY_RANK["S"])
     elif roll < 0.3501:  # 25.0% Hạng A
         chosen = random.choice(CARDS_BY_RANK["A"])
-    else:  # 64.99% Hạng B
+    elif roll < 0.6501:  # 30.0% Hạng B
         chosen = random.choice(CARDS_BY_RANK["B"])
+    else:  # 34.99% Hạng C
+        chosen = random.choice(CARDS_BY_RANK["C"])
 
     cid_str = str(chosen["id"])
     already_owned = player["inventory"].get(cid_str, 0)
@@ -1202,6 +1284,8 @@ def execute_single_pull(player):
             converted_pulls = 0.5
         elif chosen["rank"] == "B":
             converted_pulls = 1.0 / 3.0
+        elif chosen["rank"] == "C":
+            converted_pulls = 0.2
 
         player["pull_tickets"] += converted_pulls
 
@@ -1290,7 +1374,7 @@ async def prefix_admin_set_level(ctx, member: discord.Member, level: int):
 @bot.tree.command(name="admin_confiscate", description="[CHỦ BOT DUY NHẤT] Tước đoạt thẻ bài của người chơi (trừng phạt cheat/gian lận)")
 @app_commands.describe(
     nguoi_dung="Người chơi bị trừng phạt",
-    id_the="Số ID thẻ từ 1 đến 20, hoặc nhập 0 để tịch thu TOÀN BỘ bài",
+    id_the="Số ID thẻ từ 1 đến 26, hoặc nhập 0 để tịch thu TOÀN BỘ bài",
     so_luong="Số lượng thẻ muốn tịch thu (mặc định tịch thu hết số lượng thẻ đó)"
 )
 async def slash_admin_confiscate(interaction: discord.Interaction, nguoi_dung: discord.Member, id_the: int = 0, so_luong: int = 0):
@@ -1327,7 +1411,7 @@ async def slash_admin_confiscate(interaction: discord.Interaction, nguoi_dung: d
         return
 
     if id_the not in CARDS_DATA:
-        await interaction.response.send_message("❌ ID thẻ không hợp lệ! ID thẻ nằm trong khoảng từ 1 đến 20.", ephemeral=True)
+        await interaction.response.send_message(f"❌ ID thẻ không hợp lệ! ID thẻ nằm trong khoảng từ 1 đến {len(CARDS_DATA)}.", ephemeral=True)
         return
 
     card = CARDS_DATA[id_the]
@@ -1384,7 +1468,7 @@ async def prefix_admin_confiscate(ctx, member: discord.Member, card_id: int = 0,
         return
 
     if card_id not in CARDS_DATA:
-        await ctx.send("❌ ID thẻ không hợp lệ (1-20)!")
+        await ctx.send(f"❌ ID thẻ không hợp lệ (1-{len(CARDS_DATA)})!")
         return
 
     card = CARDS_DATA[card_id]
@@ -1406,6 +1490,93 @@ async def prefix_admin_confiscate(ctx, member: discord.Member, card_id: int = 0,
     save_player(target_player)
 
     await ctx.send(f"⚖️ Đã tịch thu **{to_remove}x [{card['rank']}] {card['name']}** của {member.mention}!")
+
+
+# --- LỆNH ADMIN: LẤY / CẤP THẺ NHÂN VẬT (CHỦ BOT ĐỘC QUYỀN) ---
+@bot.tree.command(name="admin_add_card", description="[CHỦ BOT DUY NHẤT] Lấy/cấp thẻ nhân vật Touhou vào kho đồ người chơi")
+@app_commands.describe(
+    id_the="Số ID thẻ từ 1 đến 26 (ví dụ: 8 là Yuyuko Saigyouji)",
+    so_luong="Số lượng thẻ muốn lấy/cấp (mặc định: 1)",
+    nguoi_dung="Người nhận thẻ (để trống nếu tự cấp cho chính bản thân chủ bot)"
+)
+async def slash_admin_add_card(interaction: discord.Interaction, id_the: int, so_luong: int = 1, nguoi_dung: discord.Member = None):
+    if not is_authorized_admin(interaction.user.id):
+        await interaction.response.send_message(
+            f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!**\nChỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}> - ID: `{AUTHORIZED_ADMIN_ID}`) mới có quyền sử dụng lệnh này.",
+            ephemeral=True
+        )
+        return
+
+    if id_the not in CARDS_DATA:
+        await interaction.response.send_message(f"❌ ID thẻ không hợp lệ! Vui lòng nhập ID từ 1 đến {len(CARDS_DATA)}.", ephemeral=True)
+        return
+
+    if so_luong < 1:
+        so_luong = 1
+
+    target = nguoi_dung if nguoi_dung else interaction.user
+    target_player = get_player(target.id, target.display_name)
+    cid_str = str(id_the)
+    card = CARDS_DATA[id_the]
+
+    inv = target_player.setdefault("inventory", {})
+    old_cnt = inv.get(cid_str, 0)
+    new_cnt = old_cnt + so_luong
+    inv[cid_str] = new_cnt
+    save_player(target_player)
+
+    embed = discord.Embed(
+        title="🎁 [ADMIN] ĐÃ LẤY / CẤP THẺ BÀI THÀNH CÔNG!",
+        description=(
+            f"👑 **Quản trị viên thực hiện:** {interaction.user.mention}\n"
+            f"👤 **Người nhận thẻ:** {target.mention} (`{target.display_name}`)\n"
+            f"🎴 **Thẻ nhận được:** `[{card['rank']}]` **#{card['id']:02d} {card['name']}**\n"
+            f"⚔️ **Chỉ số:** Power: **{card['power']:,}** | HP: **{card['hp']:,}**\n"
+            f"📦 **Số lượng cấp:** `+{so_luong}` lá (Hiện có trong kho: `{new_cnt}` lá)"
+        ),
+        color=0x10B981
+    )
+    embed.set_thumbnail(url=card["image"])
+    embed.set_footer(text=f"Hakurei Shrine Admin Management • Card #{card['id']:02d}")
+    await interaction.response.send_message(embed=embed)
+
+@bot.command(name="addcard", aliases=["adminaddcard", "givecard", "thembai"])
+async def prefix_admin_add_card(ctx, card_id: int, quantity: int = 1, member: discord.Member = None):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send(f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}> - ID: `{AUTHORIZED_ADMIN_ID}`) mới có quyền sử dụng lệnh này.")
+        return
+
+    if card_id not in CARDS_DATA:
+        await ctx.send(f"❌ ID thẻ không hợp lệ! Vui lòng chọn ID từ 1 đến {len(CARDS_DATA)}.")
+        return
+
+    if quantity < 1:
+        quantity = 1
+
+    target = member if member else ctx.author
+    target_player = get_player(target.id, target.display_name)
+    cid_str = str(card_id)
+    card = CARDS_DATA[card_id]
+
+    inv = target_player.setdefault("inventory", {})
+    old_cnt = inv.get(cid_str, 0)
+    new_cnt = old_cnt + quantity
+    inv[cid_str] = new_cnt
+    save_player(target_player)
+
+    embed = discord.Embed(
+        title="🎁 [ADMIN] ĐÃ LẤY / CẤP THẺ BÀI THÀNH CÔNG!",
+        description=(
+            f"👑 **Quản trị viên thực hiện:** {ctx.author.mention}\n"
+            f"👤 **Người nhận thẻ:** {target.mention}\n"
+            f"🎴 **Thẻ nhận được:** `[{card['rank']}]` **#{card['id']:02d} {card['name']}**\n"
+            f"📦 **Số lượng cấp:** `+{quantity}` lá (Hiện có trong kho: `{new_cnt}` lá)"
+        ),
+        color=0x10B981
+    )
+    embed.set_thumbnail(url=card["image"])
+    embed.set_footer(text="Hakurei Shrine Admin Management")
+    await ctx.send(embed=embed)
 
 # ==============================================================================
 # 10. SLASH COMMANDS & PREFIX COMMANDS (PULL, TEAM, BATTLE, DAILY, BOSS STATUS)
@@ -1515,7 +1686,7 @@ def build_team_guide_embed(player, user, lang="vi", error_msg=None):
     cur_lvl, xp_in_lvl, needed_xp, ratio = get_level_progress(player.get("xp", 0))
     lvl_buff = (cur_lvl - 1) * 10
     embed = discord.Embed(
-        title="🛡️ HƯỚNG DẪN CHI TIẾT: CƠ CHẾ XẾP ĐỘI HÌNH (/team add)",
+        title="🛡️ HƯỚNG DẪN CHI TIẾT: CƠ CHẾ XẾP ĐỘI HÌNH (Team <hanh_dong><thêm thẻ><id>)",
         color=0xEF4444 if error_msg else 0x3B82F6
     )
     if error_msg:
@@ -1547,7 +1718,7 @@ def build_team_guide_embed(player, user, lang="vi", error_msg=None):
 
     inv = player.get("inventory", {})
     owned_lines = []
-    for cid in range(1, 21):
+    for cid in range(1, len(CARDS_DATA) + 1):
         cnt = inv.get(str(cid), 0)
         if cnt > 0:
             c = CARDS_DATA[cid]
@@ -1565,8 +1736,9 @@ def build_team_guide_embed(player, user, lang="vi", error_msg=None):
         embed.add_field(name="🎒 Thẻ Bạn Đang Sở Hữu:", value="❌ Bạn chưa sở hữu thẻ nào! Hãy gõ `/pull` để quay thẻ miễn phí!", inline=False)
 
     syntax_guide = (
-        "• Thêm thẻ: `!team add <ID>` hoặc `/team add id_the:<ID>`\n"
-        "• Gỡ thẻ: `!team remove <ID>` hoặc `/team remove id_the:<ID>`\n"
+        "• Thêm thẻ vào đội: `Team <hanh_dong><thêm thẻ><id>` hoặc `/team add id_the:<ID>` (ví dụ: `/team add 8`)\n"
+        "• Gỡ thẻ khỏi đội: `/team remove id_the:<ID>` hoặc `!team remove <ID>`\n"
+        "• Xem đội hình hiện tại: `/team view` hoặc `!team`\n"
         "• Khiêu chiến kiếm XP: `/battle` (hồi chiêu 2 phút)"
     )
     embed.add_field(name="⚡ Hướng Dẫn Cú Pháp Thao Tác:", value=syntax_guide, inline=False)
@@ -1591,7 +1763,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
 
     if act == "add":
         if not card_id or card_id not in CARDS_DATA:
-            err = "Bạn chưa nhập số ID thẻ hợp lệ (từ 1 đến 20)!"
+            err = f"Bạn chưa nhập số ID thẻ hợp lệ (từ 1 đến {len(CARDS_DATA)})!"
             guide_embed = build_team_guide_embed(player, user, lang, error_msg=err)
             if isinstance(ctx_or_interaction, discord.Interaction):
                 await ctx_or_interaction.response.send_message(embed=guide_embed, ephemeral=True)
@@ -1698,7 +1870,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
     if not player["team"]:
         embed.add_field(
             name="📋 Trạng Thái 3 Vị Trí (0/3 Thẻ):",
-            value="❌ Đội hình hiện đang trống!\n👉 Hãy dùng `!team add <id>` để đưa thẻ vào đội chiến đấu!",
+            value="❌ Đội hình hiện đang trống!\n👉 Hãy dùng: `Team <hanh_dong><thêm thẻ><id>` (ví dụ: `/team add 8`) để đưa thẻ vào đội chiến đấu!",
             inline=False
         )
     else:
@@ -1720,7 +1892,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
             else:
                 embed.add_field(
                     name=f"Vị trí #{idx}: 🔲 [Trống]",
-                    value="Dùng `!team add <ID>` để thêm thẻ.",
+                    value="Dùng `Team <hanh_dong><thêm thẻ><id>` để thêm thẻ.",
                     inline=False
                 )
 
@@ -1738,10 +1910,10 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
     else:
         await ctx_or_interaction.send(embed=embed)
 
-@bot.tree.command(name="team", description="Xem, sắp xếp hoặc nhận hướng dẫn chi tiết đội hình 3 thẻ")
+@bot.tree.command(name="team", description="Quản lý đội hình 3 thẻ chiến đấu (view, add, remove, guide)")
 @app_commands.describe(
     hanh_dong="view (xem đội), add (thêm thẻ), remove (gỡ thẻ), guide (hướng dẫn chi tiết)",
-    id_the="Số ID thẻ từ 1 đến 20 (khi dùng add hoặc remove)"
+    id_the="Số ID thẻ từ 1 đến 26 (khi dùng add hoặc remove)"
 )
 @app_commands.choices(hanh_dong=[
     app_commands.Choice(name="👁️ Xem đội hình hiện tại (view)", value="view"),
@@ -1766,7 +1938,7 @@ async def handle_collection(ctx_or_interaction):
 
     owned_count = 0
     lines = []
-    for cid in range(1, 21):
+    for cid in range(1, len(CARDS_DATA) + 1):
         card = CARDS_DATA[cid]
         count = player["inventory"].get(str(cid), 0)
         if count > 0:
@@ -1776,7 +1948,7 @@ async def handle_collection(ctx_or_interaction):
             lines.append(f"🔒 **#{card['id']:02d} [{card['rank']}] {card['name']}** *(Chưa có)*")
 
     embed = discord.Embed(
-        title=f"📖 BỘ SƯU TẬP THẺ TOUHOU ({owned_count}/20)" if lang == "vi" else f"📖 TOUHOU CARD COLLECTION ({owned_count}/20)",
+        title=f"📖 BỘ SƯU TẬP THẺ TOUHOU ({owned_count}/{len(CARDS_DATA)})" if lang == "vi" else f"📖 TOUHOU CARD COLLECTION ({owned_count}/{len(CARDS_DATA)})",
         description="\n".join(lines),
         color=0x8B5CF6
     )
@@ -1786,7 +1958,7 @@ async def handle_collection(ctx_or_interaction):
     else:
         await ctx_or_interaction.send(embed=embed)
 
-@bot.tree.command(name="collection", description="Kiểm tra bộ sưu tập 20 nhân vật Touhou đã sở hữu")
+@bot.tree.command(name="collection", description="Kiểm tra bộ sưu tập 26 nhân vật Touhou đã sở hữu")
 async def slash_collection(interaction: discord.Interaction):
     await handle_collection(interaction)
 
@@ -1797,15 +1969,15 @@ async def prefix_collection(ctx):
 
 # DANH SÁCH NPC GENSOKYO CHO BATTLE
 GENSOKYO_NPCS = [
-    {"name": "Cirno Đệ Nhất", "title": "Băng Tinh Tự Xưng Vô Địch Gensokyo", "badge": "❄️ Băng Tinh", "preferred": [17, 18, 19]},
-    {"name": "Marisa Đạo Tặc", "title": "Phù Thủy Ánh Sáng Rừng Ma Thuật", "badge": "⭐ Tinh Linh", "preferred": [6, 12, 16]},
-    {"name": "Alice Ma Đạo", "title": "Nghệ Nhân Điều Khiển Búp Bê Thượng Hải", "badge": "🪆 Búp Bê", "preferred": [11, 14, 20]},
-    {"name": "Aya Phóng Viên", "title": "Ký Giả Tốc Độ Bão Cuộn Bunbunmaru", "badge": "🌪️ Phong Thần", "preferred": [12, 13, 15]},
-    {"name": "Youmu Kiếm Hồn", "title": "Hộ Vệ Nửa Người Nửa Ma Bạch Ngọc Lâu", "badge": "⚔️ Song Kiếm", "preferred": [8, 13, 14]},
-    {"name": "Remilia Huyết Ma", "title": "Chúa Tể Huyết Nguyệt Tươi Thắm", "badge": "🦇 Huyết Tộc", "preferred": [3, 4, 9]},
-    {"name": "Flandre Hủy Diệt", "title": "Cuồng Nộ Tầng Hầm Cấm Địa Laevateinn", "badge": "💎 Hủy Diệt", "preferred": [3, 5, 8]},
-    {"name": "Suika Quỷ Vương", "title": "Đại Quỷ Bách Quỷ Dạ Hành Mê Tửu", "badge": "🍶 Đại Quỷ", "preferred": [5, 6, 8]},
-    {"name": "Mokou Phượng Hoàng", "title": "Ngọn Lửa Bất Tử Bất Diệt Rừng Tre Lạc Lối", "badge": "🔥 Bất Tử", "preferred": [6, 9, 12]},
+    {"name": "Cirno Đệ Nhất", "title": "Băng Tinh Tự Xưng Vô Địch Gensokyo", "badge": "❄️ Băng Tinh", "preferred": [18, 19, 20]},
+    {"name": "Marisa Đạo Tặc", "title": "Phù Thủy Ánh Sáng Rừng Ma Thuật", "badge": "⭐ Tinh Linh", "preferred": [6, 13, 17]},
+    {"name": "Alice Ma Đạo", "title": "Nghệ Nhân Điều Khiển Búp Bê Thượng Hải", "badge": "🪆 Búp Bê", "preferred": [12, 15, 21]},
+    {"name": "Aya Phóng Viên", "title": "Ký Giả Tốc Độ Bão Cuộn Bunbunmaru", "badge": "🌪️ Phong Thần", "preferred": [13, 14, 16]},
+    {"name": "Youmu Kiếm Hồn", "title": "Hộ Vệ Nửa Người Nửa Ma Bạch Ngọc Lâu", "badge": "⚔️ Song Kiếm", "preferred": [8, 14, 15]},
+    {"name": "Remilia Huyết Ma", "title": "Chúa Tể Huyết Nguyệt Tươi Thắm", "badge": "🦇 Huyết Tộc", "preferred": [3, 4, 10]},
+    {"name": "Flandre Hủy Diệt", "title": "Cuồng Nộ Tầng Hầm Cấm Địa Laevateinn", "badge": "💎 Hủy Diệt", "preferred": [3, 5, 9]},
+    {"name": "Suika Quỷ Vương", "title": "Đại Quỷ Bách Quỷ Dạ Hành Mê Tửu", "badge": "🍶 Đại Quỷ", "preferred": [5, 6, 9]},
+    {"name": "Mokou Phượng Hoàng", "title": "Ngọn Lửa Bất Tử Bất Diệt Rừng Tre Lạc Lối", "badge": "🔥 Bất Tử", "preferred": [6, 10, 13]},
     {"name": "Hecatia Hỗn Mang", "title": "Nữ Thần Địa Ngục Ba Hành Tinh Thần Bí", "badge": "🌌 Hỗn Mang", "preferred": [1, 2, 4]}
 ]
 
@@ -1816,7 +1988,7 @@ async def handle_battle(ctx_or_interaction):
     lang = player.get("language", "vi")
 
     if not player.get("team") or len(player["team"]) == 0:
-        err = "Bạn chưa thiết lập đội hình chiến đấu! Vui lòng gõ `!team add <ID>` để xếp thẻ."
+        err = "Bạn chưa thiết lập đội hình chiến đấu! Vui lòng dùng: `Team <hanh_dong><thêm thẻ><id>` (ví dụ: `/team add 8`) để xếp thẻ."
         guide_embed = build_team_guide_embed(player, user, lang, error_msg=err)
         if isinstance(ctx_or_interaction, discord.Interaction):
             await ctx_or_interaction.response.send_message(embed=guide_embed, ephemeral=True)
@@ -2037,10 +2209,8 @@ async def handle_help(ctx_or_interaction):
 **🎮 HỆ THỐNG GACHA & CARD BATTLE:**
 • `/pull [số_lượng]` hoặc `!pull`: Quay thẻ Touhou (Free 5 lượt/ngày, nerf tỷ lệ S xuống đúng 10%).
 • `/daily` hoặc `!daily`: Điểm danh nhận 1 vé pull mỗi ngày.
-• `/team view` hoặc `!team`: Xem đội hình 3 thẻ và tiến trình cấp độ mới.
-• `/team add <id>`: Thêm thẻ vào đội hình.
-• `/team remove <id>`: Gỡ thẻ khỏi đội hình.
-• `/collection` hoặc `!collection`: Xem bộ sưu tập 20 nhân vật Touhou.
+• `Team <hanh_dong><thêm thẻ><id>` hoặc `/team [hanh_dong] [id_the]` / `!team [action] [id]`: Quản lý đội hình 3 thẻ chiến đấu (view: xem đội hình & tiến trình cấp độ, add: thêm thẻ theo ID, remove: gỡ thẻ, guide: hướng dẫn chi tiết).
+• `/collection` hoặc `!collection`: Xem bộ sưu tập 26 nhân vật Touhou (SS, S, A, B, C).
 • `/battle` hoặc `!battle`: Giao đấu tự động nhận 50-100 XP.
 • `/boss_status` hoặc `!boss`: Kiểm tra thời gian hồi chiêu 15 phút của Boss.
 
@@ -2053,6 +2223,7 @@ async def handle_help(ctx_or_interaction):
 • **Hồi chiêu 15 phút:** Kích hoạt sau mỗi đợt có người tham gia raid!
 
 **👑 LỆNH QUẢN TRỊ VIÊN (CHỈ DUY NHẤT CHỦ BOT ID: 1502579398560317441):**
+• `/admin_add_card <id_the> [so_luong] [user]` hoặc `!addcard <id> [sl] [@user]`: Cấp/lấy thẻ nhân vật Touhou vào kho đồ người chơi (chủ bot dùng để lấy bất kỳ thẻ nào).
 • `/admin_set_level <user> <level>` hoặc `!setlevel @user <level>`: Đặt cấp độ cho người chơi, đồng bộ XP chuẩn xác không bug.
 • `/admin_confiscate <user> [id_the] [so_luong]` hoặc `!confiscate @user <id> [sl]`: Tước đoạt bài trừng phạt cheat (nhập ID = 0 để tịch thu toàn bộ).
 • `/sync` hoặc `!sync`: Đồng bộ lại cây lệnh Slash Commands.
