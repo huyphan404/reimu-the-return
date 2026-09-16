@@ -480,6 +480,111 @@ bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 active_raid = None
 
 # ==============================================================================
+# HỆ THỐNG XEM CHI TIẾT TRẬN CHIẾN & HOẠT ẢNH GIF KỸ NĂNG (IN-DISCORD)
+# ==============================================================================
+class BattleDetailsView(discord.ui.View):
+    def __init__(self, turns_data):
+        super().__init__(timeout=300)
+        self.turns_data = turns_data
+        self.current_idx = 0
+
+        # Nếu số hiệp <= 25, bổ sung Dropdown Select để nhảy trực tiếp đến bất kỳ hiệp nào
+        if 1 < len(self.turns_data) <= 25:
+            options = []
+            for i, t in enumerate(self.turns_data):
+                has_skill = "✨ " if t.get("image") else ""
+                lbl = f"{has_skill}{t.get('short_label', f'Hiệp {i+1}')}"[:100]
+                desc = t.get("short_desc", f"Chi tiết diễn biến hiệp {i+1}")[:100]
+                options.append(discord.SelectOption(label=lbl, value=str(i), description=desc))
+            select_menu = discord.ui.Select(
+                placeholder="🔽 Chọn hiệp muốn xem trực tiếp...",
+                options=options,
+                row=2
+            )
+            select_menu.callback = self.select_callback
+            self.add_item(select_menu)
+
+        self.update_buttons()
+
+    async def select_callback(self, interaction: discord.Interaction):
+        self.current_idx = int(interaction.data["values"][0])
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    def update_buttons(self):
+        self.prev_btn.disabled = (self.current_idx <= 0)
+        self.next_btn.disabled = (self.current_idx >= len(self.turns_data) - 1)
+        self.skill_btn.disabled = not any(t.get("image") for t in self.turns_data)
+
+    def get_current_embed(self):
+        t = self.turns_data[self.current_idx]
+        embed = discord.Embed(
+            title=f"📜 CHI TIẾT TRẬN CHIẾN: {t.get('title', f'Hiệp {self.current_idx + 1}')}",
+            description=t.get("desc", ""),
+            color=t.get("color", 0x3B82F6)
+        )
+        for field in t.get("fields", []):
+            if len(field) == 3:
+                name, val, inl = field
+                embed.add_field(name=name, value=val, inline=inl)
+        if t.get("image"):
+            embed.set_image(url=t["image"])
+        embed.set_footer(
+            text=f"Hiệp {self.current_idx + 1}/{len(self.turns_data)} • Nhấn 'Hiệp Dùng Kỹ Năng' để xem hoạt ảnh GIF chiêu thức trực tiếp"
+        )
+        return embed
+
+    @discord.ui.button(label="⏮️ Đầu", style=discord.ButtonStyle.secondary, row=0)
+    async def first_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.current_idx = 0
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    @discord.ui.button(label="◀ Hiệp Trước", style=discord.ButtonStyle.primary, row=0)
+    async def prev_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.current_idx > 0:
+            self.current_idx -= 1
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    @discord.ui.button(label="Hiệp Sau ▶", style=discord.ButtonStyle.primary, row=0)
+    async def next_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.current_idx < len(self.turns_data) - 1:
+            self.current_idx += 1
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    @discord.ui.button(label="⏭️ Cuối", style=discord.ButtonStyle.secondary, row=0)
+    async def last_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.current_idx = len(self.turns_data) - 1
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    @discord.ui.button(label="✨ Hiệp Dùng Kỹ Năng (Xem GIF)", style=discord.ButtonStyle.success, row=1)
+    async def skill_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        skill_indices = [i for i, t in enumerate(self.turns_data) if t.get("image")]
+        if not skill_indices:
+            await interaction.response.send_message("Không có hiệp nào kích hoạt kỹ năng trong trận này!", ephemeral=True)
+            return
+        next_skills = [i for i in skill_indices if i > self.current_idx]
+        self.current_idx = next_skills[0] if next_skills else skill_indices[0]
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+class OpenDetailsView(discord.ui.View):
+    def __init__(self, turns_data):
+        super().__init__(timeout=600)
+        self.turns_data = turns_data
+
+    @discord.ui.button(label="📜 Xem Chi Tiết Trận Chiến & GIF Kỹ Năng", style=discord.ButtonStyle.success, emoji="📜")
+    async def open_details(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.turns_data:
+            await interaction.response.send_message("Không có dữ liệu chi tiết cho trận chiến này!", ephemeral=True)
+            return
+        view = BattleDetailsView(self.turns_data)
+        await interaction.response.send_message(embed=view.get_current_embed(), view=view, ephemeral=True)
+
+# ==============================================================================
 # 6. QUẢN LÝ BOSS RAID (LIVE TURN-BY-TURN COMBAT, 15P COOLDOWN, TICKET REWARDS)
 # ==============================================================================
 class RaidJoinView(discord.ui.View):
@@ -635,6 +740,7 @@ async def execute_raid(channel, raid_data):
     p1_rounds = 0
     max_rounds = 35
     p1_battle_history = []
+    all_raid_turns = []
 
     # CHẠY TURN-BY-TURN PHASE 1
     while p1_hp > 0 and p1_rounds < max_rounds:
@@ -750,6 +856,23 @@ async def execute_raid(channel, raid_data):
             round_embed.set_thumbnail(url=BOSS_CONFIG["image"])
 
         p1_battle_history.append(f"Hiệp {p1_rounds}: Gây {round_player_dmg:,} DMG (Boss còn {p1_hp:,} HP).")
+        all_raid_turns.append({
+            "round": p1_rounds,
+            "phase": 1,
+            "title": f"Phase 1 - Hiệp {p1_rounds}: Reimu Dị Hình",
+            "short_label": f"P1 - Hiệp {p1_rounds}",
+            "short_desc": f"Boss P1 còn {p1_hp:,} HP",
+            "desc": f"👹 **Reimu Dị Hình Phase 1**\n❤️ Máu Boss: `{get_hp_bar(p1_hp, p1_max_hp)}` **{p1_hp:,}/{p1_max_hp:,} HP**",
+            "color": 0xDC2626,
+            "image": turn_image,
+            "fields": [
+                ("💥 Tiền Tuyến Tấn Công:", f"Toàn quân gây **{round_player_dmg:,} DMG** lên Boss!", False),
+                *([("❄️ Kỹ Năng Đột Biến:", sakuya_stun_notif, False)] if sakuya_stun_notif else []),
+                ("👺 Phản Kích Của Boss:", boss_action_log, False),
+                *([("🔄 Thay Đổi Tiền Tuyến & Đổi Sát Thương:", "\n".join(push_logs), False)] if push_logs else []),
+                ("🛡️ Tình Trạng Tiền Tuyến Hiện Tại:", "\n".join(round_card_status), False)
+            ]
+        })
         try:
             await battle_msg.edit(embed=round_embed)
         except Exception:
@@ -767,7 +890,7 @@ async def execute_raid(channel, raid_data):
             color=0xEF4444
         )
         embed_fail.set_thumbnail(url=BOSS_CONFIG["image"])
-        await channel.send(embed=embed_fail)
+        await channel.send(embed=embed_fail, view=OpenDetailsView(all_raid_turns))
         return
 
     # TRAO THƯỞNG PHASE 1
@@ -937,6 +1060,23 @@ async def execute_raid(channel, raid_data):
             round_embed.set_thumbnail(url=BOSS_PHASE2_CONFIG["image"])
 
         p2_battle_history.append(f"Hiệp {p2_rounds}: Gây {round_player_dmg:,} DMG (Boss còn {p2_hp:,} HP).")
+        all_raid_turns.append({
+            "round": p2_rounds,
+            "phase": 2,
+            "title": f"Phase 2 - Hiệp {p2_rounds}: Thức Tỉnh",
+            "short_label": f"P2 - Hiệp {p2_rounds}",
+            "short_desc": f"Boss Phase 2 còn {p2_hp:,} HP",
+            "desc": f"⚡ **Reimu Dị Hình - Thức Tỉnh Phase 2**\n❤️ Máu Boss: `{get_hp_bar(p2_hp, p2_max_hp)}` **{p2_hp:,}/{p2_max_hp:,} HP**",
+            "color": 0x9333EA,
+            "image": turn_image,
+            "fields": [
+                ("💥 Tiền Tuyến Tấn Công:", f"Toàn quân dồn **{round_player_dmg:,} DMG**!", False),
+                *([("❄️ Kỹ Năng Đột Biến:", sakuya_stun_notif, False)] if sakuya_stun_notif else []),
+                ("👹 Boss Phase 2 Ra Đòn:", boss_action_log, False),
+                *([("🔄 Thay Đổi Tiền Tuyến & Đổi Sát Thương:", "\n".join(push_logs), False)] if push_logs else []),
+                ("🛡️ Tình Trạng Tiền Tuyến Hiện Tại:", "\n".join(round_card_status), False)
+            ]
+        })
         try:
             await battle_msg.edit(embed=round_embed)
         except Exception:
@@ -1005,7 +1145,7 @@ async def execute_raid(channel, raid_data):
     else:
         final_embed.add_field(name="⚠️ Kết Quả Phase 2:", value=f"Boss Phase 2 còn {p2_hp:,} HP! Toàn bộ quà Phase 1 vẫn được bảo lưu trọn vẹn.", inline=False)
 
-    await channel.send(embed=final_embed)
+    await channel.send(embed=final_embed, view=OpenDetailsView(all_raid_turns))
 
 # ==============================================================================
 # 7. SỰ KIỆN BOT ON_READY & ON_MESSAGE
@@ -1746,38 +1886,92 @@ async def handle_battle(ctx_or_interaction):
     p_idx, o_idx, r_cnt = 0, 0, 0
     p_sakuya, p_reimu = False, False
     battle_logs = []
+    battle_turns = []
 
     while p_idx < len(player_cards) and o_idx < len(opp_cards) and r_cnt < 30:
         r_cnt += 1
         pc = player_cards[p_idx]
         oc = opp_cards[o_idx]
+        turn_image = None
+        turn_actions = []
+        turn_trades = []
         stunned = False
 
         if pc["cid"] == 16 and pc["is_ace2"] and not p_sakuya:
             if random.random() < 0.30:
                 p_sakuya = True
                 stunned = True
-                battle_logs.append(f"⏳ **[Ace 2] [#16] Sakuya** kích hoạt **Thời Gian Đóng Băng**! ❄️ {oc['name']} bị STUN!")
+                turn_image = EVOL_CONFIG[16]["skill_gif"]
+                msg_skill = f"⏳ **[Ace 2] [#16] Sakuya** kích hoạt **Thời Gian Đóng Băng**! ❄️ {oc['name']} bị STUN mất lượt!"
+                battle_logs.append(msg_skill)
+                turn_actions.append(msg_skill)
 
         oc["current_hp"] -= pc["power"]
+        turn_actions.append(f"⚔️ **{pc['name']}** tấn công gây **{pc['power']:,} DMG** lên **{oc['name']}**!")
+
         if not stunned:
             invul = False
             if pc["cid"] == 13 and pc["is_ace2"] and not p_reimu:
                 if random.random() < 0.30:
                     p_reimu = True
                     invul = True
-                    battle_logs.append(f"🛡️ **[Ace 2] [#13] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!")
+                    if not turn_image:
+                        turn_image = EVOL_CONFIG[13]["skill_gif"]
+                    msg_skill = f"🛡️ **[Ace 2] [#13] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN TOÀN BỘ THƯƠNG TỔN!"
+                    battle_logs.append(msg_skill)
+                    turn_actions.append(msg_skill)
             if not invul:
                 pc["current_hp"] -= oc["power"]
+                turn_actions.append(f"⚔️ **{oc['name']}** phản công gây **{oc['power']:,} DMG** lên **{pc['name']}**!")
+            else:
+                turn_actions.append(f"🛡️ **{pc['name']}** miễn nhiễm toàn bộ đòn đánh của **{oc['name']}**!")
+        else:
+            turn_actions.append(f"❄️ **{oc['name']}** bị đóng băng nên không thể phản công!")
 
+        # Cơ chế đổi sát thương trước khi tử trận (Last Stand Trade)
         if pc["current_hp"] <= 0:
             pc["current_hp"] = 0
-            p_idx += 1
-            if p_idx < len(player_cards): battle_logs.append(f"💀 **{pc['name']}** gục! ➡️ Đẩy **{player_cards[p_idx]['name']}** lên!")
+            trade_dmg = pc["power"]
+            oc["current_hp"] = max(0, oc["current_hp"] - trade_dmg)
+            turn_trades.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{pc['name']}** trước khi gục ngã đã kịp thời đổi **{trade_dmg:,} DMG** vào **{oc['name']}**!")
+
         if oc["current_hp"] <= 0:
             oc["current_hp"] = 0
+            trade_dmg = oc["power"]
+            pc["current_hp"] = max(0, pc["current_hp"] - trade_dmg)
+            turn_trades.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{oc['name']}** trước khi gục ngã đã kịp thời đổi **{trade_dmg:,} DMG** vào **{pc['name']}**!")
+
+        push_msg = []
+        if pc["current_hp"] <= 0:
+            p_idx += 1
+            if p_idx < len(player_cards):
+                push_msg.append(f"💀 **{pc['name']}** gục! ➡️ Đẩy **{player_cards[p_idx]['name']}** lên tiền tuyến!")
+                battle_logs.append(push_msg[-1])
+            else:
+                push_msg.append(f"☠️ Toàn bộ thẻ bài của **{user.display_name}** đã bị tiêu diệt!")
+        if oc["current_hp"] <= 0:
             o_idx += 1
-            if o_idx < len(opp_cards): battle_logs.append(f"💥 Hạ gục **{oc['name']}**! ➡️ Đối thủ đưa **{opp_cards[o_idx]['name']}** lên!")
+            if o_idx < len(opp_cards):
+                push_msg.append(f"💥 Hạ gục **{oc['name']}**! ➡️ Đối thủ đưa **{opp_cards[o_idx]['name']}** lên nghênh chiến!")
+                battle_logs.append(push_msg[-1])
+            else:
+                push_msg.append(f"🏆 Toàn bộ thẻ bài của đối thủ đã bị quét sạch!")
+
+        battle_turns.append({
+            "round": r_cnt,
+            "title": f"Hiệp {r_cnt}: {pc['name']} VS {oc['name']}",
+            "short_label": f"Hiệp {r_cnt}",
+            "short_desc": f"{pc['name']} vs {oc['name']}",
+            "desc": f"🔴 **{user.display_name}:** {pc['name']} (❤️ {max(0, pc['current_hp']):,} HP)\n🔵 **{opp_name}:** {oc['name']} (❤️ {max(0, oc['current_hp']):,} HP)",
+            "color": 0x10B981 if (oc['current_hp'] <= 0 and pc['current_hp'] > 0) else 0x3B82F6,
+            "image": turn_image,
+            "fields": [
+                ("⚡ Diễn Biến Giao Tranh:", "\n".join(turn_actions), False),
+                *([("💥 Đổi Sát Thương Trước Khi Chết:", "\n".join(turn_trades), False)] if turn_trades else []),
+                *([("🔄 Thay Đổi Tiền Tuyến:", "\n".join(push_msg), False)] if push_msg else []),
+                ("👥 Quân Số Còn Lại:", f"• {user.display_name}: Còn {max(0, len(player_cards) - p_idx)} thẻ\n• {opp_name}: Còn {max(0, len(opp_cards) - o_idx)} thẻ", False)
+            ]
+        })
 
     win = (o_idx >= len(opp_cards))
     gained_xp = random.randint(50, 100)
@@ -1798,9 +1992,10 @@ async def handle_battle(ctx_or_interaction):
         value=f"{'🏆 **CHIẾN THẮNG!**' if win else '💀 **THẤT BẠI!**'}\nNhận: **+{gained_xp} XP** (Tổng: {player['xp']:,} XP | Cấp: Lv.{cur_lvl}: {xp_in_lvl}/{needed_xp} XP){lvl_up_str}",
         inline=False
     )
-    embed.set_footer(text="Hồi chiêu lệnh: 2 phút")
-    if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
-    else: await ctx_or_interaction.send(embed=embed)
+    embed.set_footer(text="Hồi chiêu lệnh: 2 phút • Bấm nút bên dưới để xem chi tiết từng hiệp kèm GIF")
+    details_view = OpenDetailsView(battle_turns)
+    if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed, view=details_view)
+    else: await ctx_or_interaction.send(embed=embed, view=details_view)
 
 @bot.tree.command(name="battle", description="Giao đấu theo lượt character-by-character nhận 50-100 XP")
 async def slash_battle(interaction: discord.Interaction):
@@ -1809,6 +2004,359 @@ async def slash_battle(interaction: discord.Interaction):
 @bot.command(name="battle")
 async def prefix_battle(ctx):
     await handle_battle(ctx)
+
+# ==============================================================================
+# HỆ THỐNG ĐẠI CHIẾN PVP ĐỐI KHÁNG 3V3 (INTERACTIVE TURN-BY-TURN & GIF LOGS)
+# ==============================================================================
+class PvPChallengeView(discord.ui.View):
+    def __init__(self, challenger, target, c_team, t_team):
+        super().__init__(timeout=90)
+        self.challenger = challenger
+        self.target = target
+        self.c_team = c_team
+        self.t_team = t_team
+        self.msg = None
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        if self.msg:
+            try:
+                await self.msg.edit(content=f"⌛ Hết thời gian chờ! Lời thách đấu của {self.challenger.mention} tới {self.target.mention} đã hết hạn.", view=self)
+            except Exception:
+                pass
+
+    @discord.ui.button(label="⚔️ Chấp Nhận Quyết Đấu", style=discord.ButtonStyle.danger, emoji="💥")
+    async def accept_pvp(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.target.id:
+            await interaction.response.send_message("❌ Chỉ người được gửi chiến thư mới có quyền chấp nhận trận đấu!", ephemeral=True)
+            return
+
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(content=f"🔥 **{self.target.mention} ĐÃ CHẤP NHẬN CHIẾN THƯ!** Trận đại chiến 3v3 bắt đầu...", view=self)
+        self.stop()
+        asyncio.create_task(run_pvp_match(interaction.channel, self.challenger, self.target, self.c_team, self.t_team))
+
+    @discord.ui.button(label="🏳️ Từ Chối", style=discord.ButtonStyle.secondary, emoji="🛡️")
+    async def decline_pvp(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id not in [self.target.id, self.challenger.id]:
+            await interaction.response.send_message("❌ Bạn không liên quan đến lời thách đấu này!", ephemeral=True)
+            return
+
+        for child in self.children:
+            child.disabled = True
+        if interaction.user.id == self.target.id:
+            await interaction.response.edit_message(content=f"🏳️ **{self.target.mention}** đã từ chối lời thách đấu của **{self.challenger.mention}**.", view=self)
+        else:
+            await interaction.response.edit_message(content=f"🚫 **{self.challenger.mention}** đã hủy bỏ lời thách đấu.", view=self)
+        self.stop()
+
+async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids):
+    c_player = get_player(challenger.id, challenger.display_name)
+    t_player = get_player(target.id, target.display_name)
+
+    c_buff = (c_player["level"] - 1) * 10
+    t_buff = (t_player["level"] - 1) * 10
+
+    c_cards = []
+    for cid in c_team_cids[:3]:
+        c = CARDS_DATA.get(cid)
+        if c:
+            is_ace = is_card_ace2(c_player, cid)
+            ace_pwr = ACE_POWER_BUFF if is_ace else 0
+            ace_hp = ACE_HP_BUFF if is_ace else 0
+            cname = f"[Ace 2 ⭐⭐] #{c['id']:02d} {c['name']}" if is_ace else f"#{c['id']:02d} {c['name']}"
+            c_cards.append({
+                "cid": cid, "name": cname, "power": c["power"] + c_buff + ace_pwr,
+                "hp": c["hp"] + c_buff + ace_hp, "current_hp": c["hp"] + c_buff + ace_hp,
+                "max_hp": c["hp"] + c_buff + ace_hp, "is_ace2": is_ace
+            })
+
+    t_cards = []
+    for cid in t_team_cids[:3]:
+        c = CARDS_DATA.get(cid)
+        if c:
+            is_ace = is_card_ace2(t_player, cid)
+            ace_pwr = ACE_POWER_BUFF if is_ace else 0
+            ace_hp = ACE_HP_BUFF if is_ace else 0
+            cname = f"[Ace 2 ⭐⭐] #{c['id']:02d} {c['name']}" if is_ace else f"#{c['id']:02d} {c['name']}"
+            t_cards.append({
+                "cid": cid, "name": cname, "power": c["power"] + t_buff + ace_pwr,
+                "hp": c["hp"] + t_buff + ace_hp, "current_hp": c["hp"] + t_buff + ace_hp,
+                "max_hp": c["hp"] + t_buff + ace_hp, "is_ace2": is_ace
+            })
+
+    c_idx, t_idx, r_cnt = 0, 0, 0
+    c_sakuya, c_reimu = False, False
+    t_sakuya, t_reimu = False, False
+    pvp_turns = []
+    pvp_logs = []
+
+    while c_idx < len(c_cards) and t_idx < len(t_cards) and r_cnt < 30:
+        r_cnt += 1
+        cc = c_cards[c_idx]
+        tc = t_cards[t_idx]
+        turn_image = None
+        turn_actions = []
+        turn_trades = []
+
+        c_stunned = False
+        t_stunned = False
+
+        # Sakuya stun
+        if cc["cid"] == 16 and cc["is_ace2"] and not c_sakuya:
+            if random.random() < 0.30:
+                c_sakuya = True
+                t_stunned = True
+                turn_image = EVOL_CONFIG[16]["skill_gif"]
+                msg_skill = f"⏳ **[Ace 2] [#16] Sakuya** ({challenger.display_name}) kích hoạt **Thời Gian Đóng Băng**! ❄️ {tc['name']} bị STUN!"
+                pvp_logs.append(msg_skill)
+                turn_actions.append(msg_skill)
+
+        if tc["cid"] == 16 and tc["is_ace2"] and not t_sakuya:
+            if random.random() < 0.30:
+                t_sakuya = True
+                c_stunned = True
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[16]["skill_gif"]
+                msg_skill = f"⏳ **[Ace 2] [#16] Sakuya** ({target.display_name}) kích hoạt **Thời Gian Đóng Băng**! ❄️ {cc['name']} bị STUN!"
+                pvp_logs.append(msg_skill)
+                turn_actions.append(msg_skill)
+
+        # Reimu invul
+        c_invul = False
+        t_invul = False
+        if cc["cid"] == 13 and cc["is_ace2"] and not c_reimu:
+            if random.random() < 0.30:
+                c_reimu = True
+                c_invul = True
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[13]["skill_gif"]
+                msg_skill = f"🛡️ **[Ace 2] [#13] Reimu** ({challenger.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                pvp_logs.append(msg_skill)
+                turn_actions.append(msg_skill)
+
+        if tc["cid"] == 13 and tc["is_ace2"] and not t_reimu:
+            if random.random() < 0.30:
+                t_reimu = True
+                t_invul = True
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[13]["skill_gif"]
+                msg_skill = f"🛡️ **[Ace 2] [#13] Reimu** ({target.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                pvp_logs.append(msg_skill)
+                turn_actions.append(msg_skill)
+
+        # Giao tranh sát thương
+        if not c_stunned and not t_invul:
+            tc["current_hp"] -= cc["power"]
+            turn_actions.append(f"⚔️ **{cc['name']}** giáng **{cc['power']:,} DMG** lên **{tc['name']}**!")
+        elif c_stunned:
+            turn_actions.append(f"❄️ **{cc['name']}** bị đóng băng không thể tấn công!")
+        elif t_invul:
+            turn_actions.append(f"🛡️ **{tc['name']}** miễn nhiễm toàn bộ đòn đánh!")
+
+        if not t_stunned and not c_invul:
+            cc["current_hp"] -= tc["power"]
+            turn_actions.append(f"⚔️ **{tc['name']}** giáng **{tc['power']:,} DMG** lên **{cc['name']}**!")
+        elif t_stunned:
+            turn_actions.append(f"❄️ **{tc['name']}** bị đóng băng không thể tấn công!")
+        elif c_invul:
+            turn_actions.append(f"🛡️ **{cc['name']}** miễn nhiễm toàn bộ đòn đánh!")
+
+        # Cơ chế đổi sát thương trước khi tử trận (Last Stand Trade)
+        if cc["current_hp"] <= 0:
+            cc["current_hp"] = 0
+            trade_dmg = cc["power"]
+            tc["current_hp"] = max(0, tc["current_hp"] - trade_dmg)
+            turn_trades.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{cc['name']}** ({challenger.display_name}) trước khi gục đã kịp thời đổi **{trade_dmg:,} DMG** vào **{tc['name']}**!")
+
+        if tc["current_hp"] <= 0:
+            tc["current_hp"] = 0
+            trade_dmg = tc["power"]
+            cc["current_hp"] = max(0, cc["current_hp"] - trade_dmg)
+            turn_trades.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{tc['name']}** ({target.display_name}) trước khi gục đã kịp thời đổi **{trade_dmg:,} DMG** vào **{cc['name']}**!")
+
+        push_msg = []
+        if cc["current_hp"] <= 0:
+            c_idx += 1
+            if c_idx < len(c_cards):
+                push_msg.append(f"💀 **{cc['name']}** gục ngã! ➡️ {challenger.display_name} đưa **{c_cards[c_idx]['name']}** lên!")
+                pvp_logs.append(push_msg[-1])
+            else:
+                push_msg.append(f"☠️ Toàn bộ thẻ bài của **{challenger.display_name}** đã bị tiêu diệt!")
+        if tc["current_hp"] <= 0:
+            t_idx += 1
+            if t_idx < len(t_cards):
+                push_msg.append(f"💀 **{tc['name']}** gục ngã! ➡️ {target.display_name} đưa **{t_cards[t_idx]['name']}** lên!")
+                pvp_logs.append(push_msg[-1])
+            else:
+                push_msg.append(f"☠️ Toàn bộ thẻ bài của **{target.display_name}** đã bị tiêu diệt!")
+
+        pvp_turns.append({
+            "round": r_cnt,
+            "title": f"PvP Hiệp {r_cnt}: {challenger.display_name} VS {target.display_name}",
+            "short_label": f"Hiệp {r_cnt}",
+            "short_desc": f"{cc['name']} vs {tc['name']}",
+            "desc": (
+                f"🔴 **{challenger.display_name}:** {cc['name']} (❤️ {max(0, cc['current_hp']):,} HP)\n"
+                f"🔵 **{target.display_name}:** {tc['name']} (❤️ {max(0, tc['current_hp']):,} HP)"
+            ),
+            "color": 0xEF4444,
+            "image": turn_image,
+            "fields": [
+                ("⚡ Diễn Biến Giao Tranh:", "\n".join(turn_actions), False),
+                *([("💥 Đổi Sát Thương Trước Khi Chết:", "\n".join(turn_trades), False)] if turn_trades else []),
+                *([("🔄 Thay Đổi Tiền Tuyến:", "\n".join(push_msg), False)] if push_msg else []),
+                ("👥 Quân Số Còn Lại:", f"• {challenger.display_name}: Còn {max(0, len(c_cards) - c_idx)} thẻ\n• {target.display_name}: Còn {max(0, len(t_cards) - t_idx)} thẻ", False)
+            ]
+        })
+
+    # Xác định người chiến thắng
+    c_won = (t_idx >= len(t_cards) and c_idx < len(c_cards))
+    t_won = (c_idx >= len(c_cards) and t_idx < len(t_cards))
+
+    old_c_lvl = c_player["level"]
+    old_t_lvl = t_player["level"]
+
+    if c_won:
+        winner_name = challenger.display_name
+        c_player["xp"] += 100
+        c_player["battles_won"] = c_player.get("battles_won", 0) + 1
+        t_player["xp"] += 40
+        result_desc = f"🏆 **{challenger.mention} ĐÃ GIÀNH CHIẾN THẮNG TUYỆT ĐỐI!**\n💀 {target.mention} đã thất thủ sau {r_cnt} hiệp đấu nghẹt thở."
+    elif t_won:
+        winner_name = target.display_name
+        t_player["xp"] += 100
+        t_player["battles_won"] = t_player.get("battles_won", 0) + 1
+        c_player["xp"] += 40
+        result_desc = f"🏆 **{target.mention} ĐÃ GIÀNH CHIẾN THẮNG TUYỆT ĐỐI!**\n💀 {challenger.mention} đã thất thủ sau {r_cnt} hiệp đấu nghẹt thở."
+    else:
+        winner_name = "Hòa"
+        c_player["xp"] += 50
+        t_player["xp"] += 50
+        result_desc = f"⚖️ **KẾT QUẢ BẤT PHÂN THẮNG BẠI!**\nCả 2 bên đều chiến đấu anh dũng đến lá bài cuối cùng sau {r_cnt} hiệp."
+
+    c_player["battles_total"] = c_player.get("battles_total", 0) + 1
+    t_player["battles_total"] = t_player.get("battles_total", 0) + 1
+    save_player(c_player)
+    save_player(t_player)
+
+    embed = discord.Embed(
+        title=f"⚔️ KẾT QUẢ ĐẠI CHIẾN PVP ({r_cnt} HIỆP): {challenger.display_name} VS {target.display_name}",
+        description=result_desc,
+        color=0xF59E0B if winner_name == "Hòa" else 0x10B981
+    )
+    if pvp_logs:
+        embed.add_field(name="📜 Điểm Nhấn Trận Đấu:", value="\n".join(pvp_logs[:5]), inline=False)
+
+    c_lvl_str = f" 🎉 *(Lên Lv.{c_player['level']}!)*" if c_player['level'] > old_c_lvl else ""
+    t_lvl_str = f" 🎉 *(Lên Lv.{t_player['level']}!)*" if t_player['level'] > old_t_lvl else ""
+
+    embed.add_field(
+        name="🎁 Phần Thưởng Kinh Nghiệm (XP):",
+        value=(
+            f"• **{challenger.display_name}**: +{'100' if c_won else ('50' if not t_won else '40')} XP "
+            f"(Tổng: {c_player['xp']:,} XP | Cấp {c_player['level']}){c_lvl_str}\n"
+            f"• **{target.display_name}**: +{'100' if t_won else ('50' if not c_won else '40')} XP "
+            f"(Tổng: {t_player['xp']:,} XP | Cấp {t_player['level']}){t_lvl_str}"
+        ),
+        inline=False
+    )
+    embed.set_footer(text="Bấm 'Xem Chi Tiết Trận Chiến & GIF Kỹ Năng' bên dưới để xem lại từng hiệp đấu kèm GIF hoạt ảnh trực tiếp!")
+
+    await channel.send(embed=embed, view=OpenDetailsView(pvp_turns))
+
+async def handle_pvp(ctx_or_interaction, target: discord.Member):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+
+    if not target:
+        msg = "⚠️ Vui lòng tag hoặc chọn người chơi bạn muốn thách đấu! Ví dụ: `/pvp target:@User` hoặc `!pvp @User`"
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    if target.bot:
+        msg = "🤖 Không thể thách đấu Bot! Bạn chỉ có thể thách đấu người chơi thực tế."
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    if target.id == user.id:
+        msg = "🤡 Bạn không thể tự thách đấu chính mình!"
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    c_player = get_player(user.id, user.display_name)
+    t_player = get_player(target.id, target.display_name)
+
+    def get_effective_team(p):
+        team = [cid for cid in p.get("team", []) if cid in CARDS_DATA]
+        if len(team) < 3:
+            owned_ids = [int(cid) for cid, cnt in p.get("inventory", {}).items() if cnt > 0 and int(cid) in CARDS_DATA]
+            owned_ids.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
+            for cid in owned_ids:
+                if cid not in team:
+                    team.append(cid)
+                if len(team) >= 3:
+                    break
+        return team
+
+    c_team = get_effective_team(c_player)
+    t_team = get_effective_team(t_player)
+
+    if not c_team:
+        msg = "⚠️ Bạn chưa sở hữu thẻ bài nào để tham chiến! Dùng `/pull` để tìm kiếm thẻ bài nhé."
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    if not t_team:
+        msg = f"⚠️ Đối thủ {target.mention} hiện chưa sở hữu bất kỳ thẻ bài nào trong kho để tiếp nhận chiến thư!"
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    c_player["team"] = c_team
+    save_player(c_player)
+    t_player["team"] = t_team
+    save_player(t_player)
+
+    embed_challenge = discord.Embed(
+        title="⚔️ CHIẾN THƯ THÁCH ĐẤU PVP ĐỈNH CAO (3V3)",
+        description=f"🔥 **{user.mention}** đã gửi chiến thư thách đấu đối kháng 3v3 tới **{target.mention}**!\n\nNhấn nút **Chấp Nhận Quyết Đấu** bên dưới để khai màn trận đấu!",
+        color=0xEF4444
+    )
+    embed_challenge.set_thumbnail(url=user.display_avatar.url if hasattr(user, 'display_avatar') else "")
+
+    c_cards_str = "\n".join([f"• #{cid:02d} {CARDS_DATA[cid]['name']} ({CARDS_DATA[cid]['rank']}) - {CARDS_DATA[cid]['power']:,} ATK" for cid in c_team])
+    t_cards_str = "\n".join([f"• #{cid:02d} {CARDS_DATA[cid]['name']} ({CARDS_DATA[cid]['rank']}) - {CARDS_DATA[cid]['power']:,} ATK" for cid in t_team])
+
+    embed_challenge.add_field(name=f"🔴 Đội Hình {user.display_name} (Lv.{c_player['level']}):", value=c_cards_str, inline=True)
+    embed_challenge.add_field(name=f"🔵 Đội Hình {target.display_name} (Lv.{t_player['level']}):", value=t_cards_str, inline=True)
+    embed_challenge.add_field(
+        name="📜 Quy Tắc Quyết Đấu:",
+        value="• Đấu lần lượt 3 thẻ bài (tự động cộng chỉ số theo Cấp & Thức tỉnh Ace 2).\n• Kỹ năng Ace 2: Sakuya đóng băng, Reimu vô tưởng chuyển sinh (hiện GIF trực tiếp).\n• Thẻ bài trước khi gục ngã đều đổi toàn bộ sát thương lên đối thủ!\n• Sau trận có mục **Xem Chi Tiết Trận Chiến** để xem lại từng hiệp kèm GIF.",
+        inline=False
+    )
+    embed_challenge.set_footer(text="Thời gian chờ chấp nhận: 90 giây")
+
+    challenge_view = PvPChallengeView(user, target, c_team, t_team)
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(content=target.mention, embed=embed_challenge, view=challenge_view)
+        challenge_view.msg = await ctx_or_interaction.original_response()
+    else:
+        challenge_view.msg = await ctx_or_interaction.send(content=target.mention, embed=embed_challenge, view=challenge_view)
+
+@bot.tree.command(name="pvp", description="Thách đấu người chơi khác trong server trận đại chiến 3v3")
+@app_commands.describe(target="Chọn người chơi bạn muốn thách đấu")
+async def slash_pvp(interaction: discord.Interaction, target: discord.Member):
+    await handle_pvp(interaction, target)
+
+@bot.command(name="pvp")
+async def prefix_pvp(ctx, target: discord.Member = None):
+    await handle_pvp(ctx, target)
 
 @bot.tree.command(name="boss_status", description="Kiểm tra trạng thái và thời gian hồi chiêu của Boss Raid")
 async def slash_boss_status(interaction: discord.Interaction):
@@ -1848,7 +2396,9 @@ async def handle_help(ctx_or_interaction):
 • `/team [hanh_dong] [id_the]`: Quản lý đội hình (view, add, remove).
 • `/collection`: Xem 26 nhân vật Touhou (SS, S, A, B, C).
 • `/battle`: Giao đấu nhân vật nhận 50-100 XP (hồi chiêu 2p).
+• `/pvp <người_chơi>`: Thách đấu người chơi khác trong server trận đại chiến 3v3 đỉnh cao.
 • `/boss_status`: Kiểm tra hồi chiêu 15 phút của Boss Raid.
+• **Thông tin chi tiết trận chiến**: Sau Battle, Raid và PvP luôn có nút **📜 Xem Chi Tiết Trận Chiến & GIF Kỹ Năng** để xem lại từng hiệp kèm GIF hoạt ảnh trực tiếp (không dùng link dẫn ra ngoài).
 
 **👹 DỊ BIẾN REIMU DỊ HÌNH (LIVE COMBAT):**
 • **Phase 1 (35k HP / 15k DMG):** Nhận 3 quà vé pull. Trận đấu phát sóng turn-by-turn trực tiếp!
