@@ -16,6 +16,7 @@
 # ==============================================================================
 
 import os
+import re
 import time
 import json
 import random
@@ -2942,6 +2943,15 @@ def find_card_by_name_or_id(query: str):
     for cid, c in CARDS_DATA.items():
         if raw in c["name"].lower():
             return cid
+    # Tra cứu theo từng từ đơn (ví dụ gõ "reimu", "hakurei", "sakuya", "mokou", v.v.)
+    words = raw.replace("#", " ").replace(":", " ").split()
+    for w in words:
+        w_clean = w.strip()
+        if w_clean in CARD_ALIASES:
+            return CARD_ALIASES[w_clean]
+        for cid, c in CARDS_DATA.items():
+            if w_clean and len(w_clean) >= 3 and w_clean in c["name"].lower():
+                return cid
     return None
 
 def parse_trade_offer(offer_str: str):
