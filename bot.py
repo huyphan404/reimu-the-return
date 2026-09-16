@@ -2896,13 +2896,99 @@ async def handle_pvp(ctx_or_interaction, target: discord.Member):
 # HỆ THỐNG TRAO ĐỔI THẺ BÀI (TRADE CARDS - CHỐNG CLONE & XÁC NHẬN 2/2)
 # ==============================================================================
 
+CARD_ALIASES = {
+    "hecatia": 1, "lapislazuli": 1,
+    "junko": 2,
+    "okina": 3, "matara": 3,
+    "yukari": 4, "yakumo": 4,
+    "suika": 5, "ibuki": 5,
+    "eirin": 6, "yagokoro": 6,
+    "yuuka": 7, "kazami": 7,
+    "yuyuko": 8, "saigyouji": 8,
+    "flandre": 9, "flan": 9,
+    "kaguya": 10, "houraisan": 10,
+    "remilia": 11, "remi": 11,
+    "utsuho": 12, "okuu": 12, "reiuji": 12,
+    "reimu": 13, "hakurei": 13,
+    "mokou": 14, "fujiwara": 14,
+    "kasen": 15, "ibaraki": 15,
+    "sakuya": 16, "izayoi": 16,
+    "marisa": 17, "kirisame": 17,
+    "youmu": 18, "konpaku": 18,
+    "reisen": 19, "udongein": 19, "udonge": 19,
+    "patchouli": 20, "patchy": 20, "knowledge": 20,
+    "cirno": 21,
+    "meiling": 22, "hong": 22,
+    "rumia": 23,
+    "mystia": 24, "lorelei": 24,
+    "wriggle": 25, "nightbug": 25,
+    "tewi": 26
+}
+
+def find_card_by_name_or_id(query: str):
+    if not query:
+        return None
+    raw = query.strip().lower()
+    clean_num = raw.replace("#", "").strip()
+    if clean_num.isdigit():
+        cid = int(clean_num)
+        if cid in CARDS_DATA:
+            return cid
+    if raw in CARD_ALIASES:
+        return CARD_ALIASES[raw]
+    for cid, c in CARDS_DATA.items():
+        if raw == c["name"].lower():
+            return cid
+    for cid, c in CARDS_DATA.items():
+        if raw in c["name"].lower():
+            return cid
+    return None
+
+def parse_trade_offer(offer_str: str):
+    if not offer_str or not offer_str.strip():
+        return None, "Chuỗi đề nghị trao đổi thẻ không được để trống!"
+    items = [x.strip() for x in re.split(r"[,;]+", offer_str) if x.strip()]
+    if not items:
+        return None, "Không tìm thấy thẻ nào trong mục trao đổi!"
+
+    result = {}
+    for item in items:
+        if ":" in item:
+            parts = item.rsplit(":", 1)
+            card_part = parts[0].strip()
+            qty_part = parts[1].strip()
+        else:
+            words = item.strip().split()
+            if len(words) > 1 and words[-1].isdigit():
+                card_part = " ".join(words[:-1])
+                qty_part = words[-1]
+            else:
+                card_part = item.strip()
+                qty_part = "1"
+
+        try:
+            qty = int(qty_part)
+        except ValueError:
+            return None, f"Số lượng thẻ không hợp lệ trong `{item}`! Cú pháp chuẩn: `tên_nhân_vật:số_lượng` (Ví dụ: `reimu: 1` hoặc `sakuya:12`)."
+
+        if qty <= 0:
+            return None, f"Số lượng thẻ phải lớn hơn 0 (bạn nhập `{qty}`)!"
+
+        cid = find_card_by_name_or_id(card_part)
+        if not cid:
+            return None, f"Không tìm thấy nhân vật `{card_part}` trong Gensokyo! (Ví dụ hợp lệ: `reimu: 1`, `sakuya:12`, `marisa: 5`, `13: 1`)."
+
+        result[cid] = result.get(cid, 0) + qty
+
+    return result, None
+
 class TradeConfirmationView(discord.ui.View):
-    def __init__(self, initiator: discord.Member, target: discord.Member, card_give_id: int, card_receive_id: int):
+    def __init__(self, initiator: discord.Member, target: discord.Member, offer_give: dict, offer_receive: dict):
         super().__init__(timeout=120)
         self.initiator = initiator
         self.target = target
-        self.card_give_id = card_give_id
-        self.card_receive_id = card_receive_id
+        self.offer_give = offer_give      # {cid: qty} - Initiator gửi cho Target
+        self.offer_receive = offer_receive # {cid: qty} - Target gửi cho Initiator
         self.confirmed_users = set()
         self.msg = None
 
@@ -2937,29 +3023,37 @@ class TradeConfirmationView(discord.ui.View):
         inv_a = p_a.get("inventory", {})
         inv_b = p_b.get("inventory", {})
 
-        cnt_a_give = inv_a.get(str(self.card_give_id), 0)
-        cnt_b_give = inv_b.get(str(self.card_receive_id), 0)
-
-        card_give = CARDS_DATA.get(self.card_give_id)
-        card_receive = CARDS_DATA.get(self.card_receive_id)
-
         # Kiểm tra tính toàn vẹn số lượng trước khi swap
-        if cnt_a_give < 1 or cnt_b_give < 1:
-            for child in self.children:
-                child.disabled = True
-            await interaction.response.edit_message(
-                content="❌ **Giao dịch thất bại!** Một trong hai bên không còn đủ thẻ bài trong túi đồ để trao đổi.",
-                view=self
-            )
-            self.stop()
-            return
+        for cid, qty in self.offer_give.items():
+            if inv_a.get(str(cid), 0) < qty:
+                for child in self.children:
+                    child.disabled = True
+                await interaction.response.edit_message(
+                    content=f"❌ **Giao dịch thất bại!** {self.initiator.display_name} không còn đủ {qty} lá #{cid:02d} {CARDS_DATA[cid][name]} trong túi đồ.",
+                    view=self
+                )
+                self.stop()
+                return
+
+        for cid, qty in self.offer_receive.items():
+            if inv_b.get(str(cid), 0) < qty:
+                for child in self.children:
+                    child.disabled = True
+                await interaction.response.edit_message(
+                    content=f"❌ **Giao dịch thất bại!** {self.target.display_name} không còn đủ {qty} lá #{cid:02d} {CARDS_DATA[cid][name]} trong túi đồ.",
+                    view=self
+                )
+                self.stop()
+                return
 
         # Thực hiện hoán đổi thẻ bài
-        inv_a[str(self.card_give_id)] = cnt_a_give - 1
-        inv_b[str(self.card_give_id)] = inv_b.get(str(self.card_give_id), 0) + 1
+        for cid, qty in self.offer_give.items():
+            inv_a[str(cid)] = inv_a.get(str(cid), 0) - qty
+            inv_b[str(cid)] = inv_b.get(str(cid), 0) + qty
 
-        inv_b[str(self.card_receive_id)] = cnt_b_give - 1
-        inv_a[str(self.card_receive_id)] = inv_a.get(str(self.card_receive_id), 0) + 1
+        for cid, qty in self.offer_receive.items():
+            inv_b[str(cid)] = inv_b.get(str(cid), 0) - qty
+            inv_a[str(cid)] = inv_a.get(str(cid), 0) + qty
 
         p_a["inventory"] = inv_a
         p_b["inventory"] = inv_b
@@ -2977,20 +3071,20 @@ class TradeConfirmationView(discord.ui.View):
             ),
             color=0x10B981
         )
+
+        give_summary_a = "\n".join([f"• Gửi đi: {qty}x **#{cid:02d} [{CARDS_DATA[cid]['rank']}] {CARDS_DATA[cid]['name']}** (Còn: {inv_a.get(str(cid), 0)} lá)" for cid, qty in self.offer_give.items()])
+        recv_summary_a = "\n".join([f"• Nhận về: {qty}x **#{cid:02d} [{CARDS_DATA[cid]['rank']}] {CARDS_DATA[cid]['name']}** (Hiện có: {inv_a.get(str(cid), 0)} lá)" for cid, qty in self.offer_receive.items()])
         embed_success.add_field(
             name=f"📦 {self.initiator.display_name} cập nhật:",
-            value=(
-                f"• Gửi đi: 1x **#{card_give['id']:02d} [{card_give['rank']}] {card_give['name']}** (Còn: {inv_a.get(str(self.card_give_id), 0)} lá)\n"
-                f"• Nhận về: 1x **#{card_receive['id']:02d} [{card_receive['rank']}] {card_receive['name']}** (Hiện có: {inv_a.get(str(self.card_receive_id), 0)} lá)"
-            ),
+            value=f"{give_summary_a}\n{recv_summary_a}",
             inline=False
         )
+
+        give_summary_b = "\n".join([f"• Gửi đi: {qty}x **#{cid:02d} [{CARDS_DATA[cid]['rank']}] {CARDS_DATA[cid]['name']}** (Còn: {inv_b.get(str(cid), 0)} lá)" for cid, qty in self.offer_give.items()])
+        recv_summary_b = "\n".join([f"• Nhận về: {qty}x **#{cid:02d} [{CARDS_DATA[cid]['rank']}] {CARDS_DATA[cid]['name']}** (Hiện có: {inv_b.get(str(cid), 0)} lá)" for cid, qty in self.offer_receive.items()])
         embed_success.add_field(
             name=f"📦 {self.target.display_name} cập nhật:",
-            value=(
-                f"• Gửi đi: 1x **#{card_receive['id']:02d} [{card_receive['rank']}] {card_receive['name']}** (Còn: {inv_b.get(str(self.card_receive_id), 0)} lá)\n"
-                f"• Nhận về: 1x **#{card_give['id']:02d} [{card_give['rank']}] {card_give['name']}** (Hiện có: {inv_b.get(str(self.card_give_id), 0)} lá)"
-            ),
+            value=f"{give_summary_b}\n{recv_summary_b}",
             inline=False
         )
         embed_success.set_footer(text="🛡️ Đã xác thực chống Spam Clone: Thẻ bài trao đổi cả 2 bên đều đã sở hữu trước đó.")
@@ -3030,35 +3124,35 @@ class TradeConfirmationView(discord.ui.View):
                 pass
 
 
-async def handle_trade(ctx_or_interaction, target: discord.Member, la_gui: int = None, la_nhan: int = None):
+async def handle_trade(ctx_or_interaction, user: discord.Member, your: str = None, their: str = None):
     author = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
 
-    if target is None:
-        msg = "⚠️ Vui lòng gắn thẻ người bạn muốn giao dịch cùng! Ví dụ: `/trade target:@NgườiDùng la_gui:16 la_nhan:13` hoặc `!trade @User 16 13`"
+    if user is None:
+        msg = "⚠️ Vui lòng gắn thẻ người bạn muốn giao dịch cùng! Ví dụ: `/trade user:@NgườiDùng your:reimu: 1 their:sakuya:12`"
         if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else: await ctx_or_interaction.send(msg)
         return
 
-    if target.bot:
+    if user.bot:
         msg = "🤖 Không thể giao dịch thẻ bài với Bot!"
         if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else: await ctx_or_interaction.send(msg)
         return
 
-    if target.id == author.id:
+    if user.id == author.id:
         msg = "🤡 Bạn không thể tự giao dịch thẻ với chính mình!"
         if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else: await ctx_or_interaction.send(msg)
         return
 
     p_a = get_player(author.id, author.display_name)
-    p_b = get_player(target.id, target.display_name)
+    p_b = get_player(user.id, user.display_name)
 
     inv_a = p_a.get("inventory", {})
     inv_b = p_b.get("inventory", {})
 
-    if la_gui is None or la_nhan is None:
-        # Hiển thị hướng dẫn chi tiết và danh sách thẻ hợp lệ cả 2 cùng sở hữu
+    if not your or not their:
+        # Hiển thị hướng dẫn chi tiết và danh sách gợi ý thẻ hợp lệ cả 2 cùng sở hữu (ĐÃ BỎ DÒNG !)
         eligible_a_gives = [cid for cid, c in CARDS_DATA.items() if inv_a.get(str(cid), 0) >= 1 and (inv_b.get(str(cid), 0) >= 1 or is_card_ace2(p_b, cid))]
         eligible_b_gives = [cid for cid, c in CARDS_DATA.items() if inv_b.get(str(cid), 0) >= 1 and (inv_a.get(str(cid), 0) >= 1 or is_card_ace2(p_a, cid))]
 
@@ -3068,17 +3162,17 @@ async def handle_trade(ctx_or_interaction, target: discord.Member, la_gui: int =
         embed_guide = discord.Embed(
             title="🤝 HỆ THỐNG TRAO ĐỔI THẺ BÀI (TRADE CARDS)",
             description=(
-                f"**Giao dịch an toàn giữa {author.mention} và {target.mention}:**\n\n"
+                f"**Giao dịch an toàn giữa {author.mention} và {user.mention}:**\n\n"
                 f"📌 **Cú pháp lệnh:**\n"
-                f"• `/trade target:@{target.display_name} la_gui:<ID> la_nhan:<ID>`\n"
-                f"• `!trade @{target.display_name} <la_gui> <la_nhan>`\n\n"
+                f"• `/trade user:@{user.display_name} your:<tên_nhân_vật:số_lượng> their:<tên_nhân_vật:số_lượng>`\n"
+                f"*(Ví dụ: `/trade user:@{user.display_name} your:reimu: 1 their:sakuya:12`)*\n\n"
                 f"🛡️ **QUY TẮC CHỐNG CLONE ACCOUNT:**\n"
-                f"• Người nhận **BẮT BUỘC ĐÃ SỞ HỮU THẺ ĐÓ RỒI** mới có thể nhận thêm (phục vụ evol Ace dễ hơn, tuyệt đối ngăn chặn tạo acc clone cày thẻ hiếm dồn acc chính).\n"
-                f"• Cả 2 bên bắt buộc phải gửi thẻ cho nhau (trao đổi 1 đổi 1 tương hỗ).\n"
+                f"• Người nhận **BẮT BUỘC ĐÃ SỞ HỮU THẺ ĐÓ RỒI** mới có thể nhận thêm (phục vụ cày Ace dễ hơn, tuyệt đối ngăn chặn tạo acc clone cày thẻ hiếm dồn acc chính).\n"
+                f"• Cả 2 bên bắt buộc phải gửi thẻ cho nhau (trao đổi tương hỗ).\n"
                 f"• Cả 2 người phải cùng bấm nút xác nhận **(2/2)** trong vòng 2 phút để hoàn tất.\n\n"
                 f"📋 **Gợi ý thẻ hợp lệ có thể trao đổi ngay:**\n"
-                f"• **{author.display_name} có thể gửi cho {target.display_name}:**\n{a_cards_txt}\n"
-                f"• **{target.display_name} có thể gửi cho {author.display_name}:**\n{b_cards_txt}"
+                f"• **{author.display_name} có thể gửi cho {user.display_name}:**\n{a_cards_txt}\n"
+                f"• **{user.display_name} có thể gửi cho {author.display_name}:**\n{b_cards_txt}"
             ),
             color=0x3B82F6
         )
@@ -3088,89 +3182,95 @@ async def handle_trade(ctx_or_interaction, target: discord.Member, la_gui: int =
             await ctx_or_interaction.send(embed=embed_guide)
         return
 
-    card_give = CARDS_DATA.get(la_gui)
-    card_receive = CARDS_DATA.get(la_nhan)
-
-    if not card_give:
-        msg = f"❌ Thẻ gửi đi có ID `#{la_gui}` không tồn tại trong Gensokyo (ID từ 1 đến {len(CARDS_DATA)})!"
-        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
-        else: await ctx_or_interaction.send(msg)
+    # Parse your (offer_a) và their (offer_b)
+    offer_a, err_a = parse_trade_offer(your)
+    if err_a:
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(f"⚠️ **Mục [your] không hợp lệ:** {err_a}", ephemeral=True)
+        else: await ctx_or_interaction.send(f"⚠️ **Mục [your] không hợp lệ:** {err_a}")
         return
 
-    if not card_receive:
-        msg = f"❌ Thẻ nhận về có ID `#{la_nhan}` không tồn tại trong Gensokyo (ID từ 1 đến {len(CARDS_DATA)})!"
-        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
-        else: await ctx_or_interaction.send(msg)
+    offer_b, err_b = parse_trade_offer(their)
+    if err_b:
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(f"⚠️ **Mục [their] không hợp lệ:** {err_b}", ephemeral=True)
+        else: await ctx_or_interaction.send(f"⚠️ **Mục [their] không hợp lệ:** {err_b}")
         return
 
-    # Kiểm tra 1: Người gửi A phải có ít nhất 1 lá bài này
-    if inv_a.get(str(la_gui), 0) < 1:
-        msg = f"❌ Bạn không có thẻ **#{card_give['id']:02d} [{card_give['rank']}] {card_give['name']}** trong túi đồ để gửi đi!"
-        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
-        else: await ctx_or_interaction.send(msg)
-        return
+    # Kiểm tra tính hợp lệ của offer_a (A gửi cho B)
+    for cid, qty in offer_a.items():
+        card_info = CARDS_DATA[cid]
+        has_cnt = inv_a.get(str(cid), 0)
+        if has_cnt < qty:
+            msg = f"❌ Bạn (**{author.display_name}**) không đủ {qty} lá **#{cid:02d} [{card_info['rank']}] {card_info['name']}** để gửi đi! (Hiện chỉ có: {has_cnt} lá)"
+            if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+            else: await ctx_or_interaction.send(msg)
+            return
 
-    # Kiểm tra 2 (CHỐNG CLONE): Đối phương B bắt buộc phải đã sở hữu thẻ card_give rồi
-    if inv_b.get(str(la_gui), 0) < 1 and not is_card_ace2(p_b, la_gui):
-        msg = (
-            f"🛡️ **Quy định chống Clone Account:**\n"
-            f"Đối phương (**{target.display_name}**) chưa từng sở hữu thẻ **#{card_give['id']:02d} [{card_give['rank']}] {card_give['name']}**!\n"
-            f"⚠️ Người nhận bắt buộc phải đã sở hữu ít nhất 1 lá bài này từ trước mới được phép nhận trade (nhằm phục vụ cày Ace dễ hơn và chống clone acc cày thẻ hiếm dồn sang)."
-        )
-        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
-        else: await ctx_or_interaction.send(msg)
-        return
+        if inv_b.get(str(cid), 0) < 1 and not is_card_ace2(p_b, cid):
+            msg = (
+                f"🛡️ **Quy định chống Clone Account:**\n"
+                f"Đối phương (**{user.display_name}**) chưa từng sở hữu thẻ **#{cid:02d} [{card_info['rank']}] {card_info['name']}**!\n"
+                f"⚠️ Người nhận bắt buộc phải đã sở hữu ít nhất 1 lá bài này từ trước mới được phép nhận trade."
+            )
+            if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+            else: await ctx_or_interaction.send(msg)
+            return
 
-    # Kiểm tra 3: Đối phương B phải có ít nhất 1 lá bài card_receive để gửi lại
-    if inv_b.get(str(la_nhan), 0) < 1:
-        msg = f"❌ Đối phương (**{target.display_name}**) không có thẻ **#{card_receive['id']:02d} [{card_receive['rank']}] {card_receive['name']}** trong túi đồ để gửi lại cho bạn!"
-        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
-        else: await ctx_or_interaction.send(msg)
-        return
+    # Kiểm tra tính hợp lệ của offer_b (B gửi cho A)
+    for cid, qty in offer_b.items():
+        card_info = CARDS_DATA[cid]
+        has_cnt = inv_b.get(str(cid), 0)
+        if has_cnt < qty:
+            msg = f"❌ Đối phương (**{user.display_name}**) không đủ {qty} lá **#{cid:02d} [{card_info['rank']}] {card_info['name']}** để gửi lại! (Hiện chỉ có: {has_cnt} lá)"
+            if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+            else: await ctx_or_interaction.send(msg)
+            return
 
-    # Kiểm tra 4 (CHỐNG CLONE): Bạn A bắt buộc phải đã sở hữu thẻ card_receive rồi
-    if inv_a.get(str(la_nhan), 0) < 1 and not is_card_ace2(p_a, la_nhan):
-        msg = (
-            f"🛡️ **Quy định chống Clone Account:**\n"
-            f"Bạn (**{author.display_name}**) chưa từng sở hữu thẻ **#{card_receive['id']:02d} [{card_receive['rank']}] {card_receive['name']}**!\n"
-            f"⚠️ Bạn bắt buộc phải đã sở hữu ít nhất 1 lá bài này từ trước mới được phép nhận trade."
-        )
-        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
-        else: await ctx_or_interaction.send(msg)
-        return
+        if inv_a.get(str(cid), 0) < 1 and not is_card_ace2(p_a, cid):
+            msg = (
+                f"🛡️ **Quy định chống Clone Account:**\n"
+                f"Bạn (**{author.display_name}**) chưa từng sở hữu thẻ **#{cid:02d} [{card_info['rank']}] {card_info['name']}**!\n"
+                f"⚠️ Bạn bắt buộc phải đã sở hữu ít nhất 1 lá bài này từ trước mới được phép nhận trade."
+            )
+            if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+            else: await ctx_or_interaction.send(msg)
+            return
 
-    # Khởi tạo giao diện xác nhận 2/2
-    trade_view = TradeConfirmationView(author, target, la_gui, la_nhan)
+    # Khởi tạo giao diện xác nhận 2 bên sau khi gửi trade
+    trade_view = TradeConfirmationView(author, user, offer_a, offer_b)
     embed_trade = discord.Embed(
         title="🤝 LỜI ĐỀ NGHỊ TRAO ĐỔI THẺ BÀI TOUHOU",
         description=(
-            f"🔥 **{author.mention}** đã gửi một lời đề nghị trao đổi thẻ bài tới **{target.mention}**!\n"
+            f"🔥 **{author.mention}** đã gửi một lời đề nghị trao đổi thẻ bài tới **{user.mention}**!\n"
             f"*(Cả hai người chơi vui lòng kiểm tra kỹ chi tiết bên dưới và cùng bấm **Đồng Ý Xác Nhận (2/2)**)*"
         ),
         color=0xF59E0B
     )
+    give_txt = "\n".join([f"• {qty}x **#{cid:02d} [{CARDS_DATA[cid]['rank']}] {CARDS_DATA[cid]['name']}** (Kho: {inv_a.get(str(cid), 0)} lá)" for cid, qty in offer_a.items()])
+    recv_txt = "\n".join([f"• {qty}x **#{cid:02d} [{CARDS_DATA[cid]['rank']}] {CARDS_DATA[cid]['name']}** (Kho: {inv_b.get(str(cid), 0)} lá)" for cid, qty in offer_b.items()])
+
     embed_trade.add_field(
         name=f"📤 {author.display_name} gửi đi:",
-        value=f"• 1x **#{card_give['id']:02d} [{card_give['rank']}] {card_give['name']}**\n• Số lượng hiện có: **{inv_a.get(str(la_gui), 0)}** lá",
+        value=give_txt,
         inline=True
     )
     embed_trade.add_field(
-        name=f"📥 {target.display_name} gửi lại:",
-        value=f"• 1x **#{card_receive['id']:02d} [{card_receive['rank']}] {card_receive['name']}**\n• Số lượng hiện có: **{inv_b.get(str(la_nhan), 0)}** lá",
+        name=f"📥 {user.display_name} gửi lại:",
+        value=recv_txt,
         inline=True
     )
     embed_trade.add_field(
-        name="🛡️ Trạng Thái Xác Thực Chống Clone:",
-        value="✅ **Hợp lệ:** Cả hai bên đều đã sở hữu trước các lá bài này từ trước!",
+        name="🛡️ Trạng Thái Chống Clone:",
+        value="✅ **Hợp lệ:** Cả hai bên đều đã sở hữu trước các loại thẻ này!",
         inline=False
     )
     embed_trade.set_footer(text="Giao dịch sẽ tự động hủy sau 2 phút nếu không đủ 2/2 lượt xác nhận.")
 
     if isinstance(ctx_or_interaction, discord.Interaction):
-        await ctx_or_interaction.response.send_message(content=f"{target.mention}", embed=embed_trade, view=trade_view)
+        await ctx_or_interaction.response.send_message(content=f"{user.mention}", embed=embed_trade, view=trade_view)
         trade_view.msg = await ctx_or_interaction.original_response()
     else:
-        trade_view.msg = await ctx_or_interaction.send(content=f"{target.mention}", embed=embed_trade, view=trade_view)
+        msg = await ctx_or_interaction.send(content=f"{user.mention}", embed=embed_trade, view=trade_view)
+        trade_view.msg = msg
 
 @bot.tree.command(name="pvp", description="Thách đấu người chơi khác trong server trận đại chiến 3v3")
 @app_commands.describe(target="Chọn người chơi bạn muốn thách đấu")
@@ -3183,16 +3283,32 @@ async def prefix_pvp(ctx, target: discord.Member = None):
 
 @bot.tree.command(name="trade", description="Trao đổi thẻ bài giữa 2 người chơi (chống clone acc, xác nhận 2/2)")
 @app_commands.describe(
-    target="Người chơi bạn muốn trao đổi thẻ",
-    la_gui="ID thẻ bài bạn muốn gửi đi (Ví dụ: 16)",
-    la_nhan="ID thẻ bài bạn muốn nhận về (Ví dụ: 13)"
+    user="Người chơi bạn muốn trao đổi thẻ",
+    your="Thẻ bạn đưa ra kèm số lượng (Ví dụ: reimu: 1 hoặc reimu:1, marisa:2)",
+    their="Thẻ đối phương đưa ra kèm số lượng (Ví dụ: sakuya:12 hoặc sakuya:12, cirno:5)"
 )
-async def slash_trade(interaction: discord.Interaction, target: discord.Member, la_gui: int = None, la_nhan: int = None):
-    await handle_trade(interaction, target, la_gui, la_nhan)
+async def slash_trade(interaction: discord.Interaction, user: discord.Member, your: str = None, their: str = None):
+    await handle_trade(interaction, user, your, their)
 
 @bot.command(name="trade")
-async def prefix_trade(ctx, target: discord.Member = None, la_gui: int = None, la_nhan: int = None):
-    await handle_trade(ctx, target, la_gui, la_nhan)
+async def prefix_trade(ctx, user: discord.Member = None, *, offers: str = None):
+    your = None
+    their = None
+    if offers:
+        if "your:" in offers and "their:" in offers:
+            try:
+                parts = offers.split("their:")
+                your = parts[0].replace("your:", "").strip()
+                their = parts[1].strip()
+            except Exception:
+                pass
+        else:
+            items = offers.split()
+            if len(items) == 2:
+                your, their = items[0], items[1]
+            elif len(items) >= 4:
+                your, their = items[0] + " " + items[1], items[2] + " " + items[3]
+    await handle_trade(ctx, user, your, their)
 
 @bot.tree.command(name="boss_status", description="Kiểm tra trạng thái và thời gian hồi chiêu của Boss Raid")
 async def slash_boss_status(interaction: discord.Interaction):
@@ -3232,7 +3348,7 @@ async def handle_help(ctx_or_interaction):
   - [#13] Reimu (20 thẻ): Vô Tưởng Chuyển Sinh (40% miễn sát thương).
   - [#16] Sakuya (30 thẻ): Thời Gian Đóng Băng (40% stun đối thủ).
   - [#17] Marisa (25 thẻ): Master Spark (30% kích hoạt sát thương ×1.5 lần).
-• `/trade <target> <la_gui> <la_nhan>`: Trao đổi thẻ bài giữa 2 người chơi (bắt buộc cả 2 gửi thẻ, chống clone acc, giao diện xác nhận 2/2).
+• `/trade <user> [your] [their]`: Trao đổi thẻ bài (Cú pháp `your:tên:số_lượng` và `their:tên:số_lượng`, ví dụ: `your:reimu: 1 their:sakuya:12`, giao diện xác nhận 2 bên).
 • `/team [hanh_dong] [id_the]`: Quản lý đội hình (view, add, remove). Mỗi cấp độ tăng +20 ATK và +25 HP buff!
 • `/check [id_hoac_ten]`: Soi chi tiết sức mạnh, máu và kỹ năng của 26 nhân vật Touhou (kèm Ace 2, có nút mũi tên ◀ ▶ lướt xem danh sách và menu chọn nhanh).
 • `/collection`: Xem 26 nhân vật Touhou (SS, S, A, B, C).
