@@ -234,6 +234,143 @@ EVOL_CONFIG["13"] = EVOL_CONFIG[13]
 EVOL_CONFIG["16"] = EVOL_CONFIG[16]
 EVOL_CONFIG["17"] = EVOL_CONFIG[17]
 
+# ==============================================================================
+# 3.1 CHI TIẾT NĂNG LỰC & KỸ NĂNG 26 NHÂN VẬT TOUHOU (CHO TÍNH NĂNG CHECK NHÂN VẬT)
+# ==============================================================================
+CHARACTER_DETAILS = {
+    1: {
+        "title": "Nữ Thần Địa Ngục Tam Thân",
+        "skill_name": "Tam Giới Hỗn Mang",
+        "skill_desc": "Nữ thần tự do sở hữu 3 thân xác (Trái Đất, Mặt Trăng, Địa Ngục). Sát thương và sinh lực áp đảo hàng đầu Gensokyo (850 ATK / 8,500 HP)."
+    },
+    2: {
+        "title": "Hồn Tinh Khiết Căm Hờn",
+        "skill_name": "Nguyên Lực Tinh Khiết",
+        "skill_desc": "Thanh lọc mọi năng lượng về bản thể sơ khai nhất, giải phóng luồng đạn ma thuật thuần khiết hủy diệt vạn vật (800 ATK / 8,000 HP)."
+    },
+    3: {
+        "title": "Bí Thần Tối Cao Gensokyo",
+        "skill_name": "Hậu Môn Bí Cảnh",
+        "skill_desc": "Mở những cánh cổng bí ẩn sau lưng vạn vật, thao túng năng lượng sinh mệnh và tinh thần để khống chế toàn cục (750 ATK / 7,500 HP)."
+    },
+    4: {
+        "title": "Đại Yêu Quái Cảnh Giới",
+        "skill_name": "Thao Túng Cảnh Giới",
+        "skill_desc": "Kiểm soát ranh giới giữa thực và ảo, ánh sáng và bóng tối, biến mọi đòn công kích thành hư vô và mở kết giới phản đòn (720 ATK / 7,200 HP)."
+    },
+    5: {
+        "title": "Đại Quỷ Núi Yêu Quái",
+        "skill_name": "Đại Quỷ Thần Lực (Tụ Tán)",
+        "skill_desc": "Thao túng mật độ không gian và vật chất, có thể phân tán thành làn sương hoặc tụ thành quỷ khổng lồ giáng đòn nghiền nát (670 ATK / 6,700 HP)."
+    },
+    6: {
+        "title": "Dược Sư Nguyệt Đô",
+        "skill_name": "Hourai Trường Sinh Dược",
+        "skill_desc": "Bác sĩ thiên tài của Mặt Trăng, bậc thầy chế tạo mọi loại tiên dược Hourai và xạ kích tiễn thuật chuẩn xác (640 ATK / 6,600 HP)."
+    },
+    7: {
+        "title": "Bạo Chúa Thái Dương Hoa",
+        "skill_name": "Hồng Hoa Diệt Tuyệt",
+        "skill_desc": "Yêu quái hoa lâu đời nhất Gensokyo, bắn ra những chùm tia Master Spark hồng hoa hủy diệt kẻ xâm phạm (630 ATK / 6,300 HP)."
+    },
+    8: {
+        "title": "U Linh Bạch Ngọc Lâu",
+        "skill_name": "Bướm Ma Dẫn Hồn",
+        "skill_desc": "Công chúa u linh cai quản cõi chết, dẫn dụ linh hồn bước vào giấc ngủ vĩnh hằng bằng điệu múa bướm ma quái (620 ATK / 6,200 HP)."
+    },
+    9: {
+        "title": "Ác Ma Cuồng Loạn",
+        "skill_name": "Tuyệt Đối Phá Hủy (Kyū)",
+        "skill_desc": "Bóp nát \x27mục tiêu tồn tại\x27 trong lòng bàn tay, giải phóng sức mạnh ma cà rồng hủy diệt không thể ngăn cản (610 ATK / 5,700 HP)."
+    },
+    10: {
+        "title": "Công Chúa Ánh Trăng",
+        "skill_name": "Vĩnh Cửu & Tức Thời",
+        "skill_desc": "Công chúa Nguyệt Cung lưu đày tại Eientei, điều khiển dòng chảy thời gian vĩnh cửu và tức thời cùng thần bảo quý giá (590 ATK / 6,400 HP)."
+    },
+    11: {
+        "title": "Chúa Tể Hồng Ma Quán",
+        "skill_name": "Thương Đỏ Gungnir (Vận Mệnh)",
+        "skill_desc": "Ma cà rồng kiêu hãnh bẻ cong số mệnh kẻ thù, phóng ra ngọn giáo ánh sáng đỏ Gungnir xuyên thủng phòng ngự (560 ATK / 5,600 HP)."
+    },
+    12: {
+        "title": "Mặt Trời Địa Ngục",
+        "skill_name": "Hạch Tâm Phản Ứng (Nuclear)",
+        "skill_desc": "Mang sức mạnh thần mặt trời Yatagarasu, thi triển hạch tâm nhiệt hạch thiêu đốt toàn bộ chiến trường (550 ATK / 5,300 HP)."
+    },
+    13: {
+        "title": "Vu Nữ Đền Hakurei",
+        "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh",
+        "skill_desc": "Bay lượn khỏi thực tại và trừ tà ma thuật. [Ace 2 ⭐⭐]: Miễn toàn bộ sát thương 1 lần trong trận (Tỷ lệ 40% battle/pvp, 30% boss raid)!"
+    },
+    14: {
+        "title": "Phượng Hoàng Bất Tử",
+        "skill_name": "Phượng Hoàng Bất Diệt",
+        "skill_desc": "Cơ thể bất tử do uống tiên dược Hourai, triệu hồi ngọn lửa phượng hoàng thiêu đốt kẻ địch mà không hề sợ chết (490 ATK / 5,200 HP)."
+    },
+    15: {
+        "title": "Tiên Nhân Một Tay",
+        "skill_name": "Thần Thú Giáng Lâm",
+        "skill_desc": "Một trong Tứ Thiên Vương ẩn mình dưới thân phận tiên nhân dạy dỗ yêu quái và điều khiển muôn loài linh thú (480 ATK / 4,900 HP)."
+    },
+    16: {
+        "title": "Hầu Gái Trưởng Hoàn Hảo",
+        "skill_name": "Thời Gian Đóng Băng",
+        "skill_desc": "Bậc thầy phi dao bạc và không-thời gian. [Ace 2 ⭐⭐]: Đóng băng thời gian làm đối thủ/boss bị STUN mất lượt 1 lần trong trận (Tỷ lệ 40% battle/pvp, 30% boss raid)!"
+    },
+    17: {
+        "title": "Phù Thủy Bình Thường",
+        "skill_name": "Bát Quái Lô - Master Spark",
+        "skill_desc": "Ma thuật ánh sáng và nhiệt độ cao. [Ace 2 ⭐⭐]: Bắn đại bác ma thuật Master Spark gây sát thương ×1.5 lần sát thương gốc (Tỷ lệ 30% 1 lần trong trận)!"
+    },
+    18: {
+        "title": "Kiếm Sĩ Nửa Người Nửa Ma",
+        "skill_name": "Song Kiếm Lâu Quan & Bạch Lâu",
+        "skill_desc": "Thần tốc kiếm đạo: Lâu Quan Kiếm chém vạn vật và Bạch Lâu Kiếm chém tan ảo tưởng mê muội (410 ATK / 4,100 HP)."
+    },
+    19: {
+        "title": "Thỏ Ngọc Chiến Binh",
+        "skill_name": "Hồng Nhãn Cuồng Loạn",
+        "skill_desc": "Thỏ ngọc từ Mặt Trăng phát sóng ảo giác từ ánh mắt đỏ rực làm hoa mắt và rối loạn phương hướng đối phương (390 ATK / 3,900 HP)."
+    },
+    20: {
+        "title": "Đại Ma Đạo Sĩ Thất Diệu",
+        "skill_name": "Thất Diệu Ma Thuật",
+        "skill_desc": "Phù thủy thông thái trong thư viện ngầm, kết hợp 7 nguyên tố tự nhiên tạo thành ma trận công thủ liên hoàn (380 ATK / 3,200 HP)."
+    },
+    21: {
+        "title": "Đệ Nhất Băng Tiên",
+        "skill_name": "Perfect Freeze (Băng Đạn)",
+        "skill_desc": "Tiên tử băng giá mạnh nhất Hồ Sương Mù, đóng băng mọi vật thể và phóng mưa mảnh băng sắc nhọn (300 ATK / 3,000 HP)."
+    },
+    22: {
+        "title": "Thủ Môn Hồng Ma Quán",
+        "skill_name": "Thái Cực Khí Công Quyền",
+        "skill_desc": "Nữ võ sư tinh thông thể thuật khí công ngũ sắc, tạo rào chắn phòng thủ kiên cố bảo vệ tiền tuyến (260 ATK / 2,800 HP)."
+    },
+    23: {
+        "title": "Yêu Quái Hoàng Hôn",
+        "skill_name": "Dạ Tối Kết Giới",
+        "skill_desc": "Yêu quái bóng đêm bao bọc mình trong vòm đêm thuần túy, tung những đòn cắn xé bất ngờ từ bóng tối (220 ATK / 2,200 HP)."
+    },
+    24: {
+        "title": "Dạ Tước Huyễn Ca",
+        "skill_name": "Huyễn Ca Dạ Manh",
+        "skill_desc": "Giọng hát chim đêm mê hoặc khiến đối thủ bị chứng quáng gà và suy giảm độ chính xác đòn đánh (200 ATK / 2,000 HP)."
+    },
+    25: {
+        "title": "Đom Đóm Phát Quang",
+        "skill_name": "Đom Đóm Lôi Triệu",
+        "skill_desc": "Điều khiển hàng triệu côn trùng dạ quang tạo nên biển ánh sáng mê ảo làm hoa mắt đối thủ (180 ATK / 1,800 HP)."
+    },
+    26: {
+        "title": "Thỏ Rừng May Mắn",
+        "skill_name": "Vận May Thần Tài",
+        "skill_desc": "Thủ lĩnh thỏ rừng Inaba tinh nghịch, ban phát vận may cực lớn cho bản thân và đồng đội (150 ATK / 1,500 HP)."
+    }
+}
+
+
 BOSS_SKILL_CONFIG = {
     "name": "Dị Hình Bùa Chú",
     "chance": 0.20,
@@ -1918,6 +2055,278 @@ async def slash_collection(interaction: discord.Interaction):
 async def prefix_collection(ctx):
     await handle_collection(ctx)
 
+# ==============================================================================
+# TÍNH NĂNG CHECK NHÂN VẬT & SOI KỸ NĂNG (TOÀN BỘ 26 NHÂN VẬT + ACE 2)
+# ==============================================================================
+class CharacterCheckView(discord.ui.View):
+    def __init__(self, current_index: int = 0, user_id: int = None, show_ace: bool = False):
+        super().__init__(timeout=180)
+        self.current_index = max(0, min(current_index, len(CARDS_DATA) - 1))
+        self.user_id = user_id
+        self.show_ace = show_ace
+        self.rebuild_items()
+
+    def rebuild_items(self):
+        self.clear_items()
+        cid = self.current_index + 1
+        has_ace = cid in (13, 16, 17)
+
+        # Row 0: Điều hướng chuyển qua lại bằng mũi tên trái/phải
+        first_btn = discord.ui.Button(label="⏮️", style=discord.ButtonStyle.secondary, row=0)
+        first_btn.callback = self.first_page
+        self.add_item(first_btn)
+
+        prev_btn = discord.ui.Button(label="◀ Trước", style=discord.ButtonStyle.primary, row=0)
+        prev_btn.callback = self.prev_page
+        self.add_item(prev_btn)
+
+        counter_btn = discord.ui.Button(label=f"#{cid:02d} / 26", style=discord.ButtonStyle.secondary, disabled=True, row=0)
+        self.add_item(counter_btn)
+
+        next_btn = discord.ui.Button(label="Sau ▶", style=discord.ButtonStyle.primary, row=0)
+        next_btn.callback = self.next_page
+        self.add_item(next_btn)
+
+        last_btn = discord.ui.Button(label="⏭️", style=discord.ButtonStyle.secondary, row=0)
+        last_btn.callback = self.last_page
+        self.add_item(last_btn)
+
+        # Row 1: Nút xem Ace 2 hoặc Bản Thường
+        if has_ace:
+            if self.show_ace:
+                ace_toggle = discord.ui.Button(label="⭐ Xem Bản Thường", style=discord.ButtonStyle.secondary, emoji="🔄", row=1)
+            else:
+                ace_toggle = discord.ui.Button(label="🌟 Xem Bản Ace 2 ⭐⭐", style=discord.ButtonStyle.success, emoji="✨", row=1)
+            ace_toggle.callback = self.toggle_ace
+            self.add_item(ace_toggle)
+        else:
+            no_ace_btn = discord.ui.Button(label="⭐ Nhân Vật Bản Chuẩn", style=discord.ButtonStyle.secondary, disabled=True, row=1)
+            self.add_item(no_ace_btn)
+
+        # Row 2: Dropdown 1 (Nhân vật #01 - #13)
+        opt_part1 = []
+        for i in range(1, 14):
+            c = CARDS_DATA[i]
+            star = " ⭐⭐" if i in (13, 16, 17) else ""
+            opt_part1.append(discord.SelectOption(
+                label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
+                value=str(i),
+                description=f"ATK {c['power']:,} | HP {c['hp']:,} • Rank {c['rank']}"[:100],
+                default=(i == cid)
+            ))
+        select1 = discord.ui.Select(
+            placeholder="🔽 Chọn nhanh #01 - #13 (Hecatia ➔ Reimu)...",
+            options=opt_part1,
+            row=2
+        )
+        select1.callback = self.select_callback
+        self.add_item(select1)
+
+        # Row 3: Dropdown 2 (Nhân vật #14 - #26)
+        opt_part2 = []
+        for i in range(14, 27):
+            c = CARDS_DATA[i]
+            star = " ⭐⭐" if i in (13, 16, 17) else ""
+            opt_part2.append(discord.SelectOption(
+                label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
+                value=str(i),
+                description=f"ATK {c['power']:,} | HP {c['hp']:,} • Rank {c['rank']}"[:100],
+                default=(i == cid)
+            ))
+        select2 = discord.ui.Select(
+            placeholder="🔽 Chọn nhanh #14 - #26 (Mokou ➔ Tewi)...",
+            options=opt_part2,
+            row=3
+        )
+        select2.callback = self.select_callback
+        self.add_item(select2)
+
+    def get_current_embed(self) -> discord.Embed:
+        cid = self.current_index + 1
+        card = CARDS_DATA[cid]
+        details = CHARACTER_DETAILS.get(cid, {})
+        has_ace = cid in (13, 16, 17)
+        is_ace_mode = self.show_ace and has_ace
+
+        player = get_player(self.user_id) if self.user_id else None
+        user_level = player.get("level", 1) if player else 1
+        lvl_atk_buff = (user_level - 1) * 20
+        lvl_hp_buff = (user_level - 1) * 25
+        owned_cnt = player.get("inventory", {}).get(str(cid), 0) if player else 0
+        is_user_ace = is_card_ace2(player, cid) if player else False
+
+        rank_colors = {
+            "SS": 0xF59E0B,
+            "S": 0x8B5CF6,
+            "A": 0x3B82F6,
+            "B": 0x10B981,
+            "C": 0x6B7280
+        }
+
+        if is_ace_mode:
+            cfg = EVOL_CONFIG[cid]
+            color = 0xEF4444
+            title = f"🌟 [Ace 2 ⭐⭐] #{cid:02d} {card['name']} (Thức Tỉnh)"
+            power_val = card["power"] + 300
+            hp_val = card["hp"] + 300
+            skill_name = cfg["skill_name"]
+            skill_desc = cfg["skill_desc"]
+            img_url = cfg["evol_gif"]
+            mode_desc = "🔥 **Đang xem trạng thái: THỨC TỈNH ACE 2 ⭐⭐**\n*(Được cường hóa +300 Sức Mạnh & +300 Máu, khai mở tuyệt kỹ tối thượng!)*"
+        else:
+            color = rank_colors.get(card["rank"], 0x3B82F6)
+            title = f"🎴 [#{cid:02d}] {card['name']} • Rank [{card['rank']}]"
+            power_val = card["power"]
+            hp_val = card["hp"]
+            skill_name = details.get("skill_name", "Ma Pháp Tấn Công")
+            skill_desc = details.get("skill_desc", "Năng lực đặc trưng của nhân vật trong thế giới Gensokyo.")
+            img_url = card["image"]
+            mode_desc = f"*{details.get('title', 'Nhân Vật Touhou Project')}*"
+            if has_ace:
+                mode_desc += "\n✨ **Nhân vật này có thể tiến hóa Ace 2 ⭐⭐!** *(Bấm nút 'Xem Bản Ace 2' bên dưới)*"
+
+        embed = discord.Embed(
+            title=title,
+            description=mode_desc,
+            color=color
+        )
+        embed.set_image(url=img_url)
+
+        atk_team = power_val + lvl_atk_buff
+        hp_team = hp_val + lvl_hp_buff
+        stats_text = (
+            f"• ⚔️ **Sức Mạnh (Power / ATK):** `{power_val:,}`\n"
+            f"• ❤️ **Máu (HP):** `{hp_val:,}`\n"
+            f"• 🛡️ **Trong Đội Hình (Cấp {user_level}):** `{atk_team:,}` ATK | `{hp_team:,}` HP\n"
+            f"*(Mỗi cấp người chơi tăng +20 ATK và +25 HP)*"
+        )
+        if is_ace_mode:
+            stats_text += "\n⭐ **Đặc quyền Ace 2:** `+300 ATK & +300 HP` cộng trực tiếp vĩnh viễn!"
+        embed.add_field(name="⚔️ SỨC MẠNH & CHỈ SỐ:", value=stats_text, inline=False)
+
+        embed.add_field(
+            name=f"🔮 KỸ NĂNG & NĂNG LỰC: {skill_name}",
+            value=f"{skill_desc}",
+            inline=False
+        )
+
+        if player:
+            if is_user_ace:
+                ace_badge = "🌟 ĐÃ THỨC TỈNH ACE 2 ⭐⭐"
+            elif has_ace:
+                req = EVOL_CONFIG[cid]["required_cards"]
+                if owned_cnt >= req:
+                    ace_badge = f"🟢 Đủ điều kiện ({owned_cnt}/{req} thẻ) - Dùng `/evol`!"
+                else:
+                    ace_badge = f"🔴 Chưa đủ ({owned_cnt}/{req} thẻ) - Cần thêm {req - owned_cnt} thẻ"
+            else:
+                ace_badge = "Chưa có dạng thức tỉnh"
+
+            embed.add_field(
+                name="🎒 TÚI ĐỒ CỦA BẠN:",
+                value=f"• Sở hữu: **{owned_cnt}** lá\n• Cảnh giới: **{ace_badge}**",
+                inline=True
+            )
+
+        embed.add_field(
+            name="📊 HẠNG THẺ:",
+            value=f"• Thứ tự: **#{cid:02d} / 26**\n• Phẩm cấp: **Rank [{card['rank']}]**",
+            inline=True
+        )
+
+        embed.set_footer(
+            text=f"Trang {self.current_index + 1}/26 • Bấm ◀ / ▶ hoặc dùng Menu chọn nhanh nhân vật!"
+        )
+        return embed
+
+    async def first_page(self, interaction: discord.Interaction):
+        self.current_index = 0
+        self.show_ace = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def prev_page(self, interaction: discord.Interaction):
+        self.current_index = (self.current_index - 1) % len(CARDS_DATA)
+        self.show_ace = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def next_page(self, interaction: discord.Interaction):
+        self.current_index = (self.current_index + 1) % len(CARDS_DATA)
+        self.show_ace = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def last_page(self, interaction: discord.Interaction):
+        self.current_index = len(CARDS_DATA) - 1
+        self.show_ace = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def toggle_ace(self, interaction: discord.Interaction):
+        self.show_ace = not self.show_ace
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def select_callback(self, interaction: discord.Interaction):
+        selected_id = int(interaction.data["values"][0])
+        self.current_index = selected_id - 1
+        self.show_ace = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    
+    target_idx = 0
+    if nhan_vat:
+        nv_clean = nhan_vat.strip().lower()
+        if nv_clean.isdigit():
+            val = int(nv_clean)
+            if 1 <= val <= len(CARDS_DATA):
+                target_idx = val - 1
+        else:
+            found = False
+            for cid, c in CARDS_DATA.items():
+                if nv_clean in c["name"].lower():
+                    target_idx = cid - 1
+                    found = True
+                    break
+            if not found:
+                for cid, det in CHARACTER_DETAILS.items():
+                    if nv_clean in det.get("title", "").lower() or nv_clean in det.get("skill_name", "").lower():
+                        target_idx = cid - 1
+                        break
+    else:
+        player = get_player(user.id, user.display_name)
+        if player and player.get("team"):
+            lead_id = player["team"][0]
+            if 1 <= lead_id <= len(CARDS_DATA):
+                target_idx = lead_id - 1
+
+    view = CharacterCheckView(current_index=target_idx, user_id=user.id, show_ace=False)
+    embed = view.get_current_embed()
+
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed, view=view)
+    else:
+        await ctx_or_interaction.send(embed=embed, view=view)
+
+@bot.tree.command(name="check", description="Kiểm tra thông số sức mạnh, máu và kỹ năng của 26 nhân vật Touhou (kèm Ace 2)")
+@app_commands.describe(nhan_vat="Nhập số ID (1-26) hoặc tên nhân vật muốn xem ngay (để trống để duyệt từ đầu)")
+async def slash_check(interaction: discord.Interaction, nhan_vat: str = None):
+    await handle_check_character(interaction, nhan_vat)
+
+@bot.tree.command(name="card_info", description="Xem chi tiết sức mạnh, máu và chiêu thức thẻ bài Touhou (kèm Ace 2)")
+@app_commands.describe(nhan_vat="Nhập số ID (1-26) hoặc tên nhân vật muốn xem ngay")
+async def slash_card_info(interaction: discord.Interaction, nhan_vat: str = None):
+    await handle_check_character(interaction, nhan_vat)
+
+@bot.command(name="check", aliases=["char", "character", "card", "cardinfo"])
+async def prefix_check(ctx, *, nhan_vat: str = None):
+    await handle_check_character(ctx, nhan_vat)
+
+
 GENSOKYO_NPCS = [
     {"name": "Cirno Đệ Nhất", "badge": "❄️ Băng Tinh", "preferred": [18, 19, 20]},
     {"name": "Marisa Đạo Tặc", "badge": "⭐ Tinh Linh", "preferred": [6, 13, 17]},
@@ -2825,6 +3234,7 @@ async def handle_help(ctx_or_interaction):
   - [#17] Marisa (25 thẻ): Master Spark (30% kích hoạt sát thương ×1.5 lần).
 • `/trade <target> <la_gui> <la_nhan>`: Trao đổi thẻ bài giữa 2 người chơi (bắt buộc cả 2 gửi thẻ, chống clone acc, giao diện xác nhận 2/2).
 • `/team [hanh_dong] [id_the]`: Quản lý đội hình (view, add, remove). Mỗi cấp độ tăng +20 ATK và +25 HP buff!
+• `/check [id_hoac_ten]`: Soi chi tiết sức mạnh, máu và kỹ năng của 26 nhân vật Touhou (kèm Ace 2, có nút mũi tên ◀ ▶ lướt xem danh sách và menu chọn nhanh).
 • `/collection`: Xem 26 nhân vật Touhou (SS, S, A, B, C).
 
 **⚔️ CHIẾN ĐẤU & BOSS RAID:**
