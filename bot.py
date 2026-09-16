@@ -194,7 +194,7 @@ EVOL_CONFIG = {
         "required_pulls": 20,
         "evol_gif": "https://c.tenor.com/39VGItAUUCYAAAAC/reimu-reimu-hakurei.gif",
         "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh (Miễn Thương)",
-        "skill_desc": "Miễn toàn bộ sát thương duy nhất 1 lần trong trận (40% xác suất mỗi hiệp khi ra trận nhận đòn, chỉ bảo vệ riêng Reimu; 30% khi đối đầu Boss).",
+        "skill_desc": "Miễn toàn bộ sát thương duy nhất 1 lần trong trận (Tỷ lệ đồng nhất 40% mỗi hiệp khi nhận đòn cả trong Raid Boss và Battle/PvP, chỉ bảo vệ riêng Reimu).",
         "skill_gif": "https://c.tenor.com/gc4ws16CrTYAAAAC/reimu-touhou.gif",
         "bonus_power": 300,
         "bonus_hp": 300
@@ -207,9 +207,9 @@ EVOL_CONFIG = {
         "ace_level": "Ace 2 ⭐⭐",
         "required_cards": 30,
         "required_pulls": 30,
-        "evol_gif": "https://c.tenor.com/cbZDFo59zV8AAAAC/touhou-izayoi-sakuya.gif",
+        "evol_gif": "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/e8/09/O842rz9E.gif",
         "skill_name": "Thời Gian Đóng Băng (Stun Đối Thủ / Boss)",
-        "skill_desc": "Khiến Boss/đối thủ bị đóng băng (Stun) mất lượt duy nhất 1 lần trong trận (40% xác suất mỗi hiệp khi ở tiền tuyến; 30% khi đối đầu Boss).",
+        "skill_desc": "Khiến Boss/đối thủ bị đóng băng (Stun) mất lượt duy nhất 1 lần trong trận (Tỷ lệ đồng nhất 40% mỗi hiệp khi ở tiền tuyến cả trong Raid Boss và Battle/PvP).",
         "skill_gif": "https://c.tenor.com/0lC8dyA6_OwAAAAC/sakuya-izayoi-sakuya.gif",
         "bonus_power": 300,
         "bonus_hp": 300
@@ -301,7 +301,7 @@ CHARACTER_DETAILS = {
     13: {
         "title": "Vu Nữ Đền Hakurei",
         "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh",
-        "skill_desc": "Bay lượn khỏi thực tại và trừ tà ma thuật. [Ace 2 ⭐⭐]: Miễn toàn bộ sát thương 1 lần trong trận (Tỷ lệ 40% battle/pvp, 30% boss raid)!"
+        "skill_desc": "Bay lượn khỏi thực tại và trừ tà ma thuật. [Ace 2 ⭐⭐]: Miễn toàn bộ sát thương 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"
     },
     14: {
         "title": "Phượng Hoàng Bất Tử",
@@ -316,7 +316,7 @@ CHARACTER_DETAILS = {
     16: {
         "title": "Hầu Gái Trưởng Hoàn Hảo",
         "skill_name": "Thời Gian Đóng Băng",
-        "skill_desc": "Bậc thầy phi dao bạc và không-thời gian. [Ace 2 ⭐⭐]: Đóng băng thời gian làm đối thủ/boss bị STUN mất lượt 1 lần trong trận (Tỷ lệ 40% battle/pvp, 30% boss raid)!"
+        "skill_desc": "Bậc thầy phi dao bạc và không-thời gian. [Ace 2 ⭐⭐]: Đóng băng thời gian làm đối thủ/boss bị STUN mất lượt 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"
     },
     17: {
         "title": "Phù Thủy Bình Thường",
@@ -920,11 +920,11 @@ async def execute_raid(channel, raid_data):
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if ac["cid"] == 16 and ac["is_ace2"] and not c["sakuya_stun_used"]:
-                if random.random() < 0.30:
+                if random.random() < 0.40:
                     c["sakuya_stun_used"] = True
                     boss_stunned = True
                     turn_image = EVOL_CONFIG[16]["skill_gif"]
-                    sakuya_stun_notif = f"⏳ **[Ace 2] [#16] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (30%)! ❄️ Boss bị **STUN** mất lượt!"
+                    sakuya_stun_notif = f"⏳ **[Ace 2] [#16] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss bị **STUN** mất lượt!"
                     break
 
         round_player_dmg = 0
@@ -956,12 +956,12 @@ async def execute_raid(channel, raid_data):
                     ac = c["team_cards"][c["current_card_index"]]
                     invul = False
                     if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
-                        if random.random() < 0.30:
+                        if random.random() < 0.40:
                             c["reimu_invul_used"] = True
                             invul = True
                             if not turn_image or turn_image == BOSS_SKILL_CONFIG["gif"]:
                                 turn_image = EVOL_CONFIG[13]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (30%)! MIỄN THƯƠNG!"
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                     if not invul:
                         ac["current_hp"] -= 5000
             else:
@@ -972,11 +972,11 @@ async def execute_raid(channel, raid_data):
                     ac = c["team_cards"][c["current_card_index"]]
                     invul = False
                     if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
-                        if random.random() < 0.30:
+                        if random.random() < 0.40:
                             c["reimu_invul_used"] = True
                             invul = True
                             turn_image = EVOL_CONFIG[13]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                     if not invul:
                         ac["current_hp"] -= dmg_per_card
 
@@ -1140,11 +1140,11 @@ async def execute_raid(channel, raid_data):
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if ac["cid"] == 16 and ac["is_ace2"] and not c["sakuya_stun_used"]:
-                if random.random() < 0.30:
+                if random.random() < 0.40:
                     c["sakuya_stun_used"] = True
                     boss_stunned = True
                     turn_image = EVOL_CONFIG[16]["skill_gif"]
-                    sakuya_stun_notif = f"⏳ **[Ace 2] [#16] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (30%)! ❄️ Boss Phase 2 bị **STUN**!"
+                    sakuya_stun_notif = f"⏳ **[Ace 2] [#16] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss Phase 2 bị **STUN**!"
                     break
 
         round_player_dmg = 0
@@ -1176,12 +1176,12 @@ async def execute_raid(channel, raid_data):
                     ac = c["team_cards"][c["current_card_index"]]
                     invul = False
                     if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
-                        if random.random() < 0.30:
+                        if random.random() < 0.40:
                             c["reimu_invul_used"] = True
                             invul = True
                             if not turn_image or turn_image == BOSS_SKILL_CONFIG["gif"]:
                                 turn_image = EVOL_CONFIG[13]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (30%)! MIỄN THƯƠNG!"
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                     if not invul:
                         ac["current_hp"] -= 5000
             else:
@@ -1192,11 +1192,11 @@ async def execute_raid(channel, raid_data):
                     ac = c["team_cards"][c["current_card_index"]]
                     invul = False
                     if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
-                        if random.random() < 0.30:
+                        if random.random() < 0.40:
                             c["reimu_invul_used"] = True
                             invul = True
                             turn_image = EVOL_CONFIG[13]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                     if not invul:
                         ac["current_hp"] -= dmg_per_card
 
@@ -1789,7 +1789,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             f"• Trạng thái: **{reimu_status}**\n"
             f"• Trong túi đồ: **{reimu_cnt}/20** lá *(tiến hóa xong trừ 20 lá)*\n"
             f"• Buff Ace: **+300 ATK** & **+300 HP**\n"
-            f"• Kỹ năng: **{reimu_cfg['skill_name']}** (Miễn thương 1 lần trong trận, rate 40% battle/pvp, 30% boss)"
+            f"• Kỹ năng: **{reimu_cfg['skill_name']}** (Miễn thương 1 lần trong trận, tỷ lệ 40% cả raid và battle/pvp)"
         ),
         inline=False
     )
@@ -1801,7 +1801,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             f"• Trạng thái: **{sakuya_status}**\n"
             f"• Trong túi đồ: **{sakuya_cnt}/30** lá *(tiến hóa xong trừ 30 lá)*\n"
             f"• Buff Ace: **+300 ATK** & **+300 HP**\n"
-            f"• Kỹ năng: **{sakuya_cfg['skill_name']}** (Stun đối thủ 1 lần trong trận, rate 40% battle/pvp, 30% boss)"
+            f"• Kỹ năng: **{sakuya_cfg['skill_name']}** (Stun đối thủ 1 lần trong trận, tỷ lệ 40% cả raid và battle/pvp)"
         ),
         inline=False
     )
