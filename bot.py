@@ -40,10 +40,21 @@ load_dotenv()
 # ==============================================================================
 AUTHORIZED_ADMIN_ID = 1502579398560317441
 
-def is_authorized_admin(user_id: int) -> bool:
+def is_authorized_admin(user_or_id) -> bool:
     try:
-        return int(user_id) == AUTHORIZED_ADMIN_ID
-    except (ValueError, TypeError):
+        if isinstance(user_or_id, (int, str)):
+            return int(user_or_id) == AUTHORIZED_ADMIN_ID
+        uid = getattr(user_or_id, "id", None)
+        if uid and int(uid) == AUTHORIZED_ADMIN_ID:
+            return True
+        guild_perms = getattr(user_or_id, "guild_permissions", None)
+        if guild_perms and (guild_perms.administrator or guild_perms.manage_guild):
+            return True
+        guild = getattr(user_or_id, "guild", None)
+        if guild and getattr(guild, "owner_id", None) == uid:
+            return True
+        return False
+    except (ValueError, TypeError, Exception):
         return False
 
 # ==============================================================================
@@ -159,13 +170,13 @@ CARDS_BY_RANK = {
 }
 
 # ==============================================================================
-# BOSS REIMU DỊ HÌNH - CHỈ SỐ MỚI (PHASE 1: 35K HP, 15K DMG | PHASE 2: 50K HP, 22K DMG)
+# BOSS REIMU DỊ HÌNH - CHỈ SỐ MỚI (PHASE 1: 30K HP, 3K DMG | PHASE 2: 50K HP, 10K DMG)
 # ==============================================================================
 BOSS_CONFIG = {
     "name": "Reimu Dị Hình - Phase 1",
     "desc": "Đó không phải Reimu, sẵn sàng giao chiến!",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1549077421624401971/content.png?ex=6aa96245&is=6aa810c5&hm=c0248e497ee5afeed898b457736b39fc71368af3be1630f1cd59b5609c99fbeb&=&format=webp&quality=lossless&width=351&height=512",
-    "hp": 35000,      # Phase 1: 35,000 HP
+    "hp": 30000,      # Phase 1: 30,000 HP (nerfed từ 35k)
     "power": 3000,    # Phase 1: 3,000 DMG đánh thường
     "max_players": 6,
     "cooldown_seconds": 15 * 60  # 15 phút (900s) sau khi có bất kỳ ai tham gia raid
@@ -447,14 +458,123 @@ def get_default_player(user_id, username):
         "last_daily_date": "",
         "inventory": {},
         "pull_stats": {},
+        "unlocked_cards": [],
         "evolutions": {},
         "team": [],
         "language": "vi",
         "battles_won": 0,
         "battles_total": 0,
         "last_battle_time": 0.0,
-        "recent_opponents": []
+        "recent_opponents": [],
+        "tutorial": {
+            "active": True,
+            "step": "pull",
+            "quest_pulls_remaining": 3,
+            "completed": False
+        },
+        "daily_quests": {
+            "date": "",
+            "quests": [],
+            "all_completed_claimed": False
+        }
     }
+
+# ==============================================================================
+# HỆ THỐNG DAILY QUEST (3/3 NHIỆM VỤ MỖI NGÀY)
+# ==============================================================================
+DAILY_QUEST_POOL = [
+    {
+        "type": "pull",
+        "name": "Quay thẻ Touhou gacha",
+        "targets": [10, 20],
+        "reward_range": (2, 5)
+    },
+    {
+        "type": "battle",
+        "name": "Chiến đấu PvE Battle",
+        "targets": [10, 15, 20],
+        "reward_range": (2, 5)
+    },
+    {
+        "type": "daily",
+        "name": "Điểm danh hàng ngày (/daily)",
+        "targets": [1],
+        "reward_range": (1, 2)
+    },
+    {
+        "type": "pvp",
+        "name": "Thách đấu PvP đại chiến",
+        "targets": [3, 4, 5],
+        "reward_range": (2, 5)
+    },
+    {
+        "type": "raid",
+        "name": "Tham gia diệt Boss Reimu Dị Hình",
+        "targets": [1, 2, 3],
+        "reward_range": (5, 7)
+    }
+]
+
+def ensure_daily_quests(player: dict) -> dict:
+    today = datetime.now().strftime("%Y-%m-%d")
+    dq = player.get("daily_quests")
+    if not dq or dq.get("date") != today or len(dq.get("quests", [])) != 3:
+        chosen = random.sample(DAILY_QUEST_POOL, 3)
+        quests = []
+        for idx, item in enumerate(chosen):
+            target = random.choice(item["targets"])
+            reward = random.randint(item["reward_range"][0], item["reward_range"][1])
+            quests.append({
+                "id": idx + 1,
+                "type": item["type"],
+                "name": item["name"],
+                "target": target,
+                "current": 0,
+                "reward": reward,
+                "completed": False,
+                "claimed": False
+            })
+        player["daily_quests"] = {
+            "date": today,
+            "quests": quests,
+            "all_completed_claimed": False
+        }
+    return player["daily_quests"]
+
+def update_daily_quest_progress(player: dict, quest_type: str, amount: int = 1) -> list:
+    dq = ensure_daily_quests(player)
+    notifs = []
+    
+    for q in dq.get("quests", []):
+        if q["type"] == quest_type and not q.get("completed", False):
+            q["current"] = min(q["target"], q["current"] + amount)
+            if q["current"] >= q["target"]:
+                q["completed"] = True
+                if not q.get("claimed", False):
+                    q["claimed"] = True
+                    player["pull_tickets"] += float(q["reward"])
+                    notifs.append(f"🎯 **Hoàn thành Nhiệm vụ Ngày:** *{q['name']}* ({q['target']}/{q['target']}) ➔ Nhận ngay **+{q['reward']} Vé Pull**! 🎟️")
+
+    all_done = all(q.get("completed", False) for q in dq.get("quests", []))
+    if all_done and not dq.get("all_completed_claimed", False):
+        dq["all_completed_claimed"] = True
+        player["pull_tickets"] += 10.0
+        notifs.append(
+            "👑 **HOÀN THÀNH TOÀN BỘ 3/3 NHIỆM VỤ NGÀY!**\n"
+            "⛩️ **Reimu:** *\"10 lượt pull đây, lo mà sử dụng cẩn thận\"*\n"
+            "🎁 Nhận thêm **+10 Lượt Pull** tích lũy vào tài khoản!"
+        )
+    return notifs
+
+def is_card_unlocked(player: dict, card_id: Union[int, str]) -> bool:
+    cid_int = int(card_id)
+    cid_str = str(card_id)
+    unlocked = player.get("unlocked_cards", [])
+    if cid_int in unlocked or cid_str in [str(x) for x in unlocked]:
+        return True
+    if player.get("pull_stats", {}).get(cid_str, 0) > 0:
+        return True
+    return False
 
 def get_card_pulled_count(player: dict, card_id: Union[int, str]) -> int:
     cid_str = str(card_id)
@@ -470,6 +590,7 @@ def get_player(user_id, username="Visitor"):
     uid_str = str(user_id)
     now_date = datetime.now().strftime("%Y-%m-%d")
     data = None
+    is_new = False
     if use_mongo and players_collection is not None:
         try:
             doc = players_collection.find_one({"user_id": uid_str})
@@ -486,14 +607,33 @@ def get_player(user_id, username="Visitor"):
 
     if not data:
         data = get_default_player(user_id, username)
+        is_new = True
 
     if "inventory" not in data: data["inventory"] = {}
     if "pull_stats" not in data: data["pull_stats"] = {}
+    if "unlocked_cards" not in data:
+        data["unlocked_cards"] = []
+        for cid_s, cnt in data.get("pull_stats", {}).items():
+            if cnt > 0:
+                try: data["unlocked_cards"].append(int(cid_s))
+                except Exception: pass
     if "evolutions" not in data: data["evolutions"] = {}
     if "team" not in data: data["team"] = []
     if "xp" not in data: data["xp"] = 0
     if "pull_tickets" not in data: data["pull_tickets"] = 0.0
     if "language" not in data: data["language"] = "vi"
+    if "tutorial" not in data:
+        data["tutorial"] = {
+            "active": False,
+            "step": None,
+            "quest_pulls_remaining": 0,
+            "completed": False
+        }
+    if "daily_quests" not in data:
+        ensure_daily_quests(data)
+
+    if is_new:
+        data["_is_first_time"] = True
 
     if data.get("free_pulls_date") != now_date:
         data["free_pulls_date"] = now_date
@@ -731,12 +871,81 @@ class BattleDetailsView(discord.ui.View):
         self.update_buttons()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
+class OpponentTeamView(discord.ui.View):
+    def __init__(self, opp_cards, opp_name="", opp_level=1):
+        super().__init__(timeout=300)
+        self.opp_cards = opp_cards or []
+        self.opp_name = opp_name
+        self.opp_level = opp_level
+        self.selected_idx = 0
+
+        if len(self.opp_cards) > 1:
+            options = []
+            for i, c in enumerate(self.opp_cards):
+                lbl = f"#{c['cid']:02d} {c['raw_name']} [{c['rank']}]"[:100]
+                desc = f"ATK: {c['power']:,} | HP: {c['hp']:,}"[:100]
+                options.append(discord.SelectOption(label=lbl, value=str(i), description=desc, default=(i == 0)))
+            select_menu = discord.ui.Select(
+                placeholder="🔍 Chọn thẻ bài đối thủ để soi Artwork & Kỹ Năng...",
+                options=options,
+                row=0
+            )
+            select_menu.callback = self.select_callback
+            self.add_item(select_menu)
+
+    async def select_callback(self, interaction: discord.Interaction):
+        self.selected_idx = int(interaction.data["values"][0])
+        for item in self.children:
+            if isinstance(item, discord.ui.Select):
+                for opt in item.options:
+                    opt.default = (opt.value == str(self.selected_idx))
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    def get_embed(self):
+        if not self.opp_cards:
+            return discord.Embed(title="👁️ ĐỘI HÌNH ĐỐI THỦ", description="Không có thông tin đội hình đối thủ!", color=0x3B82F6)
+        c = self.opp_cards[self.selected_idx]
+        embed = discord.Embed(
+            title=f"👁️ TOÀN BỘ ĐỘI HÌNH ĐỐI THỦ: {self.opp_name} (Lv.{self.opp_level})",
+            description=f"Soi chiến thuật thẻ bài **#{c['cid']:02d} {c['raw_name']}** của đối phương!",
+            color=0x3B82F6
+        )
+        if c.get("image"):
+            embed.set_thumbnail(url=c["image"])
+        embed.add_field(name="⭐ Phẩm Cấp / Rank:", value=f"**[{c['rank']}]**", inline=True)
+        embed.add_field(
+            name="⚔️ Sức Mạnh (ATK):",
+            value=f"**{c['power']:,} DMG**\n*(Gốc: {c['base_power']:,} + Buff Lv: {c['power'] - c['base_power']:,})*",
+            inline=True
+        )
+        embed.add_field(
+            name="❤️ Sinh Mệnh (HP):",
+            value=f"**{c['hp']:,} HP**\n*(Gốc: {c['base_hp']:,} + Buff Lv: {c['hp'] - c['base_hp']:,})*",
+            inline=True
+        )
+
+        skill_text = c.get("skill") or "Tấn công Danmaku cơ bản"
+        embed.add_field(name="✨ Kỹ Năng / Tuyệt Kỹ Danmaku:", value=f"*{skill_text}*", inline=False)
+
+        summary_lines = []
+        for i, card in enumerate(self.opp_cards):
+            arrow = "👉 " if i == self.selected_idx else "• "
+            summary_lines.append(
+                f"{arrow}**#{card['cid']:02d} {card['raw_name']}** `[{card['rank']}]` ⚔️ `{card['power']:,} DMG` | ❤️ `{card['hp']:,} HP`"
+            )
+        embed.add_field(name="👥 Danh Sách Đầy Đủ 3 Thẻ Đối Thủ:", value="\n".join(summary_lines), inline=False)
+        embed.set_footer(text=f"Đang xem thẻ #{self.selected_idx + 1}/{len(self.opp_cards)} • Dùng menu bên dưới để đổi thẻ")
+        return embed
+
 class OpenDetailsView(discord.ui.View):
-    def __init__(self, turns_data):
+    def __init__(self, turns_data, opp_cards=None, opp_name="", opp_level=1):
         super().__init__(timeout=600)
         self.turns_data = turns_data
+        self.opp_cards = opp_cards or []
+        self.opp_name = opp_name
+        self.opp_level = opp_level
 
-    @discord.ui.button(label="📜 Xem Chi Tiết Trận Chiến & GIF Kỹ Năng", style=discord.ButtonStyle.success, emoji="📜")
+    @discord.ui.button(label="📜 Diễn Biến Từng Hiệp (GIF)", style=discord.ButtonStyle.success, emoji="📜", row=0)
     async def open_details(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self.turns_data:
             await interaction.response.send_message("Không có dữ liệu chi tiết cho trận chiến này!", ephemeral=True)
@@ -744,9 +953,108 @@ class OpenDetailsView(discord.ui.View):
         view = BattleDetailsView(self.turns_data)
         await interaction.response.send_message(embed=view.get_current_embed(), view=view, ephemeral=True)
 
+    @discord.ui.button(label="👁️ Soi Toàn Bộ Đội Hình Đối Thủ", style=discord.ButtonStyle.primary, emoji="👁️", row=0)
+    async def opp_team_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.opp_cards:
+            await interaction.response.send_message("Không tìm thấy thông tin thẻ của đối thủ!", ephemeral=True)
+            return
+        view = OpponentTeamView(self.opp_cards, self.opp_name, self.opp_level)
+        await interaction.response.send_message(embed=view.get_embed(), view=view, ephemeral=True)
+
 # ==============================================================================
 # 6. QUẢN LÝ BOSS RAID (LIVE TURN-BY-TURN COMBAT, 15P COOLDOWN, TICKET REWARDS)
 # ==============================================================================
+def check_and_clean_expired_raid():
+    global active_raid
+    if active_raid is not None:
+        created_ts = active_raid.get("created_timestamp")
+        # Nếu raid tồn tại quá 150s (2.5 phút) hoặc không có timestamp hợp lệ: tự dọn dẹp
+        if not created_ts or (time.time() - created_ts > 150):
+            active_raid = None
+            return True
+    return False
+
+async def admin_reset_boss(channel_or_interaction, author):
+    global active_raid, boss_cooldown_until
+    was_stuck = (active_raid is not None)
+    active_raid = None
+    boss_cooldown_until = 0
+
+    embed = discord.Embed(
+        title="🧹 [ADMIN] ĐÃ RESET BOSS RAID THÀNH CÔNG!",
+        description=(
+            f"👑 **Thực hiện bởi:** {author.mention}\n"
+            f"✅ **Trạng thái:** {'Đã giải phóng Boss Raid bị kẹt trước đó!' if was_stuck else 'Boss Raid đã được dọn sạch hoàn toàn.'}\n"
+            "⏱️ **Hồi chiêu:** Đã đưa thời gian hồi chiêu về **0 giây**.\n"
+            "⛩️ **Sẵn sàng:** Bạn có thể dùng `boss admin spawn` để gọi ngay tại kênh này, hoặc để boss tự xuất hiện khi chat!"
+        ),
+        color=0x10B981
+    )
+    embed.set_footer(text="Hakurei Shrine • Boss Raid Admin Reset")
+    if isinstance(channel_or_interaction, discord.Interaction):
+        if channel_or_interaction.response.is_done():
+            await channel_or_interaction.followup.send(embed=embed)
+        else:
+            await channel_or_interaction.response.send_message(embed=embed)
+    elif hasattr(channel_or_interaction, "send"):
+        await channel_or_interaction.send(embed=embed)
+
+async def admin_spawn_boss(channel, author):
+    global active_raid, boss_cooldown_until
+    active_raid = None
+    boss_cooldown_until = 0
+
+    active_raid = {
+        "channel_id": channel.id,
+        "participants": [],
+        "names": [],
+        "created_at": datetime.now().isoformat(),
+        "created_timestamp": time.time()
+    }
+    embed = discord.Embed(
+        title="🚨 [ADMIN TRIỆU HỒI] CẢNH BÁO KHẨN CẤP: DỊ BIẾN XUẤT HIỆN!",
+        description=f"👑 **Được triệu hồi bởi Admin:** {author.mention}\n\n**{BOSS_CONFIG['name']}**\n*{BOSS_CONFIG['desc']}*",
+        color=0xDC2626
+    )
+    embed.set_image(url=BOSS_CONFIG["image"])
+    embed.add_field(name="❤️ Máu Boss (HP):", value=f"{BOSS_CONFIG['hp']:,} HP *(Phase 1 30k HP)*", inline=True)
+    embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{BOSS_CONFIG['power']:,} DMG** *(chia đều)*\n• Phase 2: **{BOSS_PHASE2_CONFIG['power']:,} DMG** *(chia đều)*", inline=True)
+    embed.add_field(name=f"👥 Người Tham Gia (0/{BOSS_CONFIG['max_players']}):", value="Chưa có ai", inline=False)
+    embed.add_field(
+        name="🎁 Cơ Chế 2 Phase & Phần Thưởng Đột Phá:",
+        value=(
+            "• **Phase 1 (30k HP):** 10% ra **10 Vé**, 40% ra **5 Vé**, 50% ra **3 Vé**!\n"
+            f"• **Chuyển Phase 2 ({BOSS_PHASE2_CONFIG['hp']:,} HP / {BOSS_PHASE2_CONFIG['power']:,} DMG chia đều):** Hồi sinh & phục hồi **100% HP toàn bộ thẻ bài**!\n"
+            "• **Phase 2:** 10% ra **20 Vé**, 40% ra **10 Vé**, 50% ra **5 Vé**!\n"
+            "• **Trận đấu trực tiếp:** Diễn biến từng hiệp được phát sóng trực tiếp!"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="⏱️ Thời Gian Chuẩn Bị:",
+        value="Có **2 phút** để bấm tham chiến. Lượt spawn tiếp theo sau raid sẽ chờ **15 phút**!",
+        inline=False
+    )
+    embed.set_footer(text="Bấm 'Tham Gia' để xuất trận • Miễn phí • Admin Force Spawn")
+
+    view = RaidJoinView(active_raid)
+    msg = await channel.send(embed=embed, view=view)
+    active_raid["msg"] = msg
+
+    # Watchdog tự động giải phóng sau 130s nếu có bất kỳ sự cố event loop nào
+    async def raid_watchdog(target_raid):
+        global active_raid
+        await asyncio.sleep(130)
+        if active_raid is target_raid:
+            participants = target_raid.get("participants", [])
+            active_raid = None
+            if not participants:
+                try:
+                    await channel.send("⌛ Hết thời gian chờ, không có dũng giả tham chiến nên Reimu Dị Hình đã rút lui...")
+                except Exception:
+                    pass
+    asyncio.create_task(raid_watchdog(active_raid))
+
 class RaidJoinView(discord.ui.View):
     def __init__(self, raid_data):
         super().__init__(timeout=120)
@@ -807,15 +1115,24 @@ class RaidJoinView(discord.ui.View):
             except Exception: pass
 
         if active_raid is self.raid_data:
-            participants = self.raid_data.get("participants", [])
-            channel_id = self.raid_data.get("channel_id")
-            channel = bot.get_channel(channel_id)
-            if participants and channel:
-                await channel.send(f"⏰ **Hết thời gian chuẩn bị!** Toàn bộ {len(participants)} dũng giả đồng loạt xuất quân khai chiến với Reimu Dị Hình!")
-                await execute_raid(channel, self.raid_data)
-            elif channel:
+            try:
+                participants = self.raid_data.get("participants", [])
+                channel_id = self.raid_data.get("channel_id")
+                channel = bot.get_channel(channel_id)
+                if not channel:
+                    try:
+                        channel = await bot.fetch_channel(channel_id)
+                    except Exception:
+                        channel = None
+
+                if participants and channel:
+                    await channel.send(f"⏰ **Hết thời gian chuẩn bị!** Toàn bộ {len(participants)} dũng giả đồng loạt xuất quân khai chiến với Reimu Dị Hình!")
+                    await execute_raid(channel, self.raid_data)
+                elif channel:
+                    await channel.send("⌛ Không có ai dám nghênh chiến, Reimu Dị Hình đã trốn thoát...")
+            finally:
+                # Đảm bảo 100% giải phóng active_raid, không bao giờ bị kẹt
                 active_raid = None
-                await channel.send("⌛ Không có ai dám nghênh chiến, Reimu Dị Hình đã trốn thoát...")
 
 def get_hp_bar(current_hp, max_hp, total_blocks=10):
     ratio = max(0.0, min(1.0, current_hp / max_hp)) if max_hp > 0 else 0
@@ -1070,26 +1387,25 @@ async def execute_raid(channel, raid_data):
         await channel.send(embed=embed_fail, view=OpenDetailsView(all_raid_turns))
         return
 
-    # TRAO THƯỞNG PHASE 1
+    # TRAO THƯỞNG PHASE 1 (10% 10 vé, 40% 5 vé, 50% 3 vé)
     p1_rewards_data = {}
     for uid in participants:
         p = get_player(uid)
-        p1_total = 0.0
-        p1_items = []
-        for g_idx in range(1, 4):
-            roll = random.random()
-            if roll < 0.40:
-                t_val = 0.5
-                d_str = "+0.5 Vé (40%)"
-            else:
-                t_val = 1.0 / 3.0
-                d_str = "+0.33 Vé (60%)"
-            p1_total += t_val
-            p1_items.append(f"Quà {g_idx}: {d_str}")
-        p["pull_tickets"] += p1_total
+        roll = random.random()
+        if roll < 0.10:
+            t_val = 10.0
+            d_str = "🔥 **+10 Vé** (10%)"
+        elif roll < 0.50:
+            t_val = 5.0
+            d_str = "💎 **+5 Vé** (40%)"
+        else:
+            t_val = 3.0
+            d_str = "✨ **+3 Vé** (50%)"
+        p["pull_tickets"] += t_val
         p["xp"] += 100
+        update_daily_quest_progress(p, "raid", 1)
         save_player(p)
-        p1_rewards_data[uid] = {"total_pulls": p1_total, "items": p1_items, "username": p["username"]}
+        p1_rewards_data[uid] = {"total_pulls": t_val, "items": [d_str], "username": p["username"]}
 
     # THÔNG BÁO PHASE 2 VÀ HỒI PHỤC 100% MÁU TOÀN BỘ LÁ BÀI
     p2_alert_embed = discord.Embed(
@@ -1287,27 +1603,22 @@ async def execute_raid(channel, raid_data):
         for uid in participants:
             p = get_player(uid)
             old_lvl = p["level"]
-            p2_total = 0.0
-            p2_items = []
-            for g_idx in range(1, 4):
-                roll = random.random()
-                if roll < 0.20:
-                    t_val = 10.0
-                    d_str = "🔥 **+10 Vé** (20%)"
-                elif roll < 0.60:
-                    t_val = 5.0
-                    d_str = "💎 **+5 Vé** (40%)"
-                else:
-                    t_val = 3.0
-                    d_str = "✨ **+3 Vé** (60%)"
-                p2_total += t_val
-                p2_items.append(f"Quà {g_idx}: {d_str}")
-            p["pull_tickets"] += p2_total
+            roll = random.random()
+            if roll < 0.10:
+                t_val = 20.0
+                d_str = "👑 **+20 Vé** (10%)"
+            elif roll < 0.50:  # 0.10 + 0.40
+                t_val = 10.0
+                d_str = "🔥 **+10 Vé** (40%)"
+            else:
+                t_val = 5.0
+                d_str = "💎 **+5 Vé** (50%)"
+            p["pull_tickets"] += t_val
             p["xp"] += 150
             save_player(p)
             p2_rewards_data[uid] = {
-                "total_pulls": p2_total,
-                "items": p2_items,
+                "total_pulls": t_val,
+                "items": [d_str],
                 "username": p["username"],
                 "new_level": p["level"],
                 "old_level": old_lvl,
@@ -1326,15 +1637,15 @@ async def execute_raid(channel, raid_data):
     )
     final_embed.set_thumbnail(url=BOSS_PHASE2_CONFIG["image"] if p2_defeated else BOSS_CONFIG["image"])
 
-    p1_summary = [f"🎁 **{r['username']}**: +{r['total_pulls']:.2f} Vé Pull ({', '.join(r['items'])}) + 100 XP" for r in p1_rewards_data.values()]
-    final_embed.add_field(name="📦 Phần Thưởng Phase 1 (100% Vé Pull):", value="\n".join(p1_summary), inline=False)
+    p1_summary = [f"🎁 **{r['username']}**: +{r['total_pulls']:.0f} Vé Pull ({r['items'][0]}) + 100 XP" for r in p1_rewards_data.values()]
+    final_embed.add_field(name="📦 Phần Thưởng Phase 1 (10% 10 vé, 40% 5 vé, 50% 3 vé):", value="\n".join(p1_summary), inline=False)
 
     if p2_defeated:
         p2_summary = []
         for r in p2_rewards_data.values():
             lvl_up = f" 🌟 **LÊN CẤP {r['new_level']}!**" if r['new_level'] > r['old_level'] else ""
-            p2_summary.append(f"🏆 **{r['username']}**: Nhận **+{r['total_pulls']:.0f} Vé Pull** ({', '.join(r['items'])}) + 150 XP!{lvl_up}\n   └ *Tổng vé hiện có: {r['total_tickets']:.2f} vé*")
-        final_embed.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (20% 10 vé, 40% 5 vé, 60% 3 vé):", value="\n".join(p2_summary), inline=False)
+            p2_summary.append(f"🏆 **{r['username']}**: Nhận **+{r['total_pulls']:.0f} Vé Pull** ({r['items'][0]}) + 150 XP!{lvl_up}\n   └ *Tổng vé hiện có: {r['total_tickets']:.2f} vé*")
+        final_embed.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (10% 20 vé, 40% 10 vé, 50% 5 vé):", value="\n".join(p2_summary), inline=False)
     else:
         final_embed.add_field(name="⚠️ Kết Quả Phase 2:", value=f"Boss Phase 2 còn {p2_hp:,} HP! Toàn bộ quà Phase 1 vẫn được bảo lưu trọn vẹn.", inline=False)
 
@@ -1355,7 +1666,7 @@ async def on_ready():
     await bot.change_presence(
         activity=discord.Activity(
             type=discord.ActivityType.watching,
-            name="Đền Hakurei | /help | /pull | /battle | Boss 35k HP"
+            name="Đền Hakurei | /help | /pull | /battle | Boss 30k HP"
         )
     )
 
@@ -1365,7 +1676,25 @@ async def on_message(message: discord.Message):
         return
 
     content_lower = message.content.lower()
+    clean_stripped = message.content.strip().lower()
+
+    # 👑 LỆNH ADMIN BOSS RAID: boss admin spawn & boss admin reset (hỗ trợ cả có và không có prefix !)
+    if clean_stripped in ["boss admin spawn", "!boss admin spawn", "!boss_admin spawn"] or clean_stripped.startswith("boss admin spawn"):
+        if not is_authorized_admin(message.author):
+            await message.channel.send(f"⛔ {message.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được phép điều động Reimu Dị Hình!")
+            return
+        await admin_spawn_boss(message.channel, message.author)
+        return
+
+    if clean_stripped in ["boss admin reset", "!boss admin reset", "!boss_admin reset"] or clean_stripped.startswith("boss admin reset"):
+        if not is_authorized_admin(message.author):
+            await message.channel.send(f"⛔ {message.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được phép reset Reimu Dị Hình!")
+            return
+        await admin_reset_boss(message.channel, message.author)
+        return
+
     global active_raid, boss_cooldown_until
+    check_and_clean_expired_raid()
     now_ts = time.time()
     
     if active_raid is None and now_ts >= boss_cooldown_until and not content_lower.startswith("!") and not content_lower.startswith("/"):
@@ -1374,7 +1703,8 @@ async def on_message(message: discord.Message):
                 "channel_id": message.channel.id,
                 "participants": [],
                 "names": [],
-                "created_at": datetime.now().isoformat()
+                "created_at": datetime.now().isoformat(),
+                "created_timestamp": time.time()
             }
             embed = discord.Embed(
                 title="🚨 CẢNH BÁO KHẨN CẤP: DỊ BIẾN XUẤT HIỆN!",
@@ -1382,15 +1712,15 @@ async def on_message(message: discord.Message):
                 color=0xDC2626
             )
             embed.set_image(url=BOSS_CONFIG["image"])
-            embed.add_field(name="❤️ Máu Boss (HP):", value=f"{BOSS_CONFIG['hp']:,} HP *(35k HP)*", inline=True)
+            embed.add_field(name="❤️ Máu Boss (HP):", value=f"{BOSS_CONFIG['hp']:,} HP *(30k HP Phase 1)*", inline=True)
             embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{BOSS_CONFIG['power']:,} DMG** *(chia đều)*\n• Phase 2: **{BOSS_PHASE2_CONFIG['power']:,} DMG** *(chia đều)*", inline=True)
             embed.add_field(name=f"👥 Người Tham Gia (0/{BOSS_CONFIG['max_players']}):", value="Chưa có ai", inline=False)
             embed.add_field(
                 name="🎁 Cơ Chế 2 Phase & Phần Thưởng Đột Phá:",
                 value=(
-                    "• **Phase 1:** 40% ra **0.5 Vé**, 60% ra **0.33 Vé**!\n"
+                    "• **Phase 1 (30k HP):** 10% ra **10 Vé**, 40% ra **5 Vé**, 50% ra **3 Vé**!\n"
                     f"• **Chuyển Phase 2 ({BOSS_PHASE2_CONFIG['hp']:,} HP / {BOSS_PHASE2_CONFIG['power']:,} DMG chia đều):** Hồi sinh & phục hồi **100% HP toàn bộ thẻ bài**!\n"
-                    "• **Phase 2:** 20% ra **10 Vé Pull**, 40% ra **5 Vé Pull**, 60% ra **3 Vé Pull**!\n"
+                    "• **Phase 2:** 10% ra **20 Vé**, 40% ra **10 Vé**, 50% ra **5 Vé**!\n"
                     "• **Trận đấu trực tiếp:** Diễn biến từng hiệp được phát sóng trực tiếp!"
                 ),
                 inline=False
@@ -1464,6 +1794,12 @@ def execute_single_pull(player):
     is_duplicate = already_owned > 0
     player["inventory"][cid_str] = already_owned + 1
     player.setdefault("pull_stats", {})[cid_str] = player.get("pull_stats", {}).get(cid_str, 0) + 1
+
+    # Mở khóa vĩnh viễn khi pull (kể cả khi inventory về 0 lá do ace)
+    cid_int = int(chosen["id"])
+    unlocked = player.setdefault("unlocked_cards", [])
+    if cid_int not in unlocked:
+        unlocked.append(cid_int)
 
     converted_pulls = 0.0
     if is_duplicate:
@@ -1846,6 +2182,52 @@ async def prefix_evol(ctx, id_hoac_ten: str = None):
 async def handle_pull(ctx_or_interaction, count: int = 1):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
+    tut = player.get("tutorial", {})
+
+    # KIỂM TRA QUEST TÂN THỦ: 3 lượt pull 100% không trùng lá
+    if tut.get("active") and tut.get("step") == "pull":
+        available_ids = list(range(1, len(CARDS_DATA) + 1))
+        # Ưu tiên lấy 3 thẻ chưa từng mở khóa, 100% không trùng nhau
+        unowned = [cid for cid in available_ids if not is_card_unlocked(player, cid)]
+        if len(unowned) >= 3:
+            chosen_ids = random.sample(unowned, 3)
+        else:
+            chosen_ids = random.sample(available_ids, 3)
+
+        results = []
+        last_card = None
+        for cid in chosen_ids:
+            card = CARDS_DATA[cid]
+            last_card = card
+            cid_str = str(cid)
+            player["inventory"][cid_str] = player["inventory"].get(cid_str, 0) + 1
+            player.setdefault("pull_stats", {})[cid_str] = player.get("pull_stats", {}).get(cid_str, 0) + 1
+            unlocked = player.setdefault("unlocked_cards", [])
+            if cid not in unlocked:
+                unlocked.append(cid)
+            results.append(f"• `[#{card['id']:02d}]` **[{card['rank']}] {card['name']}** (⚔️{card['power']} | ❤️{card['hp']}) ✨ **[MỚI]**")
+
+        tut["quest_pulls_remaining"] = 0
+        tut["step"] = "collection"
+        save_player(player)
+
+        embed = discord.Embed(
+            title="🌸 KẾT QUẢ PULL TÂN THỦ (3 LƯỢT 100% KHÔNG TRÙNG)",
+            description="\n".join(results),
+            color=0x10B981
+        )
+        if last_card:
+            embed.set_thumbnail(url=last_card["image"])
+        embed.add_field(
+            name="⛩️ BƯỚC TIẾP THEO:",
+            value=f"🔔 {user.mention} **Reimu:** *\"Có vẻ ngươi đã đủ đội hình rồi đấy, giờ hãy kiểm tra đội ngũ mình nào `/collection`\"*",
+            inline=False
+        )
+        embed.set_footer(text="Nhiệm vụ tân thủ: Dùng lệnh /collection để tiếp tục!")
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
+        else: await ctx_or_interaction.send(embed=embed)
+        return
+
     count = max(1, min(10, count))
     total_avail = player.get("free_pulls_remaining", 0) + int(player.get("pull_tickets", 0))
 
@@ -1868,7 +2250,10 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
         dup_text = f" *(Trùng! +{conv:.2f} vé pull)*" if is_dup else " ✨ **[MỚI]**"
         results.append(f"• `[#{card['id']:02d}]` **[{card['rank']}] {card['name']}** (⚔️{card['power']} | ❤️{card['hp']}){dup_text}")
 
+    # Cập nhật nhiệm vụ ngày pull
+    dq_notifs = update_daily_quest_progress(player, "pull", count)
     save_player(player)
+
     embed = discord.Embed(
         title=f"🌸 KẾT QUẢ PULL THẺ GACHA ({count} LƯỢT)",
         description="\n".join(results),
@@ -1876,6 +2261,8 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
     )
     if card:
         embed.set_thumbnail(url=card["image"])
+    if dq_notifs:
+        embed.add_field(name="📜 Tiến Trình Nhiệm Vụ Ngày:", value="\n\n".join(dq_notifs), inline=False)
     embed.set_footer(text=f"Vé pull còn lại: {player['pull_tickets']:.2f} | Free hôm nay: {player['free_pulls_remaining']}/5")
     if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
     else: await ctx_or_interaction.send(embed=embed)
@@ -1892,6 +2279,13 @@ async def prefix_pull(ctx, count: int = 1):
 async def handle_daily(ctx_or_interaction):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
+
+    # Người chơi mới lần đầu tiên bấm lệnh: Kích hoạt ngay Tutorial tân thủ
+    if player.get("_is_first_time") and not player.get("tutorial", {}).get("completed"):
+        player["_is_first_time"] = False
+        await send_tutorial_intro(ctx_or_interaction, player)
+        return
+
     today = datetime.now().strftime("%Y-%m-%d")
 
     if player.get("last_daily_date") == today:
@@ -1902,12 +2296,15 @@ async def handle_daily(ctx_or_interaction):
 
     player["last_daily_date"] = today
     player["pull_tickets"] += 1.0
+    dq_notifs = update_daily_quest_progress(player, "daily", 1)
     save_player(player)
     embed = discord.Embed(
         title="🎁 ĐIỂM DANH HÀNG NGÀY / DAILY REWARD",
         description=f"Chúc mừng **{user.display_name}** đã viếng đền Hakurei!\nBạn nhận được: **+1 Lượt Pull** 🎟️\nTổng vé pull hiện có: **{player['pull_tickets']:.2f}**",
         color=0xF59E0B
     )
+    if dq_notifs:
+        embed.add_field(name="📜 Tiến Trình Nhiệm Vụ Ngày:", value="\n\n".join(dq_notifs), inline=False)
     if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
     else: await ctx_or_interaction.send(embed=embed)
 
@@ -1922,6 +2319,13 @@ async def prefix_daily(ctx):
 async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = None):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
+
+    # Người chơi mới lần đầu tiên bấm lệnh: Kích hoạt ngay Tutorial tân thủ
+    if player.get("_is_first_time") and not player.get("tutorial", {}).get("completed"):
+        player["_is_first_time"] = False
+        await send_tutorial_intro(ctx_or_interaction, player)
+        return
+
     cur_lvl, xp_in_lvl, needed_xp, ratio = get_level_progress(player.get("xp", 0))
     lvl_buff_pwr = get_level_atk_buff(cur_lvl)
     lvl_buff_hp = get_level_hp_buff(cur_lvl)
@@ -1935,8 +2339,11 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
             return
 
         cid_str = str(card_id)
-        if player["inventory"].get(cid_str, 0) < 1:
-            msg = f"⚠️ Bạn chưa sở hữu thẻ #{card_id:02d} {CARDS_DATA[card_id]['name']}!"
+        # Kiểm tra sở hữu trong kho hoặc đã mở khóa vĩnh viễn qua Pull
+        owned_inv = player["inventory"].get(cid_str, 0)
+        unlocked = is_card_unlocked(player, card_id)
+        if owned_inv < 1 and not unlocked:
+            msg = f"⚠️ Bạn chưa sở hữu hoặc chưa mở khóa thẻ #{card_id:02d} {CARDS_DATA[card_id]['name']}! Hãy dùng `/pull` để mở khóa."
             if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
             else: await ctx_or_interaction.send(msg)
             return
@@ -1960,6 +2367,17 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
         ace_pwr = ACE_POWER_BUFF if is_ace else 0
         ace_hp = ACE_HP_BUFF if is_ace else 0
         msg = f"✅ Đã thêm **#{card['id']:02d} [{card['rank']}] {card['name']}** vào đội hình! (Lực chiến: ⚔️{card['power'] + lvl_buff_pwr + ace_pwr:,} | ❤️{card['hp'] + lvl_buff_hp + ace_hp:,})"
+
+        # Kiểm tra nhiệm vụ tân thủ bước 3 (team)
+        tut = player.get("tutorial", {})
+        if tut.get("active") and tut.get("step") == "team":
+            if len(player["team"]) >= 3:
+                tut["step"] = "battle"
+                save_player(player)
+                msg += f"\n\n🔔 {user.mention} ⛩️ **Reimu:** *\"Giờ hãy thử `/battle` đi\"*"
+            else:
+                msg += f"\n\n💡 *Nhiệm vụ tân thủ: Đã thêm {len(player['team'])}/3 thẻ vào đội hình! Hãy tiếp tục add đủ 3 lần nhé!*"
+
         if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg)
         else: await ctx_or_interaction.send(msg)
         return
@@ -2035,16 +2453,32 @@ async def handle_collection(ctx_or_interaction):
     for cid in range(1, len(CARDS_DATA) + 1):
         card = CARDS_DATA[cid]
         cnt = player["inventory"].get(str(cid), 0)
-        if cnt > 0:
+        unlocked = is_card_unlocked(player, cid)
+        if cnt > 0 or unlocked:
             owned += 1
             is_ace = is_card_ace2(player, cid)
             ace_mark = " ⭐⭐ [Ace 2]" if is_ace else ""
-            lines.append(f"✅ **#{card['id']:02d} [{card['rank']}] {card['name']}** ×{cnt}{ace_mark}")
+            if cnt > 0:
+                lines.append(f"✅ **#{card['id']:02d} [{card['rank']}] {card['name']}** ×{cnt}{ace_mark}")
+            else:
+                lines.append(f"🔓 **#{card['id']:02d} [{card['rank']}] {card['name']}** ×0 *(Đã mở khóa)*{ace_mark}")
         else:
             lines.append(f"🔒 `#{card['id']:02d}` [{card['rank']}] {card['name']} *(Chưa có)*")
 
     embed = discord.Embed(title=f"📖 BỘ SƯU TẬP THẺ TOUHOU ({owned}/{len(CARDS_DATA)})", description="\n".join(lines), color=0x8B5CF6)
-    embed.set_footer(text="Quay thêm thẻ bằng lệnh /pull")
+
+    # Kiểm tra nhiệm vụ tân thủ bước 2 (collection)
+    tut = player.get("tutorial", {})
+    if tut.get("active") and tut.get("step") == "collection":
+        tut["step"] = "team"
+        save_player(player)
+        embed.add_field(
+            name="⛩️ BƯỚC TIẾP THEO:",
+            value=f"🔔 {user.mention} **Reimu:** *\"Tốt tốt, giờ nhìn id của họ và `/team add <id>` nào, nhớ là add đủ 3 lần nhé\"*",
+            inline=False
+        )
+
+    embed.set_footer(text="Quay thêm thẻ bằng lệnh /pull • Thẻ quay được sẽ mở khóa vĩnh viễn")
     if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
     else: await ctx_or_interaction.send(embed=embed)
 
@@ -2055,6 +2489,107 @@ async def slash_collection(interaction: discord.Interaction):
 @bot.command(name="collection")
 async def prefix_collection(ctx):
     await handle_collection(ctx)
+
+# ==============================================================================
+# HỆ THỐNG TUTORIAL TÂN THỦ & NHIỆM VỤ NGÀY
+# ==============================================================================
+async def send_tutorial_intro(ctx_or_interaction, player):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    tut = player.setdefault("tutorial", {})
+    tut["active"] = True
+    tut["step"] = "pull"
+    tut["quest_pulls_remaining"] = 3
+    tut["completed"] = False
+    save_player(player)
+
+    embed = discord.Embed(
+        title="🌸 KHÓA HUẤN LUYỆN TÂN THỦ - ĐỀN HAKUREI",
+        description=(
+            f"⛩️ **Reimu:** *\"Hm? Lại thêm 1 kẻ ngốc rơi vào đây nữa ư? Nghe này thế giới này không giống Gensokyo mà các người biết nên là nghe cho kĩ đây\"*\n\n"
+            "🎁 **Cấp người chơi 3 lượt pull** *(chỉ dành cho quest này thôi, pull 100% không trùng lá)*\n\n"
+            "👉 **Bước 1:** *\"Sử dụng lệnh `/pull` để tìm đồng đội cho mình\"*"
+        ),
+        color=0xF59E0B
+    )
+    embed.set_footer(text="Phần thưởng sau khi hoàn thành: 10 Lượt Pull • Dùng /pull để bắt đầu")
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        if ctx_or_interaction.response.is_done():
+            await ctx_or_interaction.followup.send(embed=embed)
+        else:
+            await ctx_or_interaction.response.send_message(embed=embed)
+    else:
+        await ctx_or_interaction.send(embed=embed)
+
+async def handle_tutorial(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    tut = player.get("tutorial", {})
+
+    if tut.get("completed"):
+        embed = discord.Embed(
+            title="⛩️ NHIỆM VỤ TÂN THỦ ĐÃ HOÀN THÀNH",
+            description=f"🎉 **{user.display_name}** đã hoàn thành toàn bộ khóa huấn luyện tân thủ và nhận thưởng 10 vé pull rồi!\nHãy dùng `/quest` để làm 3/3 Nhiệm Vụ Hàng Ngày nhé!",
+            color=0x10B981
+        )
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed, ephemeral=True)
+        else: await ctx_or_interaction.send(embed=embed)
+        return
+
+    await send_tutorial_intro(ctx_or_interaction, player)
+
+@bot.tree.command(name="tutorial", description="Mở khóa huấn luyện tân thủ đền Hakurei (Phần thưởng: 10 Lượt Pull)")
+async def slash_tutorial(interaction: discord.Interaction):
+    await handle_tutorial(interaction)
+
+@bot.command(name="tutorial", aliases=["huongdan", "tanthu"])
+async def prefix_tutorial(ctx):
+    await handle_tutorial(ctx)
+
+async def handle_quest(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    dq = ensure_daily_quests(player)
+    save_player(player)
+
+    today_str = dq.get("date", datetime.now().strftime("%Y-%m-%d"))
+    completed_count = sum(1 for q in dq.get("quests", []) if q.get("completed"))
+
+    embed = discord.Embed(
+        title=f"📜 NHIỆM VỤ HÀNG NGÀY ({completed_count}/3 HOÀN THÀNH)",
+        description=f"📅 **Hôm nay:** `{today_str}` • Tự động làm mới mỗi ngày!\nHoàn thành cả 3 nhiệm vụ để nhận đại tiệc **10 Lượt Pull** từ Reimu!",
+        color=0xF59E0B if completed_count < 3 else 0x10B981
+    )
+
+    for q in dq.get("quests", []):
+        progress = min(q["current"], q["target"])
+        pct = progress / q["target"] if q["target"] > 0 else 1.0
+        filled = int(pct * 8)
+        bar = "▰" * filled + "▱" * (8 - filled)
+        status = "✅ **ĐÃ XONG** (Đã nhận vé)" if q.get("claimed") else ("🎯 Đang thực hiện" if progress > 0 else "⏳ Chưa bắt đầu")
+        embed.add_field(
+            name=f"Nhiệm vụ #{q['id']}: {q['name']}",
+            value=f"• Tiến độ: `[{bar}]` **{progress}/{q['target']}**\n• Thưởng: **+{q['reward']} Vé Pull** 🎟️\n• Trạng thái: {status}",
+            inline=False
+        )
+
+    all_done = dq.get("all_completed_claimed", False)
+    all_bonus_status = "✅ ĐÃ NHẬN THƯỞNG 10 VÉ!" if all_done else ("🎁 SẴN SÀNG NHẬN!" if completed_count >= 3 else f"🔒 Hoàn thành thêm {3 - completed_count} nhiệm vụ để mở khóa")
+    embed.add_field(
+        name="👑 QUÀ ĐẶC BIỆT HOÀN THÀNH 3/3 NHIỆM VỤ:",
+        value=f"⛩️ **Reimu:** *\"10 lượt pull đây, lo mà sử dụng cẩn thận\"*\n• Phần thưởng: **+10 Lượt Pull Tích Lũy** 🎟️\n• Trạng thái: **{all_bonus_status}**",
+        inline=False
+    )
+    embed.set_footer(text=f"Vé pull hiện có: {player.get('pull_tickets', 0):.2f} • Hakurei Shrine Daily Quests")
+    if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
+    else: await ctx_or_interaction.send(embed=embed)
+
+@bot.tree.command(name="quest", description="Xem danh sách 3/3 Nhiệm vụ Hàng Ngày và phần thưởng 10 lượt pull")
+async def slash_quest(interaction: discord.Interaction):
+    await handle_quest(interaction)
+
+@bot.command(name="quest", aliases=["quests", "dailyquest"])
+async def prefix_quest(ctx):
+    await handle_quest(ctx)
 
 # ==============================================================================
 # TÍNH NĂNG CHECK NHÂN VẬT & SOI KỸ NĂNG (TOÀN BỘ 26 NHÂN VẬT + ACE 2)
@@ -2344,6 +2879,13 @@ GENSOKYO_NPCS = [
 async def handle_battle(ctx_or_interaction):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
+
+    # Người chơi mới lần đầu tiên bấm lệnh: Kích hoạt ngay Tutorial tân thủ
+    if player.get("_is_first_time") and not player.get("tutorial", {}).get("completed"):
+        player["_is_first_time"] = False
+        await send_tutorial_intro(ctx_or_interaction, player)
+        return
+
     if not player.get("team"):
         msg = "⚠️ Đội hình của bạn đang trống! Dùng `/team add id_the:<ID>` để xếp thẻ."
         if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
@@ -2351,9 +2893,9 @@ async def handle_battle(ctx_or_interaction):
         return
 
     now = time.time()
-    if now - player.get("last_battle_time", 0) < 120:
-        rem = int(120 - (now - player.get("last_battle_time", 0)))
-        msg = f"⏳ Bạn vừa chiến đấu kịch liệt, cần nghỉ ngơi thêm **{rem // 60}m {rem % 60}s**!"
+    if now - player.get("last_battle_time", 0) < 60:
+        rem = int(60 - (now - player.get("last_battle_time", 0)))
+        msg = f"⏳ Bạn vừa chiến đấu kịch liệt, cần nghỉ ngơi thêm **{rem}s**!"
         if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else: await ctx_or_interaction.send(msg)
         return
@@ -2377,8 +2919,11 @@ async def handle_battle(ctx_or_interaction):
             ace_hp = ACE_HP_BUFF if is_ace else 0
             cname = f"[Ace 2] #{c['id']:02d} {c['name']}" if is_ace else f"#{c['id']:02d} {c['name']}"
             player_cards.append({
-                "cid": cid, "name": cname, "power": c["power"] + p_buff_pwr + ace_pwr,
-                "hp": c["hp"] + p_buff_hp + ace_hp, "current_hp": c["hp"] + p_buff_hp + ace_hp, "is_ace2": is_ace
+                "cid": cid, "name": cname, "raw_name": c["name"], "rank": c.get("rank", "A"),
+                "power": c["power"] + p_buff_pwr + ace_pwr,
+                "hp": c["hp"] + p_buff_hp + ace_hp, "current_hp": c["hp"] + p_buff_hp + ace_hp,
+                "is_ace2": is_ace, "base_power": c["power"], "base_hp": c["hp"],
+                "image": c.get("image", "")
             })
 
     opp_cards = []
@@ -2386,8 +2931,12 @@ async def handle_battle(ctx_or_interaction):
         c = CARDS_DATA.get(cid)
         if c:
             opp_cards.append({
-                "cid": cid, "name": f"#{c['id']:02d} {c['name']}",
-                "power": c["power"] + o_buff_pwr, "hp": c["hp"] + o_buff_hp, "current_hp": c["hp"] + o_buff_hp
+                "cid": cid, "name": f"#{c['id']:02d} {c['name']}", "raw_name": c["name"],
+                "rank": c.get("rank", "A"), "power": c["power"] + o_buff_pwr,
+                "hp": c["hp"] + o_buff_hp, "current_hp": c["hp"] + o_buff_hp,
+                "base_power": c["power"], "base_hp": c["hp"],
+                "skill": c.get("skill", "Tấn công Danmaku cơ bản"),
+                "image": c.get("image", "")
             })
 
     p_idx, o_idx, r_cnt = 0, 0, 0
@@ -2493,30 +3042,71 @@ async def handle_battle(ctx_or_interaction):
         })
 
     win = (o_idx >= len(opp_cards))
-    gained_xp = random.randint(50, 100)
+    # Phần thưởng XP mới: Thắng nhận 100-200 XP, Thua nhận 30-50 XP
+    if win:
+        gained_xp = random.randint(100, 200)
+    else:
+        gained_xp = random.randint(30, 50)
+
     old_lvl = player["level"]
     player["last_battle_time"] = now
     player["xp"] += gained_xp
     player["battles_total"] = player.get("battles_total", 0) + 1
     if win: player["battles_won"] = player.get("battles_won", 0) + 1
+
+    # Cập nhật daily quest cho battle
+    dq_notifs = update_daily_quest_progress(player, "battle", 1)
+
+    # Kiểm tra nhiệm vụ tân thủ bước cuối (battle)
+    tut = player.get("tutorial", {})
+    tut_completed = False
+    if tut.get("active") and tut.get("step") == "battle":
+        tut["active"] = False
+        tut["step"] = "completed"
+        tut["completed"] = True
+        player["pull_tickets"] += 10.0
+        tut_completed = True
+
     save_player(player)
 
     new_lvl = player["level"]
     lvl_up_str = f"\n🎉 **LÊN CẤP {new_lvl}!** (+20 ATK & +25 HP buff)" if new_lvl > old_lvl else ""
     embed = discord.Embed(title=f"⚔️ BATTLE ({r_cnt} HIỆP): {user.display_name} VS {opp_name}", color=0x10B981 if win else 0xEF4444)
-    if battle_logs: embed.add_field(name="📜 Diễn Biến:", value="\n".join(battle_logs[:5]), inline=False)
+
+    # HIỂN THỊ HOÀN TOÀN ĐỘI HÌNH CỦA BẠN VÀ ĐỐI THỦ
+    your_team_lines = [
+        f"• {'⭐ ' if pc.get('is_ace2') else ''}**{pc['name']}** `[{pc.get('rank', 'A')}]` ⚔️ `{pc['power']:,}` | ❤️ `{pc['hp']:,}`"
+        for pc in player_cards
+    ]
+    embed.add_field(name=f"🔴 Đội Hình Của Bạn (Lv.{player['level']}):", value="\n".join(your_team_lines) if your_team_lines else "Trống", inline=False)
+
+    opp_team_lines = [
+        f"• **#{oc['cid']:02d} {oc['raw_name']}** `[{oc['rank']}]` ⚔️ `{oc['power']:,}` | ❤️ `{oc['hp']:,}`"
+        for oc in opp_cards
+    ]
+    embed.add_field(name=f"🔵 Toàn Bộ Đội Hình Đối Thủ: {opp_name} (Lv.{opp_level}):", value="\n".join(opp_team_lines) if opp_team_lines else "Trống", inline=False)
+
+    if battle_logs: embed.add_field(name="📜 Diễn Biến Nổi Bật:", value="\n".join(battle_logs[:5]), inline=False)
     cur_lvl, xp_in_lvl, needed_xp, _ = get_level_progress(player["xp"])
     embed.add_field(
         name="Kết Quả:",
-        value=f"{'🏆 **CHIẾN THẮNG!**' if win else '💀 **THẤT BẠI!**'}\nNhận: **+{gained_xp} XP** (Tổng: {player['xp']:,} XP | Cấp: Lv.{cur_lvl}: {xp_in_lvl}/{needed_xp} XP){lvl_up_str}",
+        value=f"{'🏆 **CHIẾN THẮNG!**' if win else '💀 **THẤT BẠI!**'}\nNhận: **+{gained_xp} XP** ({'Thắng +100-200 XP' if win else 'Thua +30-50 XP'} | Tổng: {player['xp']:,} XP | Cấp: Lv.{cur_lvl}: {xp_in_lvl}/{needed_xp} XP){lvl_up_str}",
         inline=False
     )
-    embed.set_footer(text="Hồi chiêu lệnh: 2 phút • Bấm nút bên dưới để xem chi tiết từng hiệp kèm GIF")
-    details_view = OpenDetailsView(battle_turns)
+    if tut_completed:
+        embed.add_field(
+            name="🎉 HOÀN THÀNH NHIỆM VỤ TÂN THỦ!",
+            value=f"🔔 {user.mention} ⛩️ **Reimu:** *\"Hoàn thành nhiệm vụ tân thủ, nhận thưởng 10 lượt pull\"* 🎟️ (+10 Vé Pull đã được cộng vào tài khoản!)",
+            inline=False
+        )
+    if dq_notifs:
+        embed.add_field(name="📜 Tiến Trình Nhiệm Vụ Ngày:", value="\n\n".join(dq_notifs), inline=False)
+    embed.set_footer(text="Hồi chiêu lệnh: 1 phút • Bấm 'Soi Toàn Bộ Đội Hình Đối Thủ' để xem chi tiết thẻ và kỹ năng đối phương")
+    details_view = OpenDetailsView(battle_turns, opp_cards=opp_cards, opp_name=opp_name, opp_level=opp_level)
     if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed, view=details_view)
     else: await ctx_or_interaction.send(embed=embed, view=details_view)
 
-@bot.tree.command(name="battle", description="Giao đấu theo lượt character-by-character nhận 50-100 XP")
+@bot.tree.command(name="battle", description="Giao đấu theo lượt: Thắng nhận 100-200 XP, Thua nhận 30-50 XP")
 async def slash_battle(interaction: discord.Interaction):
     await handle_battle(interaction)
 
@@ -2783,6 +3373,11 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids):
 
     c_player["battles_total"] = c_player.get("battles_total", 0) + 1
     t_player["battles_total"] = t_player.get("battles_total", 0) + 1
+
+    # Cập nhật daily quest cho PvP
+    dq_c = update_daily_quest_progress(c_player, "pvp", 1)
+    dq_t = update_daily_quest_progress(t_player, "pvp", 1)
+
     save_player(c_player)
     save_player(t_player)
 
@@ -3326,6 +3921,7 @@ async def prefix_trade(ctx, user: Union[discord.Member, discord.User] = None, *,
 @bot.tree.command(name="boss_status", description="Kiểm tra trạng thái và thời gian hồi chiêu của Boss Raid")
 async def slash_boss_status(interaction: discord.Interaction):
     global boss_cooldown_until, active_raid
+    check_and_clean_expired_raid()
     now = time.time()
     embed = discord.Embed(title="👹 TRẠNG THÁI BOSS RAID: REIMU DỊ HÌNH (2 PHASE)", color=0xDC2626)
     embed.set_thumbnail(url=BOSS_CONFIG["image"])
@@ -3337,25 +3933,78 @@ async def slash_boss_status(interaction: discord.Interaction):
         rem = int(boss_cooldown_until - now)
         embed.add_field(name="⏳ Hồi Chiêu:", value=f"Cần đợi thêm **{rem // 60} phút {rem % 60} giây** nữa!", inline=False)
     else:
-        embed.add_field(name="🟢 Sẵn Sàng:", value="Boss đã sẵn sàng xuất hiện ngẫu nhiên (10% khi chat)!", inline=False)
+        embed.add_field(name="🟢 Sẵn Sàng:", value="Boss đã sẵn sàng xuất hiện ngẫu nhiên (10% khi chat)!\n*(Hoặc Admin có thể dùng `boss admin spawn`)*", inline=False)
     await interaction.response.send_message(embed=embed)
 
 @bot.command(name="boss", aliases=["bossstatus"])
-async def prefix_boss_status(ctx):
+async def prefix_boss_status(ctx, *args):
     global boss_cooldown_until, active_raid
+    if args:
+        sub = " ".join(args).strip().lower()
+        if sub in ["admin spawn", "spawn"]:
+            if not is_authorized_admin(ctx.author):
+                await ctx.send(f"⛔ {ctx.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được triệu hồi Reimu Dị Hình!")
+                return
+            await admin_spawn_boss(ctx.channel, ctx.author)
+            return
+        elif sub in ["admin reset", "reset"]:
+            if not is_authorized_admin(ctx.author):
+                await ctx.send(f"⛔ {ctx.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được reset Reimu Dị Hình!")
+                return
+            await admin_reset_boss(ctx.channel, ctx.author)
+            return
+
+    check_and_clean_expired_raid()
     now = time.time()
-    if active_raid: await ctx.send("🚨 Boss Raid ĐANG XUẤT HIỆN! Hãy tham gia ngay!")
+    if active_raid:
+        await ctx.send("🚨 Boss Raid ĐANG XUẤT HIỆN! Hãy tham gia ngay!")
     elif now < boss_cooldown_until:
         rem = int(boss_cooldown_until - now)
         await ctx.send(f"⏳ Boss đang hồi chiêu 15 phút (Còn lại: {rem // 60}m {rem % 60}s).")
-    else: await ctx.send("🟢 Boss đã sẵn sàng xuất hiện (10% cơ hội khi chat)!")
+    else:
+        await ctx.send("🟢 Boss đã sẵn sàng xuất hiện (10% cơ hội khi chat, hoặc dùng `boss admin spawn`)!")
+
+@bot.tree.command(name="boss_admin", description="[Admin] Quản trị Boss Raid Reimu Dị Hình (spawn hoặc reset)")
+@app_commands.describe(action="Hành động muốn thực hiện với Boss Raid")
+@app_commands.choices(action=[
+    app_commands.Choice(name="spawn - Triệu hồi Boss ngay tại kênh này", value="spawn"),
+    app_commands.Choice(name="reset - Giải phóng Boss kẹt và xóa hồi chiêu", value="reset")
+])
+async def slash_boss_admin(interaction: discord.Interaction, action: str):
+    if not is_authorized_admin(interaction.user):
+        await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN HẠN!** Chỉ có Han Seiki hoặc Admin mới được dùng lệnh này!", ephemeral=True)
+        return
+    if action == "spawn":
+        await interaction.response.send_message("⚡ Đang cưỡng chế triệu hồi Reimu Dị Hình...", ephemeral=True)
+        await admin_spawn_boss(interaction.channel, interaction.user)
+    elif action == "reset":
+        await admin_reset_boss(interaction, interaction.user)
+
+@bot.tree.command(name="admin_boss_spawn", description="[Admin] Triệu hồi ngay Reimu Dị Hình tại kênh này")
+async def slash_admin_boss_spawn(interaction: discord.Interaction):
+    if not is_authorized_admin(interaction.user):
+        await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN HẠN!**", ephemeral=True)
+        return
+    await interaction.response.send_message("⚡ Đang triệu hồi Reimu Dị Hình...", ephemeral=True)
+    await admin_spawn_boss(interaction.channel, interaction.user)
+
+@bot.tree.command(name="admin_boss_reset", description="[Admin] Giải phóng Boss Raid bị kẹt và xóa hồi chiêu")
+async def slash_admin_boss_reset(interaction: discord.Interaction):
+    if not is_authorized_admin(interaction.user):
+        await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN HẠN!**", ephemeral=True)
+        return
+    await admin_reset_boss(interaction, interaction.user)
 
 async def handle_help(ctx_or_interaction):
     desc = """
 ⛩️ **HAKUREI REIMU DISCORD BOT - BẢN ĐỒ LỆNH**
 
+**🌸 TÂN THỦ & NHIỆM VỤ:**
+• `/tutorial`: Khóa huấn luyện tân thủ (Thưởng 10 lượt pull, cấp 3 lượt pull 100% không trùng lá).
+• `/quest`: Xem 3/3 Nhiệm vụ Hàng Ngày (Nhận vé pull & thưởng lớn +10 lượt pull khi xong cả 3).
+
 **🎮 GACHA, TIẾN HÓA & TRAO ĐỔI:**
-• `/pull [số_lượng]`: Quay thẻ Touhou (Free 5 lượt/ngày).
+• `/pull [số_lượng]`: Quay thẻ Touhou (Free 5 lượt/ngày). *Thẻ đã quay được sẽ mở khóa vĩnh viễn!*
 • `/daily`: Điểm danh nhận 1 vé pull mỗi ngày.
 • `/evol [id_hoac_ten]`: Tiến hóa Ace 2 ⭐⭐ (Buff +300 ATK, +300 HP, trừ thẻ sau khi evol):
   - [#13] Reimu (20 thẻ): Vô Tưởng Chuyển Sinh (40% miễn sát thương).
@@ -3367,14 +4016,14 @@ async def handle_help(ctx_or_interaction):
 • `/collection`: Xem 26 nhân vật Touhou (SS, S, A, B, C).
 
 **⚔️ CHIẾN ĐẤU & BOSS RAID:**
-• `/battle`: Giao đấu nhân vật nhận 50-100 XP (hồi chiêu 2p).
+• `/battle`: Giao đấu nhân vật nhận 50-100 XP (hồi chiêu 1 phút).
 • `/pvp <người_chơi>`: Thách đấu người chơi khác trong server trận đại chiến 3v3 đỉnh cao.
 • `/boss_status`: Kiểm tra hồi chiêu 15 phút của Boss Raid.
 • **Thông tin chi tiết trận chiến**: Sau Battle, Raid và PvP luôn có nút **📜 Xem Chi Tiết Trận Chiến & GIF Kỹ Năng** để xem lại từng hiệp kèm GIF hoạt ảnh trực tiếp (không dùng link dẫn ra ngoài).
 
 **👹 DỊ BIẾN REIMU DỊ HÌNH (LIVE COMBAT):**
-• **Phase 1 (35k HP / 15k DMG):** Nhận 3 quà vé pull. Trận đấu phát sóng turn-by-turn trực tiếp!
-• **Phase 2 Thức Tỉnh (50k HP / 22k DMG):** Tự động hồi sinh & hồi 100% HP mọi thẻ bài! Quà siêu cấp: 3-10 vé!
+• **Phase 1 (30k HP / 15k DMG):** Quà rơi: 10% 10 vé, 40% 5 vé, 50% 3 vé. Trận đấu phát sóng turn-by-turn trực tiếp!
+• **Phase 2 Thức Tỉnh (50k HP / 22k DMG):** Tự động hồi sinh & hồi 100% HP mọi thẻ bài! Quà siêu cấp: 10% 20 vé, 40% 10 vé, 50% 5 vé!
 
 **👑 LỆNH ADMIN (OWNER EXCLUSIVE - ID: 1502579398560317441):**
 • `/admin_set_level <user> <level>`: Đặt cấp độ và đồng bộ XP (+50 XP/cấp chuẩn xác).
