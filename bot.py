@@ -988,8 +988,10 @@ def check_and_clean_expired_raid():
     global active_raid
     if active_raid is not None:
         created_ts = active_raid.get("created_timestamp")
-        # Nếu raid tồn tại quá 150s (2.5 phút) hoặc không có timestamp hợp lệ: tự dọn dẹp
-        if not created_ts or (time.time() - created_ts > 150):
+        # Chỉ dọn dẹp khẩn cấp nếu raid chưa bắt đầu và đã vượt quá 180s (3 phút)
+        if not active_raid.get("started") and created_ts and (time.time() - created_ts > 180):
+            if active_raid.get("task") and not active_raid["task"].done():
+                active_raid["task"].cancel()
             active_raid = None
             return True
     return False
@@ -997,6 +999,15 @@ def check_and_clean_expired_raid():
 async def admin_reset_boss(channel_or_interaction, author):
     global active_raid, boss_cooldown_until
     was_stuck = (active_raid is not None)
+    if active_raid is not None:
+        if active_raid.get("task") and not active_raid["task"].done():
+            active_raid["task"].cancel()
+        if active_raid.get("view"):
+            for child in active_raid["view"].children:
+                child.disabled = True
+            if active_raid.get("msg"):
+                try: await active_raid["msg"].edit(view=active_raid["view"])
+                except Exception: pass
     active_raid = None
     boss_cooldown_until = 0
 
@@ -1019,25 +1030,102 @@ async def admin_reset_boss(channel_or_interaction, author):
     elif hasattr(channel_or_interaction, "send"):
         await channel_or_interaction.send(embed=embed)
 
-async def admin_spawn_boss(channel, author):
+async def raid_timer_lifecycle(channel, raid_data, view):
     global active_raid, boss_cooldown_until
-    active_raid = None
-    boss_cooldown_until = 0
+    try:
+        # Chờ tối đa 120 giây (2 phút), hoặc mở sớm nếu start_event kích hoạt (ví dụ đủ 6 người)
+        try:
+            await asyncio.wait_for(raid_data["start_event"].wait(), timeout=120.0)
+        except asyncio.TimeoutError:
+            pass
 
-    active_raid = {
+        # Vô hiệu hóa nút Tham Gia trên View để chốt danh sách
+        for child in view.children:
+            child.disabled = True
+        if raid_data.get("msg"):
+            try:
+                await raid_data["msg"].edit(view=view)
+            except Exception:
+                pass
+
+        # Kiểm tra nếu đã bắt đầu hoặc đã bị đóng bởi lệnh admin reset
+        if raid_data.get("started") or raid_data.get("closed"):
+            return
+
+        participants = raid_data.get("participants", [])
+
+        if participants:
+            # Có người tham gia: MỞ RAID TỰ ĐỘNG!
+            raid_data["started"] = True
+            boss_cooldown_until = time.time() + BOSS_CONFIG["cooldown_seconds"]
+            names_str = ", ".join(raid_data.get("names", []))
+            await channel.send(
+                f"⏰ **ĐÃ HẾT 2 PHÚT CHUẨN BỊ!**\n"
+                f"⚔️ **{len(participants)} Dũng Giả** ({names_str}) đồng loạt dàn quân xuất trận!\n"
+                f"👹 **Reimu Dị Hình** gầm thét kinh thiên động địa — **TRẬN ĐẠI CHIẾN CHÍNH THỨC BẮT ĐẦU!**"
+            )
+            try:
+                await execute_raid(channel, raid_data)
+            except Exception as e:
+                print(f"Lỗi khi thực thi Boss Raid: {e}", flush=True)
+                try:
+                    await channel.send(f"⚠️ Đã xảy ra sự cố kỹ thuật trong trận đánh Boss: `{e}`")
+                except Exception:
+                    pass
+            finally:
+                active_raid = None
+        else:
+            # Không có ai tham gia: TỰ ĐỘNG ĐÓNG VÀ THÔNG BÁO THEO YÊU CẦU
+            raid_data["closed"] = True
+            active_raid = None
+            # Boss trốn thoát nên hồi chiêu ngắn (60s) để sớm có cơ hội xuất hiện lại
+            boss_cooldown_until = time.time() + 60
+            await channel.send(
+                "🌌 **Dị hình đã xé toạc không gian và trốn thoát do không có pháp sư nào dám nghênh chiến!**\n"
+                "*(Đền Hakurei tạm thời tĩnh lặng, hãy chuẩn bị lực lượng cho lần dị biến tiếp theo...)*"
+            )
+    except asyncio.CancelledError:
+        return
+    except Exception as ex:
+        print(f"Lỗi trong raid_timer_lifecycle: {ex}", flush=True)
+        active_raid = None
+
+async def spawn_boss_raid(channel, author=None):
+    global active_raid, boss_cooldown_until
+
+    # Hủy raid cũ nếu có
+    if active_raid is not None:
+        if active_raid.get("task") and not active_raid["task"].done():
+            active_raid["task"].cancel()
+        active_raid = None
+
+    start_event = asyncio.Event()
+    raid_data = {
         "channel_id": channel.id,
         "participants": [],
         "names": [],
         "created_at": datetime.now().isoformat(),
-        "created_timestamp": time.time()
+        "created_timestamp": time.time(),
+        "start_event": start_event,
+        "started": False,
+        "closed": False,
+        "msg": None,
+        "view": None,
+        "task": None
     }
+    active_raid = raid_data
+
+    is_admin = (author is not None)
+    title = "🚨 [ADMIN TRIỆU HỒI] CẢNH BÁO KHẨN CẤP: DỊ BIẾN XUẤT HIỆN!" if is_admin else "🚨 CẢNH BÁO KHẨN CẤP: DỊ BIẾN XUẤT HIỆN!"
+    desc = f"👑 **Được triệu hồi bởi Admin:** {author.mention}\n\n**{BOSS_CONFIG['name']}**\n*{BOSS_CONFIG['desc']}*" if is_admin else f"**{BOSS_CONFIG['name']}**\n*{BOSS_CONFIG['desc']}*"
+
     embed = discord.Embed(
-        title="🚨 [ADMIN TRIỆU HỒI] CẢNH BÁO KHẨN CẤP: DỊ BIẾN XUẤT HIỆN!",
-        description=f"👑 **Được triệu hồi bởi Admin:** {author.mention}\n\n**{BOSS_CONFIG['name']}**\n*{BOSS_CONFIG['desc']}*",
+        title=title,
+        description=desc,
         color=0xDC2626
     )
     embed.set_image(url=BOSS_CONFIG["image"])
-    embed.add_field(name="❤️ Máu Boss (HP):", value=f"{BOSS_CONFIG['hp']:,} HP *(Phase 1 30k HP)*", inline=True)
+    embed.add_field(name="❤️ Máu Boss (HP):", value=f"{BOSS_CONFIG['hp']:,} HP *(Phase 1: 30k HP)*", inline=True)
     embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{BOSS_CONFIG['power']:,} DMG** *(chia đều)*\n• Phase 2: **{BOSS_PHASE2_CONFIG['power']:,} DMG** *(chia đều)*", inline=True)
     embed.add_field(name=f"👥 Người Tham Gia (0/{BOSS_CONFIG['max_players']}):", value="Chưa có ai", inline=False)
     embed.add_field(
@@ -1051,38 +1139,41 @@ async def admin_spawn_boss(channel, author):
         inline=False
     )
     embed.add_field(
-        name="⏱️ Thời Gian Chuẩn Bị:",
-        value="Có **2 phút** để bấm tham chiến. Lượt spawn tiếp theo sau raid sẽ chờ **15 phút**!",
+        name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
+        value=(
+            "• Có đúng **2 phút (120 giây)** để bấm **'Tham Gia'** (Miễn phí)!\n"
+            "• **Tự động mở raid:** Khi hết 2 phút, nếu có dũng giả tham chiến, trận đại chiến sẽ **TỰ ĐỘNG KHỞI TRANH** ngay lập tức!\n"
+            "• **Tự động đóng:** Nếu sau 2 phút không có ai tham gia, Dị Hình sẽ xé toạc không gian và trốn thoát!"
+        ),
         inline=False
     )
-    embed.set_footer(text="Bấm 'Tham Gia' để xuất trận • Miễn phí • Admin Force Spawn")
+    embed.set_footer(text=f"Bấm 'Tham Gia' để xuất trận • Miễn phí • {'Admin Force Spawn' if is_admin else 'Boss Tự Nhiên'}")
 
-    view = RaidJoinView(active_raid)
+    view = RaidJoinView(raid_data)
+    raid_data["view"] = view
     msg = await channel.send(embed=embed, view=view)
-    active_raid["msg"] = msg
+    raid_data["msg"] = msg
 
-    # Watchdog tự động giải phóng sau 130s nếu có bất kỳ sự cố event loop nào
-    async def raid_watchdog(target_raid):
-        global active_raid
-        await asyncio.sleep(130)
-        if active_raid is target_raid:
-            participants = target_raid.get("participants", [])
-            active_raid = None
-            if not participants:
-                try:
-                    await channel.send("⌛ Hết thời gian chờ, không có dũng giả tham chiến nên Reimu Dị Hình đã rút lui...")
-                except Exception:
-                    pass
-    asyncio.create_task(raid_watchdog(active_raid))
+    # Khởi động background countdown 120s
+    task = asyncio.create_task(raid_timer_lifecycle(channel, raid_data, view))
+    raid_data["task"] = task
+
+async def admin_spawn_boss(channel, author):
+    global boss_cooldown_until
+    boss_cooldown_until = 0
+    await spawn_boss_raid(channel, author)
 
 class RaidJoinView(discord.ui.View):
     def __init__(self, raid_data):
-        super().__init__(timeout=120)
+        super().__init__(timeout=None)  # Timer 120s được kiểm soát chính xác bởi raid_timer_lifecycle
         self.raid_data = raid_data
 
     @discord.ui.button(label="⚔️ Tham Gia / Join Raid (Miễn phí)", style=discord.ButtonStyle.danger, emoji="💥")
     async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        global boss_cooldown_until
+        if self.raid_data.get("started") or self.raid_data.get("closed"):
+            await interaction.response.send_message("Trận chiến đã bắt đầu hoặc thời gian chuẩn bị đã kết thúc!", ephemeral=True)
+            return
+
         user_id = interaction.user.id
         if user_id in self.raid_data["participants"]:
             await interaction.response.send_message("Bạn đã tham gia hàng ngũ diệt boss rồi!", ephemeral=True)
@@ -1113,46 +1204,24 @@ class RaidJoinView(discord.ui.View):
         self.raid_data["participants"].append(user_id)
         self.raid_data["names"].append(interaction.user.display_name)
         count = len(self.raid_data["participants"])
-        boss_cooldown_until = time.time() + BOSS_CONFIG["cooldown_seconds"]
 
         await interaction.response.send_message(f"🔥 {interaction.user.mention} đã tham chiến! ({count}/{BOSS_CONFIG['max_players']} dũng giả)", ephemeral=False)
 
-        embed = interaction.message.embeds[0]
-        embed.set_field_at(
-            2,
-            name=f"👥 Người Tham Gia ({count}/{BOSS_CONFIG['max_players']}):",
-            value=", ".join(self.raid_data["names"]),
-            inline=False
-        )
-        await interaction.message.edit(embed=embed, view=self)
+        try:
+            embed = interaction.message.embeds[0]
+            embed.set_field_at(
+                2,
+                name=f"👥 Người Tham Gia ({count}/{BOSS_CONFIG['max_players']}):",
+                value=", ".join(self.raid_data["names"]),
+                inline=False
+            )
+            await interaction.message.edit(embed=embed, view=self)
+        except Exception:
+            pass
 
-    async def on_timeout(self):
-        global active_raid
-        for child in self.children:
-            child.disabled = True
-        if self.raid_data.get("msg"):
-            try: await self.raid_data["msg"].edit(view=self)
-            except Exception: pass
-
-        if active_raid is self.raid_data:
-            try:
-                participants = self.raid_data.get("participants", [])
-                channel_id = self.raid_data.get("channel_id")
-                channel = bot.get_channel(channel_id)
-                if not channel:
-                    try:
-                        channel = await bot.fetch_channel(channel_id)
-                    except Exception:
-                        channel = None
-
-                if participants and channel:
-                    await channel.send(f"⏰ **Hết thời gian chuẩn bị!** Toàn bộ {len(participants)} dũng giả đồng loạt xuất quân khai chiến với Reimu Dị Hình!")
-                    await execute_raid(channel, self.raid_data)
-                elif channel:
-                    await channel.send("⌛ Không có ai dám nghênh chiến, Reimu Dị Hình đã trốn thoát...")
-            finally:
-                # Đảm bảo 100% giải phóng active_raid, không bao giờ bị kẹt
-                active_raid = None
+        # Nếu đã đủ số lượng người tối đa, kích hoạt bắt đầu sớm
+        if count >= BOSS_CONFIG["max_players"]:
+            self.raid_data["start_event"].set()
 
 def get_hp_bar(current_hp, max_hp, total_blocks=10):
     ratio = max(0.0, min(1.0, current_hp / max_hp)) if max_hp > 0 else 0
@@ -1719,42 +1788,7 @@ async def on_message(message: discord.Message):
     
     if active_raid is None and now_ts >= boss_cooldown_until and not content_lower.startswith("!") and not content_lower.startswith("/"):
         if random.random() < 0.10:
-            active_raid = {
-                "channel_id": message.channel.id,
-                "participants": [],
-                "names": [],
-                "created_at": datetime.now().isoformat(),
-                "created_timestamp": time.time()
-            }
-            embed = discord.Embed(
-                title="🚨 CẢNH BÁO KHẨN CẤP: DỊ BIẾN XUẤT HIỆN!",
-                description=f"**{BOSS_CONFIG['name']}**\n*{BOSS_CONFIG['desc']}*",
-                color=0xDC2626
-            )
-            embed.set_image(url=BOSS_CONFIG["image"])
-            embed.add_field(name="❤️ Máu Boss (HP):", value=f"{BOSS_CONFIG['hp']:,} HP *(30k HP Phase 1)*", inline=True)
-            embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{BOSS_CONFIG['power']:,} DMG** *(chia đều)*\n• Phase 2: **{BOSS_PHASE2_CONFIG['power']:,} DMG** *(chia đều)*", inline=True)
-            embed.add_field(name=f"👥 Người Tham Gia (0/{BOSS_CONFIG['max_players']}):", value="Chưa có ai", inline=False)
-            embed.add_field(
-                name="🎁 Cơ Chế 2 Phase & Phần Thưởng Đột Phá:",
-                value=(
-                    "• **Phase 1 (30k HP):** 10% ra **10 Vé**, 40% ra **5 Vé**, 50% ra **3 Vé**!\n"
-                    f"• **Chuyển Phase 2 ({BOSS_PHASE2_CONFIG['hp']:,} HP / {BOSS_PHASE2_CONFIG['power']:,} DMG chia đều):** Hồi sinh & phục hồi **100% HP toàn bộ thẻ bài**!\n"
-                    "• **Phase 2:** 10% ra **20 Vé**, 40% ra **10 Vé**, 50% ra **5 Vé**!\n"
-                    "• **Trận đấu trực tiếp:** Diễn biến từng hiệp được phát sóng trực tiếp!"
-                ),
-                inline=False
-            )
-            embed.add_field(
-                name="⏱️ Quy Tắc Hồi Chiêu 15 Phút:",
-                value="Khi có bất kỳ ai tham gia, lượt spawn tiếp theo sẽ cần chờ **15 phút**!",
-                inline=False
-            )
-            embed.set_footer(text="Bấm 'Tham Gia' để xuất trận • Miễn phí • Hồi chiêu 15 phút sau raid")
-            
-            view = RaidJoinView(active_raid)
-            msg = await message.channel.send(embed=embed, view=view)
-            active_raid["msg"] = msg
+            await spawn_boss_raid(message.channel, None)
 
     # XỬ LÝ TRÒ CHUYỆN VỚI REIMU
     is_reply_to_reimu = False
@@ -2946,18 +2980,36 @@ async def handle_battle(ctx_or_interaction):
                 "image": c.get("image", "")
             })
 
-    # Xác suất NPC có thẻ Ace 2: thi thoảng (~25% trận đấu có 1 thẻ Ace 2, không quá dày đặc để giữ độ cân bằng)
-    npc_has_ace = random.random() < 0.25
-    npc_ace_idx = random.randint(0, len(opp_team_ids[:3]) - 1) if npc_has_ace and opp_team_ids else -1
+    # Danh sách các ID nhân vật đã được cấp Ace 2 trong game (từ EVOL_CONFIG: 13 Reimu, 16 Sakuya, 17 Marisa...)
+    ace_supported_cids = list({int(k) for k in EVOL_CONFIG.keys() if str(k).isdigit() and int(k) in CARDS_DATA})
+
+    # Xác suất NPC thi thoảng có 1 thẻ Ace 2 (~25% trận đấu, tần suất vừa phải, kịch tính nhưng không quá cao)
+    # Áp dụng chuẩn xác cho các nhân vật đã được game cấp Ace 2 (Reimu, Sakuya, Marisa,...)
+    npc_has_ace = (random.random() < 0.25) and len(ace_supported_cids) > 0
+    npc_ace_idx = -1
+
+    final_opp_team_ids = list(opp_team_ids[:3])
+
+    if npc_has_ace:
+        # Kiểm tra xem trong 3 thẻ của NPC đã có sẵn nhân vật nào có Ace 2 chưa
+        existing_ace_eligible = [i for i, cid in enumerate(final_opp_team_ids) if cid in ace_supported_cids]
+        if existing_ace_eligible:
+            npc_ace_idx = random.choice(existing_ace_eligible)
+        else:
+            # Nếu chưa có, thay thế ngẫu nhiên 1 vị trí bằng 1 nhân vật hợp lệ có Ace 2 (Sakuya, Reimu, hoặc Marisa)
+            replace_idx = random.randint(0, len(final_opp_team_ids) - 1)
+            chosen_ace_cid = random.choice(ace_supported_cids)
+            final_opp_team_ids[replace_idx] = chosen_ace_cid
+            npc_ace_idx = replace_idx
 
     opp_cards = []
-    for idx, cid in enumerate(opp_team_ids[:3]):
+    for idx, cid in enumerate(final_opp_team_ids):
         c = CARDS_DATA.get(cid)
         if c:
             is_o_ace = (idx == npc_ace_idx)
             o_ace_pwr = ACE_POWER_BUFF if is_o_ace else 0
             o_ace_hp = ACE_HP_BUFF if is_o_ace else 0
-            o_name = f"[Ace 2] #{c['id']:02d} {c['name']}" if is_o_ace else f"#{c['id']:02d} {c['name']}"
+            o_name = f"[Ace 2 ⭐⭐] #{c['id']:02d} {c['name']}" if is_o_ace else f"#{c['id']:02d} {c['name']}"
             opp_cards.append({
                 "cid": cid, "name": o_name, "raw_name": c["name"],
                 "rank": c.get("rank", "A"),
@@ -4005,7 +4057,11 @@ async def slash_boss_status(interaction: discord.Interaction):
     embed.add_field(name="❤️ Chỉ Số 2 Phase:", value=f"• Phase 1: HP {BOSS_CONFIG['hp']:,} | Đánh thường {BOSS_CONFIG['power']:,} DMG (chia đều)\n• Phase 2: HP {BOSS_PHASE2_CONFIG['hp']:,} | Đánh thường {BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều)", inline=True)
     embed.add_field(name="🎁 Phần Thưởng:", value="100% Quy đổi thành Vé Pull tích lũy!", inline=True)
     if active_raid:
-        embed.add_field(name="🔥 Tình Trạng:", value=f"**ĐANG XUẤT HIỆN!** Có {len(active_raid.get('participants', []))}/{BOSS_CONFIG['max_players']} dũng giả!", inline=False)
+        if active_raid.get("started"):
+            embed.add_field(name="🔥 Tình Trạng:", value="⚔️ **ĐANG TRỰC TIẾP GIAO CHIẾN!** Các hiệp đấu đang diễn ra gay cấn!", inline=False)
+        else:
+            time_left = max(0, int(120 - (now - active_raid.get("created_timestamp", now))))
+            embed.add_field(name="🔥 Tình Trạng:", value=f"**ĐANG CHỜ XUẤT TRẬN!** Có **{len(active_raid.get('participants', []))}/{BOSS_CONFIG['max_players']} dũng giả**!\n⏱️ Còn lại: **{time_left} giây** (Hết giờ sẽ **TỰ ĐỘNG KHAI MÀN** nếu có người join, hoặc đóng lại nếu không ai dám nghênh chiến)!", inline=False)
     elif now < boss_cooldown_until:
         rem = int(boss_cooldown_until - now)
         embed.add_field(name="⏳ Hồi Chiêu:", value=f"Cần đợi thêm **{rem // 60} phút {rem % 60} giây** nữa!", inline=False)
@@ -4034,7 +4090,11 @@ async def prefix_boss_status(ctx, *args):
     check_and_clean_expired_raid()
     now = time.time()
     if active_raid:
-        await ctx.send("🚨 Boss Raid ĐANG XUẤT HIỆN! Hãy tham gia ngay!")
+        if active_raid.get("started"):
+            await ctx.send("🚨 Boss Raid ĐANG TRỰC TIẾP GIAO CHIẾN!")
+        else:
+            time_left = max(0, int(120 - (now - active_raid.get("created_timestamp", now))))
+            await ctx.send(f"🚨 Boss Raid ĐANG CHỜ XUẤT TRẬN ({len(active_raid.get('participants', []))}/{BOSS_CONFIG['max_players']} người)! Còn {time_left}s sẽ tự động mở trận!")
     elif now < boss_cooldown_until:
         rem = int(boss_cooldown_until - now)
         await ctx.send(f"⏳ Boss đang hồi chiêu 15 phút (Còn lại: {rem // 60}m {rem % 60}s).")
