@@ -1,18 +1,21 @@
 # ==============================================================================
-# HAKUREI REIMU DISCORD BOT - FULL EDITION (UPDATED)
+# HAKUREI REIMU DISCORD BOT - FULL EDITION (UPDATED & SECURED)
 # GEMINI FLASH CHATBOT + MONGODB ATLAS CLOUD + TOUHOU GACHA & AUTO-BATTLE & RAID
 # ==============================================================================
-# 1. BOSS STATS: Phase 1 (35k HP, 15k DMG) & Phase 2 Thức Tỉnh (50k HP, 22k DMG)
+# 1. BOSS STATS: Phase 1 (30k HP, 3k DMG) & Phase 2 Thức Tỉnh (50k HP, 10k DMG)
 # 2. BOSS DROP: Rương chiến lợi phẩm quy đổi 100% thành Vé Pull
 # 3. BOSS COOLDOWN: Hồi chiêu 15 phút tính từ lúc có bất kỳ ai tham gia raid
-# 4. ADMIN COMMANDS: /admin_set_level, /admin_confiscate, /admin_add_card (ID: 1502579398560317441)
+# 4. ADMIN COMMANDS: /admin_set_level, /admin_confiscate, /admin_add_card, /admin_lock (ID: 1502579398560317441)
 # 5. LEVEL UP MỚI: Mỗi cấp tăng +50 XP (Lv.1: 100 XP, Lv.2: 150 XP, Lv.3: 200 XP...)
 # 6. EVOL UPDATE:
 #    - Luôn hiển thị ID nhân vật: [#13] Reimu Hakurei, [#16] Sakuya Izayoi
 #    - Lệnh /evol hỗ trợ nhập trực tiếp ID hoặc tên
 #    - Hoạt ảnh GIF hiển thị trực tiếp trong Discord (embed image & direct GIF)
-#    - Buff tối thượng Ace: Mọi nhân vật đạt Ace đều được cộng +100 ATK (Power) và +250 Máu (HP)!
+#    - Buff tối thượng Ace: Mọi nhân vật đạt Ace đều được cộng +300 ATK (Power) và +300 Máu (HP)!
 # 7. LIVE RAID COMBAT: Trận chiến chạy turn-by-turn theo thời gian thực để mọi người cùng theo dõi!
+# 8. TÍNH NĂNG MỚI:
+#    - Lệnh /admin_lock: Khóa thẻ của người chơi, gỡ khỏi team, chỉ mở khi pull trúng lại!
+#    - Vá lỗi Tutorial: Tiến trình tuyến tính 1 chiều tuyệt đối, cờ vĩnh viễn chống farm 3 thẻ không trùng!
 # ==============================================================================
 
 import os
@@ -176,10 +179,10 @@ BOSS_CONFIG = {
     "name": "Reimu Dị Hình - Phase 1",
     "desc": "Đó không phải Reimu, sẵn sàng giao chiến!",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1549077421624401971/content.png?ex=6aa96245&is=6aa810c5&hm=c0248e497ee5afeed898b457736b39fc71368af3be1630f1cd59b5609c99fbeb&=&format=webp&quality=lossless&width=351&height=512",
-    "hp": 30000,      # Phase 1: 30,000 HP (nerfed từ 35k)
-    "power": 3000,    # Phase 1: 3,000 DMG đánh thường
+    "hp": 30000,      # Phase 1: 30,000 HP
+    "power": 3000,    # Phase 1: 3,000 DMG đánh thường chia đều
     "max_players": 6,
-    "cooldown_seconds": 15 * 60  # 15 phút (900s) sau khi có bất kỳ ai tham gia raid
+    "cooldown_seconds": 15 * 60  # 15 phút (900s)
 }
 
 BOSS_PHASE2_CONFIG = {
@@ -250,138 +253,33 @@ EVOL_CONFIG["17"] = EVOL_CONFIG[17]
 # 3.1 CHI TIẾT NĂNG LỰC & KỸ NĂNG 26 NHÂN VẬT TOUHOU (CHO TÍNH NĂNG CHECK NHÂN VẬT)
 # ==============================================================================
 CHARACTER_DETAILS = {
-    1: {
-        "title": "Nữ Thần Địa Ngục Tam Thân",
-        "skill_name": "Tam Giới Hỗn Mang",
-        "skill_desc": "Nữ thần tự do sở hữu 3 thân xác (Trái Đất, Mặt Trăng, Địa Ngục). Sát thương và sinh lực áp đảo hàng đầu Gensokyo (850 ATK / 8,500 HP)."
-    },
-    2: {
-        "title": "Hồn Tinh Khiết Căm Hờn",
-        "skill_name": "Nguyên Lực Tinh Khiết",
-        "skill_desc": "Thanh lọc mọi năng lượng về bản thể sơ khai nhất, giải phóng luồng đạn ma thuật thuần khiết hủy diệt vạn vật (800 ATK / 8,000 HP)."
-    },
-    3: {
-        "title": "Bí Thần Tối Cao Gensokyo",
-        "skill_name": "Hậu Môn Bí Cảnh",
-        "skill_desc": "Mở những cánh cổng bí ẩn sau lưng vạn vật, thao túng năng lượng sinh mệnh và tinh thần để khống chế toàn cục (750 ATK / 7,500 HP)."
-    },
-    4: {
-        "title": "Đại Yêu Quái Cảnh Giới",
-        "skill_name": "Thao Túng Cảnh Giới",
-        "skill_desc": "Kiểm soát ranh giới giữa thực và ảo, ánh sáng và bóng tối, biến mọi đòn công kích thành hư vô và mở kết giới phản đòn (720 ATK / 7,200 HP)."
-    },
-    5: {
-        "title": "Đại Quỷ Núi Yêu Quái",
-        "skill_name": "Đại Quỷ Thần Lực (Tụ Tán)",
-        "skill_desc": "Thao túng mật độ không gian và vật chất, có thể phân tán thành làn sương hoặc tụ thành quỷ khổng lồ giáng đòn nghiền nát (670 ATK / 6,700 HP)."
-    },
-    6: {
-        "title": "Dược Sư Nguyệt Đô",
-        "skill_name": "Hourai Trường Sinh Dược",
-        "skill_desc": "Bác sĩ thiên tài của Mặt Trăng, bậc thầy chế tạo mọi loại tiên dược Hourai và xạ kích tiễn thuật chuẩn xác (640 ATK / 6,600 HP)."
-    },
-    7: {
-        "title": "Bạo Chúa Thái Dương Hoa",
-        "skill_name": "Hồng Hoa Diệt Tuyệt",
-        "skill_desc": "Yêu quái hoa lâu đời nhất Gensokyo, bắn ra những chùm tia Master Spark hồng hoa hủy diệt kẻ xâm phạm (630 ATK / 6,300 HP)."
-    },
-    8: {
-        "title": "U Linh Bạch Ngọc Lâu",
-        "skill_name": "Bướm Ma Dẫn Hồn",
-        "skill_desc": "Công chúa u linh cai quản cõi chết, dẫn dụ linh hồn bước vào giấc ngủ vĩnh hằng bằng điệu múa bướm ma quái (620 ATK / 6,200 HP)."
-    },
-    9: {
-        "title": "Ác Ma Cuồng Loạn",
-        "skill_name": "Tuyệt Đối Phá Hủy (Kyū)",
-        "skill_desc": "Bóp nát \x27mục tiêu tồn tại\x27 trong lòng bàn tay, giải phóng sức mạnh ma cà rồng hủy diệt không thể ngăn cản (610 ATK / 5,700 HP)."
-    },
-    10: {
-        "title": "Công Chúa Ánh Trăng",
-        "skill_name": "Vĩnh Cửu & Tức Thời",
-        "skill_desc": "Công chúa Nguyệt Cung lưu đày tại Eientei, điều khiển dòng chảy thời gian vĩnh cửu và tức thời cùng thần bảo quý giá (590 ATK / 6,400 HP)."
-    },
-    11: {
-        "title": "Chúa Tể Hồng Ma Quán",
-        "skill_name": "Thương Đỏ Gungnir (Vận Mệnh)",
-        "skill_desc": "Ma cà rồng kiêu hãnh bẻ cong số mệnh kẻ thù, phóng ra ngọn giáo ánh sáng đỏ Gungnir xuyên thủng phòng ngự (560 ATK / 5,600 HP)."
-    },
-    12: {
-        "title": "Mặt Trời Địa Ngục",
-        "skill_name": "Hạch Tâm Phản Ứng (Nuclear)",
-        "skill_desc": "Mang sức mạnh thần mặt trời Yatagarasu, thi triển hạch tâm nhiệt hạch thiêu đốt toàn bộ chiến trường (550 ATK / 5,300 HP)."
-    },
-    13: {
-        "title": "Vu Nữ Đền Hakurei",
-        "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh",
-        "skill_desc": "Bay lượn khỏi thực tại và trừ tà ma thuật. [Ace 2 ⭐⭐]: Miễn toàn bộ sát thương 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"
-    },
-    14: {
-        "title": "Phượng Hoàng Bất Tử",
-        "skill_name": "Phượng Hoàng Bất Diệt",
-        "skill_desc": "Cơ thể bất tử do uống tiên dược Hourai, triệu hồi ngọn lửa phượng hoàng thiêu đốt kẻ địch mà không hề sợ chết (490 ATK / 5,200 HP)."
-    },
-    15: {
-        "title": "Tiên Nhân Một Tay",
-        "skill_name": "Thần Thú Giáng Lâm",
-        "skill_desc": "Một trong Tứ Thiên Vương ẩn mình dưới thân phận tiên nhân dạy dỗ yêu quái và điều khiển muôn loài linh thú (480 ATK / 4,900 HP)."
-    },
-    16: {
-        "title": "Hầu Gái Trưởng Hoàn Hảo",
-        "skill_name": "Thời Gian Đóng Băng",
-        "skill_desc": "Bậc thầy phi dao bạc và không-thời gian. [Ace 2 ⭐⭐]: Đóng băng thời gian làm đối thủ/boss bị STUN mất lượt 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"
-    },
-    17: {
-        "title": "Phù Thủy Bình Thường",
-        "skill_name": "Bát Quái Lô - Master Spark",
-        "skill_desc": "Ma thuật ánh sáng và nhiệt độ cao. [Ace 2 ⭐⭐]: Bắn đại bác ma thuật Master Spark gây sát thương ×1.5 lần sát thương gốc (Tỷ lệ 30% 1 lần trong trận)!"
-    },
-    18: {
-        "title": "Kiếm Sĩ Nửa Người Nửa Ma",
-        "skill_name": "Song Kiếm Lâu Quan & Bạch Lâu",
-        "skill_desc": "Thần tốc kiếm đạo: Lâu Quan Kiếm chém vạn vật và Bạch Lâu Kiếm chém tan ảo tưởng mê muội (410 ATK / 4,100 HP)."
-    },
-    19: {
-        "title": "Thỏ Ngọc Chiến Binh",
-        "skill_name": "Hồng Nhãn Cuồng Loạn",
-        "skill_desc": "Thỏ ngọc từ Mặt Trăng phát sóng ảo giác từ ánh mắt đỏ rực làm hoa mắt và rối loạn phương hướng đối phương (390 ATK / 3,900 HP)."
-    },
-    20: {
-        "title": "Đại Ma Đạo Sĩ Thất Diệu",
-        "skill_name": "Thất Diệu Ma Thuật",
-        "skill_desc": "Phù thủy thông thái trong thư viện ngầm, kết hợp 7 nguyên tố tự nhiên tạo thành ma trận công thủ liên hoàn (380 ATK / 3,200 HP)."
-    },
-    21: {
-        "title": "Đệ Nhất Băng Tiên",
-        "skill_name": "Perfect Freeze (Băng Đạn)",
-        "skill_desc": "Tiên tử băng giá mạnh nhất Hồ Sương Mù, đóng băng mọi vật thể và phóng mưa mảnh băng sắc nhọn (300 ATK / 3,000 HP)."
-    },
-    22: {
-        "title": "Thủ Môn Hồng Ma Quán",
-        "skill_name": "Thái Cực Khí Công Quyền",
-        "skill_desc": "Nữ võ sư tinh thông thể thuật khí công ngũ sắc, tạo rào chắn phòng thủ kiên cố bảo vệ tiền tuyến (260 ATK / 2,800 HP)."
-    },
-    23: {
-        "title": "Yêu Quái Hoàng Hôn",
-        "skill_name": "Dạ Tối Kết Giới",
-        "skill_desc": "Yêu quái bóng đêm bao bọc mình trong vòm đêm thuần túy, tung những đòn cắn xé bất ngờ từ bóng tối (220 ATK / 2,200 HP)."
-    },
-    24: {
-        "title": "Dạ Tước Huyễn Ca",
-        "skill_name": "Huyễn Ca Dạ Manh",
-        "skill_desc": "Giọng hát chim đêm mê hoặc khiến đối thủ bị chứng quáng gà và suy giảm độ chính xác đòn đánh (200 ATK / 2,000 HP)."
-    },
-    25: {
-        "title": "Đom Đóm Phát Quang",
-        "skill_name": "Đom Đóm Lôi Triệu",
-        "skill_desc": "Điều khiển hàng triệu côn trùng dạ quang tạo nên biển ánh sáng mê ảo làm hoa mắt đối thủ (180 ATK / 1,800 HP)."
-    },
-    26: {
-        "title": "Thỏ Rừng May Mắn",
-        "skill_name": "Vận May Thần Tài",
-        "skill_desc": "Thủ lĩnh thỏ rừng Inaba tinh nghịch, ban phát vận may cực lớn cho bản thân và đồng đội (150 ATK / 1,500 HP)."
-    }
+    1: {"title": "Nữ Thần Địa Ngục Tam Thân", "skill_name": "Tam Giới Hỗn Mang", "skill_desc": "Nữ thần tự do sở hữu 3 thân xác (Trái Đất, Mặt Trăng, Địa Ngục). Sát thương và sinh lực áp đảo hàng đầu Gensokyo (850 ATK / 8,500 HP)."},
+    2: {"title": "Hồn Tinh Khiết Căm Hờn", "skill_name": "Nguyên Lực Tinh Khiết", "skill_desc": "Thanh lọc mọi năng lượng về bản thể sơ khai nhất, giải phóng luồng đạn ma thuật thuần khiết hủy diệt vạn vật (800 ATK / 8,000 HP)."},
+    3: {"title": "Bí Thần Tối Cao Gensokyo", "skill_name": "Hậu Môn Bí Cảnh", "skill_desc": "Mở những cánh cổng bí ẩn sau lưng vạn vật, thao túng năng lượng sinh mệnh và tinh thần để khống chế toàn cục (750 ATK / 7,500 HP)."},
+    4: {"title": "Đại Yêu Quái Cảnh Giới", "skill_name": "Thao Túng Cảnh Giới", "skill_desc": "Kiểm soát ranh giới giữa thực và ảo, ánh sáng và bóng tối, biến mọi đòn công kích thành hư vô và mở kết giới phản đòn (720 ATK / 7,200 HP)."},
+    5: {"title": "Đại Quỷ Núi Yêu Quái", "skill_name": "Đại Quỷ Thần Lực (Tụ Tán)", "skill_desc": "Thao túng mật độ không gian và vật chất, có thể phân tán thành làn sương hoặc tụ thành quỷ khổng lồ giáng đòn nghiền nát (670 ATK / 6,700 HP)."},
+    6: {"title": "Dược Sư Nguyệt Đô", "skill_name": "Hourai Trường Sinh Dược", "skill_desc": "Bác sĩ thiên tài của Mặt Trăng, bậc thầy chế tạo mọi loại tiên dược Hourai và xạ kích tiễn thuật chuẩn xác (640 ATK / 6,600 HP)."},
+    7: {"title": "Bạo Chúa Thái Dương Hoa", "skill_name": "Hồng Hoa Diệt Tuyệt", "skill_desc": "Yêu quái hoa lâu đời nhất Gensokyo, bắn ra những chùm tia Master Spark hồng hoa hủy diệt kẻ xâm phạm (630 ATK / 6,300 HP)."},
+    8: {"title": "U Linh Bạch Ngọc Lâu", "skill_name": "Bướm Ma Dẫn Hồn", "skill_desc": "Công chúa u linh cai quản cõi chết, dẫn dụ linh hồn bước vào giấc ngủ vĩnh hằng bằng điệu múa bướm ma quái (620 ATK / 6,200 HP)."},
+    9: {"title": "Ác Ma Cuồng Loạn", "skill_name": "Tuyệt Đối Phá Hủy (Kyū)", "skill_desc": "Bóp nát 'mục tiêu tồn tại' trong lòng bàn tay, giải phóng sức mạnh ma cà rồng hủy diệt không thể ngăn cản (610 ATK / 5,700 HP)."},
+    10: {"title": "Công Chúa Ánh Trăng", "skill_name": "Vĩnh Cửu & Tức Thời", "skill_desc": "Công chúa Nguyệt Cung lưu đày tại Eientei, điều khiển dòng chảy thời gian vĩnh cửu và tức thời cùng thần bảo quý giá (590 ATK / 6,400 HP)."},
+    11: {"title": "Chúa Tể Hồng Ma Quán", "skill_name": "Thương Đỏ Gungnir (Vận Mệnh)", "skill_desc": "Ma cà rồng kiêu hãnh bẻ cong số mệnh kẻ thù, phóng ra ngọn giáo ánh sáng đỏ Gungnir xuyên thủng phòng ngự (560 ATK / 5,600 HP)."},
+    12: {"title": "Mặt Trời Địa Ngục", "skill_name": "Hạch Tâm Phản Ứng (Nuclear)", "skill_desc": "Mang sức mạnh thần mặt trời Yatagarasu, thi triển hạch tâm nhiệt hạch thiêu đốt toàn bộ chiến trường (550 ATK / 5,300 HP)."},
+    13: {"title": "Vu Nữ Đền Hakurei", "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh", "skill_desc": "Bay lượn khỏi thực tại và trừ tà ma thuật. [Ace 2 ⭐⭐]: Miễn toàn bộ sát thương 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
+    14: {"title": "Phượng Hoàng Bất Tử", "skill_name": "Phượng Hoàng Bất Diệt", "skill_desc": "Cơ thể bất tử do uống tiên dược Hourai, triệu hồi ngọn lửa phượng hoàng thiêu đốt kẻ địch mà không hề sợ chết (490 ATK / 5,200 HP)."},
+    15: {"title": "Tiên Nhân Một Tay", "skill_name": "Thần Thú Giáng Lâm", "skill_desc": "Một trong Tứ Thiên Vương ẩn mình dưới thân phận tiên nhân dạy dỗ yêu quái và điều khiển muôn loài linh thú (480 ATK / 4,900 HP)."},
+    16: {"title": "Hầu Gái Trưởng Hoàn Hảo", "skill_name": "Thời Gian Đóng Băng", "skill_desc": "Bậc thầy phi dao bạc và không-thời gian. [Ace 2 ⭐⭐]: Đóng băng thời gian làm đối thủ/boss bị STUN mất lượt 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
+    17: {"title": "Phù Thủy Bình Thường", "skill_name": "Bát Quái Lô - Master Spark", "skill_desc": "Ma thuật ánh sáng và nhiệt độ cao. [Ace 2 ⭐⭐]: Bắn đại bác ma thuật Master Spark gây sát thương ×1.5 lần sát thương gốc (Tỷ lệ 30% 1 lần trong trận)!"},
+    18: {"title": "Kiếm Sĩ Nửa Người Nửa Ma", "skill_name": "Song Kiếm Lâu Quan & Bạch Lâu", "skill_desc": "Thần tốc kiếm đạo: Lâu Quan Kiếm chém vạn vật và Bạch Lâu Kiếm chém tan ảo tưởng mê muội (410 ATK / 4,100 HP)."},
+    19: {"title": "Thỏ Ngọc Chiến Binh", "skill_name": "Hồng Nhãn Cuồng Loạn", "skill_desc": "Thỏ ngọc từ Mặt Trăng phát sóng ảo giác từ ánh mắt đỏ rực làm hoa mắt và rối loạn phương hướng đối phương (390 ATK / 3,900 HP)."},
+    20: {"title": "Đại Ma Đạo Sĩ Thất Diệu", "skill_name": "Thất Diệu Ma Thuật", "skill_desc": "Phù thủy thông thái trong thư viện ngầm, kết hợp 7 nguyên tố tự nhiên tạo thành ma trận công thủ liên hoàn (380 ATK / 3,200 HP)."},
+    21: {"title": "Đệ Nhất Băng Tiên", "skill_name": "Perfect Freeze (Băng Đạn)", "skill_desc": "Tiên tử băng giá mạnh nhất Hồ Sương Mù, đóng băng mọi vật thể và phóng mưa mảnh băng sắc nhọn (300 ATK / 3,000 HP)."},
+    22: {"title": "Thủ Môn Hồng Ma Quán", "skill_name": "Thái Cực Khí Công Quyền", "skill_desc": "Nữ võ sư tinh thông thể thuật khí công ngũ sắc, tạo rào chắn phòng thủ kiên cố bảo vệ tiền tuyến (260 ATK / 2,800 HP)."},
+    23: {"title": "Yêu Quái Hoàng Hôn", "skill_name": "Dạ Tối Kết Giới", "skill_desc": "Yêu quái bóng đêm bao bọc mình trong vòm đêm thuần túy, tung những đòn cắn xé bất ngờ từ bóng tối (220 ATK / 2,200 HP)."},
+    24: {"title": "Dạ Tước Huyễn Ca", "skill_name": "Huyễn Ca Dạ Manh", "skill_desc": "Giọng hát chim đêm mê hoặc khiến đối thủ bị chứng quáng gà và suy giảm độ chính xác đòn đánh (200 ATK / 2,000 HP)."},
+    25: {"title": "Đom Đóm Phát Quang", "skill_name": "Đom Đóm Lôi Triệu", "skill_desc": "Điều khiển hàng triệu côn trùng dạ quang tạo nên biển ánh sáng mê ảo làm hoa mắt đối thủ (180 ATK / 1,800 HP)."},
+    26: {"title": "Thỏ Rừng May Mắn", "skill_name": "Vận May Thần Tài", "skill_desc": "Thủ lĩnh thỏ rừng Inaba tinh nghịch, ban phát vận may cực lớn cho bản thân và đồng đội (150 ATK / 1,500 HP)."}
 }
-
 
 BOSS_SKILL_CONFIG = {
     "name": "Dị Hình Bùa Chú",
@@ -390,7 +288,6 @@ BOSS_SKILL_CONFIG = {
     "desc": "Gây 5,000 DMG cho mỗi lá bài đang ở tiền tuyến (Boss không đánh thường)",
     "gif": "https://c.tenor.com/x27qU0sR_vkAAAAC/touhou-danmaku-touhou-yuyuko.gif"
 }
-
 # ==============================================================================
 # 4. DATABASE SETUP: MONGODB ATLAS + SQLITE DỰ PHÒNG
 # ==============================================================================
@@ -459,6 +356,7 @@ def get_default_player(user_id, username):
         "inventory": {},
         "pull_stats": {},
         "unlocked_cards": [],
+        "locked_cards": [],  # DANH SÁCH THẺ BỊ ADMIN KHÓA (CHỈ MỞ KHI PULL LẠI)
         "evolutions": {},
         "team": [],
         "language": "vi",
@@ -470,6 +368,7 @@ def get_default_player(user_id, username):
             "active": True,
             "step": "pull",
             "quest_pulls_remaining": 3,
+            "pull_used": False,  # CỜ BẢO MẬT CHỐNG BUG FARM FULL S
             "completed": False
         },
         "daily_quests": {
@@ -576,6 +475,12 @@ def is_card_unlocked(player: dict, card_id: Union[int, str]) -> bool:
         return True
     return False
 
+def is_card_locked(player: dict, card_id: Union[int, str]) -> bool:
+    cid_int = int(card_id)
+    cid_str = str(card_id)
+    locked = player.get("locked_cards", [])
+    return (cid_int in locked) or (cid_str in [str(x) for x in locked])
+
 def get_card_pulled_count(player: dict, card_id: Union[int, str]) -> int:
     cid_str = str(card_id)
     inv_cnt = player.get("inventory", {}).get(cid_str, 0)
@@ -617,6 +522,7 @@ def get_player(user_id, username="Visitor"):
             if cnt > 0:
                 try: data["unlocked_cards"].append(int(cid_s))
                 except Exception: pass
+    if "locked_cards" not in data: data["locked_cards"] = []
     if "evolutions" not in data: data["evolutions"] = {}
     if "team" not in data: data["team"] = []
     if "xp" not in data: data["xp"] = 0
@@ -627,8 +533,11 @@ def get_player(user_id, username="Visitor"):
             "active": False,
             "step": None,
             "quest_pulls_remaining": 0,
+            "pull_used": False,
             "completed": False
         }
+    if "pull_used" not in data["tutorial"]:
+        data["tutorial"]["pull_used"] = data["tutorial"].get("completed", False)
     if "daily_quests" not in data:
         ensure_daily_quests(data)
 
@@ -788,7 +697,6 @@ class BattleDetailsView(discord.ui.View):
         self.turns_data = turns_data
         self.current_idx = 0
 
-        # Nếu số hiệp <= 25, bổ sung Dropdown Select để nhảy trực tiếp đến bất kỳ hiệp nào
         if 1 < len(self.turns_data) <= 25:
             options = []
             for i, t in enumerate(self.turns_data):
@@ -938,11 +846,11 @@ class OpponentTeamView(discord.ui.View):
         skill_text = c.get("skill") or "Tấn công Danmaku cơ bản"
         if is_ace and c["cid"] in [13, 16, 17]:
             if c["cid"] == 13:
-                skill_text += "\n🛡️ **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Vô Tưởng Chuyển Sinh* né toàn bộ sát thương."
+                skill_text += "\n🛡️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Vô Tưởng Chuyển Sinh* né toàn bộ sát thương."
             elif c["cid"] == 16:
-                skill_text += "\n⏳ **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Thời Gian Đóng Băng* khiến đối phương mất lượt."
+                skill_text += "\n⏳ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Thời Gian Đóng Băng* khiến đối phương mất lượt."
             elif c["cid"] == 17:
-                skill_text += "\n🌟 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Master Spark* bộc phá ×1.5 sát thương."
+                skill_text += "\n🌟 **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Master Spark* bộc phá ×1.5 sát thương."
         embed.add_field(name="✨ Kỹ Năng / Tuyệt Kỹ Danmaku:", value=f"*{skill_text}*", inline=False)
 
         summary_lines = []
@@ -988,7 +896,6 @@ def check_and_clean_expired_raid():
     global active_raid
     if active_raid is not None:
         created_ts = active_raid.get("created_timestamp")
-        # Chỉ dọn dẹp khẩn cấp nếu raid chưa bắt đầu và đã vượt quá 180s (3 phút)
         if not active_raid.get("started") and created_ts and (time.time() - created_ts > 180):
             if active_raid.get("task") and not active_raid["task"].done():
                 active_raid["task"].cancel()
@@ -1033,13 +940,11 @@ async def admin_reset_boss(channel_or_interaction, author):
 async def raid_timer_lifecycle(channel, raid_data, view):
     global active_raid, boss_cooldown_until
     try:
-        # Chờ tối đa 120 giây (2 phút), hoặc mở sớm nếu start_event kích hoạt (ví dụ đủ 6 người)
         try:
             await asyncio.wait_for(raid_data["start_event"].wait(), timeout=120.0)
         except asyncio.TimeoutError:
             pass
 
-        # Vô hiệu hóa nút Tham Gia trên View để chốt danh sách
         for child in view.children:
             child.disabled = True
         if raid_data.get("msg"):
@@ -1048,14 +953,12 @@ async def raid_timer_lifecycle(channel, raid_data, view):
             except Exception:
                 pass
 
-        # Kiểm tra nếu đã bắt đầu hoặc đã bị đóng bởi lệnh admin reset
         if raid_data.get("started") or raid_data.get("closed"):
             return
 
         participants = raid_data.get("participants", [])
 
         if participants:
-            # Có người tham gia: MỞ RAID TỰ ĐỘNG!
             raid_data["started"] = True
             boss_cooldown_until = time.time() + BOSS_CONFIG["cooldown_seconds"]
             names_str = ", ".join(raid_data.get("names", []))
@@ -1075,10 +978,8 @@ async def raid_timer_lifecycle(channel, raid_data, view):
             finally:
                 active_raid = None
         else:
-            # Không có ai tham gia: TỰ ĐỘNG ĐÓNG VÀ THÔNG BÁO THEO YÊU CẦU
             raid_data["closed"] = True
             active_raid = None
-            # Boss trốn thoát nên hồi chiêu ngắn (60s) để sớm có cơ hội xuất hiện lại
             boss_cooldown_until = time.time() + 60
             await channel.send(
                 "🌌 **Dị hình đã xé toạc không gian và trốn thoát do không có pháp sư nào dám nghênh chiến!**\n"
@@ -1093,7 +994,6 @@ async def raid_timer_lifecycle(channel, raid_data, view):
 async def spawn_boss_raid(channel, author=None):
     global active_raid, boss_cooldown_until
 
-    # Hủy raid cũ nếu có
     if active_raid is not None:
         if active_raid.get("task") and not active_raid["task"].done():
             active_raid["task"].cancel()
@@ -1154,7 +1054,6 @@ async def spawn_boss_raid(channel, author=None):
     msg = await channel.send(embed=embed, view=view)
     raid_data["msg"] = msg
 
-    # Khởi động background countdown 120s
     task = asyncio.create_task(raid_timer_lifecycle(channel, raid_data, view))
     raid_data["task"] = task
 
@@ -1165,7 +1064,7 @@ async def admin_spawn_boss(channel, author):
 
 class RaidJoinView(discord.ui.View):
     def __init__(self, raid_data):
-        super().__init__(timeout=None)  # Timer 120s được kiểm soát chính xác bởi raid_timer_lifecycle
+        super().__init__(timeout=None)
         self.raid_data = raid_data
 
     @discord.ui.button(label="⚔️ Tham Gia / Join Raid (Miễn phí)", style=discord.ButtonStyle.danger, emoji="💥")
@@ -1189,9 +1088,9 @@ class RaidJoinView(discord.ui.View):
             await interaction.response.send_message("⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` trước nhé!", ephemeral=True)
             return
 
-        current_team = [cid for cid in player.get("team", []) if cid in CARDS_DATA]
+        current_team = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
         if len(current_team) < 3:
-            owned_ids = [int(cid) for cid, cnt in player.get("inventory", {}).items() if cnt > 0 and int(cid) in CARDS_DATA]
+            owned_ids = [int(cid) for cid, cnt in player.get("inventory", {}).items() if cnt > 0 and int(cid) in CARDS_DATA and not is_card_locked(player, cid)]
             owned_ids.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
             for cid in owned_ids:
                 if cid not in current_team:
@@ -1219,7 +1118,6 @@ class RaidJoinView(discord.ui.View):
         except Exception:
             pass
 
-        # Nếu đã đủ số lượng người tối đa, kích hoạt bắt đầu sớm
         if count >= BOSS_CONFIG["max_players"]:
             self.raid_data["start_event"].set()
 
@@ -1243,9 +1141,9 @@ async def execute_raid(channel, raid_data):
         p = get_player(uid)
         lvl_buff_pwr = get_level_atk_buff(p["level"])
         lvl_buff_hp = get_level_hp_buff(p["level"])
-        team_cids = [cid for cid in p.get("team", []) if cid in CARDS_DATA]
+        team_cids = [cid for cid in p.get("team", []) if cid in CARDS_DATA and not is_card_locked(p, cid)]
         if len(team_cids) < 3:
-            owned_ids = [int(cid) for cid, cnt in p.get("inventory", {}).items() if cnt > 0 and int(cid) in CARDS_DATA]
+            owned_ids = [int(cid) for cid, cnt in p.get("inventory", {}).items() if cnt > 0 and int(cid) in CARDS_DATA and not is_card_locked(p, cid)]
             owned_ids.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
             for cid in owned_ids:
                 if cid not in team_cids:
@@ -1290,7 +1188,6 @@ async def execute_raid(channel, raid_data):
             "death_round": None
         })
 
-    # Khởi tạo màn hình đấu Boss trực tiếp (Live Turn-by-Turn)
     p1_max_hp = BOSS_CONFIG["hp"]
     p1_hp = p1_max_hp
     p1_power = BOSS_CONFIG["power"]
@@ -1310,7 +1207,6 @@ async def execute_raid(channel, raid_data):
     p1_battle_history = []
     all_raid_turns = []
 
-    # CHẠY TURN-BY-TURN PHASE 1
     while p1_hp > 0 and p1_rounds < max_rounds:
         active_combatants = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
         if not active_combatants:
@@ -1393,8 +1289,6 @@ async def execute_raid(channel, raid_data):
             if ac["current_hp"] <= 0:
                 ac["current_hp"] = 0
                 dead_name = ac["name"]
-
-                # Lá bài trước khi chết đều thành công đổi sát thương vs Boss
                 trade_dmg = ac["power"]
                 p1_hp = max(0, p1_hp - trade_dmg)
                 c["total_dmg"] += trade_dmg
@@ -1476,7 +1370,6 @@ async def execute_raid(channel, raid_data):
         await channel.send(embed=embed_fail, view=OpenDetailsView(all_raid_turns))
         return
 
-    # TRAO THƯỞNG PHASE 1 (10% 10 vé, 40% 5 vé, 50% 3 vé)
     p1_rewards_data = {}
     for uid in participants:
         p = get_player(uid)
@@ -1496,7 +1389,6 @@ async def execute_raid(channel, raid_data):
         save_player(p)
         p1_rewards_data[uid] = {"total_pulls": t_val, "items": [d_str], "username": p["username"]}
 
-    # THÔNG BÁO PHASE 2 VÀ HỒI PHỤC 100% MÁU TOÀN BỘ LÁ BÀI
     p2_alert_embed = discord.Embed(
         title="🚨 DỊ BIẾN BIẾN ĐỔI - BÙA CHÚ RUNG ĐỘNG DỮ DỘI! (PHASE 2)",
         description=(
@@ -1523,7 +1415,6 @@ async def execute_raid(channel, raid_data):
         for card in c["team_cards"]:
             card["current_hp"] = card["max_hp"]
 
-    # CHẠY TURN-BY-TURN PHASE 2
     p2_max_hp = BOSS_PHASE2_CONFIG["hp"]
     p2_hp = p2_max_hp
     p2_power = BOSS_PHASE2_CONFIG["power"]
@@ -1612,8 +1503,6 @@ async def execute_raid(channel, raid_data):
             if ac["current_hp"] <= 0:
                 ac["current_hp"] = 0
                 dead_name = ac["name"]
-
-                # Lá bài trước khi chết đều thành công đổi sát thương vs Boss Phase 2
                 trade_dmg = ac["power"]
                 p2_hp = max(0, p2_hp - trade_dmg)
                 c["total_dmg"] += trade_dmg
@@ -1696,7 +1585,7 @@ async def execute_raid(channel, raid_data):
             if roll < 0.10:
                 t_val = 20.0
                 d_str = "👑 **+20 Vé** (10%)"
-            elif roll < 0.50:  # 0.10 + 0.40
+            elif roll < 0.50:
                 t_val = 10.0
                 d_str = "🔥 **+10 Vé** (40%)"
             else:
@@ -1739,7 +1628,6 @@ async def execute_raid(channel, raid_data):
         final_embed.add_field(name="⚠️ Kết Quả Phase 2:", value=f"Boss Phase 2 còn {p2_hp:,} HP! Toàn bộ quà Phase 1 vẫn được bảo lưu trọn vẹn.", inline=False)
 
     await channel.send(embed=final_embed, view=OpenDetailsView(all_raid_turns))
-
 # ==============================================================================
 # 7. SỰ KIỆN BOT ON_READY & ON_MESSAGE
 # ==============================================================================
@@ -1767,7 +1655,6 @@ async def on_message(message: discord.Message):
     content_lower = message.content.lower()
     clean_stripped = message.content.strip().lower()
 
-    # 👑 LỆNH ADMIN BOSS RAID: boss admin spawn & boss admin reset (hỗ trợ cả có và không có prefix !)
     if clean_stripped in ["boss admin spawn", "!boss admin spawn", "!boss_admin spawn"] or clean_stripped.startswith("boss admin spawn"):
         if not is_authorized_admin(message.author):
             await message.channel.send(f"⛔ {message.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được phép điều động Reimu Dị Hình!")
@@ -1790,7 +1677,6 @@ async def on_message(message: discord.Message):
         if random.random() < 0.10:
             await spawn_boss_raid(message.channel, None)
 
-    # XỬ LÝ TRÒ CHUYỆN VỚI REIMU
     is_reply_to_reimu = False
     if message.reference and message.reference.resolved:
         resolved = message.reference.resolved
@@ -1833,7 +1719,7 @@ async def on_message(message: discord.Message):
     await bot.process_commands(message)
 
 # ==============================================================================
-# 8. CƠ CHẾ GACHA PULL TOUHOU
+# 8. CƠ CHẾ GACHA PULL TOUHOU & TỰ ĐỘNG MỞ KHÓA THẺ KHI PULL LẠI
 # ==============================================================================
 def execute_single_pull(player):
     roll = random.random()
@@ -1844,16 +1730,25 @@ def execute_single_pull(player):
     else: chosen = random.choice(CARDS_BY_RANK["C"])
 
     cid_str = str(chosen["id"])
+    cid_int = int(chosen["id"])
     already_owned = player["inventory"].get(cid_str, 0)
     is_duplicate = already_owned > 0
     player["inventory"][cid_str] = already_owned + 1
     player.setdefault("pull_stats", {})[cid_str] = player.get("pull_stats", {}).get(cid_str, 0) + 1
 
-    # Mở khóa vĩnh viễn khi pull (kể cả khi inventory về 0 lá do ace)
-    cid_int = int(chosen["id"])
     unlocked = player.setdefault("unlocked_cards", [])
     if cid_int not in unlocked:
         unlocked.append(cid_int)
+
+    # CƠ CHẾ MỞ KHÓA THẺ BỊ ADMIN LOCK: Khi quay trúng lại chính lá bài đó
+    unlocked_from_lock = False
+    locked_list = player.setdefault("locked_cards", [])
+    if cid_int in locked_list:
+        locked_list.remove(cid_int)
+        unlocked_from_lock = True
+    if cid_str in locked_list:
+        locked_list.remove(cid_str)
+        unlocked_from_lock = True
 
     converted_pulls = 0.0
     if is_duplicate:
@@ -1864,7 +1759,7 @@ def execute_single_pull(player):
         elif chosen["rank"] == "C": converted_pulls = 0.2
         player["pull_tickets"] += converted_pulls
 
-    return chosen, is_duplicate, converted_pulls
+    return chosen, is_duplicate, converted_pulls, unlocked_from_lock
 
 # ==============================================================================
 # 9. LỆNH ADMIN (OWNER EXCLUSIVE: 1502579398560317441)
@@ -2034,6 +1929,104 @@ async def prefix_admin_add_card(ctx, card_id: int, quantity: int = 1, member: di
     await ctx.send(f"🎁 Đã cấp **+{quantity}x [{card['rank']}] #{card['id']:02d} {card['name']}** cho {target.mention} (Hiện có: {new_cnt})!")
 
 # ==============================================================================
+# LỆNH MỚI: /admin_lock - KHÓA THẺ ĐÃ SỞ HỮU, CHỈ MỞ KHI PULL RA LẠI
+# ==============================================================================
+@bot.tree.command(name="admin_lock", description="[CHỦ BOT DUY NHẤT] Khóa lá bài đã sở hữu của người chơi (chỉ mở khi pull ra lại)")
+@app_commands.describe(nguoi_dung="Người chơi bị khóa thẻ", id_the="ID lá bài từ 1-26")
+async def slash_admin_lock(interaction: discord.Interaction, nguoi_dung: discord.Member, id_the: int):
+    if not is_authorized_admin(interaction.user.id):
+        await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ chủ bot mới có quyền khóa thẻ.", ephemeral=True)
+        return
+
+    if id_the not in CARDS_DATA:
+        await interaction.response.send_message(f"❌ ID thẻ không hợp lệ (1-{len(CARDS_DATA)})!", ephemeral=True)
+        return
+
+    target = get_player(nguoi_dung.id, nguoi_dung.display_name)
+    inv = target.get("inventory", {})
+    cid_str = str(id_the)
+    owned = inv.get(cid_str, 0)
+    unlocked = is_card_unlocked(target, id_the)
+
+    if owned <= 0 and not unlocked:
+        await interaction.response.send_message(
+            f"⚠️ **{nguoi_dung.display_name}** chưa từng sở hữu thẻ bài #{id_the:02d} {CARDS_DATA[id_the]['name']}! Không thể khóa.",
+            ephemeral=True
+        )
+        return
+
+    locked_list = target.setdefault("locked_cards", [])
+    if id_the in locked_list or cid_str in locked_list:
+        await interaction.response.send_message(
+            f"⚠️ Thẻ #{id_the:02d} của {nguoi_dung.mention} đã bị khóa từ trước rồi!",
+            ephemeral=True
+        )
+        return
+
+    locked_list.append(id_the)
+
+    # Tự động gỡ khỏi đội hình nếu người đó đang trang bị thẻ này
+    team = target.get("team", [])
+    removed_from_team = False
+    if id_the in team:
+        team.remove(id_the)
+        target["team"] = team
+        removed_from_team = True
+
+    save_player(target)
+    card = CARDS_DATA[id_the]
+
+    removed_team_str = "• ⚠️ Đã tự động gỡ khỏi đội hình chiến đấu (/team)!\n" if removed_from_team else ""
+    embed = discord.Embed(
+        title="🔒 [ADMIN LOCK] ĐÃ NIÊM PHONG THẺ BÀI!",
+        description=(
+            f"👑 **Thực hiện bởi:** {interaction.user.mention}\n"
+            f"👤 **Người chơi bị phạt:** {nguoi_dung.mention}\n"
+            f"🎴 **Lá bài bị khóa:** `[{card['rank']}]` **#{card['id']:02d} {card['name']}**\n\n"
+            f"⚙️ **Cơ chế niêm phong:**\n"
+            f"{removed_team_str}"
+            f"• Cấm mang vào đội hình và cấm đem đi giao dịch (/trade).\n"
+            f"• 🔓 **Cách duy nhất để mở khóa:** Người chơi bắt buộc phải quay gacha (`/pull`) trúng lại chính lá bài này!"
+        ),
+        color=0xDC2626
+    )
+    embed.set_thumbnail(url=card["image"])
+    await interaction.response.send_message(embed=embed)
+
+@bot.command(name="lock", aliases=["admin_lock", "adminlock"])
+async def prefix_admin_lock(ctx, member: discord.Member, card_id: int):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send("⛔ Từ chối quyền truy cập! Lệnh dành riêng cho chủ bot.")
+        return
+
+    if card_id not in CARDS_DATA:
+        await ctx.send(f"❌ ID thẻ không hợp lệ (1-{len(CARDS_DATA)})!")
+        return
+
+    target = get_player(member.id, member.display_name)
+    cid_str = str(card_id)
+    inv = target.get("inventory", {})
+    owned = inv.get(cid_str, 0)
+    unlocked = is_card_unlocked(target, card_id)
+
+    if owned <= 0 and not unlocked:
+        await ctx.send(f"⚠️ {member.display_name} chưa từng sở hữu thẻ bài này!")
+        return
+
+    locked_list = target.setdefault("locked_cards", [])
+    if card_id in locked_list or cid_str in locked_list:
+        await ctx.send(f"⚠️ Thẻ này của {member.mention} đã bị khóa từ trước!")
+        return
+
+    locked_list.append(card_id)
+    if card_id in target.get("team", []):
+        target["team"].remove(card_id)
+
+    save_player(target)
+    card = CARDS_DATA[card_id]
+    await ctx.send(f"🔒 Đã khóa thẻ **[#{card['id']:02d}] {card['name']}** của {member.mention}! Chỉ được mở khi pull trúng lại.")
+
+# ==============================================================================
 # 10. CƠ CHẾ TIẾN HÓA /evol (ACE 2 - KHẤU TRỪ CHI PHÍ, BUFF +300/+300, MARISA ACE 2)
 # ==============================================================================
 class EvolSelectView(discord.ui.View):
@@ -2085,7 +2078,6 @@ def execute_card_evolution(player, cid: int):
             None
         )
 
-    # Khấu trừ chi phí tiến hóa (Ví dụ 30 lá Sakuya -> còn 0, 32 lá -> còn 2 lá)
     player["inventory"][cid_str] = current_cnt - req_cards
     remaining_cnt = player["inventory"][cid_str]
 
@@ -2231,18 +2223,16 @@ async def prefix_evol(ctx, id_hoac_ten: str = None):
     await handle_evol(ctx, id_hoac_ten)
 
 # ==============================================================================
-# 11. CÁC LỆNH GAME: PULL, DAILY, TEAM, BATTLE, COLLECTION, BOSS STATUS, HELP
+# 11. CÁC LỆNH GAME: PULL, DAILY, TEAM, COLLECTION, TUTORIAL, QUEST
 # ==============================================================================
 async def handle_pull(ctx_or_interaction, count: int = 1):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
     tut = player.get("tutorial", {})
 
-    # KIỂM TRA QUEST TÂN THỦ: 3 lượt pull 100% không trùng lá (KHÔNG BAO GIỜ RA THẺ SS)
-    if tut.get("active") and tut.get("step") == "pull":
-        # 100% loại bỏ toàn bộ thẻ bậc SS khỏi pool quay tân thủ
+    # BẢO MẬT CHỐNG BUG TUTORIAL: Kiểm tra cờ vĩnh viễn pull_used
+    if tut.get("active") and tut.get("step") == "pull" and not tut.get("pull_used", False):
         available_ids = [cid for cid, card in CARDS_DATA.items() if card.get("rank") != "SS"]
-        # Ưu tiên lấy 3 thẻ chưa từng mở khóa (không có SS), 100% không trùng nhau
         unowned = [cid for cid in available_ids if not is_card_unlocked(player, cid)]
         if len(unowned) >= 3:
             chosen_ids = random.sample(unowned, 3)
@@ -2262,7 +2252,9 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
                 unlocked.append(cid)
             results.append(f"• `[#{card['id']:02d}]` **[{card['rank']}] {card['name']}** (⚔️{card['power']} | ❤️{card['hp']}) ✨ **[MỚI]**")
 
+        # KHÓA VĨNH VIỄN BƯỚC PULL TÂN THỦ: ĐẶT CỜ pull_used = True
         tut["quest_pulls_remaining"] = 0
+        tut["pull_used"] = True
         tut["step"] = "collection"
         save_player(player)
 
@@ -2274,7 +2266,7 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
         if last_card:
             embed.set_thumbnail(url=last_card["image"])
         embed.add_field(
-            name="⛩️ BƯỚC TIẾP THEO:",
+            name="⛩️ BƯỚC TIẾP THEO (TIẾN TRÌNH 1 CHIỀU):",
             value=f"🔔 {user.mention} **Reimu:** *\"Có vẻ ngươi đã đủ đội hình rồi đấy, giờ hãy kiểm tra đội ngũ mình nào `/collection`\"*",
             inline=False
         )
@@ -2299,13 +2291,16 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
     player["pull_tickets"] -= float(needed)
 
     results = []
+    unlocked_notifs = []
     card = None
     for _ in range(count):
-        card, is_dup, conv = execute_single_pull(player)
+        card, is_dup, conv, unlocked_from_lock = execute_single_pull(player)
         dup_text = f" *(Trùng! +{conv:.2f} vé pull)*" if is_dup else " ✨ **[MỚI]**"
+        if unlocked_from_lock:
+            dup_text += " 🔓 **[ĐÃ MỞ KHÓA BỞI ADMIN!]**"
+            unlocked_notifs.append(f"🔓 Chúc mừng! Bạn đã quay trúng lại **#{card['id']:02d} {card['name']}**, thẻ bài đã được giải phóng khỏi trạng thái khóa Admin!")
         results.append(f"• `[#{card['id']:02d}]` **[{card['rank']}] {card['name']}** (⚔️{card['power']} | ❤️{card['hp']}){dup_text}")
 
-    # Cập nhật nhiệm vụ ngày pull
     dq_notifs = update_daily_quest_progress(player, "pull", count)
     save_player(player)
 
@@ -2316,6 +2311,8 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
     )
     if card:
         embed.set_thumbnail(url=card["image"])
+    if unlocked_notifs:
+        embed.add_field(name="🔓 GIẢI PHÓNG THẺ BÀI BỊ KHÓA:", value="\n".join(unlocked_notifs), inline=False)
     if dq_notifs:
         embed.add_field(name="📜 Tiến Trình Nhiệm Vụ Ngày:", value="\n\n".join(dq_notifs), inline=False)
     embed.set_footer(text=f"Vé pull còn lại: {player['pull_tickets']:.2f} | Free hôm nay: {player['free_pulls_remaining']}/5")
@@ -2335,7 +2332,6 @@ async def handle_daily(ctx_or_interaction):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
 
-    # Người chơi mới lần đầu tiên bấm lệnh: Kích hoạt ngay Tutorial tân thủ
     if player.get("_is_first_time") and not player.get("tutorial", {}).get("completed"):
         player["_is_first_time"] = False
         await send_tutorial_intro(ctx_or_interaction, player)
@@ -2375,7 +2371,6 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
 
-    # Người chơi mới lần đầu tiên bấm lệnh: Kích hoạt ngay Tutorial tân thủ
     if player.get("_is_first_time") and not player.get("tutorial", {}).get("completed"):
         player["_is_first_time"] = False
         await send_tutorial_intro(ctx_or_interaction, player)
@@ -2393,8 +2388,14 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
             else: await ctx_or_interaction.send(msg)
             return
 
+        # CHẶN THẺ BỊ ADMIN KHÓA
+        if is_card_locked(player, card_id):
+            msg = f"🔒 Thẻ **#{card_id:02d} {CARDS_DATA[card_id]['name']}** hiện đang bị Quản Trị Viên niêm phong! Bạn chỉ có thể dùng lại khi quay gacha (`/pull`) trúng lại lá này."
+            if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+            else: await ctx_or_interaction.send(msg)
+            return
+
         cid_str = str(card_id)
-        # Kiểm tra sở hữu trong kho hoặc đã mở khóa vĩnh viễn qua Pull
         owned_inv = player["inventory"].get(cid_str, 0)
         unlocked = is_card_unlocked(player, card_id)
         if owned_inv < 1 and not unlocked:
@@ -2423,7 +2424,6 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
         ace_hp = ACE_HP_BUFF if is_ace else 0
         msg = f"✅ Đã thêm **#{card['id']:02d} [{card['rank']}] {card['name']}** vào đội hình! (Lực chiến: ⚔️{card['power'] + lvl_buff_pwr + ace_pwr:,} | ❤️{card['hp'] + lvl_buff_hp + ace_hp:,})"
 
-        # Kiểm tra nhiệm vụ tân thủ bước 3 (team)
         tut = player.get("tutorial", {})
         if tut.get("active") and tut.get("step") == "team":
             if len(player["team"]) >= 3:
@@ -2450,7 +2450,6 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
         else: await ctx_or_interaction.send(msg)
         return
 
-    # View team
     filled_bars = int(ratio * 10)
     bar_str = "▰" * filled_bars + "▱" * (10 - filled_bars)
     embed = discord.Embed(title=f"🛡️ ĐỘI HÌNH CHIẾN ĐẤU - {user.display_name.upper()}", color=0x3B82F6)
@@ -2509,7 +2508,11 @@ async def handle_collection(ctx_or_interaction):
         card = CARDS_DATA[cid]
         cnt = player["inventory"].get(str(cid), 0)
         unlocked = is_card_unlocked(player, cid)
-        if cnt > 0 or unlocked:
+        locked = is_card_locked(player, cid)
+
+        if locked:
+            lines.append(f"🔒 **#{card['id']:02d} [{card['rank']}] {card['name']}** ×{cnt} `[BỊ ADMIN KHÓA - Cần pull ra để mở]`")
+        elif cnt > 0 or unlocked:
             owned += 1
             is_ace = is_card_ace2(player, cid)
             ace_mark = " ⭐⭐ [Ace 2]" if is_ace else ""
@@ -2522,13 +2525,12 @@ async def handle_collection(ctx_or_interaction):
 
     embed = discord.Embed(title=f"📖 BỘ SƯU TẬP THẺ TOUHOU ({owned}/{len(CARDS_DATA)})", description="\n".join(lines), color=0x8B5CF6)
 
-    # Kiểm tra nhiệm vụ tân thủ bước 2 (collection)
     tut = player.get("tutorial", {})
     if tut.get("active") and tut.get("step") == "collection":
         tut["step"] = "team"
         save_player(player)
         embed.add_field(
-            name="⛩️ BƯỚC TIẾP THEO:",
+            name="⛩️ BƯỚC TIẾP THEO (TIẾN TRÌNH 1 CHIỀU):",
             value=f"🔔 {user.mention} **Reimu:** *\"Tốt tốt, giờ nhìn id của họ và `/team add <id>` nào, nhớ là add đủ 3 lần nhé\"*",
             inline=False
         )
@@ -2546,7 +2548,7 @@ async def prefix_collection(ctx):
     await handle_collection(ctx)
 
 # ==============================================================================
-# HỆ THỐNG TUTORIAL TÂN THỦ & NHIỆM VỤ NGÀY
+# HỆ THỐNG TUTORIAL TÂN THỦ & NHIỆM VỤ NGÀY (TIẾN TRÌNH TUYẾN TÍNH 1 CHIỀU)
 # ==============================================================================
 async def send_tutorial_intro(ctx_or_interaction, player):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
@@ -2585,6 +2587,24 @@ async def handle_tutorial(ctx_or_interaction):
             title="⛩️ NHIỆM VỤ TÂN THỦ ĐÃ HOÀN THÀNH",
             description=f"🎉 **{user.display_name}** đã hoàn thành toàn bộ khóa huấn luyện tân thủ và nhận thưởng 10 vé pull rồi!\nHãy dùng `/quest` để làm 3/3 Nhiệm Vụ Hàng Ngày nhé!",
             color=0x10B981
+        )
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed, ephemeral=True)
+        else: await ctx_or_interaction.send(embed=embed)
+        return
+
+    # NẾU ĐÃ PULL 3 LÁ RỒI THÌ TUYỆT ĐỐI KHÔNG RESET BƯỚC PULL NỮA!
+    if tut.get("pull_used", False):
+        curr_step = tut.get("step", "collection")
+        step_hints = {
+            "collection": "Bạn đã nhận 3 lá tân thủ rồi! Hãy dùng `/collection` để xem bài.",
+            "team": f"Bạn đã mở khóa bộ sưu tập! Hãy dùng `/team add <id>` để xếp đủ 3 thẻ (Hiện có {len(player.get('team', []))}/3 thẻ).",
+            "battle": "Đội hình đã sẵn sàng! Hãy dùng `/battle` tham gia trận chiến đầu tiên để hoàn tất nhiệm vụ và nhận 10 Vé Pull!"
+        }
+        hint = step_hints.get(curr_step, "Hãy tiếp tục hoàn tất nhiệm vụ tân thủ!")
+        embed = discord.Embed(
+            title="🌸 TIẾN TRÌNH NHIỆM VỤ TÂN THỦ (TIẾN TRÌNH 1 CHIỀU)",
+            description=f"⚠️ **Bạn đang thực hiện nhiệm vụ dở dang:**\n{hint}\n\n*(Không thể reset lượt pull 3 lá khởi đầu)*",
+            color=0xF59E0B
         )
         if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed, ephemeral=True)
         else: await ctx_or_interaction.send(embed=embed)
@@ -2645,7 +2665,6 @@ async def slash_quest(interaction: discord.Interaction):
 @bot.command(name="quest", aliases=["quests", "dailyquest"])
 async def prefix_quest(ctx):
     await handle_quest(ctx)
-
 # ==============================================================================
 # TÍNH NĂNG CHECK NHÂN VẬT & SOI KỸ NĂNG (TOÀN BỘ 26 NHÂN VẬT + ACE 2)
 # ==============================================================================
@@ -2662,7 +2681,6 @@ class CharacterCheckView(discord.ui.View):
         cid = self.current_index + 1
         has_ace = cid in (13, 16, 17)
 
-        # Row 0: Điều hướng chuyển qua lại bằng mũi tên trái/phải
         first_btn = discord.ui.Button(label="⏮️", style=discord.ButtonStyle.secondary, row=0)
         first_btn.callback = self.first_page
         self.add_item(first_btn)
@@ -2682,7 +2700,6 @@ class CharacterCheckView(discord.ui.View):
         last_btn.callback = self.last_page
         self.add_item(last_btn)
 
-        # Row 1: Nút xem Ace 2 hoặc Bản Thường
         if has_ace:
             if self.show_ace:
                 ace_toggle = discord.ui.Button(label="⭐ Xem Bản Thường", style=discord.ButtonStyle.secondary, emoji="🔄", row=1)
@@ -2694,7 +2711,6 @@ class CharacterCheckView(discord.ui.View):
             no_ace_btn = discord.ui.Button(label="⭐ Nhân Vật Bản Chuẩn", style=discord.ButtonStyle.secondary, disabled=True, row=1)
             self.add_item(no_ace_btn)
 
-        # Row 2: Dropdown 1 (Nhân vật #01 - #13)
         opt_part1 = []
         for i in range(1, 14):
             c = CARDS_DATA[i]
@@ -2713,7 +2729,6 @@ class CharacterCheckView(discord.ui.View):
         select1.callback = self.select_callback
         self.add_item(select1)
 
-        # Row 3: Dropdown 2 (Nhân vật #14 - #26)
         opt_part2 = []
         for i in range(14, 27):
             c = CARDS_DATA[i]
@@ -2745,6 +2760,7 @@ class CharacterCheckView(discord.ui.View):
         lvl_hp_buff = (user_level - 1) * 25
         owned_cnt = player.get("inventory", {}).get(str(cid), 0) if player else 0
         is_user_ace = is_card_ace2(player, cid) if player else False
+        is_locked = is_card_locked(player, cid) if player else False
 
         rank_colors = {
             "SS": 0xF59E0B,
@@ -2776,6 +2792,9 @@ class CharacterCheckView(discord.ui.View):
             if has_ace:
                 mode_desc += "\n✨ **Nhân vật này có thể tiến hóa Ace 2 ⭐⭐!** *(Bấm nút 'Xem Bản Ace 2' bên dưới)*"
 
+        if is_locked:
+            mode_desc += "\n🔒 **CẢNH BÁO: Thẻ này hiện đang bị ADMIN KHÓA!** Cần quay `/pull` ra lại để mở."
+
         embed = discord.Embed(
             title=title,
             description=mode_desc,
@@ -2802,7 +2821,9 @@ class CharacterCheckView(discord.ui.View):
         )
 
         if player:
-            if is_user_ace:
+            if is_locked:
+                ace_badge = "🔒 [BỊ ADMIN KHÓA]"
+            elif is_user_ace:
                 ace_badge = "🌟 ĐÃ THỨC TỈNH ACE 2 ⭐⭐"
             elif has_ace:
                 req = EVOL_CONFIG[cid]["required_cards"]
@@ -2917,7 +2938,9 @@ async def slash_card_info(interaction: discord.Interaction, nhan_vat: str = None
 async def prefix_check(ctx, *, nhan_vat: str = None):
     await handle_check_character(ctx, nhan_vat)
 
-
+# ==============================================================================
+# HỆ THỐNG PVE BATTLE (ĐẤU THEO LƯỢT NPC GENSOKYO)
+# ==============================================================================
 GENSOKYO_NPCS = [
     {"name": "Cirno Đệ Nhất", "badge": "❄️ Băng Tinh", "preferred": [18, 19, 20]},
     {"name": "Marisa Đạo Tặc", "badge": "⭐ Tinh Linh", "preferred": [6, 13, 17]},
@@ -2935,14 +2958,16 @@ async def handle_battle(ctx_or_interaction):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
 
-    # Người chơi mới lần đầu tiên bấm lệnh: Kích hoạt ngay Tutorial tân thủ
     if player.get("_is_first_time") and not player.get("tutorial", {}).get("completed"):
         player["_is_first_time"] = False
         await send_tutorial_intro(ctx_or_interaction, player)
         return
 
+    # Lọc bỏ thẻ bị Admin lock khỏi đội hình nếu có
+    player["team"] = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
+
     if not player.get("team"):
-        msg = "⚠️ Đội hình của bạn đang trống! Dùng `/team add id_the:<ID>` để xếp thẻ."
+        msg = "⚠️ Đội hình của bạn đang trống hoặc các thẻ đang bị khóa! Dùng `/team add id_the:<ID>` để xếp thẻ."
         if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else: await ctx_or_interaction.send(msg)
         return
@@ -2981,23 +3006,17 @@ async def handle_battle(ctx_or_interaction):
                 "image": c.get("image", "")
             })
 
-    # Danh sách các ID nhân vật đã được cấp Ace 2 trong game (từ EVOL_CONFIG: 13 Reimu, 16 Sakuya, 17 Marisa...)
     ace_supported_cids = list({int(k) for k in EVOL_CONFIG.keys() if str(k).isdigit() and int(k) in CARDS_DATA})
-
-    # Xác suất NPC thi thoảng có 1 thẻ Ace 2 (~25% trận đấu, tần suất vừa phải, kịch tính nhưng không quá cao)
-    # Áp dụng chuẩn xác cho các nhân vật đã được game cấp Ace 2 (Reimu, Sakuya, Marisa,...)
     npc_has_ace = (random.random() < 0.25) and len(ace_supported_cids) > 0
     npc_ace_idx = -1
 
     final_opp_team_ids = list(opp_team_ids[:3])
 
     if npc_has_ace:
-        # Kiểm tra xem trong 3 thẻ của NPC đã có sẵn nhân vật nào có Ace 2 chưa
         existing_ace_eligible = [i for i, cid in enumerate(final_opp_team_ids) if cid in ace_supported_cids]
         if existing_ace_eligible:
             npc_ace_idx = random.choice(existing_ace_eligible)
         else:
-            # Nếu chưa có, thay thế ngẫu nhiên 1 vị trí bằng 1 nhân vật hợp lệ có Ace 2 (Sakuya, Reimu, hoặc Marisa)
             replace_idx = random.randint(0, len(final_opp_team_ids) - 1)
             chosen_ace_cid = random.choice(ace_supported_cids)
             final_opp_team_ids[replace_idx] = chosen_ace_cid
@@ -3039,7 +3058,6 @@ async def handle_battle(ctx_or_interaction):
         stunned_pc = False
         stunned_oc = False
 
-        # Người chơi: Sakuya Ace 2 đóng băng đối thủ (40%)
         if pc["cid"] == 16 and pc["is_ace2"] and not p_sakuya:
             if random.random() < 0.40:
                 p_sakuya = True
@@ -3049,7 +3067,6 @@ async def handle_battle(ctx_or_interaction):
                 battle_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
-        # Đối thủ NPC: Sakuya Ace 2 đóng băng người chơi (30%)
         if oc["cid"] == 16 and oc.get("is_ace2") and not o_sakuya:
             if random.random() < 0.30:
                 o_sakuya = True
@@ -3060,7 +3077,6 @@ async def handle_battle(ctx_or_interaction):
                 battle_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
-        # Người chơi: Marisa Ace 2 Master Spark (30%)
         curr_pc_power = pc["power"]
         if pc["cid"] == 17 and pc["is_ace2"] and not p_marisa:
             if random.random() < 0.30:
@@ -3072,7 +3088,6 @@ async def handle_battle(ctx_or_interaction):
                 battle_logs.append(msg_m)
                 turn_actions.append(msg_m)
 
-        # Đối thủ NPC: Marisa Ace 2 Master Spark (25%)
         curr_oc_power = oc["power"]
         if oc["cid"] == 17 and oc.get("is_ace2") and not o_marisa:
             if random.random() < 0.25:
@@ -3084,9 +3099,7 @@ async def handle_battle(ctx_or_interaction):
                 battle_logs.append(msg_m)
                 turn_actions.append(msg_m)
 
-        # Đòn đánh của người chơi (nếu không bị stun)
         if not stunned_pc:
-            # Kiểm tra xem đối thủ có Reimu Ace 2 né đòn không
             oc_invul = False
             if oc["cid"] == 13 and oc.get("is_ace2") and not o_reimu:
                 if random.random() < 0.30:
@@ -3106,7 +3119,6 @@ async def handle_battle(ctx_or_interaction):
         else:
             turn_actions.append(f"❄️ **{pc['name']}** bị đóng băng nên không thể ra đòn!")
 
-        # Phản công của đối thủ (nếu không bị stun)
         if not stunned_oc:
             pc_invul = False
             if pc["cid"] == 13 and pc["is_ace2"] and not p_reimu:
@@ -3126,7 +3138,6 @@ async def handle_battle(ctx_or_interaction):
         else:
             turn_actions.append(f"❄️ **{oc['name']}** bị đóng băng nên không thể phản công!")
 
-        # Cơ chế đổi sát thương trước khi tử trận (Last Stand Trade)
         if pc["current_hp"] <= 0:
             pc["current_hp"] = 0
             trade_dmg = pc["power"]
@@ -3172,7 +3183,6 @@ async def handle_battle(ctx_or_interaction):
         })
 
     win = (o_idx >= len(opp_cards))
-    # Phần thưởng XP mới: Thắng nhận 100-200 XP, Thua nhận 30-50 XP
     if win:
         gained_xp = random.randint(100, 200)
     else:
@@ -3184,10 +3194,8 @@ async def handle_battle(ctx_or_interaction):
     player["battles_total"] = player.get("battles_total", 0) + 1
     if win: player["battles_won"] = player.get("battles_won", 0) + 1
 
-    # Cập nhật daily quest cho battle
     dq_notifs = update_daily_quest_progress(player, "battle", 1)
 
-    # Kiểm tra nhiệm vụ tân thủ bước cuối (battle)
     tut = player.get("tutorial", {})
     tut_completed = False
     if tut.get("active") and tut.get("step") == "battle":
@@ -3203,7 +3211,6 @@ async def handle_battle(ctx_or_interaction):
     lvl_up_str = f"\n🎉 **LÊN CẤP {new_lvl}!** (+20 ATK & +25 HP buff)" if new_lvl > old_lvl else ""
     embed = discord.Embed(title=f"⚔️ BATTLE ({r_cnt} HIỆP): {user.display_name} VS {opp_name}", color=0x10B981 if win else 0xEF4444)
 
-    # HIỂN THỊ HOÀN TOÀN ĐỘI HÌNH CỦA BẠN VÀ ĐỐI THỦ
     your_team_lines = [
         f"• {'⭐ ' if pc.get('is_ace2') else ''}**{pc['name']}** `[{pc.get('rank', 'A')}]` ⚔️ `{pc['power']:,}` | ❤️ `{pc['hp']:,}`"
         for pc in player_cards
@@ -3345,7 +3352,6 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids):
         c_stunned = False
         t_stunned = False
 
-        # Sakuya stun (40% rate in PvP)
         if cc["cid"] == 16 and cc["is_ace2"] and not c_sakuya:
             if random.random() < 0.40:
                 c_sakuya = True
@@ -3365,7 +3371,6 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids):
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
-        # Reimu invul (40% rate in PvP)
         c_invul = False
         t_invul = False
         if cc["cid"] == 13 and cc["is_ace2"] and not c_reimu:
@@ -3388,7 +3393,6 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids):
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
-        # Marisa Ace 2 Master Spark (30% rate, 1 time per battle, 1.5x DMG)
         c_curr_power = cc["power"]
         t_curr_power = tc["power"]
         if cc["cid"] == 17 and cc["is_ace2"] and not c_marisa:
@@ -3411,7 +3415,6 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids):
                 pvp_logs.append(msg_m)
                 turn_actions.append(msg_m)
 
-        # Giao tranh sát thương
         if not c_stunned and not t_invul:
             tc["current_hp"] -= c_curr_power
             turn_actions.append(f"⚔️ **{cc['name']}** giáng **{c_curr_power:,} DMG** lên **{tc['name']}**!")
@@ -3428,7 +3431,6 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids):
         elif c_invul:
             turn_actions.append(f"🛡️ **{cc['name']}** miễn nhiễm toàn bộ đòn đánh!")
 
-        # Cơ chế đổi sát thương trước khi tử trận (Last Stand Trade)
         if cc["current_hp"] <= 0:
             cc["current_hp"] = 0
             trade_dmg = cc["power"]
@@ -3476,7 +3478,6 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids):
             ]
         })
 
-    # Xác định người chiến thắng
     c_won = (t_idx >= len(t_cards) and c_idx < len(c_cards))
     t_won = (c_idx >= len(c_cards) and t_idx < len(t_cards))
 
@@ -3504,7 +3505,6 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids):
     c_player["battles_total"] = c_player.get("battles_total", 0) + 1
     t_player["battles_total"] = t_player.get("battles_total", 0) + 1
 
-    # Cập nhật daily quest cho PvP
     dq_c = update_daily_quest_progress(c_player, "pvp", 1)
     dq_t = update_daily_quest_progress(t_player, "pvp", 1)
 
@@ -3561,9 +3561,9 @@ async def handle_pvp(ctx_or_interaction, target: discord.Member):
     t_player = get_player(target.id, target.display_name)
 
     def get_effective_team(p):
-        team = [cid for cid in p.get("team", []) if cid in CARDS_DATA]
+        team = [cid for cid in p.get("team", []) if cid in CARDS_DATA and not is_card_locked(p, cid)]
         if len(team) < 3:
-            owned_ids = [int(cid) for cid, cnt in p.get("inventory", {}).items() if cnt > 0 and int(cid) in CARDS_DATA]
+            owned_ids = [int(cid) for cid, cnt in p.get("inventory", {}).items() if cnt > 0 and int(cid) in CARDS_DATA and not is_card_locked(p, cid)]
             owned_ids.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
             for cid in owned_ids:
                 if cid not in team:
@@ -3576,13 +3576,13 @@ async def handle_pvp(ctx_or_interaction, target: discord.Member):
     t_team = get_effective_team(t_player)
 
     if not c_team:
-        msg = "⚠️ Bạn chưa sở hữu thẻ bài nào để tham chiến! Dùng `/pull` để tìm kiếm thẻ bài nhé."
+        msg = "⚠️ Bạn chưa sở hữu thẻ bài hợp lệ để tham chiến (hoặc các thẻ đang bị Admin khóa)! Dùng `/pull` để tìm kiếm thẻ bài nhé."
         if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else: await ctx_or_interaction.send(msg)
         return
 
     if not t_team:
-        msg = f"⚠️ Đối thủ {target.mention} hiện chưa sở hữu bất kỳ thẻ bài nào trong kho để tiếp nhận chiến thư!"
+        msg = f"⚠️ Đối thủ {target.mention} hiện chưa có thẻ bài khả dụng để tiếp nhận chiến thư!"
         if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else: await ctx_or_interaction.send(msg)
         return
@@ -3668,7 +3668,6 @@ def find_card_by_name_or_id(query: str):
     for cid, c in CARDS_DATA.items():
         if raw in c["name"].lower():
             return cid
-    # Tra cứu theo từng từ đơn (ví dụ gõ "reimu", "hakurei", "sakuya", "mokou", v.v.)
     words = raw.replace("#", " ").replace(":", " ").split()
     for w in words:
         w_clean = w.strip()
@@ -3722,8 +3721,8 @@ class TradeConfirmationView(discord.ui.View):
         super().__init__(timeout=120)
         self.initiator = initiator
         self.target = target
-        self.offer_give = offer_give      # {cid: qty} - Initiator gửi cho Target
-        self.offer_receive = offer_receive # {cid: qty} - Target gửi cho Initiator
+        self.offer_give = offer_give
+        self.offer_receive = offer_receive
         self.confirmed_users = set()
         self.msg = None
 
@@ -3751,37 +3750,36 @@ class TradeConfirmationView(discord.ui.View):
             )
             return
 
-        # Khi đã đủ 2/2 xác nhận:
         p_a = get_player(self.initiator.id, self.initiator.display_name)
         p_b = get_player(self.target.id, self.target.display_name)
 
         inv_a = p_a.get("inventory", {})
         inv_b = p_b.get("inventory", {})
 
-        # Kiểm tra tính toàn vẹn số lượng trước khi swap
         for cid, qty in self.offer_give.items():
+            if is_card_locked(p_a, cid):
+                for child in self.children: child.disabled = True
+                await interaction.response.edit_message(content=f"❌ **Giao dịch thất bại!** Thẻ #{cid:02d} của {self.initiator.display_name} đang bị Admin khóa.", view=self)
+                self.stop()
+                return
             if inv_a.get(str(cid), 0) < qty:
-                for child in self.children:
-                    child.disabled = True
-                await interaction.response.edit_message(
-                    content=f"❌ **Giao dịch thất bại!** {self.initiator.display_name} không còn đủ {qty} lá #{cid:02d} {CARDS_DATA[cid][name]} trong túi đồ.",
-                    view=self
-                )
+                for child in self.children: child.disabled = True
+                await interaction.response.edit_message(content=f"❌ **Giao dịch thất bại!** {self.initiator.display_name} không còn đủ {qty} lá #{cid:02d} trong túi đồ.", view=self)
                 self.stop()
                 return
 
         for cid, qty in self.offer_receive.items():
+            if is_card_locked(p_b, cid):
+                for child in self.children: child.disabled = True
+                await interaction.response.edit_message(content=f"❌ **Giao dịch thất bại!** Thẻ #{cid:02d} của {self.target.display_name} đang bị Admin khóa.", view=self)
+                self.stop()
+                return
             if inv_b.get(str(cid), 0) < qty:
-                for child in self.children:
-                    child.disabled = True
-                await interaction.response.edit_message(
-                    content=f"❌ **Giao dịch thất bại!** {self.target.display_name} không còn đủ {qty} lá #{cid:02d} {CARDS_DATA[cid][name]} trong túi đồ.",
-                    view=self
-                )
+                for child in self.children: child.disabled = True
+                await interaction.response.edit_message(content=f"❌ **Giao dịch thất bại!** {self.target.display_name} không còn đủ {qty} lá #{cid:02d} trong túi đồ.", view=self)
                 self.stop()
                 return
 
-        # Thực hiện hoán đổi thẻ bài
         for cid, qty in self.offer_give.items():
             inv_a[str(cid)] = inv_a.get(str(cid), 0) - qty
             inv_b[str(cid)] = inv_b.get(str(cid), 0) + qty
@@ -3858,7 +3856,6 @@ class TradeConfirmationView(discord.ui.View):
             except Exception:
                 pass
 
-
 async def send_trade_msg(ctx_or_interaction, content=None, embed=None, view=None, ephemeral=False):
     if isinstance(ctx_or_interaction, discord.Interaction):
         if ctx_or_interaction.response.is_done():
@@ -3894,9 +3891,8 @@ async def handle_trade(ctx_or_interaction, user: Union[discord.Member, discord.U
     inv_b = p_b.get("inventory", {})
 
     if not your or not their:
-        # Hiển thị hướng dẫn chi tiết và danh sách gợi ý thẻ hợp lệ cả 2 cùng sở hữu
-        eligible_a_gives = [cid for cid, c in CARDS_DATA.items() if inv_a.get(str(cid), 0) >= 1 and (inv_b.get(str(cid), 0) >= 1 or is_card_ace2(p_b, cid))]
-        eligible_b_gives = [cid for cid, c in CARDS_DATA.items() if inv_b.get(str(cid), 0) >= 1 and (inv_a.get(str(cid), 0) >= 1 or is_card_ace2(p_a, cid))]
+        eligible_a_gives = [cid for cid, c in CARDS_DATA.items() if inv_a.get(str(cid), 0) >= 1 and (inv_b.get(str(cid), 0) >= 1 or is_card_ace2(p_b, cid)) and not is_card_locked(p_a, cid)]
+        eligible_b_gives = [cid for cid, c in CARDS_DATA.items() if inv_b.get(str(cid), 0) >= 1 and (inv_a.get(str(cid), 0) >= 1 or is_card_ace2(p_a, cid)) and not is_card_locked(p_b, cid)]
 
         a_cards_txt = ", ".join([f"#{c:02d} {CARDS_DATA[c]['name']}" for c in eligible_a_gives[:8]]) or "Chưa có thẻ chung hợp lệ"
         b_cards_txt = ", ".join([f"#{c:02d} {CARDS_DATA[c]['name']}" for c in eligible_b_gives[:8]]) or "Chưa có thẻ chung hợp lệ"
@@ -3908,8 +3904,9 @@ async def handle_trade(ctx_or_interaction, user: Union[discord.Member, discord.U
                 f"📌 **Cú pháp lệnh:**\n"
                 f"• `/trade user:@{getattr(user, 'display_name', str(user))} your:<tên_nhân_vật:số_lượng> their:<tên_nhân_vật:số_lượng>`\n"
                 f"*(Ví dụ: `/trade user:@{getattr(user, 'display_name', str(user))} your:reimu: 1 their:sakuya:12`)*\n\n"
-                f"🛡️ **QUY TẮC CHỐNG CLONE ACCOUNT:**\n"
-                f"• Người nhận **BẮT BUỘC ĐÃ SỞ HỮU THẺ ĐÓ RỒI** mới có thể nhận thêm (phục vụ cày Ace dễ hơn, tuyệt đối ngăn chặn tạo acc clone cày thẻ hiếm dồn acc chính).\n"
+                f"🛡️ **QUY TẮC CHỐNG CLONE ACCOUNT & KHÓA ADMIN:**\n"
+                f"• Người nhận **BẮT BUỘC ĐÃ SỞ HỮU THẺ ĐÓ RỒI** mới có thể nhận thêm.\n"
+                f"• Tuyệt đối không thể trao đổi lá bài đang bị Admin niêm phong.\n"
                 f"• Cả 2 bên bắt buộc phải gửi thẻ cho nhau (trao đổi tương hỗ).\n"
                 f"• Cả 2 người phải cùng bấm nút xác nhận **(2/2)** trong vòng 2 phút để hoàn tất.\n\n"
                 f"📋 **Gợi ý thẻ hợp lệ có thể trao đổi ngay:**\n"
@@ -3921,7 +3918,6 @@ async def handle_trade(ctx_or_interaction, user: Union[discord.Member, discord.U
         await send_trade_msg(ctx_or_interaction, embed=embed_guide)
         return
 
-    # Parse your (offer_a) và their (offer_b)
     offer_a, err_a = parse_trade_offer(your)
     if err_a:
         await send_trade_msg(ctx_or_interaction, content=f"⚠️ **Mục [your] không hợp lệ:** {err_a}", ephemeral=True)
@@ -3932,9 +3928,13 @@ async def handle_trade(ctx_or_interaction, user: Union[discord.Member, discord.U
         await send_trade_msg(ctx_or_interaction, content=f"⚠️ **Mục [their] không hợp lệ:** {err_b}", ephemeral=True)
         return
 
-    # Kiểm tra tính hợp lệ của offer_a (A gửi cho B)
     for cid, qty in offer_a.items():
         card_info = CARDS_DATA[cid]
+        if is_card_locked(p_a, cid):
+            msg = f"🔒 Lá bài **#{cid:02d} {card_info['name']}** của bạn đang bị Admin niêm phong, không thể mang đi trao đổi!"
+            await send_trade_msg(ctx_or_interaction, content=msg, ephemeral=True)
+            return
+
         has_cnt = inv_a.get(str(cid), 0)
         if has_cnt < qty:
             msg = f"❌ Bạn (**{getattr(author, 'display_name', str(author))}**) không đủ {qty} lá **#{cid:02d} [{card_info['rank']}] {card_info['name']}** để gửi đi! (Hiện chỉ có: {has_cnt} lá)"
@@ -3950,9 +3950,13 @@ async def handle_trade(ctx_or_interaction, user: Union[discord.Member, discord.U
             await send_trade_msg(ctx_or_interaction, content=msg, ephemeral=True)
             return
 
-    # Kiểm tra tính hợp lệ của offer_b (B gửi cho A)
     for cid, qty in offer_b.items():
         card_info = CARDS_DATA[cid]
+        if is_card_locked(p_b, cid):
+            msg = f"🔒 Lá bài **#{cid:02d} {card_info['name']}** của đối phương đang bị Admin niêm phong, không thể mang đi trao đổi!"
+            await send_trade_msg(ctx_or_interaction, content=msg, ephemeral=True)
+            return
+
         has_cnt = inv_b.get(str(cid), 0)
         if has_cnt < qty:
             msg = f"❌ Đối phương (**{getattr(user, 'display_name', str(user))}**) không đủ {qty} lá **#{cid:02d} [{card_info['rank']}] {card_info['name']}** để gửi lại! (Hiện chỉ có: {has_cnt} lá)"
@@ -3968,7 +3972,6 @@ async def handle_trade(ctx_or_interaction, user: Union[discord.Member, discord.U
             await send_trade_msg(ctx_or_interaction, content=msg, ephemeral=True)
             return
 
-    # Khởi tạo giao diện xác nhận 2 bên sau khi gửi trade
     trade_view = TradeConfirmationView(author, user, offer_a, offer_b)
     embed_trade = discord.Embed(
         title="🤝 LỜI ĐỀ NGHỊ TRAO ĐỔI THẺ BÀI TOUHOU",
@@ -4017,7 +4020,6 @@ async def prefix_pvp(ctx, target: Union[discord.Member, discord.User] = None):
     their="Thẻ đối phương đưa ra kèm số lượng (Ví dụ: sakuya:12 hoặc sakuya:12, cirno:5)"
 )
 async def slash_trade(interaction: discord.Interaction, user: Union[discord.Member, discord.User], your: str = None, their: str = None):
-    # Dùng defer() để ngăn chặn triệt để lỗi Discord "Ứng dụng không phản hồi" (3s timeout)
     await interaction.response.defer()
     try:
         await handle_trade(interaction, user, your, their)
@@ -4138,11 +4140,11 @@ async def handle_help(ctx_or_interaction):
 ⛩️ **HAKUREI REIMU DISCORD BOT - BẢN ĐỒ LỆNH**
 
 **🌸 TÂN THỦ & NHIỆM VỤ:**
-• `/tutorial`: Khóa huấn luyện tân thủ (Thưởng 10 lượt pull, cấp 3 lượt pull 100% không trùng lá, không bao giờ ra thẻ SS).
+• `/tutorial`: Khóa huấn luyện tân thủ (Thưởng 10 lượt pull, cấp 3 lượt pull 100% không trùng lá, không bao giờ ra thẻ SS, tiến trình 1 chiều).
 • `/quest`: Xem 3/3 Nhiệm vụ Hàng Ngày (Nhận vé pull & thưởng lớn +10 lượt pull khi xong cả 3).
 
 **🎮 GACHA, TIẾN HÓA & TRAO ĐỔI:**
-• `/pull [số_lượng]`: Quay thẻ Touhou (Free 5 lượt/ngày). *Thẻ đã quay được sẽ mở khóa vĩnh viễn!*
+• `/pull [số_lượng]`: Quay thẻ Touhou (Free 5 lượt/ngày). *Thẻ đã quay được sẽ mở khóa vĩnh viễn! Quay trúng lại thẻ bị lock sẽ mở khóa!*
 • `/daily`: Điểm danh nhận 1 vé pull mỗi ngày.
 • `/evol [id_hoac_ten]`: Tiến hóa Ace 2 ⭐⭐ (Buff +300 ATK, +300 HP, trừ thẻ sau khi evol):
   - [#13] Reimu (20 thẻ): Vô Tưởng Chuyển Sinh (40% miễn sát thương).
@@ -4164,6 +4166,7 @@ async def handle_help(ctx_or_interaction):
 • **Phase 2 Thức Tỉnh (50k HP / 22k DMG):** Tự động hồi sinh & hồi 100% HP mọi thẻ bài! Quà siêu cấp: 10% 20 vé, 40% 10 vé, 50% 5 vé!
 
 **👑 LỆNH ADMIN (OWNER EXCLUSIVE - ID: 1502579398560317441):**
+• `/admin_lock <user> <id_the>`: Niêm phong thẻ bài của người chơi (chỉ mở khi pull ra lại).
 • `/admin_set_level <user> <level>`: Đặt cấp độ và đồng bộ XP (+50 XP/cấp chuẩn xác).
 • `/admin_confiscate <user> [id_the] [so_luong]`: Tước đoạt bài trừng phạt cheat (0 = tất cả).
 • `/admin_add_card <id_the> [so_luong] [user]`: Cấp thẻ cho người chơi / tự lấy thẻ.
