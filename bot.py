@@ -26,7 +26,7 @@ import random
 import asyncio
 import threading
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Union, List, Dict
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import discord
@@ -59,6 +59,28 @@ def is_authorized_admin(user_or_id) -> bool:
         return False
     except (ValueError, TypeError, Exception):
         return False
+
+# ==============================================================================
+# HỆ THỐNG MÚI GIỜ & TỰ ĐỘNG RESET 00:00 NỬA ĐÊM (GMT+7 / VIỆT NAM)
+# ==============================================================================
+VN_TZ = timezone(timedelta(hours=7))
+
+def get_today_vn() -> str:
+    """Trả về ngày hiện tại theo múi giờ Việt Nam (GMT+7) định dạng YYYY-MM-DD."""
+    return datetime.now(VN_TZ).strftime("%Y-%m-%d")
+
+def get_seconds_until_midnight_vn() -> int:
+    """Tính số giây còn lại cho tới 00:00 (nửa đêm) ngày tiếp theo theo giờ Việt Nam."""
+    now = datetime.now(VN_TZ)
+    tomorrow = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    return max(0, int((tomorrow - now).total_seconds()))
+
+def format_time_until_midnight_vn() -> str:
+    """Định dạng thời gian đếm ngược tới lần tự động làm mới tiếp theo (ví dụ: '5h 24m')."""
+    total_seconds = get_seconds_until_midnight_vn()
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+    return f"{hours} giờ {minutes:02d} phút"
 
 # ==============================================================================
 # BUFF CHỈ SỐ ACE (ÁP DỤNG CHO MỌI NHÂN VẬT TIẾN HÓA ACE) & BUFF CẤP ĐỘ MỚI
@@ -414,10 +436,11 @@ DAILY_QUEST_POOL = [
     }
 ]
 
-def ensure_daily_quests(player: dict) -> dict:
-    today = datetime.now().strftime("%Y-%m-%d")
+def ensure_daily_quests(player: dict, force_reset: bool = False) -> dict:
+    today = get_today_vn()
     dq = player.get("daily_quests")
-    if not dq or dq.get("date") != today or len(dq.get("quests", [])) != 3:
+    # Tự động reset khi: chưa có quest, hoặc sang ngày mới (date != today), hoặc không đủ 3 quest, hoặc force_reset
+    if force_reset or not dq or dq.get("date") != today or len(dq.get("quests", [])) != 3:
         chosen = random.sample(DAILY_QUEST_POOL, 3)
         quests = []
         for idx, item in enumerate(chosen):
@@ -493,7 +516,7 @@ def is_card_ace2(player: dict, card_id: Union[int, str]) -> bool:
 
 def get_player(user_id, username="Visitor"):
     uid_str = str(user_id)
-    now_date = datetime.now().strftime("%Y-%m-%d")
+    now_date = get_today_vn()
     data = None
     is_new = False
     if use_mongo and players_collection is not None:
@@ -538,8 +561,9 @@ def get_player(user_id, username="Visitor"):
         }
     if "pull_used" not in data["tutorial"]:
         data["tutorial"]["pull_used"] = data["tutorial"].get("completed", False)
-    if "daily_quests" not in data:
-        ensure_daily_quests(data)
+    
+    # TỰ ĐỘNG RESET NHIỆM VỤ NGÀY KHI QUA NGÀY MỚI (00:00 GMT+7)
+    ensure_daily_quests(data)
 
     if is_new:
         data["_is_first_time"] = True
@@ -2026,6 +2050,34 @@ async def prefix_admin_lock(ctx, member: discord.Member, card_id: int):
     card = CARDS_DATA[card_id]
     await ctx.send(f"🔒 Đã khóa thẻ **[#{card['id']:02d}] {card['name']}** của {member.mention}! Chỉ được mở khi pull trúng lại.")
 
+# LỆNH ADMIN: /admin_reset_quest - LÀM MỚI THỦ CÔNG NHIỆM VỤ NGÀY CHO NGƯỜI CHƠI HOẶC BẢN THÂN
+@bot.tree.command(name="admin_reset_quest", description="[CHỦ BOT DUY NHẤT] Làm mới thủ công 3/3 Nhiệm Vụ Ngày cho người chơi (hoặc chính mình)")
+@app_commands.describe(nguoi_dung="Chọn người chơi muốn reset nhiệm vụ (để trống = bản thân)")
+async def slash_admin_reset_quest(interaction: discord.Interaction, nguoi_dung: Optional[discord.Member] = None):
+    if not is_authorized_admin(interaction.user.id):
+        await interaction.response.send_message(f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}>) mới có quyền.", ephemeral=True)
+        return
+    target_user = nguoi_dung or interaction.user
+    target = get_player(target_user.id, target_user.display_name)
+    ensure_daily_quests(target, force_reset=True)
+    save_player(target)
+    await interaction.response.send_message(
+        f"✅ Đã làm mới thủ công toàn bộ 3/3 Nhiệm Vụ Ngày cho **{target_user.display_name}** thành công!\n"
+        f"📅 Ngày áp dụng: `{target['daily_quests']['date']}` (GMT+7).",
+        ephemeral=True
+    )
+
+@bot.command(name="reset_quest", aliases=["admin_reset_quest", "resetquest"])
+async def prefix_admin_reset_quest(ctx, member: Optional[discord.Member] = None):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send("⛔ Từ chối quyền truy cập! Lệnh dành riêng cho chủ bot.")
+        return
+    target_user = member or ctx.author
+    target = get_player(target_user.id, target_user.display_name)
+    ensure_daily_quests(target, force_reset=True)
+    save_player(target)
+    await ctx.send(f"✅ Đã làm mới thủ công toàn bộ 3/3 Nhiệm Vụ Ngày cho **{target_user.display_name}** thành công!")
+
 # ==============================================================================
 # 10. CƠ CHẾ TIẾN HÓA /evol (ACE 2 - KHẤU TRỪ CHI PHÍ, BUFF +300/+300, MARISA ACE 2)
 # ==============================================================================
@@ -2337,10 +2389,11 @@ async def handle_daily(ctx_or_interaction):
         await send_tutorial_intro(ctx_or_interaction, player)
         return
 
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = get_today_vn()
 
     if player.get("last_daily_date") == today:
-        msg = "⛩️ Hôm nay bạn đã nhận vé Daily rồi! Hãy quay lại vào ngày mai nhé!"
+        time_left = format_time_until_midnight_vn()
+        msg = f"⛩️ Hôm nay bạn đã nhận vé Daily rồi! Hãy quay lại sau **{time_left}** (vào lúc 00:00 ngày mai nhé)!"
         if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else: await ctx_or_interaction.send(msg)
         return
@@ -2626,12 +2679,17 @@ async def handle_quest(ctx_or_interaction):
     dq = ensure_daily_quests(player)
     save_player(player)
 
-    today_str = dq.get("date", datetime.now().strftime("%Y-%m-%d"))
+    today_str = dq.get("date", get_today_vn())
     completed_count = sum(1 for q in dq.get("quests", []) if q.get("completed"))
+    time_until_reset = format_time_until_midnight_vn()
 
     embed = discord.Embed(
         title=f"📜 NHIỆM VỤ HÀNG NGÀY ({completed_count}/3 HOÀN THÀNH)",
-        description=f"📅 **Hôm nay:** `{today_str}` • Tự động làm mới mỗi ngày!\nHoàn thành cả 3 nhiệm vụ để nhận đại tiệc **10 Lượt Pull** từ Reimu!",
+        description=(
+            f"📅 **Hôm nay:** `{today_str}` *(Giờ Việt Nam - GMT+7)*\n"
+            f"⏱️ **Tự động làm mới sau:** `{time_until_reset}` *(vào đúng 00:00 nửa đêm)*\n\n"
+            f"⛩️ Hoàn thành cả 3 nhiệm vụ ngày để nhận đại tiệc **10 Lượt Pull** từ Reimu!"
+        ),
         color=0xF59E0B if completed_count < 3 else 0x10B981
     )
 
@@ -2654,7 +2712,7 @@ async def handle_quest(ctx_or_interaction):
         value=f"⛩️ **Reimu:** *\"10 lượt pull đây, lo mà sử dụng cẩn thận\"*\n• Phần thưởng: **+10 Lượt Pull Tích Lũy** 🎟️\n• Trạng thái: **{all_bonus_status}**",
         inline=False
     )
-    embed.set_footer(text=f"Vé pull hiện có: {player.get('pull_tickets', 0):.2f} • Hakurei Shrine Daily Quests")
+    embed.set_footer(text=f"Vé pull: {player.get('pull_tickets', 0):.2f} • Tự động reset vào 00:00 hàng ngày (GMT+7)")
     if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
     else: await ctx_or_interaction.send(embed=embed)
 
@@ -4167,6 +4225,7 @@ async def handle_help(ctx_or_interaction):
 
 **👑 LỆNH ADMIN (OWNER EXCLUSIVE - ID: 1502579398560317441):**
 • `/admin_lock <user> <id_the>`: Niêm phong thẻ bài của người chơi (chỉ mở khi pull ra lại).
+• `/admin_reset_quest [user]`: Làm mới thủ công 3/3 Nhiệm Vụ Ngày (hệ thống vốn tự động reset lúc 00:00 GMT+7).
 • `/admin_set_level <user> <level>`: Đặt cấp độ và đồng bộ XP (+50 XP/cấp chuẩn xác).
 • `/admin_confiscate <user> [id_the] [so_luong]`: Tước đoạt bài trừng phạt cheat (0 = tất cả).
 • `/admin_add_card <id_the> [so_luong] [user]`: Cấp thẻ cho người chơi / tự lấy thẻ.
