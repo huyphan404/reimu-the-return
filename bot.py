@@ -2238,15 +2238,16 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
     player = get_player(user.id, user.display_name)
     tut = player.get("tutorial", {})
 
-    # KIỂM TRA QUEST TÂN THỦ: 3 lượt pull 100% không trùng lá
+    # KIỂM TRA QUEST TÂN THỦ: 3 lượt pull 100% không trùng lá (KHÔNG BAO GIỜ RA THẺ SS)
     if tut.get("active") and tut.get("step") == "pull":
-        available_ids = list(range(1, len(CARDS_DATA) + 1))
-        # Ưu tiên lấy 3 thẻ chưa từng mở khóa, 100% không trùng nhau
+        # 100% loại bỏ toàn bộ thẻ bậc SS khỏi pool quay tân thủ
+        available_ids = [cid for cid, card in CARDS_DATA.items() if card.get("rank") != "SS"]
+        # Ưu tiên lấy 3 thẻ chưa từng mở khóa (không có SS), 100% không trùng nhau
         unowned = [cid for cid in available_ids if not is_card_unlocked(player, cid)]
         if len(unowned) >= 3:
             chosen_ids = random.sample(unowned, 3)
         else:
-            chosen_ids = random.sample(available_ids, 3)
+            chosen_ids = random.sample(available_ids, min(3, len(available_ids)))
 
         results = []
         last_card = None
@@ -2266,7 +2267,7 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
         save_player(player)
 
         embed = discord.Embed(
-            title="🌸 KẾT QUẢ PULL TÂN THỦ (3 LƯỢT 100% KHÔNG TRÙNG)",
+            title="🌸 KẾT QUẢ PULL TÂN THỦ (3 LƯỢT 100% KHÔNG TRÙNG - KHÔNG RA BẬC SS)",
             description="\n".join(results),
             color=0x10B981
         )
@@ -2560,7 +2561,7 @@ async def send_tutorial_intro(ctx_or_interaction, player):
         title="🌸 KHÓA HUẤN LUYỆN TÂN THỦ - ĐỀN HAKUREI",
         description=(
             f"⛩️ **Reimu:** *\"Hm? Lại thêm 1 kẻ ngốc rơi vào đây nữa ư? Nghe này thế giới này không giống Gensokyo mà các người biết nên là nghe cho kĩ đây\"*\n\n"
-            "🎁 **Cấp người chơi 3 lượt pull** *(chỉ dành cho quest này thôi, pull 100% không trùng lá)*\n\n"
+            "🎁 **Cấp người chơi 3 lượt pull** *(chỉ dành cho quest này thôi, pull 100% không trùng lá và TUYỆT ĐỐI KHÔNG BAO GIỜ ra bậc SS)*\n\n"
             "👉 **Bước 1:** *\"Sử dụng lệnh `/pull` để tìm đồng đội cho mình\"*"
         ),
         color=0xF59E0B
@@ -4137,7 +4138,7 @@ async def handle_help(ctx_or_interaction):
 ⛩️ **HAKUREI REIMU DISCORD BOT - BẢN ĐỒ LỆNH**
 
 **🌸 TÂN THỦ & NHIỆM VỤ:**
-• `/tutorial`: Khóa huấn luyện tân thủ (Thưởng 10 lượt pull, cấp 3 lượt pull 100% không trùng lá).
+• `/tutorial`: Khóa huấn luyện tân thủ (Thưởng 10 lượt pull, cấp 3 lượt pull 100% không trùng lá, không bao giờ ra thẻ SS).
 • `/quest`: Xem 3/3 Nhiệm vụ Hàng Ngày (Nhận vé pull & thưởng lớn +10 lượt pull khi xong cả 3).
 
 **🎮 GACHA, TIẾN HÓA & TRAO ĐỔI:**
