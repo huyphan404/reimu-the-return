@@ -882,7 +882,8 @@ class OpponentTeamView(discord.ui.View):
         if len(self.opp_cards) > 1:
             options = []
             for i, c in enumerate(self.opp_cards):
-                lbl = f"#{c['cid']:02d} {c['raw_name']} [{c['rank']}]"[:100]
+                ace_tag = "⭐ [Ace 2] " if c.get("is_ace2") else ""
+                lbl = f"{ace_tag}#{c['cid']:02d} {c['raw_name']} [{c['rank']}]"[:100]
                 desc = f"ATK: {c['power']:,} | HP: {c['hp']:,}"[:100]
                 options.append(discord.SelectOption(label=lbl, value=str(i), description=desc, default=(i == 0)))
             select_menu = discord.ui.Select(
@@ -905,33 +906,52 @@ class OpponentTeamView(discord.ui.View):
         if not self.opp_cards:
             return discord.Embed(title="👁️ ĐỘI HÌNH ĐỐI THỦ", description="Không có thông tin đội hình đối thủ!", color=0x3B82F6)
         c = self.opp_cards[self.selected_idx]
+        is_ace = c.get("is_ace2", False)
         embed = discord.Embed(
             title=f"👁️ TOÀN BỘ ĐỘI HÌNH ĐỐI THỦ: {self.opp_name} (Lv.{self.opp_level})",
-            description=f"Soi chiến thuật thẻ bài **#{c['cid']:02d} {c['raw_name']}** của đối phương!",
-            color=0x3B82F6
+            description=f"Soi chiến thuật thẻ bài **{'⭐ [Ace 2] ' if is_ace else ''}#{c['cid']:02d} {c['raw_name']}** của đối phương!",
+            color=0xF59E0B if is_ace else 0x3B82F6
         )
         if c.get("image"):
             embed.set_thumbnail(url=c["image"])
-        embed.add_field(name="⭐ Phẩm Cấp / Rank:", value=f"**[{c['rank']}]**", inline=True)
+        rank_str = f"**[{c['rank']}]**" + (" `⭐⭐ [TIẾN HÓA ACE 2]`" if is_ace else "")
+        embed.add_field(name="⭐ Phẩm Cấp / Rank:", value=rank_str, inline=True)
+
+        buff_breakdown = f"*(Gốc: {c['base_power']:,} + Buff: {c['power'] - c['base_power']:,})*"
+        if is_ace:
+            buff_breakdown = f"*(Gốc: {c['base_power']:,} + Buff Lv: {c['power'] - c['base_power'] - ACE_POWER_BUFF:,} + Ace: +{ACE_POWER_BUFF})*"
         embed.add_field(
             name="⚔️ Sức Mạnh (ATK):",
-            value=f"**{c['power']:,} DMG**\n*(Gốc: {c['base_power']:,} + Buff Lv: {c['power'] - c['base_power']:,})*",
+            value=f"**{c['power']:,} DMG**\n{buff_breakdown}",
             inline=True
         )
+
+        hp_breakdown = f"*(Gốc: {c['base_hp']:,} + Buff: {c['hp'] - c['base_hp']:,})*"
+        if is_ace:
+            hp_breakdown = f"*(Gốc: {c['base_hp']:,} + Buff Lv: {c['hp'] - c['base_hp'] - ACE_HP_BUFF:,} + Ace: +{ACE_HP_BUFF})*"
         embed.add_field(
             name="❤️ Sinh Mệnh (HP):",
-            value=f"**{c['hp']:,} HP**\n*(Gốc: {c['base_hp']:,} + Buff Lv: {c['hp'] - c['base_hp']:,})*",
+            value=f"**{c['hp']:,} HP**\n{hp_breakdown}",
             inline=True
         )
 
         skill_text = c.get("skill") or "Tấn công Danmaku cơ bản"
+        if is_ace and c["cid"] in [13, 16, 17]:
+            if c["cid"] == 13:
+                skill_text += "\n🛡️ **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Vô Tưởng Chuyển Sinh* né toàn bộ sát thương."
+            elif c["cid"] == 16:
+                skill_text += "\n⏳ **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Thời Gian Đóng Băng* khiến đối phương mất lượt."
+            elif c["cid"] == 17:
+                skill_text += "\n🌟 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Master Spark* bộc phá ×1.5 sát thương."
         embed.add_field(name="✨ Kỹ Năng / Tuyệt Kỹ Danmaku:", value=f"*{skill_text}*", inline=False)
 
         summary_lines = []
         for i, card in enumerate(self.opp_cards):
             arrow = "👉 " if i == self.selected_idx else "• "
+            ace_star = "⭐ " if card.get("is_ace2") else ""
+            ace_label = " `[Ace 2]`" if card.get("is_ace2") else ""
             summary_lines.append(
-                f"{arrow}**#{card['cid']:02d} {card['raw_name']}** `[{card['rank']}]` ⚔️ `{card['power']:,} DMG` | ❤️ `{card['hp']:,} HP`"
+                f"{arrow}{ace_star}**#{card['cid']:02d} {card['raw_name']}** `[{card['rank']}]`{ace_label} ⚔️ `{card['power']:,} DMG` | ❤️ `{card['hp']:,} HP`"
             )
         embed.add_field(name="👥 Danh Sách Đầy Đủ 3 Thẻ Đối Thủ:", value="\n".join(summary_lines), inline=False)
         embed.set_footer(text=f"Đang xem thẻ #{self.selected_idx + 1}/{len(self.opp_cards)} • Dùng menu bên dưới để đổi thẻ")
@@ -2926,14 +2946,25 @@ async def handle_battle(ctx_or_interaction):
                 "image": c.get("image", "")
             })
 
+    # Xác suất NPC có thẻ Ace 2: thi thoảng (~25% trận đấu có 1 thẻ Ace 2, không quá dày đặc để giữ độ cân bằng)
+    npc_has_ace = random.random() < 0.25
+    npc_ace_idx = random.randint(0, len(opp_team_ids[:3]) - 1) if npc_has_ace and opp_team_ids else -1
+
     opp_cards = []
-    for cid in opp_team_ids[:3]:
+    for idx, cid in enumerate(opp_team_ids[:3]):
         c = CARDS_DATA.get(cid)
         if c:
+            is_o_ace = (idx == npc_ace_idx)
+            o_ace_pwr = ACE_POWER_BUFF if is_o_ace else 0
+            o_ace_hp = ACE_HP_BUFF if is_o_ace else 0
+            o_name = f"[Ace 2] #{c['id']:02d} {c['name']}" if is_o_ace else f"#{c['id']:02d} {c['name']}"
             opp_cards.append({
-                "cid": cid, "name": f"#{c['id']:02d} {c['name']}", "raw_name": c["name"],
-                "rank": c.get("rank", "A"), "power": c["power"] + o_buff_pwr,
-                "hp": c["hp"] + o_buff_hp, "current_hp": c["hp"] + o_buff_hp,
+                "cid": cid, "name": o_name, "raw_name": c["name"],
+                "rank": c.get("rank", "A"),
+                "power": c["power"] + o_buff_pwr + o_ace_pwr,
+                "hp": c["hp"] + o_buff_hp + o_ace_hp,
+                "current_hp": c["hp"] + o_buff_hp + o_ace_hp,
+                "is_ace2": is_o_ace,
                 "base_power": c["power"], "base_hp": c["hp"],
                 "skill": c.get("skill", "Tấn công Danmaku cơ bản"),
                 "image": c.get("image", "")
@@ -2941,6 +2972,7 @@ async def handle_battle(ctx_or_interaction):
 
     p_idx, o_idx, r_cnt = 0, 0, 0
     p_sakuya, p_reimu, p_marisa = False, False, False
+    o_sakuya, o_reimu, o_marisa = False, False, False
     battle_logs = []
     battle_turns = []
 
@@ -2951,18 +2983,31 @@ async def handle_battle(ctx_or_interaction):
         turn_image = None
         turn_actions = []
         turn_trades = []
-        stunned = False
+        stunned_pc = False
+        stunned_oc = False
 
+        # Người chơi: Sakuya Ace 2 đóng băng đối thủ (40%)
         if pc["cid"] == 16 and pc["is_ace2"] and not p_sakuya:
             if random.random() < 0.40:
                 p_sakuya = True
-                stunned = True
+                stunned_oc = True
                 turn_image = EVOL_CONFIG[16]["skill_gif"]
                 msg_skill = f"⏳ **[Ace 2] [#16] Sakuya** kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {oc['name']} bị STUN mất lượt!"
                 battle_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
-        # Marisa Ace 2 Master Spark
+        # Đối thủ NPC: Sakuya Ace 2 đóng băng người chơi (30%)
+        if oc["cid"] == 16 and oc.get("is_ace2") and not o_sakuya:
+            if random.random() < 0.30:
+                o_sakuya = True
+                stunned_pc = True
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[16]["skill_gif"]
+                msg_skill = f"⏳ **Đối thủ [Ace 2] [#16] Sakuya** kích hoạt **Thời Gian Đóng Băng** (30%)! ❄️ {pc['name']} bị STUN mất lượt!"
+                battle_logs.append(msg_skill)
+                turn_actions.append(msg_skill)
+
+        # Người chơi: Marisa Ace 2 Master Spark (30%)
         curr_pc_power = pc["power"]
         if pc["cid"] == 17 and pc["is_ace2"] and not p_marisa:
             if random.random() < 0.30:
@@ -2974,23 +3019,55 @@ async def handle_battle(ctx_or_interaction):
                 battle_logs.append(msg_m)
                 turn_actions.append(msg_m)
 
-        oc["current_hp"] -= curr_pc_power
-        turn_actions.append(f"⚔️ **{pc['name']}** tấn công gây **{curr_pc_power:,} DMG** lên **{oc['name']}**!")
+        # Đối thủ NPC: Marisa Ace 2 Master Spark (25%)
+        curr_oc_power = oc["power"]
+        if oc["cid"] == 17 and oc.get("is_ace2") and not o_marisa:
+            if random.random() < 0.25:
+                o_marisa = True
+                curr_oc_power = int(curr_oc_power * 1.5)
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[17]["skill_gif"]
+                msg_m = f"🌟 **Đối thủ [Ace 2] [#17] Marisa** tung ra **Master Spark** (25%)! Bộc phá ×1.5 sát thương gây **{curr_oc_power:,} DMG**!"
+                battle_logs.append(msg_m)
+                turn_actions.append(msg_m)
 
-        if not stunned:
-            invul = False
+        # Đòn đánh của người chơi (nếu không bị stun)
+        if not stunned_pc:
+            # Kiểm tra xem đối thủ có Reimu Ace 2 né đòn không
+            oc_invul = False
+            if oc["cid"] == 13 and oc.get("is_ace2") and not o_reimu:
+                if random.random() < 0.30:
+                    o_reimu = True
+                    oc_invul = True
+                    if not turn_image:
+                        turn_image = EVOL_CONFIG[13]["skill_gif"]
+                    msg_skill = f"🛡️ **Đối thủ [Ace 2] [#13] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (30%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
+                    battle_logs.append(msg_skill)
+                    turn_actions.append(msg_skill)
+
+            if not oc_invul:
+                oc["current_hp"] -= curr_pc_power
+                turn_actions.append(f"⚔️ **{pc['name']}** tấn công gây **{curr_pc_power:,} DMG** lên **{oc['name']}**!")
+            else:
+                turn_actions.append(f"🛡️ **{oc['name']}** né tránh hoàn toàn đòn đánh của **{pc['name']}**!")
+        else:
+            turn_actions.append(f"❄️ **{pc['name']}** bị đóng băng nên không thể ra đòn!")
+
+        # Phản công của đối thủ (nếu không bị stun)
+        if not stunned_oc:
+            pc_invul = False
             if pc["cid"] == 13 and pc["is_ace2"] and not p_reimu:
                 if random.random() < 0.40:
                     p_reimu = True
-                    invul = True
+                    pc_invul = True
                     if not turn_image:
                         turn_image = EVOL_CONFIG[13]["skill_gif"]
                     msg_skill = f"🛡️ **[Ace 2] [#13] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
                     battle_logs.append(msg_skill)
                     turn_actions.append(msg_skill)
-            if not invul:
-                pc["current_hp"] -= oc["power"]
-                turn_actions.append(f"⚔️ **{oc['name']}** phản công gây **{oc['power']:,} DMG** lên **{pc['name']}**!")
+            if not pc_invul:
+                pc["current_hp"] -= curr_oc_power
+                turn_actions.append(f"⚔️ **{oc['name']}** phản công gây **{curr_oc_power:,} DMG** lên **{pc['name']}**!")
             else:
                 turn_actions.append(f"🛡️ **{pc['name']}** miễn nhiễm toàn bộ đòn đánh của **{oc['name']}**!")
         else:
@@ -3081,7 +3158,7 @@ async def handle_battle(ctx_or_interaction):
     embed.add_field(name=f"🔴 Đội Hình Của Bạn (Lv.{player['level']}):", value="\n".join(your_team_lines) if your_team_lines else "Trống", inline=False)
 
     opp_team_lines = [
-        f"• **#{oc['cid']:02d} {oc['raw_name']}** `[{oc['rank']}]` ⚔️ `{oc['power']:,}` | ❤️ `{oc['hp']:,}`"
+        f"• {'⭐ ' if oc.get('is_ace2') else ''}**#{oc['cid']:02d} {oc['raw_name']}** `[{oc['rank']}]`{' `[Ace 2 ⭐]`' if oc.get('is_ace2') else ''} ⚔️ `{oc['power']:,}` | ❤️ `{oc['hp']:,}`"
         for oc in opp_cards
     ]
     embed.add_field(name=f"🔵 Toàn Bộ Đội Hình Đối Thủ: {opp_name} (Lv.{opp_level}):", value="\n".join(opp_team_lines) if opp_team_lines else "Trống", inline=False)
