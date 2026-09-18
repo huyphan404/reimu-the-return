@@ -2205,8 +2205,116 @@ def execute_single_pull(player):
     return chosen, is_duplicate, converted_pulls, unlocked_from_lock
 
 # ==============================================================================
-# 9. LỆNH ADMIN (OWNER EXCLUSIVE: 1502579398560317441)
+# 9. LỆNH ADMIN & ĐỒNG BỘ XOÁ LỆNH TRÙNG LẶP (SYNC COMMANDS - OWNER EXCLUSIVE)
 # ==============================================================================
+@bot.tree.command(name="admin_sync", description="[CHỦ BOT DUY NHẤT] Xoá sạch lệnh trùng lặp / lệnh rác và đồng bộ lại Slash Commands")
+@app_commands.describe(che_do="Chọn chế độ đồng bộ để dọn sạch lệnh trùng lặp")
+@app_commands.choices(che_do=[
+    app_commands.Choice(name="🧹 Xoá Sạch Lệnh Lặp Server Này (Clear Guild & Sync Global)", value="clean_guild"),
+    app_commands.Choice(name="🌐 Đồng Bộ Lại Toàn Bộ Lệnh Toàn Cầu (Sync Global)", value="sync_global"),
+    app_commands.Choice(name="⚡ Copy Toàn Cầu Vào Server Này (Guild Copy)", value="copy_guild"),
+    app_commands.Choice(name="💥 Reset Cực Đại (Xoá Trắng Cả Guild Lẫn Global Rồi Nạp Lại)", value="hard_reset")
+])
+async def slash_admin_sync(interaction: discord.Interaction, che_do: str = "clean_guild"):
+    if not is_authorized_admin(interaction.user.id):
+        await interaction.response.send_message(f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}>) mới có quyền.", ephemeral=True)
+        return
+
+    await interaction.response.defer(ephemeral=True)
+    guild = interaction.guild
+
+    try:
+        if che_do == "clean_guild":
+            # Xóa toàn bộ lệnh cấp Guild của server này để dọn sạch hoàn toàn các lệnh trùng lặp
+            if guild:
+                bot.tree.clear_commands(guild=guild)
+                await bot.tree.sync(guild=guild)
+            synced = await bot.tree.sync()
+            await interaction.followup.send(
+                f"🧹 **ĐÃ XOÁ SẠCH LỆNH TRÙNG LẶP TRÊN SERVER NÀY THÀNH CÔNG!**\n\n"
+                f"• Đã giải phóng bộ đệm lệnh cấp Guild của server: **{guild.name if guild else 'Hiện tại'}**\n"
+                f"• Đã đồng bộ chuẩn hóa: **{len(synced)} Slash Commands Global**\n"
+                f"👉 *Lưu ý quan trọng:* Nếu trên Discord của bạn vẫn còn lưu hình ảnh lệnh cũ, hãy bấm **Ctrl + R** trên máy tính hoặc khởi động lại app Discord trên điện thoại để cập nhật ngay lập tức!",
+                ephemeral=True
+            )
+        elif che_do == "sync_global":
+            synced = await bot.tree.sync()
+            await interaction.followup.send(f"🌐 Đã đồng bộ thành công **{len(synced)} Slash Commands** trên phạm vi toàn cầu!", ephemeral=True)
+        elif che_do == "copy_guild":
+            if guild:
+                bot.tree.copy_global_to(guild=guild)
+                synced = await bot.tree.sync(guild=guild)
+                await interaction.followup.send(f"⚡ Đã copy và đồng bộ **{len(synced)} lệnh** vào riêng Server **{guild.name}**!", ephemeral=True)
+            else:
+                await interaction.followup.send("⚠️ Lệnh này chỉ khả dụng khi thực hiện bên trong một Server!", ephemeral=True)
+        elif che_do == "hard_reset":
+            if guild:
+                bot.tree.clear_commands(guild=guild)
+                await bot.tree.sync(guild=guild)
+            bot.tree.clear_commands(guild=None)
+            await bot.tree.sync()
+            synced = await bot.tree.sync()
+            await interaction.followup.send(f"💥 **ĐÃ RESET CỰC ĐẠI TOÀN BỘ HỆ THỐNG LỆNH!**\nĐã xóa trắng và tái đồng bộ **{len(synced)} Slash Commands** sạch sẽ.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"❌ Có lỗi trong quá trình đồng bộ: `{e}`", ephemeral=True)
+
+@bot.command(name="sync", aliases=["clearsync", "dongbo", "fixslash", "clearduplicate"])
+async def prefix_sync(ctx, spec: Optional[str] = None):
+    """
+    Lệnh Prefix chuyên dụng để xoá lệnh trùng lặp:
+    !sync       -> Xoá sạch lệnh trùng lặp trên server này và đồng bộ Global
+    !sync ~     -> Đồng bộ riêng server này
+    !sync *     -> Copy toàn bộ Global sang server này
+    !sync ^     -> Xoá sạch lệnh Guild trên server này để hết trùng lặp
+    !sync clear -> Xoá sạch lệnh lặp triệt để
+    """
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send(f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}>) mới có quyền.")
+        return
+
+    msg = await ctx.send("🔄 Đang xử lý dọn dẹp lệnh trùng lặp và đồng bộ Slash Commands... Vui lòng chờ...")
+    guild = ctx.guild
+
+    try:
+        if spec == "~":
+            synced = await ctx.bot.tree.sync(guild=guild)
+            await msg.edit(content=f"⚡ Đã đồng bộ **{len(synced)} lệnh** riêng cho server **{guild.name if guild else 'này'}**!")
+        elif spec == "*":
+            if guild:
+                ctx.bot.tree.copy_global_to(guild=guild)
+                synced = await ctx.bot.tree.sync(guild=guild)
+                await msg.edit(content=f"⚡ Đã copy toàn bộ và đồng bộ **{len(synced)} lệnh** vào server **{guild.name}**!")
+            else:
+                await msg.edit(content="⚠️ Không tìm thấy server hợp lệ!")
+        elif spec in ["^", "clean", "clear", "xoa", "dup"]:
+            if guild:
+                ctx.bot.tree.clear_commands(guild=guild)
+                await ctx.bot.tree.sync(guild=guild)
+            synced = await ctx.bot.tree.sync()
+            await msg.edit(
+                content=(
+                    f"🧹 **ĐÃ XOÁ SẠCH HOÀN TOÀN LỆNH LẶP TRÊN SERVER NÀY!**\n\n"
+                    f"• Đã dọn sạch cache Guild commands gây trùng lặp trên **{guild.name if guild else 'server'}**\n"
+                    f"• Đã đồng bộ chuẩn hóa: **{len(synced)} Slash Commands Global**\n"
+                    f"💡 *Mẹo:* Nếu Discord vẫn còn lưu hình ảnh lệnh cũ, hãy bấm **Ctrl + R** trên máy tính hoặc khởi động lại app Discord để cập nhật ngay!"
+                )
+            )
+        else:
+            if guild:
+                ctx.bot.tree.clear_commands(guild=guild)
+                await ctx.bot.tree.sync(guild=guild)
+            synced = await ctx.bot.tree.sync()
+            await msg.edit(
+                content=(
+                    f"✅ **ĐỒNG BỘ THÀNH CÔNG & ĐÃ XOÁ LỆNH TRÙNG LẶP!**\n\n"
+                    f"• Đã giải phóng bộ đệm lệnh trùng lặp trên server này.\n"
+                    f"• Tổng số lệnh chuẩn đang hoạt động: **{len(synced)} Slash Commands**\n"
+                    f"• Dùng lệnh: `!sync ^` hoặc `!sync clear` nếu cần dọn sạch triệt để."
+                )
+            )
+    except Exception as e:
+        await msg.edit(content=f"❌ Có lỗi xảy ra khi đồng bộ: `{e}`")
+
 @bot.tree.command(name="admin_set_level", description="[CHỦ BOT DUY NHẤT] Đặt cấp độ cho người chơi (đồng bộ XP chuẩn xác không bug)")
 @app_commands.describe(nguoi_dung="Chọn người chơi", cap_do="Cấp độ từ 1 đến 100")
 async def slash_admin_set_level(interaction: discord.Interaction, nguoi_dung: discord.Member, cap_do: int):
