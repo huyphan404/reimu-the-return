@@ -162,6 +162,16 @@ def get_level_progress(total_xp: int):
     ratio = min(1.0, max(0.0, xp_in_level / needed)) if needed > 0 else 1.0
     return lvl, xp_in_level, needed, ratio
 
+def add_player_xp(player: dict, amount: int) -> tuple[bool, int]:
+    """Cộng XP cho người chơi, tự động tính toán cấp độ mới và buff chiến đấu."""
+    old_lvl = player.get("level", 1)
+    cur_xp = player.get("xp", 0) + max(0, int(amount))
+    player["xp"] = cur_xp
+    new_lvl = calculate_level_from_xp(cur_xp)
+    player["level"] = new_lvl
+    leveled_up = new_lvl > old_lvl
+    return leveled_up, new_lvl
+
 # ==============================================================================
 # 3. TOUHOU CARDS DATABASE (26 NHÂN VẬT CHUẨN THÔNG SỐ + NHÓM THẺ ĐẶC BIỆT T)
 # ==============================================================================
@@ -583,6 +593,14 @@ def format_card_id(cid) -> str:
         return f"#{int(cid):02d}"
     except (ValueError, TypeError):
         return f"#{cid}"
+
+CARD_ALIASES = {
+    "hecatia": 1, "junko": 2, "okina": 3, "yukari": 4, "suika": 5, "eirin": 6, "yuuka": 7,
+    "kaguya": 8, "koishi": 9, "mokou": 10, "satori": 11, "yuyuko": 12, "reimu": 13,
+    "remilia": 14, "flandre": 15, "sakuya": 16, "marisa": 17, "youmu": 18, "reisen": 19,
+    "sanae": 20, "aya": 21, "patchouli": 22, "meiling": 23, "tenshi": 24, "alice": 25,
+    "cirno": 26, "seiki": "t1", "dephap": "t1", "toannang": "t1"
+}
 
 def normalize_card_id(raw_id):
     """Chuẩn hóa ID thẻ từ int hoặc str (#1, 't1', 13, 'seiki') về key chính xác trong CARDS_DATA."""
@@ -3183,25 +3201,6 @@ async def handle_view_shards(ctx_or_interaction):
     else:
         await ctx_or_interaction.send(embed=embed)
 
-class ShardGroup(app_commands.Group, name="t", description="Quản lý kho mảnh nhân vật đặc biệt (shards) & quy đổi"):
-    @app_commands.command(name="translate", description="Quy đổi 10 mảnh đặc biệt (shards) sang thẻ bài chính thức (Seiki T1)")
-    @app_commands.describe(loai_shard="Loại mảnh muốn quy đổi (mặc định: seiki)")
-    @app_commands.choices(loai_shard=[
-        app_commands.Choice(name="Mảnh Seiki Đệ Pháp Toàn Năng (Đổi ra Thẻ [T] #t1 Seiki)", value="seiki")
-    ])
-    async def slash_t_translate(self, interaction: discord.Interaction, loai_shard: str = "seiki"):
-        await handle_translate_shard(interaction, loai_shard)
-
-    @app_commands.command(name="shard", description="Kiểm tra số lượng mảnh đặc biệt hiện có trong kho")
-    async def slash_t_shard(self, interaction: discord.Interaction):
-        await handle_view_shards(interaction)
-
-    @app_commands.command(name="shards", description="Kiểm tra số lượng mảnh đặc biệt hiện có trong kho")
-    async def slash_t_shards(self, interaction: discord.Interaction):
-        await handle_view_shards(interaction)
-
-bot.tree.add_command(ShardGroup())
-
 @bot.tree.command(name="translate", description="Quy đổi 10 mảnh đặc biệt (shards) sang thẻ bài chính thức (Seiki T1)")
 @app_commands.describe(loai_shard="Loại mảnh muốn quy đổi (mặc định: seiki)")
 async def slash_standalone_translate(interaction: discord.Interaction, loai_shard: str = "seiki"):
@@ -3700,11 +3699,6 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
 async def slash_check(interaction: discord.Interaction, nhan_vat: str = None):
     await handle_check_character(interaction, nhan_vat)
 
-@bot.tree.command(name="card_info", description="Xem chi tiết sức mạnh, máu và chiêu thức thẻ bài Touhou (kèm Ace 2 và nhóm T)")
-@app_commands.describe(nhan_vat="Nhập số ID (1-26 hoặc t1) hoặc tên nhân vật muốn xem ngay")
-async def slash_card_info(interaction: discord.Interaction, nhan_vat: str = None):
-    await handle_check_character(interaction, nhan_vat)
-
 @bot.tree.command(name="card_infor", description="Xem chi tiết sức mạnh, máu và chiêu thức thẻ bài Touhou (kèm nhóm thẻ đặc biệt T)")
 @app_commands.describe(nhan_vat="Nhập số ID (1-26 hoặc t1) hoặc tên nhân vật muốn xem ngay")
 async def slash_card_infor(interaction: discord.Interaction, nhan_vat: str = None):
@@ -3754,18 +3748,25 @@ async def handle_battle(ctx_or_interaction):
             "is_ace": is_ace
         })
 
-    opp_keys = list(CARDS_DATA.keys())
+    opp_keys = [k for k in range(1, 27)]
     opp_team_ids = random.sample(opp_keys, 3)
     opp_combat = []
     for cid in opp_team_ids:
         card = CARDS_DATA[cid]
         max_hp = card["hp"]
         opp_combat.append({
-            "cid": cid, "name": f"{format_card_id(card['id'])} {card['name']}",
+            "cid": cid,
+            "raw_name": card["name"],
+            "name": f"{format_card_id(card['id'])} {card['name']}",
+            "rank": card.get("rank", "C"),
             "power": card["power"],
-            "hp": max_hp, "max_hp": max_hp,
+            "base_power": card["power"],
+            "hp": max_hp,
+            "base_hp": max_hp,
+            "max_hp": max_hp,
             "image": card["image"],
-            "is_ace": False
+            "is_ace": False,
+            "is_ace2": False
         })
 
     logs = []
@@ -3904,7 +3905,7 @@ async def handle_battle(ctx_or_interaction):
     if dq_notifs:
         embed.add_field(name="📜 Tiến Trình Nhiệm Vụ Ngày:", value="\n\n".join(dq_notifs), inline=False)
 
-    view = OpponentTeamView(opp_combat)
+    view = OpponentTeamView(opp_combat, opp_name="Quái Vật Gensokyo", opp_level=p_level)
     if isinstance(ctx_or_interaction, discord.Interaction):
         await ctx_or_interaction.response.send_message(embed=embed, view=view)
     else:
