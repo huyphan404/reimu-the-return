@@ -215,6 +215,45 @@ BOSS_PHASE2_CONFIG = {
     "power": 10000    # Phase 2: 10,000 DMG đánh thường chia đều
 }
 
+# ==============================================================================
+# BOSS SEIKI DỊ HÌNH - DỊ TÀ ĐỆ NHẤT PHÁP SƯ (PHASE 1: 30K HP, 3K DMG, PASSIVE 1.5% HP)
+# ==============================================================================
+SEIKI_BOSS_CONFIG = {
+    "id": "seiki",
+    "name": "Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư",
+    "desc": "Đó không phải cha ta!",
+    "reimu_quote": "Đó không phải cha ta! Dị khí ngập tràn, người này đã bị tà niệm nuốt chửng!",
+    "image": "https://media.discordapp.net/attachments/1543072032034521228/1550376898641788938/content.png?ex=6aae1c81&is=6aaccb01&hm=d3c3c9d6c077931869c7f11e64fb4de796b79fecc3a9210008008fbc15a25e5f&=&format=webp&quality=lossless&width=643&height=1024",
+    "hp": 30000,      # 30,000 HP
+    "power": 3000,    # 3,000 DMG chia đều tiền tuyến
+    "passive_regen_pct": 0.015,  # Hồi 1.5% HP tối đa mỗi lượt (450 HP)
+    "max_players": 6,
+    "cooldown_seconds": 15 * 60,
+    "skills": {
+        "multi_spark": {
+            "name": "Multi Master Spark",
+            "chance": 0.15,
+            "multiplier": 1.5,
+            "turns": 3,
+            "desc": "15% kích hoạt, gây 1.5x sát thương trong 3 lượt (4,500 DMG chia đều tiền tuyến)!",
+            "gif": "https://c.tenor.com/t3uT71FkEosAAAAC/marisa-master-spark.gif"
+        },
+        "fantasy_seal": {
+            "name": "Fantasy Seal",
+            "chance": 0.20,
+            "desc": "20% kích hoạt kết giới phong ấn, MIỄN TOÀN BỘ SÁT THƯƠNG trong 1 turn!",
+            "gif": "https://c.tenor.com/gc4ws16CrTYAAAAC/reimu-touhou.gif"
+        },
+        "blitz_attack": {
+            "name": "Blitz Attack",
+            "chance": 0.20,
+            "damage": 4000,
+            "desc": "20% gây 4,000 DMG diện rộng trực tiếp lên toàn bộ thẻ tiền tuyến!",
+            "gif": "https://c.tenor.com/x27qU0sR_vkAAAAC/touhou-danmaku-touhou-yuyuko.gif"
+        }
+    }
+}
+
 boss_cooldown_until = 0.0
 
 # ==============================================================================
@@ -1015,17 +1054,24 @@ async def raid_timer_lifecycle(channel, raid_data, view):
         print(f"Lỗi trong raid_timer_lifecycle: {ex}", flush=True)
         active_raid = None
 
-async def spawn_boss_raid(channel, author=None):
+async def spawn_boss_raid(channel, author=None, boss_type=None):
     global active_raid, boss_cooldown_until
-
     if active_raid is not None:
         if active_raid.get("task") and not active_raid["task"].done():
             active_raid["task"].cancel()
         active_raid = None
 
+    if boss_type not in ["reimu", "seiki"]:
+        boss_type = "seiki" if random.random() < 0.50 else "reimu"
+
+    is_seiki = (boss_type == "seiki")
+    cfg = SEIKI_BOSS_CONFIG if is_seiki else BOSS_CONFIG
+
     start_event = asyncio.Event()
     raid_data = {
         "channel_id": channel.id,
+        "boss_type": boss_type,
+        "boss_config": cfg,
         "participants": [],
         "names": [],
         "created_at": datetime.now().isoformat(),
@@ -1040,51 +1086,80 @@ async def spawn_boss_raid(channel, author=None):
     active_raid = raid_data
 
     is_admin = (author is not None)
-    title = "🚨 [ADMIN TRIỆU HỒI] CẢNH BÁO KHẨN CẤP: DỊ BIẾN XUẤT HIỆN!" if is_admin else "🚨 CẢNH BÁO KHẨN CẤP: DỊ BIẾN XUẤT HIỆN!"
-    desc = f"👑 **Được triệu hồi bởi Admin:** {author.mention}\n\n**{BOSS_CONFIG['name']}**\n*{BOSS_CONFIG['desc']}*" if is_admin else f"**{BOSS_CONFIG['name']}**\n*{BOSS_CONFIG['desc']}*"
+    title = f"🚨 [ADMIN TRIỆU HỒI] CẢNH BÁO KHẨN CẤP: DỊ BIẾN {cfg['name'].upper()}!" if is_admin else f"🚨 CẢNH BÁO KHẨN CẤP: DỊ BIẾN {cfg['name'].upper()}!"
 
-    embed = discord.Embed(
-        title=title,
-        description=desc,
-        color=0xDC2626
-    )
-    embed.set_image(url=BOSS_CONFIG["image"])
-    embed.add_field(name="❤️ Máu Boss (HP):", value=f"{BOSS_CONFIG['hp']:,} HP *(Phase 1: 30k HP)*", inline=True)
-    embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{BOSS_CONFIG['power']:,} DMG** *(chia đều)*\n• Phase 2: **{BOSS_PHASE2_CONFIG['power']:,} DMG** *(chia đều)*", inline=True)
-    embed.add_field(name=f"👥 Người Tham Gia (0/{BOSS_CONFIG['max_players']}):", value="Chưa có ai", inline=False)
-    embed.add_field(
-        name="🎁 Cơ Chế 2 Phase & Phần Thưởng Đột Phá:",
-        value=(
-            "• **Phase 1 (30k HP):** 10% ra **10 Vé**, 40% ra **5 Vé**, 50% ra **3 Vé**!\n"
-            f"• **Chuyển Phase 2 ({BOSS_PHASE2_CONFIG['hp']:,} HP / {BOSS_PHASE2_CONFIG['power']:,} DMG chia đều):** Hồi sinh & phục hồi **100% HP toàn bộ thẻ bài**!\n"
-            "• **Phase 2:** 10% ra **20 Vé**, 40% ra **10 Vé**, 50% ra **5 Vé**!\n"
-            "• **Trận đấu trực tiếp:** Diễn biến từng hiệp được phát sóng trực tiếp!"
-        ),
-        inline=False
-    )
-    embed.add_field(
-        name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
-        value=(
-            "• Có đúng **2 phút (120 giây)** để bấm **'Tham Gia'** (Miễn phí)!\n"
-            "• **Tự động mở raid:** Khi hết 2 phút, nếu có dũng giả tham chiến, trận đại chiến sẽ **TỰ ĐỘNG KHỞI TRANH** ngay lập tức!\n"
-            "• **Tự động đóng:** Nếu sau 2 phút không có ai tham gia, Dị Hình sẽ xé toạc không gian và trốn thoát!"
-        ),
-        inline=False
-    )
+    if is_seiki:
+        reimu_line = f"🌸 **Reimu thảng thốt:** *\"{cfg['reimu_quote']}\"*\n\n"
+        desc = (f"👑 **Được triệu hồi bởi Admin:** {author.mention}\n\n{reimu_line}👺 **{cfg['name']}**\n*{cfg['desc']}*" 
+                if is_admin else f"{reimu_line}👺 **{cfg['name']}**\n*{cfg['desc']}*")
+        embed = discord.Embed(title=title, description=desc, color=0x7C3AED)
+        embed.set_image(url=cfg["image"])
+        embed.add_field(name="❤️ Máu Boss (HP):", value=f"**{cfg['hp']:,} HP** *(Phase 1)*", inline=True)
+        embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Cơ bản: **{cfg['power']:,} DMG** *(chia đều)*\n• Khi có Spark: **4,500 DMG** *(x1.5)*", inline=True)
+        embed.add_field(name=f"👥 Người Tham Gia (0/{cfg['max_players']}):", value="Chưa có ai", inline=False)
+        embed.add_field(
+            name="🔮 Kỹ Năng & Nội Tại (Độc Quyền - Không Trùng Turn):",
+            value=(
+                "• 💚 **Nội Tại:** Mỗi hiệp tự hồi phục **1.5% HP tối đa (450 HP)**!\n"
+                "• 🌟 **Multi Master Spark (15%):** Bộc phát ma lực x1.5 sát thương (4,500 DMG chia đều) duy trì trong **3 lượt**!\n"
+                "• 🛡️ **Fantasy Seal (20%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 turn!\n"
+                "• ⚡ **Blitz Attack (20%):** Oanh tạc chớp nhoáng gây **4,000 DMG** lên toàn bộ thẻ tiền tuyến!\n"
+                "*(Lưu ý: Không bao giờ kích hoạt trùng chiêu trong cùng một hiệp)*"
+            ),
+            inline=False
+        )
+        embed.add_field(
+            name="🎁 Phần Thưởng Thanh Tẩy Boss:",
+            value="• 10% cơ hội nhận **10 Vé Pull**, 40% nhận **5 Vé**, 50% nhận **3 Vé**!\n• Nhận thêm **+100 XP** và điểm danh nhiệm vụ diệt Boss!",
+            inline=False
+        )
+        embed.add_field(
+            name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
+            value=(
+                "• Có đúng **2 phút (120 giây)** để bấm **'Tham Gia'** (Miễn phí)!\n"
+                "• **Tự động mở raid:** Khi hết 2 phút, nếu có dũng giả tham chiến, trận đại chiến sẽ **TỰ ĐỘNG KHỞI TRANH** ngay lập tức!\n"
+                "• **Tự động đóng:** Nếu sau 2 phút không có ai tham gia, Dị Hình sẽ xé toạc không gian và trốn thoát!"
+            ),
+            inline=False
+        )
+    else:
+        desc = f"👑 **Được triệu hồi bởi Admin:** {author.mention}\n\n**{BOSS_CONFIG['name']}**\n*{BOSS_CONFIG['desc']}*" if is_admin else f"**{BOSS_CONFIG['name']}**\n*{BOSS_CONFIG['desc']}*"
+        embed = discord.Embed(title=title, description=desc, color=0xDC2626)
+        embed.set_image(url=BOSS_CONFIG["image"])
+        embed.add_field(name="❤️ Máu Boss (HP):", value=f"{BOSS_CONFIG['hp']:,} HP *(Phase 1: 30k HP)*", inline=True)
+        embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{BOSS_CONFIG['power']:,} DMG** *(chia đều)*\n• Phase 2: **{BOSS_PHASE2_CONFIG['power']:,} DMG** *(chia đều)*", inline=True)
+        embed.add_field(name=f"👥 Người Tham Gia (0/{BOSS_CONFIG['max_players']}):", value="Chưa có ai", inline=False)
+        embed.add_field(
+            name="🎁 Cơ Chế 2 Phase & Phần Thưởng Đột Phá:",
+            value=(
+                "• **Phase 1 (30k HP):** 10% ra **10 Vé**, 40% ra **5 Vé**, 50% ra **3 Vé**!\n"
+                f"• **Chuyển Phase 2 ({BOSS_PHASE2_CONFIG['hp']:,} HP / {BOSS_PHASE2_CONFIG['power']:,} DMG chia đều):** Hồi sinh & phục hồi **100% HP toàn bộ thẻ bài**!\n"
+                "• **Phase 2:** 10% ra **20 Vé**, 40% ra **10 Vé**, 50% ra **5 Vé**!\n"
+                "• **Trận đấu trực tiếp:** Diễn biến từng hiệp được phát sóng trực tiếp!"
+            ),
+            inline=False
+        )
+        embed.add_field(
+            name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
+            value=(
+                "• Có đúng **2 phút (120 giây)** để bấm **'Tham Gia'** (Miễn phí)!\n"
+                "• **Tự động mở raid:** Khi hết 2 phút, nếu có dũng giả tham chiến, trận đại chiến sẽ **TỰ ĐỘNG KHỞI TRANH** ngay lập tức!\n"
+                "• **Tự động đóng:** Nếu sau 2 phút không có ai tham gia, Dị Hình sẽ xé toạc không gian và trốn thoát!"
+            ),
+            inline=False
+        )
     embed.set_footer(text=f"Bấm 'Tham Gia' để xuất trận • Miễn phí • {'Admin Force Spawn' if is_admin else 'Boss Tự Nhiên'}")
-
     view = RaidJoinView(raid_data)
     raid_data["view"] = view
     msg = await channel.send(embed=embed, view=view)
     raid_data["msg"] = msg
-
     task = asyncio.create_task(raid_timer_lifecycle(channel, raid_data, view))
     raid_data["task"] = task
 
-async def admin_spawn_boss(channel, author):
+async def admin_spawn_boss(channel, author, boss_type=None):
     global boss_cooldown_until
     boss_cooldown_until = 0
-    await spawn_boss_raid(channel, author)
+    await spawn_boss_raid(channel, author, boss_type=boss_type)
 
 class RaidJoinView(discord.ui.View):
     def __init__(self, raid_data):
@@ -1212,17 +1287,31 @@ async def execute_raid(channel, raid_data):
             "death_round": None
         })
 
-    p1_max_hp = BOSS_CONFIG["hp"]
+    boss_type = raid_data.get("boss_type", "reimu")
+    boss_cfg = raid_data.get("boss_config", SEIKI_BOSS_CONFIG if boss_type == "seiki" else BOSS_CONFIG)
+    p1_max_hp = boss_cfg["hp"]
     p1_hp = p1_max_hp
-    p1_power = BOSS_CONFIG["power"]
-    
-    init_embed = discord.Embed(
-        title="⚔️ ĐẠI CHIẾN BẮT ĐẦU: REIMU DỊ HÌNH (PHASE 1)",
-        description=f"🔥 **{len(combatants)} Dũng Giả** cùng đội quân thẻ bài đã dàn trận nghênh chiến!\nTheo dõi diễn biến từng hiệp trực tiếp ngay bên dưới!",
-        color=0xDC2626
-    )
-    init_embed.set_thumbnail(url=BOSS_CONFIG["image"])
-    init_embed.add_field(name="❤️ Máu Boss Phase 1:", value=f"`{get_hp_bar(p1_hp, p1_max_hp)}` **{p1_hp:,}/{p1_max_hp:,} HP**", inline=False)
+    p1_power = boss_cfg["power"]
+    seiki_spark_turns = 0
+
+    if boss_type == "seiki":
+        init_embed = discord.Embed(
+            title="⚔️ ĐẠI CHIẾN BẮT ĐẦU: SEIKI DỊ HÌNH - DỊ TÀ ĐỆ NHẤT PHÁP SƯ",
+            description=(
+                f"🌸 **Reimu thảng thốt:** *\"{boss_cfg['reimu_quote']}\"*\n\n"
+                f"🔥 **{len(combatants)} Dũng Giả** cùng đội quân thẻ bài đã dàn trận nghênh chiến!\n"
+                f"Theo dõi diễn biến từng hiệp trực tiếp ngay bên dưới!"
+            ),
+            color=0x7C3AED
+        )
+    else:
+        init_embed = discord.Embed(
+            title="⚔️ ĐẠI CHIẾN BẮT ĐẦU: REIMU DỊ HÌNH (PHASE 1)",
+            description=f"🔥 **{len(combatants)} Dũng Giả** cùng đội quân thẻ bài đã dàn trận nghênh chiến!\nTheo dõi diễn biến từng hiệp trực tiếp ngay bên dưới!",
+            color=0xDC2626
+        )
+    init_embed.set_thumbnail(url=boss_cfg["image"])
+    init_embed.add_field(name=f"❤️ Máu {boss_cfg['name']}:", value=f"`{get_hp_bar(p1_hp, p1_max_hp)}` **{p1_hp:,}/{p1_max_hp:,} HP**", inline=False)
     battle_msg = await channel.send(embed=init_embed)
     await asyncio.sleep(2.0)
 
@@ -1239,6 +1328,15 @@ async def execute_raid(channel, raid_data):
         p1_rounds += 1
         frontline_cards = [c["team_cards"][c["current_card_index"]] for c in active_combatants]
 
+        passive_log = None
+        if boss_type == "seiki":
+            heal_amt = int(p1_max_hp * boss_cfg.get("passive_regen_pct", 0.015))
+            old_hp = p1_hp
+            p1_hp = min(p1_max_hp, p1_hp + heal_amt)
+            actual_healed = p1_hp - old_hp
+            if actual_healed > 0:
+                passive_log = f"💚 **[Nội Tại - Hồi Phục]** Seiki Dị Hình hấp thụ dị khí hồi phục **+{actual_healed:,} HP** (1.5% HP tối đa)!"
+
         boss_stunned = False
         sakuya_stun_notif = None
         marisa_spark_notif = None
@@ -1254,6 +1352,25 @@ async def execute_raid(channel, raid_data):
                     sakuya_stun_notif = f"⏳ **[Ace 2] [#16] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss bị **STUN** mất lượt!"
                     break
 
+        seiki_invul = False
+        seiki_action = "normal"
+        if boss_type == "seiki" and not boss_stunned:
+            if seiki_spark_turns > 0:
+                seiki_spark_turns -= 1
+                seiki_action = "spark_active"
+            else:
+                roll_s = random.random()
+                if roll_s < 0.15:
+                    seiki_spark_turns = 2  # Turn hiện tại + 2 turn kế = 3 lượt
+                    seiki_action = "spark_start"
+                elif roll_s < 0.35:  # 0.15 + 0.20 = 0.35
+                    seiki_invul = True
+                    seiki_action = "fantasy_seal"
+                elif roll_s < 0.55:  # 0.35 + 0.20 = 0.55
+                    seiki_action = "blitz_attack"
+                else:
+                    seiki_action = "normal"
+
         round_player_dmg = 0
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
@@ -1268,44 +1385,107 @@ async def execute_raid(channel, raid_data):
             round_player_dmg += card_dmg
             c["total_dmg"] += card_dmg
 
-        p1_hp = max(0, p1_hp - round_player_dmg)
+        if boss_type == "seiki" and seiki_invul and not boss_stunned:
+            player_atk_str = f"🛡️ Toàn quân dồn **{round_player_dmg:,} DMG** nhưng **Seiki Dị Hình** đã kích hoạt **Fantasy Seal**, MIỄN TOÀN BỘ SÁT THƯƠNG trong hiệp này!"
+        else:
+            p1_hp = max(0, p1_hp - round_player_dmg)
+            player_atk_str = f"Toàn quân gây **{round_player_dmg:,} DMG** lên Boss!"
 
         boss_action_log = ""
-        if p1_hp <= 0:
-            boss_action_log = "💥 **Reimu Dị Hình Phase 1 đã bị đánh gục hoàn toàn!**"
-        elif boss_stunned:
-            boss_action_log = "❄️ Boss bị đóng băng thời gian, bất lực không thể phản công!"
-        else:
-            if random.random() < 0.20:
-                turn_image = BOSS_SKILL_CONFIG["gif"]
-                boss_action_log = "👹 **[NỘI TẠI BOSS] Reimu Dị Hình** thi triển **Dị Hình Bùa Chú** (20%)! Giáng **5,000 DMG** diện rộng!"
-                for c in active_combatants:
-                    ac = c["team_cards"][c["current_card_index"]]
-                    invul = False
-                    if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
-                        if random.random() < 0.40:
-                            c["reimu_invul_used"] = True
-                            invul = True
-                            if not turn_image or turn_image == BOSS_SKILL_CONFIG["gif"]:
-                                turn_image = EVOL_CONFIG[13]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                    if not invul:
-                        ac["current_hp"] -= 5000
+        if boss_type == "seiki":
+            if p1_hp <= 0:
+                boss_action_log = "💥 **Seiki Dị Hình đã bị đánh gục hoàn toàn! Dị tà ma thuật tiêu tan!**"
+            elif boss_stunned:
+                boss_action_log = "❄️ Boss bị đóng băng thời gian, bất lực không thể ra đòn!"
             else:
-                num_front = len(frontline_cards)
-                dmg_per_card = max(100, p1_power // num_front)
-                boss_action_log = f"⚔️ Boss đánh thường tổng **{p1_power:,} DMG**, chia đều **{dmg_per_card:,} DMG** lên mỗi lá bài tiền tuyến ({num_front} lá)!"
-                for c in active_combatants:
-                    ac = c["team_cards"][c["current_card_index"]]
-                    invul = False
-                    if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
-                        if random.random() < 0.40:
-                            c["reimu_invul_used"] = True
-                            invul = True
-                            turn_image = EVOL_CONFIG[13]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                    if not invul:
-                        ac["current_hp"] -= dmg_per_card
+                if seiki_action == "fantasy_seal":
+                    turn_image = "https://c.tenor.com/gc4ws16CrTYAAAAC/reimu-touhou.gif"
+                    boss_action_log = "🛡️ **[KỸ NĂNG] Seiki Dị Hình** kích hoạt **Fantasy Seal (20%)**! Vận khởi kết giới phong ấn tuyệt đối, MIỄN TOÀN BỘ SÁT THƯƠNG trong 1 turn!"
+                elif seiki_action == "blitz_attack":
+                    turn_image = "https://c.tenor.com/x27qU0sR_vkAAAAC/touhou-danmaku-touhou-yuyuko.gif"
+                    boss_action_log = "⚡ **[KỸ NĂNG] Seiki Dị Hình** phát động **Blitz Attack (20%)**! Oanh kích chớp nhoáng gây **4,000 DMG** diện rộng lên toàn bộ thẻ tiền tuyến!"
+                    for c in active_combatants:
+                        ac = c["team_cards"][c["current_card_index"]]
+                        invul = False
+                        if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                            if random.random() < 0.40:
+                                c["reimu_invul_used"] = True
+                                invul = True
+                                turn_image = EVOL_CONFIG[13]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                        if not invul:
+                            ac["current_hp"] -= 4000
+                elif seiki_action in ["spark_start", "spark_active"]:
+                    turn_image = "https://c.tenor.com/t3uT71FkEosAAAAC/marisa-master-spark.gif"
+                    num_front = len(frontline_cards)
+                    curr_dmg = int(p1_power * 1.5)  # 4,500 DMG
+                    dmg_per_card = max(100, curr_dmg // num_front)
+                    if seiki_action == "spark_start":
+                        boss_action_log = f"🌟 **[KỸ NĂNG] Seiki Dị Hình** bộc phát **Multi Master Spark (15%)**! Cường hóa x1.5 sát thương trong 3 lượt và giáng **{curr_dmg:,} DMG** chia đều **{dmg_per_card:,} DMG** lên mỗi thẻ tiền tuyến ({num_front} lá)!"
+                    else:
+                        boss_action_log = f"🌟 **[Multi Master Spark Duy Trì]** Sát thương cường hóa x1.5, giáng **{curr_dmg:,} DMG** chia đều **{dmg_per_card:,} DMG** lên mỗi thẻ tiền tuyến ({num_front} lá)! (Còn {seiki_spark_turns} lượt)"
+                    for c in active_combatants:
+                        ac = c["team_cards"][c["current_card_index"]]
+                        invul = False
+                        if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                            if random.random() < 0.40:
+                                c["reimu_invul_used"] = True
+                                invul = True
+                                turn_image = EVOL_CONFIG[13]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                        if not invul:
+                            ac["current_hp"] -= dmg_per_card
+                else:  # normal
+                    num_front = len(frontline_cards)
+                    dmg_per_card = max(100, p1_power // num_front)
+                    boss_action_log = f"⚔️ Seiki Dị Hình phóng đạn hắc ám tổng **{p1_power:,} DMG**, chia đều **{dmg_per_card:,} DMG** lên mỗi lá bài tiền tuyến ({num_front} lá)!"
+                    for c in active_combatants:
+                        ac = c["team_cards"][c["current_card_index"]]
+                        invul = False
+                        if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                            if random.random() < 0.40:
+                                c["reimu_invul_used"] = True
+                                invul = True
+                                turn_image = EVOL_CONFIG[13]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                        if not invul:
+                            ac["current_hp"] -= dmg_per_card
+        else:
+            if p1_hp <= 0:
+                boss_action_log = "💥 **Reimu Dị Hình Phase 1 đã bị đánh gục hoàn toàn!**"
+            elif boss_stunned:
+                boss_action_log = "❄️ Boss bị đóng băng thời gian, bất lực không thể phản công!"
+            else:
+                if random.random() < 0.20:
+                    turn_image = BOSS_SKILL_CONFIG["gif"]
+                    boss_action_log = "👹 **[NỘI TẠI BOSS] Reimu Dị Hình** thi triển **Dị Hình Bùa Chú** (20%)! Giáng **5,000 DMG** diện rộng!"
+                    for c in active_combatants:
+                        ac = c["team_cards"][c["current_card_index"]]
+                        invul = False
+                        if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                            if random.random() < 0.40:
+                                c["reimu_invul_used"] = True
+                                invul = True
+                                if not turn_image or turn_image == BOSS_SKILL_CONFIG["gif"]:
+                                    turn_image = EVOL_CONFIG[13]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                        if not invul:
+                            ac["current_hp"] -= 5000
+                else:
+                    num_front = len(frontline_cards)
+                    dmg_per_card = max(100, p1_power // num_front)
+                    boss_action_log = f"⚔️ Boss đánh thường tổng **{p1_power:,} DMG**, chia đều **{dmg_per_card:,} DMG** lên mỗi lá bài tiền tuyến ({num_front} lá)!"
+                    for c in active_combatants:
+                        ac = c["team_cards"][c["current_card_index"]]
+                        invul = False
+                        if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                            if random.random() < 0.40:
+                                c["reimu_invul_used"] = True
+                                invul = True
+                                turn_image = EVOL_CONFIG[13]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                        if not invul:
+                            ac["current_hp"] -= dmg_per_card
 
         push_logs = []
         for c in active_combatants:
@@ -1317,7 +1497,6 @@ async def execute_raid(channel, raid_data):
                 p1_hp = max(0, p1_hp - trade_dmg)
                 c["total_dmg"] += trade_dmg
                 push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{dead_name}** ({c['username']}) trước khi gục ngã đã thành công đổi **{trade_dmg:,} DMG** lên Boss!")
-
                 c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     next_card = c["team_cards"][c["current_card_index"]]
@@ -1336,11 +1515,13 @@ async def execute_raid(channel, raid_data):
                 round_card_status.append(f"• **{c['username']}**: ☠️ Đã tử trận")
 
         round_embed = discord.Embed(
-            title=f"⚔️ HIỆP {p1_rounds} - PHASE 1: REIMU DỊ HÌNH",
+            title=f"⚔️ HIỆP {p1_rounds} - {boss_cfg['name'].upper()}",
             description=f"❤️ **Máu Boss:** `{get_hp_bar(p1_hp, p1_max_hp)}` **{p1_hp:,}/{p1_max_hp:,} HP**",
-            color=0xDC2626
+            color=0x7C3AED if boss_type == "seiki" else 0xDC2626
         )
-        round_embed.add_field(name="💥 Tiền Tuyến Tấn Công:", value=f"Toàn quân gây **{round_player_dmg:,} DMG** lên Boss!", inline=False)
+        if passive_log:
+            round_embed.add_field(name="💚 Nội Tại Hồi Phục:", value=passive_log, inline=False)
+        round_embed.add_field(name="💥 Tiền Tuyến Tấn Công:", value=player_atk_str, inline=False)
         if sakuya_stun_notif:
             round_embed.add_field(name="❄️ Kỹ Năng Đột Biến:", value=sakuya_stun_notif, inline=False)
         if marisa_spark_notif:
@@ -1353,20 +1534,21 @@ async def execute_raid(channel, raid_data):
         if turn_image:
             round_embed.set_image(url=turn_image)
         else:
-            round_embed.set_thumbnail(url=BOSS_CONFIG["image"])
+            round_embed.set_thumbnail(url=boss_cfg["image"])
 
         p1_battle_history.append(f"Hiệp {p1_rounds}: Gây {round_player_dmg:,} DMG (Boss còn {p1_hp:,} HP).")
         all_raid_turns.append({
             "round": p1_rounds,
             "phase": 1,
-            "title": f"Phase 1 - Hiệp {p1_rounds}: Reimu Dị Hình",
-            "short_label": f"P1 - Hiệp {p1_rounds}",
-            "short_desc": f"Boss P1 còn {p1_hp:,} HP",
-            "desc": f"👹 **Reimu Dị Hình Phase 1**\n❤️ Máu Boss: `{get_hp_bar(p1_hp, p1_max_hp)}` **{p1_hp:,}/{p1_max_hp:,} HP**",
-            "color": 0xDC2626,
+            "title": f"Hiệp {p1_rounds}: {boss_cfg['name']}",
+            "short_label": f"H{p1_rounds} - {boss_cfg['name'][:10]}",
+            "short_desc": f"Boss còn {p1_hp:,} HP",
+            "desc": f"👹 **{boss_cfg['name']}**\n❤️ Máu Boss: `{get_hp_bar(p1_hp, p1_max_hp)}` **{p1_hp:,}/{p1_max_hp:,} HP**",
+            "color": 0x7C3AED if boss_type == "seiki" else 0xDC2626,
             "image": turn_image,
             "fields": [
-                ("💥 Tiền Tuyến Tấn Công:", f"Toàn quân gây **{round_player_dmg:,} DMG** lên Boss!", False),
+                *([("💚 Nội Tại Hồi Phục:", passive_log, False)] if passive_log else []),
+                ("💥 Tiền Tuyến Tấn Công:", player_atk_str, False),
                 *([("❄️ Kỹ Năng Đột Biến:", sakuya_stun_notif, False)] if sakuya_stun_notif else []),
                 *([("🌟 Master Spark:", marisa_spark_notif, False)] if marisa_spark_notif else []),
                 ("👺 Phản Kích Của Boss:", boss_action_log, False),
@@ -1374,6 +1556,7 @@ async def execute_raid(channel, raid_data):
                 ("🛡️ Tình Trạng Tiền Tuyến Hiện Tại:", "\n".join(round_card_status), False)
             ]
         })
+
         try:
             await battle_msg.edit(embed=round_embed)
         except Exception:
@@ -1381,16 +1564,17 @@ async def execute_raid(channel, raid_data):
 
         if p1_hp <= 0:
             break
+
         await asyncio.sleep(1.8)
 
     p1_defeated = (p1_hp <= 0)
     if not p1_defeated:
         embed_fail = discord.Embed(
-            title="❌ QUÂN ĐOÀN THẤT THỦ TẠI PHASE 1!",
-            description=f"Toàn bộ dũng giả đã tử trận sau {p1_rounds} hiệp!\nBoss Phase 1 còn **{p1_hp:,} HP** và đã trốn thoát.\n⏳ Hồi chiêu **15 phút** đã kích hoạt!",
+            title=f"❌ QUÂN ĐOÀN THẤT THỦ TRƯỚC {boss_cfg['name'].upper()}!",
+            description=f"Toàn bộ dũng giả đã tử trận sau {p1_rounds} hiệp!\nBoss còn **{p1_hp:,} HP** và đã trốn thoát.\n⏳ Hồi chiêu **15 phút** đã kích hoạt!",
             color=0xEF4444
         )
-        embed_fail.set_thumbnail(url=BOSS_CONFIG["image"])
+        embed_fail.set_thumbnail(url=boss_cfg["image"])
         await channel.send(embed=embed_fail, view=OpenDetailsView(all_raid_turns))
         return
 
@@ -1407,11 +1591,30 @@ async def execute_raid(channel, raid_data):
         else:
             t_val = 3.0
             d_str = "✨ **+3 Vé** (50%)"
+
         p["pull_tickets"] += t_val
         p["xp"] += 100
         update_daily_quest_progress(p, "raid", 1)
         save_player(p)
         p1_rewards_data[uid] = {"total_pulls": t_val, "items": [d_str], "username": p["username"]}
+
+    if boss_type == "seiki":
+        total_raid_dmg = sum(c["total_dmg"] for c in combatants)
+        final_embed = discord.Embed(
+            title="🌟 CHIẾN THẮNG HUY HOÀNG: THANH TẨY SEIKI DỊ HÌNH!",
+            description=(
+                "🌸 **Reimu thở phào nhẹ nhõm:** *\"Đó không phải cha ta! Dị tà ma thuật đã tan biến, ngài ấy đã được thanh tẩy hoàn toàn! Cảm ơn mọi người nhiều lắm!\"*\n\n"
+                f"🎉 **Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư** đã bị khuất phục hoàn toàn sau **{p1_rounds} hiệp**!\n"
+                f"💥 **Tổng sát thương toàn quân:** **{total_raid_dmg:,} DMG**\n"
+                f"⏳ **Hồi chiêu Boss tiếp theo:** **15 phút**"
+            ),
+            color=0x10B981
+        )
+        final_embed.set_thumbnail(url=boss_cfg["image"])
+        p1_summary = [f"🎁 **{r['username']}**: +{r['total_pulls']:.0f} Vé Pull ({r['items'][0]}) + 100 XP" for r in p1_rewards_data.values()]
+        final_embed.add_field(name="📦 Phần Thưởng Dũng Giả (10% 10 vé, 40% 5 vé, 50% 3 vé):", value="\n".join(p1_summary), inline=False)
+        await channel.send(embed=final_embed, view=OpenDetailsView(all_raid_turns))
+        return
 
     p2_alert_embed = discord.Embed(
         title="🚨 DỊ BIẾN BIẾN ĐỔI - BÙA CHÚ RUNG ĐỘNG DỮ DỘI! (PHASE 2)",
@@ -1681,14 +1884,19 @@ async def on_message(message: discord.Message):
 
     if clean_stripped in ["boss admin spawn", "!boss admin spawn", "!boss_admin spawn"] or clean_stripped.startswith("boss admin spawn"):
         if not is_authorized_admin(message.author):
-            await message.channel.send(f"⛔ {message.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được phép điều động Reimu Dị Hình!")
+            await message.channel.send(f"⛔ {message.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được phép điều động Boss Raid!")
             return
-        await admin_spawn_boss(message.channel, message.author)
+        b_type = None
+        if "seiki" in clean_stripped:
+            b_type = "seiki"
+        elif "reimu" in clean_stripped:
+            b_type = "reimu"
+        await admin_spawn_boss(message.channel, message.author, boss_type=b_type)
         return
 
     if clean_stripped in ["boss admin reset", "!boss admin reset", "!boss_admin reset"] or clean_stripped.startswith("boss admin reset"):
         if not is_authorized_admin(message.author):
-            await message.channel.send(f"⛔ {message.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được phép reset Reimu Dị Hình!")
+            await message.channel.send(f"⛔ {message.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được phép reset Boss Raid!")
             return
         await admin_reset_boss(message.channel, message.author)
         return
@@ -1698,8 +1906,13 @@ async def on_message(message: discord.Message):
     now_ts = time.time()
     
     if active_raid is None and now_ts >= boss_cooldown_until and not content_lower.startswith("!") and not content_lower.startswith("/"):
-        if random.random() < 0.10:
-            await spawn_boss_raid(message.channel, None)
+        spawn_roll = random.random()
+        if spawn_roll < 0.05:
+            # 5% xuất hiện Seiki Dị Hình (nếu ra Seiki thì không ra Reimu)
+            await spawn_boss_raid(message.channel, None, boss_type="seiki")
+        elif spawn_roll < 0.10:
+            # 5% xuất hiện Reimu Dị Hình (nếu ra Reimu thì không ra Seiki)
+            await spawn_boss_raid(message.channel, None, boss_type="reimu")
 
     is_reply_to_reimu = False
     if message.reference and message.reference.resolved:
@@ -3340,7 +3553,7 @@ class PvPChallengeView(discord.ui.View):
             child.disabled = True
         await interaction.response.edit_message(content=f"🔥 **{self.target.mention} ĐÃ CHẤP NHẬN CHIẾN THƯ!** Trận đại chiến 3v3 bắt đầu...", view=self)
         self.stop()
-        asyncio.create_task(run_pvp_match(interaction.channel, self.challenger, self.target, self.c_team, self.t_team))
+        asyncio.create_task(run_pvp_match(interaction.channel, self.challenger, self.target, self.c_team, self.t_team, interaction=interaction, msg=self.msg))
 
     @discord.ui.button(label="🏳️ Từ Chối", style=discord.ButtonStyle.secondary, emoji="🛡️")
     async def decline_pvp(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -3356,7 +3569,7 @@ class PvPChallengeView(discord.ui.View):
             await interaction.response.edit_message(content=f"🚫 **{self.challenger.mention}** đã hủy bỏ lời thách đấu.", view=self)
         self.stop()
 
-async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids):
+async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, interaction: discord.Interaction = None, msg: discord.Message = None):
     c_player = get_player(challenger.id, challenger.display_name)
     t_player = get_player(target.id, target.display_name)
 
@@ -3592,7 +3805,52 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids):
     )
     embed.set_footer(text="Bấm 'Xem Chi Tiết Trận Chiến & GIF Kỹ Năng' bên dưới để xem lại từng hiệp đấu kèm GIF hoạt ảnh trực tiếp!")
 
-    await channel.send(embed=embed, view=OpenDetailsView(pvp_turns))
+    details_view = OpenDetailsView(pvp_turns)
+    sent = False
+
+    # 1. Thử gửi trực tiếp qua channel (nếu bot có quyền và channel hợp lệ)
+    target_channel = channel
+    if target_channel is None and interaction:
+        target_channel = interaction.channel
+
+    if target_channel:
+        try:
+            await target_channel.send(embed=embed, view=details_view)
+            sent = True
+        except discord.errors.Forbidden:
+            logger.warning(f"PvP: Missing Access in channel {getattr(target_channel, 'id', None)}, attempting fallback...")
+        except Exception as e:
+            logger.warning(f"PvP: Error sending to channel: {e}")
+
+    # 2. Nếu channel.send thất bại (403 Forbidden / Missing Access), thử gửi qua interaction followup webhook
+    if not sent and interaction:
+        try:
+            await interaction.followup.send(embed=embed, view=details_view)
+            sent = True
+        except Exception as e:
+            logger.warning(f"PvP: Interaction followup fallback failed: {e}")
+
+    # 3. Thử qua bot.fetch_channel nếu có ID
+    if not sent and target_channel and hasattr(target_channel, "id"):
+        try:
+            fetched_ch = await bot.fetch_channel(target_channel.id)
+            if fetched_ch:
+                await fetched_ch.send(embed=embed, view=details_view)
+                sent = True
+        except Exception as e:
+            logger.warning(f"PvP: bot.fetch_channel fallback failed: {e}")
+
+    # 4. Fallback cuối cùng: Gửi kết quả qua DM cho người thách đấu và người được thách đấu
+    if not sent:
+        for p_user in [challenger, target]:
+            try:
+                await p_user.send(
+                    content=f"⚔️ **Kết quả trận PvP 3v3 giữa {challenger.display_name} và {target.display_name}:** (Kênh máy chủ thiếu quyền gửi tin nhắn)",
+                    embed=embed,
+                    view=OpenDetailsView(pvp_turns)
+                )
+            except Exception as e:
+                logger.warning(f"PvP: Could not DM {getattr(p_user, 'display_name', p_user)}: {e}")
 
 async def handle_pvp(ctx_or_interaction, target: discord.Member):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
@@ -4135,15 +4393,20 @@ async def prefix_boss_status(ctx, *args):
     global boss_cooldown_until, active_raid
     if args:
         sub = " ".join(args).strip().lower()
-        if sub in ["admin spawn", "spawn"]:
+        if sub in ["admin spawn", "spawn"] or sub.startswith("admin spawn") or sub.startswith("spawn"):
             if not is_authorized_admin(ctx.author):
-                await ctx.send(f"⛔ {ctx.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được triệu hồi Reimu Dị Hình!")
+                await ctx.send(f"⛔ {ctx.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được triệu hồi Boss Raid!")
                 return
-            await admin_spawn_boss(ctx.channel, ctx.author)
+            b_type = None
+            if "seiki" in sub:
+                b_type = "seiki"
+            elif "reimu" in sub:
+                b_type = "reimu"
+            await admin_spawn_boss(ctx.channel, ctx.author, boss_type=b_type)
             return
         elif sub in ["admin reset", "reset"]:
             if not is_authorized_admin(ctx.author):
-                await ctx.send(f"⛔ {ctx.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được reset Reimu Dị Hình!")
+                await ctx.send(f"⛔ {ctx.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được reset Boss Raid!")
                 return
             await admin_reset_boss(ctx.channel, ctx.author)
             return
@@ -4160,31 +4423,45 @@ async def prefix_boss_status(ctx, *args):
         rem = int(boss_cooldown_until - now)
         await ctx.send(f"⏳ Boss đang hồi chiêu 15 phút (Còn lại: {rem // 60}m {rem % 60}s).")
     else:
-        await ctx.send("🟢 Boss đã sẵn sàng xuất hiện (10% cơ hội khi chat, hoặc dùng `boss admin spawn`)!")
+        await ctx.send("🟢 Boss đã sẵn sàng xuất hiện (Tỉ lệ 5% Seiki Dị Hình, 5% Reimu Dị Hình khi chat, hoặc dùng `boss admin spawn [seiki|reimu]`)!")
 
-@bot.tree.command(name="boss_admin", description="[Admin] Quản trị Boss Raid Reimu Dị Hình (spawn hoặc reset)")
-@app_commands.describe(action="Hành động muốn thực hiện với Boss Raid")
+@bot.tree.command(name="boss_admin", description="[Admin] Quản trị Boss Raid (Reimu Dị Hình hoặc Seiki Dị Hình)")
+@app_commands.describe(action="Hành động muốn thực hiện với Boss Raid", loai_boss="Loại Boss muốn triệu hồi (nếu chọn spawn)")
 @app_commands.choices(action=[
     app_commands.Choice(name="spawn - Triệu hồi Boss ngay tại kênh này", value="spawn"),
     app_commands.Choice(name="reset - Giải phóng Boss kẹt và xóa hồi chiêu", value="reset")
+], loai_boss=[
+    app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
+    app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
+    app_commands.Choice(name="Ngẫu nhiên 50/50 giữa 2 Boss", value="random")
 ])
-async def slash_boss_admin(interaction: discord.Interaction, action: str):
+async def slash_boss_admin(interaction: discord.Interaction, action: str, loai_boss: str = "random"):
     if not is_authorized_admin(interaction.user):
         await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN HẠN!** Chỉ có Han Seiki hoặc Admin mới được dùng lệnh này!", ephemeral=True)
         return
     if action == "spawn":
-        await interaction.response.send_message("⚡ Đang cưỡng chế triệu hồi Reimu Dị Hình...", ephemeral=True)
-        await admin_spawn_boss(interaction.channel, interaction.user)
+        b_type = None if loai_boss == "random" else loai_boss
+        boss_label = "Seiki Dị Hình" if b_type == "seiki" else ("Reimu Dị Hình" if b_type == "reimu" else "Boss Raid ngẫu nhiên")
+        await interaction.response.send_message(f"⚡ Đang cưỡng chế triệu hồi {boss_label}...", ephemeral=True)
+        await admin_spawn_boss(interaction.channel, interaction.user, boss_type=b_type)
     elif action == "reset":
         await admin_reset_boss(interaction, interaction.user)
 
-@bot.tree.command(name="admin_boss_spawn", description="[Admin] Triệu hồi ngay Reimu Dị Hình tại kênh này")
-async def slash_admin_boss_spawn(interaction: discord.Interaction):
+@bot.tree.command(name="admin_boss_spawn", description="[Admin] Triệu hồi ngay Boss Raid (Seiki Dị Hình hoặc Reimu Dị Hình) tại kênh này")
+@app_commands.describe(loai_boss="Chọn Boss muốn triệu hồi")
+@app_commands.choices(loai_boss=[
+    app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
+    app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
+    app_commands.Choice(name="Ngẫu nhiên 50/50 giữa 2 Boss", value="random")
+])
+async def slash_admin_boss_spawn(interaction: discord.Interaction, loai_boss: str = "random"):
     if not is_authorized_admin(interaction.user):
         await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN HẠN!**", ephemeral=True)
         return
-    await interaction.response.send_message("⚡ Đang triệu hồi Reimu Dị Hình...", ephemeral=True)
-    await admin_spawn_boss(interaction.channel, interaction.user)
+    b_type = None if loai_boss == "random" else loai_boss
+    boss_label = "Seiki Dị Hình" if b_type == "seiki" else ("Reimu Dị Hình" if b_type == "reimu" else "Boss Raid ngẫu nhiên")
+    await interaction.response.send_message(f"⚡ Đang triệu hồi {boss_label}...", ephemeral=True)
+    await admin_spawn_boss(interaction.channel, interaction.user, boss_type=b_type)
 
 @bot.tree.command(name="admin_boss_reset", description="[Admin] Giải phóng Boss Raid bị kẹt và xóa hồi chiêu")
 async def slash_admin_boss_reset(interaction: discord.Interaction):
