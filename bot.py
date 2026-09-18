@@ -385,6 +385,12 @@ BOSS_SKILL_CONFIG = {
     "damage": 5000,
     "desc": "Gây 5,000 DMG cho mỗi lá bài đang ở tiền tuyến (Boss không đánh thường)",
     "gif": "https://c.tenor.com/x27qU0sR_vkAAAAC/touhou-danmaku-touhou-yuyuko.gif"
+    
+    "name": "Blitz Attack",
+    "chance": 0.20,
+    "damage": 4000,
+    "desc": "Gây 4,000 DMG cho mỗi lá bài đang ở tiền tuyến (Boss không đánh thường)",
+    "gif": "https://klipy.com/gifs/naoya-jujutsu-kaisen"
 }
 # ==============================================================================
 # 4. DATABASE SETUP: MONGODB ATLAS + SQLITE DỰ PHÒNG
