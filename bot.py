@@ -1297,11 +1297,9 @@ class RaidJoinView(discord.ui.View):
             await interaction.response.send_message("⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` trước nhé!", ephemeral=True)
             return
 
-        raw_team = [normalize_card_id(cid) for cid in player.get("team", []) if normalize_card_id(cid)]
-        current_team = [cid for cid in raw_team if cid in CARDS_DATA and not is_card_locked(player, cid)]
+        current_team = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
         if len(current_team) < 3:
-            owned_ids = [normalize_card_id(cid) for cid, cnt in player.get("inventory", {}).items() if cnt > 0 and normalize_card_id(cid) and not is_card_locked(player, normalize_card_id(cid))]
-            owned_ids = list(dict.fromkeys(owned_ids))
+            owned_ids = [cid for cid, cnt in player.get("inventory", {}).items() if cnt > 0 and cid in CARDS_DATA and not is_card_locked(player, cid)]
             owned_ids.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
             for cid in owned_ids:
                 if cid not in current_team:
@@ -1352,11 +1350,9 @@ async def execute_raid(channel, raid_data):
         p = get_player(uid)
         lvl_buff_pwr = get_level_atk_buff(p["level"])
         lvl_buff_hp = get_level_hp_buff(p["level"])
-        raw_team = [normalize_card_id(cid) for cid in p.get("team", []) if normalize_card_id(cid)]
-        team_cids = [cid for cid in raw_team if cid in CARDS_DATA and not is_card_locked(p, cid)]
+        team_cids = [cid for cid in p.get("team", []) if cid in CARDS_DATA and not is_card_locked(p, cid)]
         if len(team_cids) < 3:
-            owned_ids = [normalize_card_id(cid) for cid, cnt in p.get("inventory", {}).items() if cnt > 0 and normalize_card_id(cid) and not is_card_locked(p, normalize_card_id(cid))]
-            owned_ids = list(dict.fromkeys(owned_ids))
+            owned_ids = [cid for cid, cnt in p.get("inventory", {}).items() if cnt > 0 and cid in CARDS_DATA and not is_card_locked(p, cid)]
             owned_ids.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
             for cid in owned_ids:
                 if cid not in team_cids:
@@ -1616,8 +1612,7 @@ async def execute_raid(channel, raid_data):
                 boss_action_log = "❄️ Boss bị đóng băng thời gian, bất lực không thể phản công!"
             else:
                 if random.random() < 0.20:
-                    if not turn_image:
-                        turn_image = BOSS_SKILL_CONFIG["gif"]
+                    turn_image = BOSS_SKILL_CONFIG["gif"]
                     boss_action_log = "👹 **[NỘI TẠI BOSS] Reimu Dị Hình** thi triển **Dị Hình Bùa Chú** (20%)! Giáng **5,000 DMG** diện rộng!"
                     for c in active_combatants:
                         ac = c["team_cards"][c["current_card_index"]]
@@ -1902,8 +1897,7 @@ async def execute_raid(channel, raid_data):
             boss_action_log = "❄️ Boss Phase 2 bị đóng băng thời gian, không thể phát động đòn đánh!"
         else:
             if random.random() < 0.20:
-                if not turn_image:
-                    turn_image = BOSS_SKILL_CONFIG["gif"]
+                turn_image = BOSS_SKILL_CONFIG["gif"]
                 boss_action_log = "👹 **[NỘI TẠI BOSS] Reimu Dị Hình** phát động **Dị Hình Bùa Chú** (20%)! Oanh tạc **5,000 DMG** diện rộng!"
                 for c in active_combatants:
                     ac = c["team_cards"][c["current_card_index"]]
@@ -3050,7 +3044,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", id_the: Optional
         return
 
     # CHẾ ĐỘ VIEW (XEM ĐỘI HÌNH)
-    team_cids = [normalize_card_id(cid) for cid in p.get("team", []) if normalize_card_id(cid)]
+    team_cids = p.get("team", [])
     valid_cids = [cid for cid in team_cids if cid in CARDS_DATA]
 
     embed = discord.Embed(
@@ -3616,11 +3610,9 @@ async def handle_battle(ctx_or_interaction):
     lvl_buff_hp = get_level_hp_buff(p["level"])
 
     # LỰA CHỌN ĐỘI HÌNH
-    raw_team = [normalize_card_id(cid) for cid in p.get("team", []) if normalize_card_id(cid)]
-    team_cids = [cid for cid in raw_team if cid in CARDS_DATA and not is_card_locked(p, cid)]
+    team_cids = [cid for cid in p.get("team", []) if cid in CARDS_DATA and not is_card_locked(p, cid)]
     if len(team_cids) < 3:
-        owned_ids = [normalize_card_id(cid) for cid, cnt in p.get("inventory", {}).items() if cnt > 0 and normalize_card_id(cid) and not is_card_locked(p, normalize_card_id(cid))]
-        owned_ids = list(dict.fromkeys(owned_ids))
+        owned_ids = [cid for cid, cnt in p.get("inventory", {}).items() if cnt > 0 and cid in CARDS_DATA and not is_card_locked(p, cid)]
         owned_ids.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
         for cid in owned_ids:
             if cid not in team_cids:
@@ -4234,11 +4226,9 @@ async def handle_pvp(ctx_or_interaction, target: discord.Member):
     p_target = get_player(target.id, target.display_name)
 
     # Đội hình người thách đấu
-    raw_c = [normalize_card_id(cid) for cid in p_author.get("team", []) if normalize_card_id(cid)]
-    c_team = [cid for cid in raw_c if cid in CARDS_DATA and not is_card_locked(p_author, cid)]
+    c_team = [cid for cid in p_author.get("team", []) if cid in CARDS_DATA and not is_card_locked(p_author, cid)]
     if len(c_team) < 3:
-        owned = [normalize_card_id(cid) for cid, cnt in p_author.get("inventory", {}).items() if cnt > 0 and normalize_card_id(cid) and not is_card_locked(p_author, normalize_card_id(cid))]
-        owned = list(dict.fromkeys(owned))
+        owned = [cid for cid, cnt in p_author.get("inventory", {}).items() if cnt > 0 and cid in CARDS_DATA and not is_card_locked(p_author, cid)]
         owned.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
         for cid in owned:
             if cid not in c_team: c_team.append(cid)
@@ -4247,11 +4237,9 @@ async def handle_pvp(ctx_or_interaction, target: discord.Member):
         save_player(p_author)
 
     # Đội hình người nhận thách đấu
-    raw_t = [normalize_card_id(cid) for cid in p_target.get("team", []) if normalize_card_id(cid)]
-    t_team = [cid for cid in raw_t if cid in CARDS_DATA and not is_card_locked(p_target, cid)]
+    t_team = [cid for cid in p_target.get("team", []) if cid in CARDS_DATA and not is_card_locked(p_target, cid)]
     if len(t_team) < 3:
-        owned = [normalize_card_id(cid) for cid, cnt in p_target.get("inventory", {}).items() if cnt > 0 and normalize_card_id(cid) and not is_card_locked(p_target, normalize_card_id(cid))]
-        owned = list(dict.fromkeys(owned))
+        owned = [cid for cid, cnt in p_target.get("inventory", {}).items() if cnt > 0 and cid in CARDS_DATA and not is_card_locked(p_target, cid)]
         owned.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
         for cid in owned:
             if cid not in t_team: t_team.append(cid)
