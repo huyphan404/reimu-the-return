@@ -196,20 +196,20 @@ CARDS_DATA = {
                 "name": "Fantasy Seal",
                 "chance": 0.40,
                 "desc": "40% miễn thương 1 lần trong trận",
-                "gif": "https://klipy.com/gifs/hakurei-reimu-touhou"
+                "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/e7/fe/JOKpsPyd.gif"
             },
             "master_spark": {
                 "name": "Master Spark",
                 "chance": 0.30,
                 "multiplier": 1.5,
                 "desc": "30% gây 1.5x sát thương 1 lần trong trận",
-                "gif": "https://klipy.com/gifs/marisa-master-spark"
+                "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/f4/32/3xCGLkOw.gif"
             },
             "medicine_sign": {
                 "name": "Medicine Sign",
                 "chance": 0.20,
                 "desc": "20% hồi phục cho bản thân 1 lần trong trận",
-                "gif": "https://klipy.com/gifs/shoko-ieiri-2"
+                "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/8d/12/mwVdJaFQsefrsAuNS.gif"
             }
         }
     }
@@ -220,9 +220,9 @@ CARDS_DATA["T1"] = CARDS_DATA["t1"]
 # GIF HOẠT ẢNH TUYỆT KỸ THẺ [T] #t1 SEIKI (dùng chung cho Raid, Battle & PvP)
 # ==============================================================================
 T1_SKILL_CONFIGS = CARDS_DATA["t1"]["skills"]
-T1_SEAL_GIF = T1_SKILL_CONFIGS["fantasy_seal"]["gif"]    # https://klipy.com/gifs/hakurei-reimu-touhou
-T1_SPARK_GIF = T1_SKILL_CONFIGS["master_spark"]["gif"]   # https://klipy.com/gifs/marisa-master-spark
-T1_HEAL_GIF = T1_SKILL_CONFIGS["medicine_sign"]["gif"]   # https://klipy.com/gifs/shoko-ieiri-2
+T1_SEAL_GIF = T1_SKILL_CONFIGS["fantasy_seal"]["gif"]    # https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/e7/fe/JOKpsPyd.gif
+T1_SPARK_GIF = T1_SKILL_CONFIGS["master_spark"]["gif"]   # https://www.google.com/url?sa=E&q=https%3A%2F%2Fstatic2.klipy.com%2Fii%2Fc3a19a0b747a76e98651f2b9a3cca5ff%2Ff4%2F32%2F3xCGLkOw.gif
+T1_HEAL_GIF = T1_SKILL_CONFIGS["medicine_sign"]["gif"]   # https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/8d/12/mwVdJaFQsefrsAuNS.gif
 
 CARDS_BY_RANK = {
     "SS": [c for c in CARDS_DATA.values() if c["rank"] == "SS"],
@@ -275,20 +275,20 @@ SEIKI_BOSS_CONFIG = {
             "multiplier": 1.5,
             "turns": 3,
             "desc": "15% kích hoạt, gây 1.5x sát thương trong 3 lượt (4,500 DMG chia đều tiền tuyến)!",
-            "gif": "https://klipy.com/gifs/touhou-gensokyo-night-festival"
+            "gif": "ttps://www.google.com/url?sa=E&q=https%3A%2F%2Fstatic2.klipy.com%2Fii%2Fc3a19a0b747a76e98651f2b9a3cca5ff%2Ff4%2F32%2F3xCGLkOw.gif"
         },
         "fantasy_seal": {
             "name": "Fantasy Seal",
             "chance": 0.20,
             "desc": "20% kích hoạt kết giới phong ấn, MIỄN TOÀN BỘ SÁT THƯƠNG trong 1 turn!",
-            "gif": "https://klipy.com/gifs/hakurei-reimu-touhou"
+            "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/e7/fe/JOKpsPyd.gif"
         },
         "blitz_attack": {
             "name": "Blitz Attack",
             "chance": 0.20,
             "damage": 4000,
             "desc": "20% gây 4,000 DMG diện rộng trực tiếp lên toàn bộ thẻ tiền tuyến!",
-            "gif": "https://klipy.com/gifs/naoya-jujutsu-kaisen"
+            "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/53/3d/F3J4ZC2CZxVLy4Nh.gif"
         }
     }
 }
