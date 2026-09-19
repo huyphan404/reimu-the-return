@@ -275,7 +275,7 @@ SEIKI_BOSS_CONFIG = {
             "multiplier": 1.5,
             "turns": 3,
             "desc": "15% kích hoạt, gây 1.5x sát thương trong 3 lượt (4,500 DMG chia đều tiền tuyến)!",
-            "gif": "ttps://www.google.com/url?sa=E&q=https%3A%2F%2Fstatic2.klipy.com%2Fii%2Fc3a19a0b747a76e98651f2b9a3cca5ff%2Ff4%2F32%2F3xCGLkOw.gif"
+            "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/f4/32/3xCGLkOw.gif"
         },
         "fantasy_seal": {
             "name": "Fantasy Seal",
@@ -285,9 +285,9 @@ SEIKI_BOSS_CONFIG = {
         },
         "blitz_attack": {
             "name": "Blitz Attack",
-            "chance": 0.20,
+            "chance": 0.25,
             "damage": 4000,
-            "desc": "20% gây 4,000 DMG diện rộng trực tiếp lên toàn bộ thẻ tiền tuyến!",
+            "desc": "25% gây 4,000 DMG diện rộng trực tiếp lên toàn bộ thẻ tiền tuyến!",
             "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/53/3d/F3J4ZC2CZxVLy4Nh.gif"
         }
     }
