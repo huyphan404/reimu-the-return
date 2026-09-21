@@ -2236,8 +2236,8 @@ def execute_single_pull(player):
     roll = random.random()
     if roll < 0.0001: chosen = random.choice(CARDS_BY_RANK["SS"])
     elif roll < 0.0301: chosen = random.choice(CARDS_BY_RANK["S"])
-    elif roll < 0.3501: chosen = random.choice(CARDS_BY_RANK["A"])
-    elif roll < 0.6501: chosen = random.choice(CARDS_BY_RANK["B"])
+    elif roll < 0.1301: chosen = random.choice(CARDS_BY_RANK["A"])
+    elif roll < 0.3301: chosen = random.choice(CARDS_BY_RANK["B"])
     else: chosen = random.choice(CARDS_BY_RANK["C"])
 
     cid_str = str(chosen["id"])
