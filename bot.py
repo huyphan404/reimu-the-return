@@ -16,6 +16,10 @@
 # 8. TÍNH NĂNG MỚI:
 #    - Lệnh /admin_lock: Khóa thẻ của người chơi, gỡ khỏi team, chỉ mở khi pull trúng lại!
 #    - Vá lỗi Tutorial: Tiến trình tuyến tính 1 chiều tuyệt đối, cờ vĩnh viễn chống farm 3 thẻ không trùng!
+# 9. ACE 2 MỚI:
+#    - [#09] Flandre Scarlet (30 thẻ): Ripples of 495 Years — 25% xóa 50% HP đối thủ (Battle/PvP)
+#      hoặc 30% HP Boss (Raid Phase 1 & 2), kích hoạt 1 lần/trận, kèm GIF kỹ năng trực tiếp!
+#    - Buff Marisa Ace 2 [#17]: Master Spark tăng sát thương từ ×1.5 lên ×2.0!
 # ==============================================================================
 
 import os
@@ -338,9 +342,24 @@ EVOL_CONFIG = {
         "required_cards": 25,
         "required_pulls": 25,
         "evol_gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/de/e5/qY4XYpLV.gif",
-        "skill_name": "Bát Quái Lô - Master Spark (Sát Thương ×1.5)",
-        "skill_desc": "Kích hoạt 1 lần trong trận: 30% tung ra Master Spark với sát thương ×1.5 lần sát thương gốc!",
+        "skill_name": "Bát Quái Lô - Master Spark (Sát Thương ×2.0)",
+        "skill_desc": "Kích hoạt 1 lần trong trận: 30% tung ra Master Spark với sát thương ×2.0 lần sát thương gốc!",
         "skill_gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/f4/32/73qv2IMW.gif",
+        "bonus_power": 300,
+        "bonus_hp": 300
+    },
+    9: {
+        "id": 9,
+        "key": "flandre",
+        "name": "Flandre Scarlet",
+        "title": "[#09] Flandre Scarlet - Ace 2 ⭐⭐",
+        "ace_level": "Ace 2 ⭐⭐",
+        "required_cards": 30,
+        "required_pulls": 30,
+        "evol_gif": "https://static2.klipy.com/ii/e1b92bb53e0c9e442408bc677a56c789/97/0e/NQbwEU2dLTI18V.gif",
+        "skill_name": "Ripples of 495 Years (Bóng Gợn 495 Năm)",
+        "skill_desc": "Kích hoạt 1 lần duy nhất trong trận (Tỷ lệ 25%): Xóa sổ 50% HP đối thủ trong Battle/PvP, hoặc lấy đi 30% HP Boss trong Raid (áp dụng cả Phase 1 & Phase 2)!",
+        "skill_gif": "https://static2.klipy.com/ii/e293a233a303a98e471f78d04e13a1b0/b2/cf/xq2ZW3uF.gif",
         "bonus_power": 300,
         "bonus_hp": 300
     }
@@ -348,6 +367,7 @@ EVOL_CONFIG = {
 EVOL_CONFIG["13"] = EVOL_CONFIG[13]
 EVOL_CONFIG["16"] = EVOL_CONFIG[16]
 EVOL_CONFIG["17"] = EVOL_CONFIG[17]
+EVOL_CONFIG["9"] = EVOL_CONFIG[9]
 
 # ==============================================================================
 # 3.1 CHI TIẾT NĂNG LỰC & KỸ NĂNG 26 NHÂN VẬT TOUHOU (CHO TÍNH NĂNG CHECK NHÂN VẬT)
@@ -361,7 +381,7 @@ CHARACTER_DETAILS = {
     6: {"title": "Dược Sư Nguyệt Đô", "skill_name": "Hourai Trường Sinh Dược", "skill_desc": "Bác sĩ thiên tài của Mặt Trăng, bậc thầy chế tạo mọi loại tiên dược Hourai và xạ kích tiễn thuật chuẩn xác (640 ATK / 6,600 HP)."},
     7: {"title": "Bạo Chúa Thái Dương Hoa", "skill_name": "Hồng Hoa Diệt Tuyệt", "skill_desc": "Yêu quái hoa lâu đời nhất Gensokyo, bắn ra những chùm tia Master Spark hồng hoa hủy diệt kẻ xâm phạm (630 ATK / 6,300 HP)."},
     8: {"title": "U Linh Bạch Ngọc Lâu", "skill_name": "Bướm Ma Dẫn Hồn", "skill_desc": "Công chúa u linh cai quản cõi chết, dẫn dụ linh hồn bước vào giấc ngủ vĩnh hằng bằng điệu múa bướm ma quái (620 ATK / 6,200 HP)."},
-    9: {"title": "Ác Ma Cuồng Loạn", "skill_name": "Tuyệt Đối Phá Hủy (Kyū)", "skill_desc": "Bóp nát 'mục tiêu tồn tại' trong lòng bàn tay, giải phóng sức mạnh ma cà rồng hủy diệt không thể ngăn cản (610 ATK / 5,700 HP)."},
+    9: {"title": "Ác Ma Cuồng Loạn", "skill_name": "Tuyệt Đối Phá Hủy (Kyū)", "skill_desc": "Bóp nát 'mục tiêu tồn tại' trong lòng bàn tay, giải phóng sức mạnh ma cà rồng hủy diệt không thể ngăn cản (610 ATK / 5,700 HP). [Ace 2 ⭐⭐]: Ripples of 495 Years (25%) — Xóa sổ 50% HP đối thủ (Battle/PvP) hoặc 30% HP Boss (Raid), kích hoạt 1 lần trong trận!"},
     10: {"title": "Công Chúa Ánh Trăng", "skill_name": "Vĩnh Cửu & Tức Thời", "skill_desc": "Công chúa Nguyệt Cung lưu đày tại Eientei, điều khiển dòng chảy thời gian vĩnh cửu và tức thời cùng thần bảo quý giá (590 ATK / 6,400 HP)."},
     11: {"title": "Chúa Tể Hồng Ma Quán", "skill_name": "Thương Đỏ Gungnir (Vận Mệnh)", "skill_desc": "Ma cà rồng kiêu hãnh bẻ cong số mệnh kẻ thù, phóng ra ngọn giáo ánh sáng đỏ Gungnir xuyên thủng phòng ngự (560 ATK / 5,600 HP)."},
     12: {"title": "Mặt Trời Địa Ngục", "skill_name": "Hạch Tâm Phản Ứng (Nuclear)", "skill_desc": "Mang sức mạnh thần mặt trời Yatagarasu, thi triển hạch tâm nhiệt hạch thiêu đốt toàn bộ chiến trường (550 ATK / 5,300 HP)."},
@@ -369,7 +389,7 @@ CHARACTER_DETAILS = {
     14: {"title": "Phượng Hoàng Bất Tử", "skill_name": "Phượng Hoàng Bất Diệt", "skill_desc": "Cơ thể bất tử do uống tiên dược Hourai, triệu hồi ngọn lửa phượng hoàng thiêu đốt kẻ địch mà không hề sợ chết (490 ATK / 5,200 HP)."},
     15: {"title": "Tiên Nhân Một Tay", "skill_name": "Thần Thú Giáng Lâm", "skill_desc": "Một trong Tứ Thiên Vương ẩn mình dưới thân phận tiên nhân dạy dỗ yêu quái và điều khiển muôn loài linh thú (480 ATK / 4,900 HP)."},
     16: {"title": "Hầu Gái Trưởng Hoàn Hảo", "skill_name": "Thời Gian Đóng Băng", "skill_desc": "Bậc thầy phi dao bạc và không-thời gian. [Ace 2 ⭐⭐]: Đóng băng thời gian làm đối thủ/boss bị STUN mất lượt 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
-    17: {"title": "Phù Thủy Bình Thường", "skill_name": "Bát Quái Lô - Master Spark", "skill_desc": "Ma thuật ánh sáng và nhiệt độ cao. [Ace 2 ⭐⭐]: Bắn đại bác ma thuật Master Spark gây sát thương ×1.5 lần sát thương gốc (Tỷ lệ 30% 1 lần trong trận)!"},
+    17: {"title": "Phù Thủy Bình Thường", "skill_name": "Bát Quái Lô - Master Spark", "skill_desc": "Ma thuật ánh sáng và nhiệt độ cao. [Ace 2 ⭐⭐]: Bắn đại bác ma thuật Master Spark gây sát thương ×2.0 lần sát thương gốc (Tỷ lệ 30% 1 lần trong trận)!"},
     18: {"title": "Kiếm Sĩ Nửa Người Nửa Ma", "skill_name": "Song Kiếm Lâu Quan & Bạch Lâu", "skill_desc": "Thần tốc kiếm đạo: Lâu Quan Kiếm chém vạn vật và Bạch Lâu Kiếm chém tan ảo tưởng mê muội (410 ATK / 4,100 HP)."},
     19: {"title": "Thỏ Ngọc Chiến Binh", "skill_name": "Hồng Nhãn Cuồng Loạn", "skill_desc": "Thỏ ngọc từ Mặt Trăng phát sóng ảo giác từ ánh mắt đỏ rực làm hoa mắt và rối loạn phương hướng đối phương (390 ATK / 3,900 HP)."},
     20: {"title": "Đại Ma Đạo Sĩ Thất Diệu", "skill_name": "Thất Diệu Ma Thuật", "skill_desc": "Phù thủy thông thái trong thư viện ngầm, kết hợp 7 nguyên tố tự nhiên tạo thành ma trận công thủ liên hoàn (380 ATK / 3,200 HP)."},
@@ -1007,13 +1027,15 @@ class OpponentTeamView(discord.ui.View):
         )
 
         skill_text = c.get("skill") or "Tấn công Danmaku cơ bản"
-        if is_ace and c["cid"] in [13, 16, 17]:
+        if is_ace and c["cid"] in [9, 13, 16, 17]:
             if c["cid"] == 13:
                 skill_text += "\n🛡️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Vô Tưởng Chuyển Sinh* né toàn bộ sát thương."
             elif c["cid"] == 16:
                 skill_text += "\n⏳ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Thời Gian Đóng Băng* khiến đối phương mất lượt."
             elif c["cid"] == 17:
-                skill_text += "\n🌟 **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Master Spark* bộc phá ×1.5 sát thương."
+                skill_text += "\n🌟 **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Master Spark* bộc phá ×2.0 sát thương."
+            elif c["cid"] == 9:
+                skill_text += "\n🦇 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Ripples of 495 Years* xóa sổ 50% HP đối thủ (30% HP Boss trong Raid, 1 lần/trận)."
         embed.add_field(name="✨ Kỹ Năng / Tuyệt Kỹ Danmaku:", value=f"*{skill_text}*", inline=False)
 
         summary_lines = []
@@ -1384,6 +1406,7 @@ async def execute_raid(channel, raid_data):
             "sakuya_stun_used": False,
             "reimu_invul_used": False,
             "marisa_spark_used": False,
+            "flandre_used": False,
             "seiki_seal_used": False,
             "seiki_spark_used": False,
             "seiki_heal_used": False,
@@ -1444,6 +1467,7 @@ async def execute_raid(channel, raid_data):
         boss_stunned = False
         sakuya_stun_notif = None
         marisa_spark_notif = None
+        flandre_notif = None
         turn_image = None
 
         for c in active_combatants:
@@ -1482,10 +1506,21 @@ async def execute_raid(channel, raid_data):
             if ac["cid"] == 17 and ac["is_ace2"] and not c.get("marisa_spark_used"):
                 if random.random() < 0.30:
                     c["marisa_spark_used"] = True
-                    card_dmg = int(card_dmg * 1.5)
+                    card_dmg = int(card_dmg * 2.0)
                     if not turn_image:
                         turn_image = EVOL_CONFIG[17]["skill_gif"]
-                    marisa_spark_notif = f"🌟 **[Ace 2] [#17] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×1.5 giáng **{card_dmg:,} DMG** lên Boss!"
+                    marisa_spark_notif = f"🌟 **[Ace 2] [#17] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.0 giáng **{card_dmg:,} DMG** lên Boss!"
+
+            # KỸ NĂNG ACE 2 FLANDRE - RIPPLES OF 495 YEARS (25%: LẤY 30% HP BOSS, 1 LẦN/TRẬN)
+            if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
+                if random.random() < 0.25:
+                    c["flandre_used"] = True
+                    rip_dmg = int(p1_hp * 0.30)
+                    p1_hp = max(0, p1_hp - rip_dmg)
+                    c["total_dmg"] += rip_dmg
+                    if not turn_image:
+                        turn_image = EVOL_CONFIG[9]["skill_gif"]
+                    flandre_notif = f"🦇 **[Ace 2] [#09] Flandre Scarlet** ({c['username']}) kích hoạt **Ripples of 495 Years** (25%)! Xóa sổ **{rip_dmg:,} DMG (30% HP Boss)** ngay lập tức!"
             
             # Kỹ năng Thẻ Seiki T1 (Tuân thủ: Không bao giờ kích hoạt 2 chiêu trong cùng 1 lượt!)
             if str(ac["cid"]).lower() == "t1":
@@ -1685,6 +1720,8 @@ async def execute_raid(channel, raid_data):
             round_embed.add_field(name="❄️ Kỹ Năng Đột Biến:", value=sakuya_stun_notif, inline=False)
         if marisa_spark_notif:
             round_embed.add_field(name="🌟 Master Spark Oanh Tạc:", value=marisa_spark_notif, inline=False)
+        if flandre_notif:
+            round_embed.add_field(name="🦇 Ripples of 495 Years:", value=flandre_notif, inline=False)
         round_embed.add_field(name="👺 Phản Kích Của Boss:", value=boss_action_log, inline=False)
         if push_logs:
             round_embed.add_field(name="🔄 Thay Đổi Tiền Tuyến:", value="\n".join(push_logs), inline=False)
@@ -1710,6 +1747,7 @@ async def execute_raid(channel, raid_data):
                 ("💥 Tiền Tuyến Tấn Công:", player_atk_str, False),
                 *([("❄️ Kỹ Năng Đột Biến:", sakuya_stun_notif, False)] if sakuya_stun_notif else []),
                 *([("🌟 Master Spark:", marisa_spark_notif, False)] if marisa_spark_notif else []),
+                *([("🦇 Ripples of 495 Years:", flandre_notif, False)] if flandre_notif else []),
                 ("👺 Phản Kích Của Boss:", boss_action_log, False),
                 *([("🔄 Thay Đổi Tiền Tuyến & Đổi Sát Thương:", "\n".join(push_logs), False)] if push_logs else []),
                 ("🛡️ Tình Trạng Tiền Tuyến Hiện Tại:", "\n".join(round_card_status), False)
@@ -1809,6 +1847,7 @@ async def execute_raid(channel, raid_data):
         c["sakuya_stun_used"] = False
         c["reimu_invul_used"] = False
         c["marisa_spark_used"] = False
+        c["flandre_used"] = False
         c["seiki_seal_used"] = False
         c["seiki_spark_used"] = False
         c["seiki_heal_used"] = False
@@ -1833,6 +1872,7 @@ async def execute_raid(channel, raid_data):
         boss_stunned = False
         sakuya_stun_notif = None
         marisa_spark_notif = None
+        flandre_notif = None
         turn_image = None
 
         for c in active_combatants:
@@ -1852,10 +1892,21 @@ async def execute_raid(channel, raid_data):
             if ac["cid"] == 17 and ac["is_ace2"] and not c.get("marisa_spark_used"):
                 if random.random() < 0.30:
                     c["marisa_spark_used"] = True
-                    card_dmg = int(card_dmg * 1.5)
+                    card_dmg = int(card_dmg * 2.0)
                     if not turn_image:
                         turn_image = EVOL_CONFIG[17]["skill_gif"]
-                    marisa_spark_notif = f"🌟 **[Ace 2] [#17] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×1.5 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
+                    marisa_spark_notif = f"🌟 **[Ace 2] [#17] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.0 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
+
+            # KỸ NĂNG ACE 2 FLANDRE - RIPPLES OF 495 YEARS (25%: LẤY 30% HP BOSS PHASE 2, 1 LẦN/TRẬN)
+            if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
+                if random.random() < 0.25:
+                    c["flandre_used"] = True
+                    rip_dmg = int(p2_hp * 0.30)
+                    p2_hp = max(0, p2_hp - rip_dmg)
+                    c["total_dmg"] += rip_dmg
+                    if not turn_image:
+                        turn_image = EVOL_CONFIG[9]["skill_gif"]
+                    flandre_notif = f"🦇 **[Ace 2] [#09] Flandre Scarlet** ({c['username']}) kích hoạt **Ripples of 495 Years** (25%)! Xóa sổ **{rip_dmg:,} DMG (30% HP Boss Phase 2)** ngay lập tức!"
 
             # Kỹ năng Thẻ Seiki T1 (Tuân thủ: Không bao giờ kích hoạt 2 chiêu trong cùng 1 lượt!)
             if str(ac["cid"]).lower() == "t1":
@@ -1969,6 +2020,8 @@ async def execute_raid(channel, raid_data):
             round_embed.add_field(name="❄️ Kỹ Năng Đột Biến:", value=sakuya_stun_notif, inline=False)
         if marisa_spark_notif:
             round_embed.add_field(name="🌟 Master Spark Oanh Tạc:", value=marisa_spark_notif, inline=False)
+        if flandre_notif:
+            round_embed.add_field(name="🦇 Ripples of 495 Years:", value=flandre_notif, inline=False)
         round_embed.add_field(name="👹 Boss Phase 2 Ra Đòn:", value=boss_action_log, inline=False)
         if push_logs:
             round_embed.add_field(name="🔄 Thay Đổi Tiền Tuyến:", value="\n".join(push_logs), inline=False)
@@ -1993,6 +2046,7 @@ async def execute_raid(channel, raid_data):
                 ("💥 Tiền Tuyến Tấn Công:", f"Toàn quân dồn **{round_player_dmg:,} DMG**!", False),
                 *([("❄️ Kỹ Năng Đột Biến:", sakuya_stun_notif, False)] if sakuya_stun_notif else []),
                 *([("🌟 Master Spark:", marisa_spark_notif, False)] if marisa_spark_notif else []),
+                *([("🦇 Ripples of 495 Years:", flandre_notif, False)] if flandre_notif else []),
                 ("👹 Boss Phase 2 Ra Đòn:", boss_action_log, False),
                 *([("🔄 Thay Đổi Tiền Tuyến & Đổi Sát Thương:", "\n".join(push_logs), False)] if push_logs else []),
                 ("🛡️ Tình Trạng Tiền Tuyến Hiện Tại:", "\n".join(round_card_status), False)
@@ -2591,6 +2645,13 @@ class EvolSelectView(discord.ui.View):
             return
         await do_evolve_interaction(interaction, self.player, 17)
 
+    @discord.ui.button(label="🦇 [#09] Tiến Hóa Flandre Ace 2 (30 Thẻ)", style=discord.ButtonStyle.danger, emoji="💥")
+    async def button_evol_flandre(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
+            return
+        await do_evolve_interaction(interaction, self.player, 9)
+
 def execute_card_evolution(player, cid: int):
     cfg = EVOL_CONFIG.get(cid)
     if not cfg:
@@ -2621,7 +2682,7 @@ def execute_card_evolution(player, cid: int):
     player["evolutions"][cid_str] = 2
     save_player(player)
 
-    color_map = {13: 0xEF4444, 16: 0x3B82F6, 17: 0xF59E0B}
+    color_map = {9: 0xDC2626, 13: 0xEF4444, 16: 0x3B82F6, 17: 0xF59E0B}
     embed = discord.Embed(
         title=f"🌟 TIẾN HÓA THÀNH CÔNG: [{cfg['ace_level']}] [#{cfg['id']:02d}] {cfg['name'].upper()}!",
         description=(
@@ -2661,6 +2722,8 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             cid_target = 16
         elif "17" in nv_clean or "marisa" in nv_clean:
             cid_target = 17
+        elif nv_clean in ("9", "#9", "09", "#09") or "flandre" in nv_clean or "flan" in nv_clean:
+            cid_target = 9
 
     if cid_target:
         success, err_msg, embed = execute_card_evolution(player, cid_target)
@@ -2687,6 +2750,10 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     marisa_cnt = player.get("inventory", {}).get("17", 0)
     marisa_ace = is_card_ace2(player, 17)
     marisa_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐" if marisa_ace else ("🟢 SẴN SÀNG TIẾN HÓA!" if marisa_cnt >= 25 else f"🔴 Chưa đủ ({marisa_cnt}/25)")
+
+    flandre_cnt = player.get("inventory", {}).get("9", 0)
+    flandre_ace = is_card_ace2(player, 9)
+    flandre_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐" if flandre_ace else ("🟢 SẴN SÀNG TIẾN HÓA!" if flandre_cnt >= 30 else f"🔴 Chưa đủ ({flandre_cnt}/30)")
 
     embed = discord.Embed(
         title="🌟 PHÒNG TIẾN HÓA NHÂN VẬT TOUHOU (EVOLUTION - ACE 2)",
@@ -2731,7 +2798,19 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             f"• Trạng thái: **{marisa_status}**\n"
             f"• Trong túi đồ: **{marisa_cnt}/25** lá *(tiến hóa xong trừ 25 lá)*\n"
             f"• Buff Ace: **+300 ATK** & **+300 HP**\n"
-            f"• Kỹ năng: **{marisa_cfg['skill_name']}** (Master Spark ×1.5 sát thương gốc, rate 30% kích hoạt 1 lần trong trận)"
+            f"• Kỹ năng: **{marisa_cfg['skill_name']}** (Master Spark ×2.0 sát thương gốc, rate 30% kích hoạt 1 lần trong trận)"
+        ),
+        inline=False
+    )
+
+    flandre_cfg = EVOL_CONFIG[9]
+    embed.add_field(
+        name=f"🦇 [#{flandre_cfg['id']:02d}] {flandre_cfg['name']} (Yêu cầu 30 thẻ):",
+        value=(
+            f"• Trạng thái: **{flandre_status}\n"
+            f"• Trong túi đồ: **{flandre_cnt}/30** lá *(tiến hóa xong trừ 30 lá)*\n"
+            f"• Buff Ace: **+300 ATK** & **+300 HP**\n"
+            f"• Kỹ năng: **{flandre_cfg['skill_name']}** (25% xóa 50% HP đối thủ / 30% HP Boss Raid, kích hoạt 1 lần trong trận, kèm GIF trực tiếp!)"
         ),
         inline=False
     )
@@ -2743,12 +2822,13 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     else:
         await ctx_or_interaction.send(embed=embed, view=view)
 
-@bot.tree.command(name="evol", description="Tiến hóa nhân vật Touhou lên Ace 2 (13: Reimu, 16: Sakuya, 17: Marisa)")
-@app_commands.describe(id_hoac_ten="Nhập số ID thẻ (13, 16 hoặc 17) hoặc chọn nhân vật")
+@bot.tree.command(name="evol", description="Tiến hóa nhân vật Touhou lên Ace 2 (9: Flandre, 13: Reimu, 16: Sakuya, 17: Marisa)")
+@app_commands.describe(id_hoac_ten="Nhập số ID thẻ (9, 13, 16 hoặc 17) hoặc chọn nhân vật")
 @app_commands.choices(id_hoac_ten=[
     app_commands.Choice(name="[#13] Reimu Hakurei (Ace 2 - Cần 20 thẻ, trừ 20 khi Ace)", value="13"),
     app_commands.Choice(name="[#16] Sakuya Izayoi (Ace 2 - Cần 30 thẻ, trừ 30 khi Ace)", value="16"),
-    app_commands.Choice(name="[#17] Marisa Kirisame (Ace 2 - Cần 25 thẻ, Master Spark x1.5)", value="17")
+    app_commands.Choice(name="[#17] Marisa Kirisame (Ace 2 - Cần 25 thẻ, Master Spark x2.0)", value="17"),
+    app_commands.Choice(name="[#09] Flandre Scarlet (Ace 2 - Cần 30 thẻ, Ripples of 495 Years)", value="9")
 ])
 async def slash_evol(interaction: discord.Interaction, id_hoac_ten: str = None):
     await handle_evol(interaction, id_hoac_ten)
@@ -3388,7 +3468,7 @@ class CharacterCheckView(discord.ui.View):
     def rebuild_items(self):
         self.clear_items()
         cid = self.current_index + 1
-        has_ace = cid in (13, 16, 17)
+        has_ace = cid in (9, 13, 16, 17)
 
         first_btn = discord.ui.Button(label="⏮️", style=discord.ButtonStyle.secondary, row=0)
         first_btn.callback = self.first_page
@@ -3432,7 +3512,7 @@ class CharacterCheckView(discord.ui.View):
         opt_part1 = []
         for i in range(1, 14):
             c = CARDS_DATA[i]
-            star = " ⭐⭐" if i in (13, 16, 17) else ""
+            star = " ⭐⭐" if i in (9, 13, 16, 17) else ""
             opt_part1.append(discord.SelectOption(
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
@@ -3450,7 +3530,7 @@ class CharacterCheckView(discord.ui.View):
         opt_part2 = []
         for i in range(14, 27):
             c = CARDS_DATA[i]
-            star = " ⭐⭐" if i in (13, 16, 17) else ""
+            star = " ⭐⭐" if i in (9, 13, 16, 17) else ""
             opt_part2.append(discord.SelectOption(
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
@@ -3471,7 +3551,7 @@ class CharacterCheckView(discord.ui.View):
         cid = self.current_index + 1
         card = CARDS_DATA[cid]
         details = CHARACTER_DETAILS.get(cid, {})
-        has_ace = cid in (13, 16, 17)
+        has_ace = cid in (9, 13, 16, 17)
         is_ace_mode = self.show_ace and has_ace
 
         player = get_player(self.user_id) if self.user_id else None
@@ -3844,6 +3924,7 @@ async def handle_battle(ctx_or_interaction):
 
     p_idx, o_idx, r_cnt = 0, 0, 0
     p_sakuya, p_reimu, p_marisa = False, False, False
+    p_flandre = False
     o_sakuya, o_reimu, o_marisa = False, False, False
     # Cờ tuyệt kỹ thẻ [T] #t1 Seiki (Battle): mỗi chiêu 1 lần/trận, tối đa 1 chiêu/lượt
     p_seiki_seal, p_seiki_spark, p_seiki_heal = False, False, False
@@ -3884,12 +3965,24 @@ async def handle_battle(ctx_or_interaction):
         if pc["cid"] == 17 and pc["is_ace2"] and not p_marisa:
             if random.random() < 0.30:
                 p_marisa = True
-                curr_pc_power = int(curr_pc_power * 1.5)
+                curr_pc_power = int(curr_pc_power * 2.0)
                 if not turn_image:
                     turn_image = EVOL_CONFIG[17]["skill_gif"]
-                msg_m = f"🌟 **[Ace 2] [#17] Marisa** tung ra **Master Spark** (30%)! Bộc phá ×1.5 sát thương gây **{curr_pc_power:,} DMG**!"
+                msg_m = f"🌟 **[Ace 2] [#17] Marisa** tung ra **Master Spark** (30%)! Bộc phá ×2.0 sát thương gây **{curr_pc_power:,} DMG**!"
                 battle_logs.append(msg_m)
                 turn_actions.append(msg_m)
+
+        # ===== ACE 2 FLANDRE - RIPPLES OF 495 YEARS (25%: XÓA 50% HP ĐỐI THỦ, 1 LẦN/TRẬN) =====
+        if pc["cid"] == 9 and pc["is_ace2"] and not p_flandre:
+            if random.random() < 0.25:
+                p_flandre = True
+                rip_dmg = int(oc["current_hp"] * 0.50)
+                oc["current_hp"] = max(0, oc["current_hp"] - rip_dmg)
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[9]["skill_gif"]
+                msg_r = f"🦇 **[Ace 2] [#09] Flandre** kích hoạt **Ripples of 495 Years** (25%)! Xóa sổ **{rip_dmg:,} HP (50% HP đối thủ)** ngay lập tức!"
+                battle_logs.append(msg_r)
+                turn_actions.append(msg_r)
 
         # ===== TUYỆT KỸ THẺ [T] #t1 SEIKI - TẤN CÔNG (Master Spark 30% x1.5 / Medicine Sign 20% hồi phục) =====
         if str(pc["cid"]).lower() == "t1" and p_seiki_used_turn != r_cnt:
@@ -3918,7 +4011,7 @@ async def handle_battle(ctx_or_interaction):
         if oc["cid"] == 17 and oc.get("is_ace2") and not o_marisa:
             if random.random() < 0.25:
                 o_marisa = True
-                curr_oc_power = int(curr_oc_power * 1.5)
+                curr_oc_power = int(curr_oc_power * 2.0)
                 if not turn_image:
                     turn_image = EVOL_CONFIG[17]["skill_gif"]
                 msg_m = f"🌟 **Đối thủ [Ace 2] [#17] Marisa** tung ra **Master Spark** (25%)! Bộc phá ×1.5 sát thương gây **{curr_oc_power:,} DMG**!"
@@ -4173,7 +4266,9 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
 
     c_idx, t_idx, r_cnt = 0, 0, 0
     c_sakuya, c_reimu, c_marisa = False, False, False
+    c_flandre = False
     t_sakuya, t_reimu, t_marisa = False, False, False
+    t_flandre = False
     # Cờ tuyệt kỹ thẻ [T] #t1 Seiki (PvP): mỗi chiêu 1 lần/trận, tối đa 1 chiêu/lượt
     c_seiki_seal, c_seiki_spark, c_seiki_heal = False, False, False
     c_seiki_used_turn = -1
@@ -4261,12 +4356,24 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
         if cc["cid"] == 17 and cc["is_ace2"] and not c_marisa:
             if random.random() < 0.30:
                 c_marisa = True
-                c_curr_power = int(c_curr_power * 1.5)
+                c_curr_power = int(c_curr_power * 2.0)
                 if not turn_image:
                     turn_image = EVOL_CONFIG[17]["skill_gif"]
-                msg_m = f"🌟 **[Ace 2] [#17] Marisa** ({challenger.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×1.5 sát thương ({c_curr_power:,} DMG)!"
+                msg_m = f"🌟 **[Ace 2] [#17] Marisa** ({challenger.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×2.0 sát thương ({c_curr_power:,} DMG)!"
                 pvp_logs.append(msg_m)
                 turn_actions.append(msg_m)
+
+        # ===== ACE 2 FLANDRE (Challenger) - RIPPLES OF 495 YEARS (25%: XÓA 50% HP ĐỐI THỦ) =====
+        if cc["cid"] == 9 and cc["is_ace2"] and not c_flandre:
+            if random.random() < 0.25:
+                c_flandre = True
+                rip_dmg = int(tc["current_hp"] * 0.50)
+                tc["current_hp"] = max(0, tc["current_hp"] - rip_dmg)
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[9]["skill_gif"]
+                msg_r = f"🦇 **[Ace 2] [#09] Flandre** ({challenger.display_name}) kích hoạt **Ripples of 495 Years** (25%)! Xóa sổ **{rip_dmg:,} HP (50% HP đối thủ)**!"
+                pvp_logs.append(msg_r)
+                turn_actions.append(msg_r)
 
         # ===== TUYỆT KỸ THẺ [T] #t1 SEIKI (Challenger) - Master Spark / Medicine Sign =====
         if str(cc["cid"]).lower() == "t1" and c_seiki_used_turn != r_cnt:
@@ -4294,12 +4401,24 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
         if tc["cid"] == 17 and tc["is_ace2"] and not t_marisa:
             if random.random() < 0.30:
                 t_marisa = True
-                t_curr_power = int(t_curr_power * 1.5)
+                t_curr_power = int(t_curr_power * 2.0)
                 if not turn_image:
                     turn_image = EVOL_CONFIG[17]["skill_gif"]
-                msg_m = f"🌟 **[Ace 2] [#17] Marisa** ({target.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×1.5 sát thương ({t_curr_power:,} DMG)!"
+                msg_m = f"🌟 **[Ace 2] [#17] Marisa** ({target.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×2.0 sát thương ({t_curr_power:,} DMG)!"
                 pvp_logs.append(msg_m)
                 turn_actions.append(msg_m)
+
+        # ===== ACE 2 FLANDRE (Target) - RIPPLES OF 495 YEARS (25%: XÓA 50% HP ĐỐI THỦ) =====
+        if tc["cid"] == 9 and tc["is_ace2"] and not t_flandre:
+            if random.random() < 0.25:
+                t_flandre = True
+                rip_dmg = int(cc["current_hp"] * 0.50)
+                cc["current_hp"] = max(0, cc["current_hp"] - rip_dmg)
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[9]["skill_gif"]
+                msg_r = f"🦇 **[Ace 2] [#09] Flandre** ({target.display_name}) kích hoạt **Ripples of 495 Years** (25%)! Xóa sổ **{rip_dmg:,} HP (50% HP đối thủ)**!"
+                pvp_logs.append(msg_r)
+                turn_actions.append(msg_r)
 
         # ===== TUYỆT KỸ THẺ [T] #t1 SEIKI (Target) - Master Spark / Medicine Sign =====
         if str(tc["cid"]).lower() == "t1" and t_seiki_used_turn != r_cnt:
@@ -5125,7 +5244,8 @@ async def handle_help(ctx_or_interaction):
 • `/evol [id_hoac_ten]`: Tiến hóa Ace 2 ⭐⭐ (Buff +300 ATK, +300 HP, trừ thẻ sau khi evol):
   - [#13] Reimu (20 thẻ): Vô Tưởng Chuyển Sinh (40% miễn sát thương).
   - [#16] Sakuya (30 thẻ): Thời Gian Đóng Băng (40% stun đối thủ).
-  - [#17] Marisa (25 thẻ): Master Spark (30% kích hoạt sát thương ×1.5 lần).
+  - [#17] Marisa (25 thẻ): Master Spark (30% kích hoạt sát thương ×2.0 lần).
+  - [#09] Flandre (30 thẻ): Ripples of 495 Years (25% xóa 50% HP đối thủ / 30% HP Boss Raid, 1 lần/trận).
 • `/trade <user> [your] [their]`: Trao đổi thẻ bài (Cú pháp `your:tên:số_lượng` và `their:tên:số_lượng`, ví dụ: `your:reimu: 1 their:sakuya:12`, giao diện xác nhận 2 bên).
 • `/team [hanh_dong] [id_the]`: Quản lý đội hình (view, add, remove). Mỗi cấp độ tăng +20 ATK và +25 HP buff!
 • `/check [id_hoac_ten]`: Soi chi tiết sức mạnh, máu và kỹ năng của 26 nhân vật Touhou + thẻ đặc biệt [T] #t1 Seiki (gõ `seiki` hoặc `t1`, kèm Ace 2, có nút ◀ ▶ lướt danh sách, menu chọn nhanh và nút 🔮 xem thẻ T1).
