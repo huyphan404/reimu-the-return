@@ -8,7 +8,7 @@
 # 4. ADMIN COMMANDS: /admin_set_level, /admin_confiscate, /admin_add_card, /admin_lock (ID: 1502579398560317441)
 # 5. LEVEL UP MỚI: Mỗi cấp tăng +50 XP (Lv.1: 100 XP, Lv.2: 150 XP, Lv.3: 200 XP...)
 # 6. EVOL UPDATE:
-#    - Luôn hiển thị ID nhân vật: [#13] Reimu Hakurei, [#16] Sakuya Izayoi
+#    - Luôn hiển thị ID nhân vật: [#14] Reimu Hakurei, [#17] Sakuya Izayoi
 #    - Lệnh /evol hỗ trợ nhập trực tiếp ID hoặc tên
 #    - Hoạt ảnh GIF hiển thị trực tiếp trong Discord (embed image & direct GIF)
 #    - Buff tối thượng Ace: Mọi nhân vật đạt Ace đều được cộng +300 ATK (Power) và +300 Máu (HP)!
@@ -19,9 +19,10 @@
 # 9. ACE 2 MỚI:
 #    - [#09] Flandre Scarlet (30 thẻ): Ripples of 495 Years — 25% xóa 50% HP đối thủ (Battle/PvP)
 #      hoặc 30% HP Boss (Raid Phase 1 & 2), kích hoạt 1 lần/trận, kèm GIF kỹ năng trực tiếp!
-#    - Buff Marisa Ace 2 [#17]: Master Spark tăng sát thương từ ×1.5 lên ×2.0!
+#    - Buff Marisa Ace 2 [#18]: Master Spark tăng sát thương từ ×1.5 lên ×2.0!
 # ==============================================================================
 
+# UPDATE 2026-09-22: THEM [#10] KOISHI KOMEIJI (Rank S - 600 ATK / 6,060 HP) - ID CU 10-26 DAY LEN 11-27, TU DONG DI TRU DU LIEU NGUOI CHOI
 import os
 import re
 import time
@@ -159,7 +160,7 @@ def get_level_progress(total_xp: int):
     return lvl, xp_in_level, needed, ratio
 
 # ==============================================================================
-# 3. TOUHOU CARDS DATABASE (26 NHÂN VẬT CHUẨN THÔNG SỐ)
+# 3. TOUHOU CARDS DATABASE (27 NHÂN VẬT CHUẨN THÔNG SỐ)
 # ==============================================================================
 CARDS_DATA = {
     1: {"id": 1, "name": "Hecatia Lapislazuli", "rank": "SS", "power": 850, "hp": 8500, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549082071178416229/hecatia_lapislazuli_touhou_drawn_by_mituba_ooka__6cf49ea15f88841c7a50e50655e920d0.png?ex=6aa9669a&is=6aa8151a&hm=3a5bc70cdd27beae06fcc8ebe8845a514d8ee28844580b64b42bf53ee836833b&=&format=webp&quality=lossless&width=769&height=1024"},
@@ -171,23 +172,24 @@ CARDS_DATA = {
     7: {"id": 7, "name": "Yuuka Kazami", "rank": "S", "power": 630, "hp": 6300, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549082802954444820/images.png?ex=6aa96748&is=6aa815c8&hm=2913b1ba8f4b29323609ba326dc029ce985d332648dd00106af461acc09b19b0&=&format=webp&quality=lossless&width=385&height=512"},
     8: {"id": 8, "name": "Yuyuko Saigyouji", "rank": "S", "power": 620, "hp": 6200, "image": "https://media.discordapp.net/attachments/1527157582115111077/1549361604234313839/images.png?ex=6aaa6af0&is=6aa91970&hm=674ea5e76356fcd1cea0a0545f5eb9a5ea5d9513216ebf6bccbc175569ab934b&=&format=webp&quality=lossless"},
     9: {"id": 9, "name": "Flandre Scarlet", "rank": "S", "power": 610, "hp": 5700, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549082626147483798/y4nci1hurauf1.png?ex=6aa9671e&is=6aa8159e&hm=a2b7e911c0855f2715e551e3ebfb0299758a3461ba0d6b14222e130bb2160ce2&=&format=webp&quality=lossless&width=361&height=512"},
-    10: {"id": 10, "name": "Kaguya Houraisan", "rank": "S", "power": 590, "hp": 6400, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549082450930696282/images.png?ex=6aa966f4&is=6aa81574&hm=363a0b7d509db06c3773fba176ede9646cfef4a95c5d2515703120d30bfc4e94&=&format=webp&quality=lossless&width=361&height=512"},
-    11: {"id": 11, "name": "Remilia Scarlet", "rank": "S", "power": 560, "hp": 5600, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549079793461633065/images.png?ex=6aa9647b&is=6aa812fb&hm=19fc0f72cd5fca597f9eeae493b1c7c663d11ffc98fff679bfd2dfdb588950e1&=&format=webp&quality=lossless"},
-    12: {"id": 12, "name": "Utsuho Reiuji (Okuu)", "rank": "S", "power": 550, "hp": 5300, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549081971169304647/images.png?ex=6aa96682&is=6aa81502&hm=6f7668c4db22133f1aa0bdc07ec7fa2c050ff4e4d220f744cd02e8cc04662c0f&=&format=webp&quality=lossless"},
-    13: {"id": 13, "name": "Reimu Hakurei", "rank": "A", "power": 500, "hp": 5000, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549078962746171463/images.png?ex=6aa963b5&is=6aa81235&hm=3fa720bd7311e4ca45789c6a0112327878135e9d9944c31c6ed2ea1f60885853&=&format=webp&quality=lossless"},
-    14: {"id": 14, "name": "Fujiwara no Mokou", "rank": "A", "power": 490, "hp": 5200, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549080689079754812/images.png?ex=6aa96550&is=6aa813d0&hm=962822a973a1e1535007f1597c0c7b468a287ec0f3d212dcf58c7ca1d9a0c5a3&=&format=webp&quality=lossless"},
-    15: {"id": 15, "name": "Kasen Ibaraki", "rank": "A", "power": 480, "hp": 4900, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549080849083924531/images.png?ex=6aa96576&is=6aa813f6&hm=802e894777a879074a59fa3dcae74394f73523e31d9b9272f19e4aff95ec36aa&=&format=webp&quality=lossless"},
-    16: {"id": 16, "name": "Sakuya Izayoi", "rank": "A", "power": 460, "hp": 4500, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549079438719844372/images.png?ex=6aa96426&is=6aa812a6&hm=263f21e095ef7f36f411473590d92012d350ab3e7b8ea13e72a443a0672a719a&=&format=webp&quality=lossless&width=307&height=512"},
-    17: {"id": 17, "name": "Marisa Kirisame", "rank": "A", "power": 450, "hp": 4400, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549081039660654612/images.png?ex=6aa965a4&is=6aa81424&hm=0ff6e9df5e0d49e483e0560bba442927385b8fa930187276b921012ad16071ad&=&format=webp&quality=lossless"},
-    18: {"id": 18, "name": "Youmu Konpaku", "rank": "B", "power": 410, "hp": 4100, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549081249036116059/images.png?ex=6aa965d6&is=6aa81456&hm=2dc107dd368c53b9c1a94c54e1cfe4a1d9b7ff6ac224dc830d6c9297d5b19e53&=&format=webp&quality=lossless"},
-    19: {"id": 19, "name": "Reisen Udongein Inaba", "rank": "B", "power": 390, "hp": 3900, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549081419777577130/images.png?ex=6aa965ff&is=6aa8147f&hm=8948e38a77f4c00d21819a6e34e2fd1a13b1853e4c92886d1e6ac3ccae6afd75&=&format=webp&quality=lossless"},
-    20: {"id": 20, "name": "Patchouli Knowledge", "rank": "B", "power": 380, "hp": 3200, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549081654948134994/images.png?ex=6aa96637&is=6aa814b7&hm=7e444589e6db73d24fb53445ea713ddb5e5bcc7c75e58ea91a619a694f0d23eb&=&format=webp&quality=lossless&width=385&height=512"},
-    21: {"id": 21, "name": "Cirno", "rank": "B", "power": 300, "hp": 3000, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549080400742195260/images.png?ex=6aa9650c&is=6aa8138c&hm=e3d3d5bf2196f4a3b0fdafcc37063c5ad16897726bdf5514be92b3f3b7719cc4&=&format=webp&quality=lossless"},
-    22: {"id": 22, "name": "Hong Meiling", "rank": "C", "power": 260, "hp": 2800, "image": "https://media.discordapp.net/attachments/1527157582115111077/1549362028601417869/images.png?ex=6aaa6b55&is=6aa919d5&hm=95498119b7d8e5f7563f28bde4efabe919878bcd40b70bf4037edb73eac009aa&=&format=webp&quality=lossless&width=363&height=512"},
-    23: {"id": 23, "name": "Rumia", "rank": "C", "power": 220, "hp": 2200, "image": "https://media.discordapp.net/attachments/1527157582115111077/1549362134440485004/images.png?ex=6aaa6b6e&is=6aa919ee&hm=860b0ede2ccf2585fb605cdef8864b141980395e5eee9d3f4f78c5692fa3827b&=&format=webp&quality=lossless&width=361&height=512"},
-    24: {"id": 24, "name": "Mystia Lorelei", "rank": "C", "power": 200, "hp": 2000, "image": "https://media.discordapp.net/attachments/1527157582115111077/1549362390641020948/84f96d0ce2f04a42a63cff967b6ec6bf.png?ex=6aaa6bab&is=6aa91a2b&hm=9c09d786873a4a70d3dbc27e10934ee7e8463964d89acc42cc1214e29e3185a2&=&format=webp&quality=lossless&width=385&height=512"},
-    25: {"id": 25, "name": "Wriggle Nightbug", "rank": "C", "power": 180, "hp": 1800, "image": "https://media.discordapp.net/attachments/1527157582115111077/1549362613421351043/images.png?ex=6aaa6be0&is=6aa91a60&hm=56779b03181c9c34cb7de4974bfdc60dc452be7d450818daeaeddbf8f36250d0&=&format=webp&quality=lossless"},
-    26: {"id": 26, "name": "Tewi Inaba", "rank": "C", "power": 150, "hp": 1500, "image": "https://media.discordapp.net/attachments/1527157582115111077/1549362906154410034/images.png?ex=6aaa6c26&is=6aa91aa6&hm=ac3b4dca861840ea6c0c5b41288fb528b56543df60081fe62ff774f75449e847&=&format=webp&quality=lossless"},
+    10: {"id": 10, "name": "Koishi Komeiji", "rank": "S", "power": 600, "hp": 6060, "image": "https://media.discordapp.net/attachments/1543072032034521228/1551877562995576952/images.png?ex=6ab3921b&is=6ab2409b&hm=52af3a3289d15e889b79325bc7d9a45403be6fb07cf7a4ab85b1f3a131da2d56&=&format=webp&quality=lossless"},
+    11: {"id": 11, "name": "Kaguya Houraisan", "rank": "S", "power": 590, "hp": 6400, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549082450930696282/images.png?ex=6aa966f4&is=6aa81574&hm=363a0b7d509db06c3773fba176ede9646cfef4a95c5d2515703120d30bfc4e94&=&format=webp&quality=lossless&width=361&height=512"},
+    12: {"id": 12, "name": "Remilia Scarlet", "rank": "S", "power": 560, "hp": 5600, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549079793461633065/images.png?ex=6aa9647b&is=6aa812fb&hm=19fc0f72cd5fca597f9eeae493b1c7c663d11ffc98fff679bfd2dfdb588950e1&=&format=webp&quality=lossless"},
+    13: {"id": 13, "name": "Utsuho Reiuji (Okuu)", "rank": "S", "power": 550, "hp": 5300, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549081971169304647/images.png?ex=6aa96682&is=6aa81502&hm=6f7668c4db22133f1aa0bdc07ec7fa2c050ff4e4d220f744cd02e8cc04662c0f&=&format=webp&quality=lossless"},
+    14: {"id": 14, "name": "Reimu Hakurei", "rank": "A", "power": 500, "hp": 5000, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549078962746171463/images.png?ex=6aa963b5&is=6aa81235&hm=3fa720bd7311e4ca45789c6a0112327878135e9d9944c31c6ed2ea1f60885853&=&format=webp&quality=lossless"},
+    15: {"id": 15, "name": "Fujiwara no Mokou", "rank": "A", "power": 490, "hp": 5200, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549080689079754812/images.png?ex=6aa96550&is=6aa813d0&hm=962822a973a1e1535007f1597c0c7b468a287ec0f3d212dcf58c7ca1d9a0c5a3&=&format=webp&quality=lossless"},
+    16: {"id": 16, "name": "Kasen Ibaraki", "rank": "A", "power": 480, "hp": 4900, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549080849083924531/images.png?ex=6aa96576&is=6aa813f6&hm=802e894777a879074a59fa3dcae74394f73523e31d9b9272f19e4aff95ec36aa&=&format=webp&quality=lossless"},
+    17: {"id": 17, "name": "Sakuya Izayoi", "rank": "A", "power": 460, "hp": 4500, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549079438719844372/images.png?ex=6aa96426&is=6aa812a6&hm=263f21e095ef7f36f411473590d92012d350ab3e7b8ea13e72a443a0672a719a&=&format=webp&quality=lossless&width=307&height=512"},
+    18: {"id": 18, "name": "Marisa Kirisame", "rank": "A", "power": 450, "hp": 4400, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549081039660654612/images.png?ex=6aa965a4&is=6aa81424&hm=0ff6e9df5e0d49e483e0560bba442927385b8fa930187276b921012ad16071ad&=&format=webp&quality=lossless"},
+    19: {"id": 19, "name": "Youmu Konpaku", "rank": "B", "power": 410, "hp": 4100, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549081249036116059/images.png?ex=6aa965d6&is=6aa81456&hm=2dc107dd368c53b9c1a94c54e1cfe4a1d9b7ff6ac224dc830d6c9297d5b19e53&=&format=webp&quality=lossless"},
+    20: {"id": 20, "name": "Reisen Udongein Inaba", "rank": "B", "power": 390, "hp": 3900, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549081419777577130/images.png?ex=6aa965ff&is=6aa8147f&hm=8948e38a77f4c00d21819a6e34e2fd1a13b1853e4c92886d1e6ac3ccae6afd75&=&format=webp&quality=lossless"},
+    21: {"id": 21, "name": "Patchouli Knowledge", "rank": "B", "power": 380, "hp": 3200, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549081654948134994/images.png?ex=6aa96637&is=6aa814b7&hm=7e444589e6db73d24fb53445ea713ddb5e5bcc7c75e58ea91a619a694f0d23eb&=&format=webp&quality=lossless&width=385&height=512"},
+    22: {"id": 22, "name": "Cirno", "rank": "B", "power": 300, "hp": 3000, "image": "https://media.discordapp.net/attachments/1533528571509866497/1549080400742195260/images.png?ex=6aa9650c&is=6aa8138c&hm=e3d3d5bf2196f4a3b0fdafcc37063c5ad16897726bdf5514be92b3f3b7719cc4&=&format=webp&quality=lossless"},
+    23: {"id": 23, "name": "Hong Meiling", "rank": "C", "power": 260, "hp": 2800, "image": "https://media.discordapp.net/attachments/1527157582115111077/1549362028601417869/images.png?ex=6aaa6b55&is=6aa919d5&hm=95498119b7d8e5f7563f28bde4efabe919878bcd40b70bf4037edb73eac009aa&=&format=webp&quality=lossless&width=363&height=512"},
+    24: {"id": 24, "name": "Rumia", "rank": "C", "power": 220, "hp": 2200, "image": "https://media.discordapp.net/attachments/1527157582115111077/1549362134440485004/images.png?ex=6aaa6b6e&is=6aa919ee&hm=860b0ede2ccf2585fb605cdef8864b141980395e5eee9d3f4f78c5692fa3827b&=&format=webp&quality=lossless&width=361&height=512"},
+    25: {"id": 25, "name": "Mystia Lorelei", "rank": "C", "power": 200, "hp": 2000, "image": "https://media.discordapp.net/attachments/1527157582115111077/1549362390641020948/84f96d0ce2f04a42a63cff967b6ec6bf.png?ex=6aaa6bab&is=6aa91a2b&hm=9c09d786873a4a70d3dbc27e10934ee7e8463964d89acc42cc1214e29e3185a2&=&format=webp&quality=lossless&width=385&height=512"},
+    26: {"id": 26, "name": "Wriggle Nightbug", "rank": "C", "power": 180, "hp": 1800, "image": "https://media.discordapp.net/attachments/1527157582115111077/1549362613421351043/images.png?ex=6aaa6be0&is=6aa91a60&hm=56779b03181c9c34cb7de4974bfdc60dc452be7d450818daeaeddbf8f36250d0&=&format=webp&quality=lossless"},
+    27: {"id": 27, "name": "Tewi Inaba", "rank": "C", "power": 150, "hp": 1500, "image": "https://media.discordapp.net/attachments/1527157582115111077/1549362906154410034/images.png?ex=6aaa6c26&is=6aa91aa6&hm=ac3b4dca861840ea6c0c5b41288fb528b56543df60081fe62ff774f75449e847&=&format=webp&quality=lossless"},
     "t1": {
         "id": "t1",
         "name": "Seiki đệ pháp toàn năng",
@@ -303,11 +305,11 @@ boss_cooldown_until = 0.0
 # CƠ CHẾ TIẾN HÓA ACE 2 (KÈM ID NHÂN VẬT & DIRECT GIF HIỂN THỊ TRỰC TIẾP)
 # ==============================================================================
 EVOL_CONFIG = {
-    13: {
-        "id": 13,
+    14: {
+        "id": 14,
         "key": "reimu",
         "name": "Reimu Hakurei",
-        "title": "[#13] Reimu Hakurei - Ace 2 ⭐⭐",
+        "title": "[#14] Reimu Hakurei - Ace 2 ⭐⭐",
         "ace_level": "Ace 2 ⭐⭐",
         "required_cards": 20,
         "required_pulls": 20,
@@ -318,11 +320,11 @@ EVOL_CONFIG = {
         "bonus_power": 300,
         "bonus_hp": 300
     },
-    16: {
-        "id": 16,
+    17: {
+        "id": 17,
         "key": "sakuya",
         "name": "Sakuya Izayoi",
-        "title": "[#16] Sakuya Izayoi - Ace 2 ⭐⭐",
+        "title": "[#17] Sakuya Izayoi - Ace 2 ⭐⭐",
         "ace_level": "Ace 2 ⭐⭐",
         "required_cards": 30,
         "required_pulls": 30,
@@ -333,11 +335,11 @@ EVOL_CONFIG = {
         "bonus_power": 300,
         "bonus_hp": 300
     },
-    17: {
-        "id": 17,
+    18: {
+        "id": 18,
         "key": "marisa",
         "name": "Marisa Kirisame",
-        "title": "[#17] Marisa Kirisame - Ace 2 ⭐⭐",
+        "title": "[#18] Marisa Kirisame - Ace 2 ⭐⭐",
         "ace_level": "Ace 2 ⭐⭐",
         "required_cards": 25,
         "required_pulls": 25,
@@ -364,13 +366,13 @@ EVOL_CONFIG = {
         "bonus_hp": 300
     }
 }
-EVOL_CONFIG["13"] = EVOL_CONFIG[13]
-EVOL_CONFIG["16"] = EVOL_CONFIG[16]
+EVOL_CONFIG["14"] = EVOL_CONFIG[14]
 EVOL_CONFIG["17"] = EVOL_CONFIG[17]
+EVOL_CONFIG["18"] = EVOL_CONFIG[18]
 EVOL_CONFIG["9"] = EVOL_CONFIG[9]
 
 # ==============================================================================
-# 3.1 CHI TIẾT NĂNG LỰC & KỸ NĂNG 26 NHÂN VẬT TOUHOU (CHO TÍNH NĂNG CHECK NHÂN VẬT)
+# 3.1 CHI TIẾT NĂNG LỰC & KỸ NĂNG 27 NHÂN VẬT TOUHOU (CHO TÍNH NĂNG CHECK NHÂN VẬT)
 # ==============================================================================
 CHARACTER_DETAILS = {
     1: {"title": "Nữ Thần Địa Ngục Tam Thân", "skill_name": "Tam Giới Hỗn Mang", "skill_desc": "Nữ thần tự do sở hữu 3 thân xác (Trái Đất, Mặt Trăng, Địa Ngục). Sát thương và sinh lực áp đảo hàng đầu Gensokyo (850 ATK / 8,500 HP)."},
@@ -382,23 +384,24 @@ CHARACTER_DETAILS = {
     7: {"title": "Bạo Chúa Thái Dương Hoa", "skill_name": "Hồng Hoa Diệt Tuyệt", "skill_desc": "Yêu quái hoa lâu đời nhất Gensokyo, bắn ra những chùm tia Master Spark hồng hoa hủy diệt kẻ xâm phạm (630 ATK / 6,300 HP)."},
     8: {"title": "U Linh Bạch Ngọc Lâu", "skill_name": "Bướm Ma Dẫn Hồn", "skill_desc": "Công chúa u linh cai quản cõi chết, dẫn dụ linh hồn bước vào giấc ngủ vĩnh hằng bằng điệu múa bướm ma quái (620 ATK / 6,200 HP)."},
     9: {"title": "Ác Ma Cuồng Loạn", "skill_name": "Tuyệt Đối Phá Hủy (Kyū)", "skill_desc": "Bóp nát 'mục tiêu tồn tại' trong lòng bàn tay, giải phóng sức mạnh ma cà rồng hủy diệt không thể ngăn cản (610 ATK / 5,700 HP). [Ace 2 ⭐⭐]: Ripples of 495 Years (25%) — Xóa sổ 50% HP đối thủ (Battle/PvP) hoặc 30% HP Boss (Raid), kích hoạt 1 lần trong trận!"},
-    10: {"title": "Công Chúa Ánh Trăng", "skill_name": "Vĩnh Cửu & Tức Thời", "skill_desc": "Công chúa Nguyệt Cung lưu đày tại Eientei, điều khiển dòng chảy thời gian vĩnh cửu và tức thời cùng thần bảo quý giá (590 ATK / 6,400 HP)."},
-    11: {"title": "Chúa Tể Hồng Ma Quán", "skill_name": "Thương Đỏ Gungnir (Vận Mệnh)", "skill_desc": "Ma cà rồng kiêu hãnh bẻ cong số mệnh kẻ thù, phóng ra ngọn giáo ánh sáng đỏ Gungnir xuyên thủng phòng ngự (560 ATK / 5,600 HP)."},
-    12: {"title": "Mặt Trời Địa Ngục", "skill_name": "Hạch Tâm Phản Ứng (Nuclear)", "skill_desc": "Mang sức mạnh thần mặt trời Yatagarasu, thi triển hạch tâm nhiệt hạch thiêu đốt toàn bộ chiến trường (550 ATK / 5,300 HP)."},
-    13: {"title": "Vu Nữ Đền Hakurei", "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh", "skill_desc": "Bay lượn khỏi thực tại và trừ tà ma thuật. [Ace 2 ⭐⭐]: Miễn toàn bộ sát thương 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
-    14: {"title": "Phượng Hoàng Bất Tử", "skill_name": "Phượng Hoàng Bất Diệt", "skill_desc": "Cơ thể bất tử do uống tiên dược Hourai, triệu hồi ngọn lửa phượng hoàng thiêu đốt kẻ địch mà không hề sợ chết (490 ATK / 5,200 HP)."},
-    15: {"title": "Tiên Nhân Một Tay", "skill_name": "Thần Thú Giáng Lâm", "skill_desc": "Một trong Tứ Thiên Vương ẩn mình dưới thân phận tiên nhân dạy dỗ yêu quái và điều khiển muôn loài linh thú (480 ATK / 4,900 HP)."},
-    16: {"title": "Hầu Gái Trưởng Hoàn Hảo", "skill_name": "Thời Gian Đóng Băng", "skill_desc": "Bậc thầy phi dao bạc và không-thời gian. [Ace 2 ⭐⭐]: Đóng băng thời gian làm đối thủ/boss bị STUN mất lượt 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
-    17: {"title": "Phù Thủy Bình Thường", "skill_name": "Bát Quái Lô - Master Spark", "skill_desc": "Ma thuật ánh sáng và nhiệt độ cao. [Ace 2 ⭐⭐]: Bắn đại bác ma thuật Master Spark gây sát thương ×2.0 lần sát thương gốc (Tỷ lệ 30% 1 lần trong trận)!"},
-    18: {"title": "Kiếm Sĩ Nửa Người Nửa Ma", "skill_name": "Song Kiếm Lâu Quan & Bạch Lâu", "skill_desc": "Thần tốc kiếm đạo: Lâu Quan Kiếm chém vạn vật và Bạch Lâu Kiếm chém tan ảo tưởng mê muội (410 ATK / 4,100 HP)."},
-    19: {"title": "Thỏ Ngọc Chiến Binh", "skill_name": "Hồng Nhãn Cuồng Loạn", "skill_desc": "Thỏ ngọc từ Mặt Trăng phát sóng ảo giác từ ánh mắt đỏ rực làm hoa mắt và rối loạn phương hướng đối phương (390 ATK / 3,900 HP)."},
-    20: {"title": "Đại Ma Đạo Sĩ Thất Diệu", "skill_name": "Thất Diệu Ma Thuật", "skill_desc": "Phù thủy thông thái trong thư viện ngầm, kết hợp 7 nguyên tố tự nhiên tạo thành ma trận công thủ liên hoàn (380 ATK / 3,200 HP)."},
-    21: {"title": "Đệ Nhất Băng Tiên", "skill_name": "Perfect Freeze (Băng Đạn)", "skill_desc": "Tiên tử băng giá mạnh nhất Hồ Sương Mù, đóng băng mọi vật thể và phóng mưa mảnh băng sắc nhọn (300 ATK / 3,000 HP)."},
-    22: {"title": "Thủ Môn Hồng Ma Quán", "skill_name": "Thái Cực Khí Công Quyền", "skill_desc": "Nữ võ sư tinh thông thể thuật khí công ngũ sắc, tạo rào chắn phòng thủ kiên cố bảo vệ tiền tuyến (260 ATK / 2,800 HP)."},
-    23: {"title": "Yêu Quái Hoàng Hôn", "skill_name": "Dạ Tối Kết Giới", "skill_desc": "Yêu quái bóng đêm bao bọc mình trong vòm đêm thuần túy, tung những đòn cắn xé bất ngờ từ bóng tối (220 ATK / 2,200 HP)."},
-    24: {"title": "Dạ Tước Huyễn Ca", "skill_name": "Huyễn Ca Dạ Manh", "skill_desc": "Giọng hát chim đêm mê hoặc khiến đối thủ bị chứng quáng gà và suy giảm độ chính xác đòn đánh (200 ATK / 2,000 HP)."},
-    25: {"title": "Đom Đóm Phát Quang", "skill_name": "Đom Đóm Lôi Triệu", "skill_desc": "Điều khiển hàng triệu côn trùng dạ quang tạo nên biển ánh sáng mê ảo làm hoa mắt đối thủ (180 ATK / 1,800 HP)."},
-    26: {"title": "Thỏ Rừng May Mắn", "skill_name": "Vận May Thần Tài", "skill_desc": "Thủ lĩnh thỏ rừng Inaba tinh nghịch, ban phát vận may cực lớn cho bản thân và đồng đội (150 ATK / 1,500 HP)."},
+    10: {"title": "Tiểu Thư Tâm Trí Khép Kín", "skill_name": "Tâm Linh Cảm Ứng (Subconscious)", "skill_desc": "Em gái của Satori Komeiji, tự khép kín trái tim để thoát khỏi sự dị nghị của thế gian. Lướt đi vô thức khắp Gensokyo và tung những đòn đánh lén từ tiềm thức mà không một ai kịp lường trước (600 ATK / 6,060 HP)."},
+    11: {"title": "Công Chúa Ánh Trăng", "skill_name": "Vĩnh Cửu & Tức Thời", "skill_desc": "Công chúa Nguyệt Cung lưu đày tại Eientei, điều khiển dòng chảy thời gian vĩnh cửu và tức thời cùng thần bảo quý giá (590 ATK / 6,400 HP)."},
+    12: {"title": "Chúa Tể Hồng Ma Quán", "skill_name": "Thương Đỏ Gungnir (Vận Mệnh)", "skill_desc": "Ma cà rồng kiêu hãnh bẻ cong số mệnh kẻ thù, phóng ra ngọn giáo ánh sáng đỏ Gungnir xuyên thủng phòng ngự (560 ATK / 5,600 HP)."},
+    13: {"title": "Mặt Trời Địa Ngục", "skill_name": "Hạch Tâm Phản Ứng (Nuclear)", "skill_desc": "Mang sức mạnh thần mặt trời Yatagarasu, thi triển hạch tâm nhiệt hạch thiêu đốt toàn bộ chiến trường (550 ATK / 5,300 HP)."},
+    14: {"title": "Vu Nữ Đền Hakurei", "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh", "skill_desc": "Bay lượn khỏi thực tại và trừ tà ma thuật. [Ace 2 ⭐⭐]: Miễn toàn bộ sát thương 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
+    15: {"title": "Phượng Hoàng Bất Tử", "skill_name": "Phượng Hoàng Bất Diệt", "skill_desc": "Cơ thể bất tử do uống tiên dược Hourai, triệu hồi ngọn lửa phượng hoàng thiêu đốt kẻ địch mà không hề sợ chết (490 ATK / 5,200 HP)."},
+    16: {"title": "Tiên Nhân Một Tay", "skill_name": "Thần Thú Giáng Lâm", "skill_desc": "Một trong Tứ Thiên Vương ẩn mình dưới thân phận tiên nhân dạy dỗ yêu quái và điều khiển muôn loài linh thú (480 ATK / 4,900 HP)."},
+    17: {"title": "Hầu Gái Trưởng Hoàn Hảo", "skill_name": "Thời Gian Đóng Băng", "skill_desc": "Bậc thầy phi dao bạc và không-thời gian. [Ace 2 ⭐⭐]: Đóng băng thời gian làm đối thủ/boss bị STUN mất lượt 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
+    18: {"title": "Phù Thủy Bình Thường", "skill_name": "Bát Quái Lô - Master Spark", "skill_desc": "Ma thuật ánh sáng và nhiệt độ cao. [Ace 2 ⭐⭐]: Bắn đại bác ma thuật Master Spark gây sát thương ×2.0 lần sát thương gốc (Tỷ lệ 30% 1 lần trong trận)!"},
+    19: {"title": "Kiếm Sĩ Nửa Người Nửa Ma", "skill_name": "Song Kiếm Lâu Quan & Bạch Lâu", "skill_desc": "Thần tốc kiếm đạo: Lâu Quan Kiếm chém vạn vật và Bạch Lâu Kiếm chém tan ảo tưởng mê muội (410 ATK / 4,100 HP)."},
+    20: {"title": "Thỏ Ngọc Chiến Binh", "skill_name": "Hồng Nhãn Cuồng Loạn", "skill_desc": "Thỏ ngọc từ Mặt Trăng phát sóng ảo giác từ ánh mắt đỏ rực làm hoa mắt và rối loạn phương hướng đối phương (390 ATK / 3,900 HP)."},
+    21: {"title": "Đại Ma Đạo Sĩ Thất Diệu", "skill_name": "Thất Diệu Ma Thuật", "skill_desc": "Phù thủy thông thái trong thư viện ngầm, kết hợp 7 nguyên tố tự nhiên tạo thành ma trận công thủ liên hoàn (380 ATK / 3,200 HP)."},
+    22: {"title": "Đệ Nhất Băng Tiên", "skill_name": "Perfect Freeze (Băng Đạn)", "skill_desc": "Tiên tử băng giá mạnh nhất Hồ Sương Mù, đóng băng mọi vật thể và phóng mưa mảnh băng sắc nhọn (300 ATK / 3,000 HP)."},
+    23: {"title": "Thủ Môn Hồng Ma Quán", "skill_name": "Thái Cực Khí Công Quyền", "skill_desc": "Nữ võ sư tinh thông thể thuật khí công ngũ sắc, tạo rào chắn phòng thủ kiên cố bảo vệ tiền tuyến (260 ATK / 2,800 HP)."},
+    24: {"title": "Yêu Quái Hoàng Hôn", "skill_name": "Dạ Tối Kết Giới", "skill_desc": "Yêu quái bóng đêm bao bọc mình trong vòm đêm thuần túy, tung những đòn cắn xé bất ngờ từ bóng tối (220 ATK / 2,200 HP)."},
+    25: {"title": "Dạ Tước Huyễn Ca", "skill_name": "Huyễn Ca Dạ Manh", "skill_desc": "Giọng hát chim đêm mê hoặc khiến đối thủ bị chứng quáng gà và suy giảm độ chính xác đòn đánh (200 ATK / 2,000 HP)."},
+    26: {"title": "Đom Đóm Phát Quang", "skill_name": "Đom Đóm Lôi Triệu", "skill_desc": "Điều khiển hàng triệu côn trùng dạ quang tạo nên biển ánh sáng mê ảo làm hoa mắt đối thủ (180 ATK / 1,800 HP)."},
+    27: {"title": "Thỏ Rừng May Mắn", "skill_name": "Vận May Thần Tài", "skill_desc": "Thủ lĩnh thỏ rừng Inaba tinh nghịch, ban phát vận may cực lớn cho bản thân và đồng đội (150 ATK / 1,500 HP)."},
     "t1": {
         "title": "Dị Tà Đệ Nhất Pháp Sư (Nhóm T-Đặc Biệt)",
         "skill_name": "Tam Đại Tuyệt Kỹ (Fantasy Seal • Master Spark • Medicine Sign)",
@@ -489,6 +492,7 @@ def get_default_player(user_id, username):
             "seiki": 0  # KHO MẢNH ĐẶC BIỆT SEIKI (10 MẢNH = 1 THẺ SEIKI T1)
         },
         "language": "vi",
+        "id_schema": 2,
         "battles_won": 0,
         "battles_total": 0,
         "last_battle_time": 0.0,
@@ -596,7 +600,7 @@ def update_daily_quest_progress(player: dict, quest_type: str, amount: int = 1) 
     return notifs
 
 def format_card_id(cid) -> str:
-    """Format ID thẻ hiển thị đẹp mắt: #01, #13, hoặc #t1 đối với thẻ nhóm T."""
+    """Format ID thẻ hiển thị đẹp mắt: #01, #14, hoặc #t1 đối với thẻ nhóm T."""
     if cid is None:
         return "#??"
     try:
@@ -721,6 +725,33 @@ def get_player(user_id, username="Visitor"):
     if "pull_used" not in data["tutorial"]:
         data["tutorial"]["pull_used"] = data["tutorial"].get("completed", False)
     
+    # ===== HỆ THỐNG DI TRÚ ID - THÊM [#10] KOISHI (ID cũ 10-26 -> 11-27), CHỈ TỰ ĐỘNG CHẠY 1 LẦN =====
+    if data.get("id_schema", 1) < 2:
+        def _migrate_id_key(k):
+            try:
+                ik = int(k)
+                if 10 <= ik <= 26:
+                    return str(ik + 1)
+            except (ValueError, TypeError):
+                pass
+            return str(k)
+
+        def _migrate_id_list(lst):
+            out = []
+            for x in (lst or []):
+                nk = _migrate_id_key(x)
+                out.append(int(nk) if nk.isdigit() else nk)
+            return out
+
+        data["inventory"] = {_migrate_id_key(k): v for k, v in data.get("inventory", {}).items()}
+        data["pull_stats"] = {_migrate_id_key(k): v for k, v in data.get("pull_stats", {}).items()}
+        data["evolutions"] = {_migrate_id_key(k): v for k, v in data.get("evolutions", {}).items()}
+        data["unlocked_cards"] = _migrate_id_list(data.get("unlocked_cards", []))
+        data["locked_cards"] = _migrate_id_list(data.get("locked_cards", []))
+        data["team"] = [x for x in _migrate_id_list(data.get("team", [])) if x in CARDS_DATA]
+        data["id_schema"] = 2
+        save_player(data)
+
     # TỰ ĐỘNG RESET NHIỆM VỤ NGÀY KHI QUA NGÀY MỚI (00:00 GMT+7)
     ensure_daily_quests(data)
 
@@ -1027,12 +1058,12 @@ class OpponentTeamView(discord.ui.View):
         )
 
         skill_text = c.get("skill") or "Tấn công Danmaku cơ bản"
-        if is_ace and c["cid"] in [9, 13, 16, 17]:
-            if c["cid"] == 13:
+        if is_ace and c["cid"] in [9, 14, 17, 18]:
+            if c["cid"] == 14:
                 skill_text += "\n🛡️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Vô Tưởng Chuyển Sinh* né toàn bộ sát thương."
-            elif c["cid"] == 16:
-                skill_text += "\n⏳ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Thời Gian Đóng Băng* khiến đối phương mất lượt."
             elif c["cid"] == 17:
+                skill_text += "\n⏳ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Thời Gian Đóng Băng* khiến đối phương mất lượt."
+            elif c["cid"] == 18:
                 skill_text += "\n🌟 **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Master Spark* bộc phá ×2.0 sát thương."
             elif c["cid"] == 9:
                 skill_text += "\n🦇 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Ripples of 495 Years* xóa sổ 50% HP đối thủ (30% HP Boss trong Raid, 1 lần/trận)."
@@ -1472,12 +1503,12 @@ async def execute_raid(channel, raid_data):
 
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
-            if ac["cid"] == 16 and ac["is_ace2"] and not c["sakuya_stun_used"]:
+            if ac["cid"] == 17 and ac["is_ace2"] and not c["sakuya_stun_used"]:
                 if random.random() < 0.40:
                     c["sakuya_stun_used"] = True
                     boss_stunned = True
-                    turn_image = EVOL_CONFIG[16]["skill_gif"]
-                    sakuya_stun_notif = f"⏳ **[Ace 2] [#16] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss bị **STUN** mất lượt!"
+                    turn_image = EVOL_CONFIG[17]["skill_gif"]
+                    sakuya_stun_notif = f"⏳ **[Ace 2] [#17] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss bị **STUN** mất lượt!"
                     break
 
         seiki_invul = False
@@ -1503,13 +1534,13 @@ async def execute_raid(channel, raid_data):
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             card_dmg = ac["power"]
-            if ac["cid"] == 17 and ac["is_ace2"] and not c.get("marisa_spark_used"):
+            if ac["cid"] == 18 and ac["is_ace2"] and not c.get("marisa_spark_used"):
                 if random.random() < 0.30:
                     c["marisa_spark_used"] = True
                     card_dmg = int(card_dmg * 2.0)
                     if not turn_image:
-                        turn_image = EVOL_CONFIG[17]["skill_gif"]
-                    marisa_spark_notif = f"🌟 **[Ace 2] [#17] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.0 giáng **{card_dmg:,} DMG** lên Boss!"
+                        turn_image = EVOL_CONFIG[18]["skill_gif"]
+                    marisa_spark_notif = f"🌟 **[Ace 2] [#18] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.0 giáng **{card_dmg:,} DMG** lên Boss!"
 
             # KỸ NĂNG ACE 2 FLANDRE - RIPPLES OF 495 YEARS (25%: LẤY 30% HP BOSS, 1 LẦN/TRẬN)
             if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
@@ -1566,12 +1597,12 @@ async def execute_raid(channel, raid_data):
                     for c in active_combatants:
                         ac = c["team_cards"][c["current_card_index"]]
                         invul = False
-                        if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                        if ac["cid"] == 14 and ac["is_ace2"] and not c["reimu_invul_used"]:
                             if random.random() < 0.40:
                                 c["reimu_invul_used"] = True
                                 invul = True
-                                turn_image = EVOL_CONFIG[13]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                turn_image = EVOL_CONFIG[14]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used"):
                             if c.get("seiki_used_turn") != p1_rounds and random.random() < 0.40:
                                 c["seiki_seal_used"] = True
@@ -1593,12 +1624,12 @@ async def execute_raid(channel, raid_data):
                     for c in active_combatants:
                         ac = c["team_cards"][c["current_card_index"]]
                         invul = False
-                        if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                        if ac["cid"] == 14 and ac["is_ace2"] and not c["reimu_invul_used"]:
                             if random.random() < 0.40:
                                 c["reimu_invul_used"] = True
                                 invul = True
-                                turn_image = EVOL_CONFIG[13]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                turn_image = EVOL_CONFIG[14]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used"):
                             if c.get("seiki_used_turn") != p1_rounds and random.random() < 0.40:
                                 c["seiki_seal_used"] = True
@@ -1615,12 +1646,12 @@ async def execute_raid(channel, raid_data):
                     for c in active_combatants:
                         ac = c["team_cards"][c["current_card_index"]]
                         invul = False
-                        if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                        if ac["cid"] == 14 and ac["is_ace2"] and not c["reimu_invul_used"]:
                             if random.random() < 0.40:
                                 c["reimu_invul_used"] = True
                                 invul = True
-                                turn_image = EVOL_CONFIG[13]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                turn_image = EVOL_CONFIG[14]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used"):
                             if c.get("seiki_used_turn") != p1_rounds and random.random() < 0.40:
                                 c["seiki_seal_used"] = True
@@ -1642,13 +1673,13 @@ async def execute_raid(channel, raid_data):
                     for c in active_combatants:
                         ac = c["team_cards"][c["current_card_index"]]
                         invul = False
-                        if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                        if ac["cid"] == 14 and ac["is_ace2"] and not c["reimu_invul_used"]:
                             if random.random() < 0.40:
                                 c["reimu_invul_used"] = True
                                 invul = True
                                 if not turn_image or turn_image == BOSS_SKILL_CONFIG["gif"]:
-                                    turn_image = EVOL_CONFIG[13]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                    turn_image = EVOL_CONFIG[14]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used"):
                             if c.get("seiki_used_turn") != p1_rounds and random.random() < 0.40:
                                 c["seiki_seal_used"] = True
@@ -1665,12 +1696,12 @@ async def execute_raid(channel, raid_data):
                     for c in active_combatants:
                         ac = c["team_cards"][c["current_card_index"]]
                         invul = False
-                        if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                        if ac["cid"] == 14 and ac["is_ace2"] and not c["reimu_invul_used"]:
                             if random.random() < 0.40:
                                 c["reimu_invul_used"] = True
                                 invul = True
-                                turn_image = EVOL_CONFIG[13]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                turn_image = EVOL_CONFIG[14]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used"):
                             if c.get("seiki_used_turn") != p1_rounds and random.random() < 0.40:
                                 c["seiki_seal_used"] = True
@@ -1877,25 +1908,25 @@ async def execute_raid(channel, raid_data):
 
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
-            if ac["cid"] == 16 and ac["is_ace2"] and not c["sakuya_stun_used"]:
+            if ac["cid"] == 17 and ac["is_ace2"] and not c["sakuya_stun_used"]:
                 if random.random() < 0.40:
                     c["sakuya_stun_used"] = True
                     boss_stunned = True
-                    turn_image = EVOL_CONFIG[16]["skill_gif"]
-                    sakuya_stun_notif = f"⏳ **[Ace 2] [#16] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss Phase 2 bị **STUN**!"
+                    turn_image = EVOL_CONFIG[17]["skill_gif"]
+                    sakuya_stun_notif = f"⏳ **[Ace 2] [#17] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss Phase 2 bị **STUN**!"
                     break
 
         round_player_dmg = 0
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             card_dmg = ac["power"]
-            if ac["cid"] == 17 and ac["is_ace2"] and not c.get("marisa_spark_used"):
+            if ac["cid"] == 18 and ac["is_ace2"] and not c.get("marisa_spark_used"):
                 if random.random() < 0.30:
                     c["marisa_spark_used"] = True
                     card_dmg = int(card_dmg * 2.0)
                     if not turn_image:
-                        turn_image = EVOL_CONFIG[17]["skill_gif"]
-                    marisa_spark_notif = f"🌟 **[Ace 2] [#17] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.0 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
+                        turn_image = EVOL_CONFIG[18]["skill_gif"]
+                    marisa_spark_notif = f"🌟 **[Ace 2] [#18] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.0 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
 
             # KỸ NĂNG ACE 2 FLANDRE - RIPPLES OF 495 YEARS (25%: LẤY 30% HP BOSS PHASE 2, 1 LẦN/TRẬN)
             if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
@@ -1943,13 +1974,13 @@ async def execute_raid(channel, raid_data):
                 for c in active_combatants:
                     ac = c["team_cards"][c["current_card_index"]]
                     invul = False
-                    if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                    if ac["cid"] == 14 and ac["is_ace2"] and not c["reimu_invul_used"]:
                         if random.random() < 0.40:
                             c["reimu_invul_used"] = True
                             invul = True
                             if not turn_image or turn_image == BOSS_SKILL_CONFIG["gif"]:
-                                turn_image = EVOL_CONFIG[13]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                turn_image = EVOL_CONFIG[14]["skill_gif"]
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used"):
                         if c.get("seiki_used_turn") != p2_rounds and random.random() < 0.40:
                             c["seiki_seal_used"] = True
@@ -1966,12 +1997,12 @@ async def execute_raid(channel, raid_data):
                 for c in active_combatants:
                     ac = c["team_cards"][c["current_card_index"]]
                     invul = False
-                    if ac["cid"] == 13 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                    if ac["cid"] == 14 and ac["is_ace2"] and not c["reimu_invul_used"]:
                         if random.random() < 0.40:
                             c["reimu_invul_used"] = True
                             invul = True
-                            turn_image = EVOL_CONFIG[13]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#13] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                            turn_image = EVOL_CONFIG[14]["skill_gif"]
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used"):
                         if c.get("seiki_used_turn") != p2_rounds and random.random() < 0.40:
                             c["seiki_seal_used"] = True
@@ -2308,7 +2339,7 @@ async def prefix_admin_set_level(ctx, member: discord.Member, level: int):
     await ctx.send(f"✅ Đã set level cho {member.mention} thành **Lv.{level}** (Đồng bộ: {target['xp']:,} XP).")
 
 @bot.tree.command(name="admin_confiscate", description="[CHỦ BOT DUY NHẤT] Tước đoạt thẻ bài của người chơi (trừng phạt cheat bẩn)")
-@app_commands.describe(nguoi_dung="Người chơi bị xử phạt", id_the="ID thẻ từ 1-26 (hoặc nhập 0 để tịch thu TOÀN BỘ)", so_luong="Số lượng thẻ (0 = tịch thu hết)")
+@app_commands.describe(nguoi_dung="Người chơi bị xử phạt", id_the="ID thẻ từ 1-27 (hoặc nhập 0 để tịch thu TOÀN BỘ)", so_luong="Số lượng thẻ (0 = tịch thu hết)")
 async def slash_admin_confiscate(interaction: discord.Interaction, nguoi_dung: discord.Member, id_the: int = 0, so_luong: int = 0):
     if not is_authorized_admin(interaction.user.id):
         await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!**", ephemeral=True)
@@ -2331,7 +2362,7 @@ async def slash_admin_confiscate(interaction: discord.Interaction, nguoi_dung: d
         return
 
     if id_the not in CARDS_DATA:
-        await interaction.response.send_message(f"❌ ID thẻ không hợp lệ (1-{len(CARDS_DATA)})!", ephemeral=True)
+        await interaction.response.send_message(f"❌ ID thẻ không hợp lệ (1-27)!", ephemeral=True)
         return
 
     card = CARDS_DATA[id_the]
@@ -2374,7 +2405,7 @@ async def prefix_admin_confiscate(ctx, member: discord.Member, card_id: int = 0,
         await ctx.send(f"🚨 Đã tịch thu toàn bộ **{total} thẻ bài** của {member.mention}!")
         return
     if card_id not in CARDS_DATA:
-        await ctx.send(f"❌ ID thẻ không hợp lệ (1-{len(CARDS_DATA)})!")
+        await ctx.send(f"❌ ID thẻ không hợp lệ (1-27)!")
         return
     card = CARDS_DATA[card_id]
     cid_str = str(card_id)
@@ -2393,14 +2424,14 @@ async def prefix_admin_confiscate(ctx, member: discord.Member, card_id: int = 0,
     await ctx.send(f"⚖️ Đã tịch thu **{to_rem}x [{card['rank']}] #{card['id']:02d} {card['name']}** của {member.mention}!")
 
 @bot.tree.command(name="admin_add_card", description="[CHỦ BOT DUY NHẤT] Cấp thẻ nhân vật Touhou vào kho đồ người chơi")
-@app_commands.describe(id_the="ID thẻ (1-26 hoặc t1)", so_luong="Số lượng thẻ (mặc định: 1)", nguoi_dung="Người nhận (để trống nếu tự cấp cho bản thân)")
+@app_commands.describe(id_the="ID thẻ (1-27 hoặc t1)", so_luong="Số lượng thẻ (mặc định: 1)", nguoi_dung="Người nhận (để trống nếu tự cấp cho bản thân)")
 async def slash_admin_add_card(interaction: discord.Interaction, id_the: str, so_luong: int = 1, nguoi_dung: discord.Member = None):
     if not is_authorized_admin(interaction.user.id):
         await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!**", ephemeral=True)
         return
     norm_id = normalize_card_id(id_the)
     if not norm_id or norm_id not in CARDS_DATA:
-        await interaction.response.send_message(f"❌ ID thẻ không hợp lệ (1-26 hoặc t1)!", ephemeral=True)
+        await interaction.response.send_message(f"❌ ID thẻ không hợp lệ (1-27 hoặc t1)!", ephemeral=True)
         return
     so_luong = max(1, so_luong)
     target = nguoi_dung if nguoi_dung else interaction.user
@@ -2429,7 +2460,7 @@ async def prefix_admin_add_card(ctx, card_id: str, quantity: int = 1, member: di
         return
     norm_id = normalize_card_id(card_id)
     if not norm_id or norm_id not in CARDS_DATA:
-        await ctx.send(f"❌ ID thẻ không hợp lệ (1-26 hoặc t1)!")
+        await ctx.send(f"❌ ID thẻ không hợp lệ (1-27 hoặc t1)!")
         return
     quantity = max(1, quantity)
     target = member if member else ctx.author
@@ -2493,14 +2524,14 @@ async def prefix_admin_add_shard(ctx, loai_shard: str = "seiki", quantity: int =
 # LỆNH MỚI: /admin_lock - KHÓA THẺ ĐÃ SỞ HỮU, CHỈ MỞ KHI PULL RA LẠI
 # ==============================================================================
 @bot.tree.command(name="admin_lock", description="[CHỦ BOT DUY NHẤT] Khóa lá bài đã sở hữu của người chơi (chỉ mở khi pull ra lại)")
-@app_commands.describe(nguoi_dung="Người chơi bị khóa thẻ", id_the="ID lá bài từ 1-26")
+@app_commands.describe(nguoi_dung="Người chơi bị khóa thẻ", id_the="ID lá bài từ 1-27")
 async def slash_admin_lock(interaction: discord.Interaction, nguoi_dung: discord.Member, id_the: int):
     if not is_authorized_admin(interaction.user.id):
         await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ chủ bot mới có quyền khóa thẻ.", ephemeral=True)
         return
 
     if id_the not in CARDS_DATA:
-        await interaction.response.send_message(f"❌ ID thẻ không hợp lệ (1-{len(CARDS_DATA)})!", ephemeral=True)
+        await interaction.response.send_message(f"❌ ID thẻ không hợp lệ (1-27)!", ephemeral=True)
         return
 
     target = get_player(nguoi_dung.id, nguoi_dung.display_name)
@@ -2561,7 +2592,7 @@ async def prefix_admin_lock(ctx, member: discord.Member, card_id: int):
         return
 
     if card_id not in CARDS_DATA:
-        await ctx.send(f"❌ ID thẻ không hợp lệ (1-{len(CARDS_DATA)})!")
+        await ctx.send(f"❌ ID thẻ không hợp lệ (1-27)!")
         return
 
     target = get_player(member.id, member.display_name)
@@ -2624,26 +2655,26 @@ class EvolSelectView(discord.ui.View):
         self.player = player
         self.user_id = user_id
 
-    @discord.ui.button(label="⛩️ [#13] Tiến Hóa Reimu Ace 2 (20 Thẻ)", style=discord.ButtonStyle.danger, emoji="🌸")
+    @discord.ui.button(label="⛩️ [#14] Tiến Hóa Reimu Ace 2 (20 Thẻ)", style=discord.ButtonStyle.danger, emoji="🌸")
     async def button_evol_reimu(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
-        await do_evolve_interaction(interaction, self.player, 13)
+        await do_evolve_interaction(interaction, self.player, 14)
 
-    @discord.ui.button(label="🕰️ [#16] Tiến Hóa Sakuya Ace 2 (30 Thẻ)", style=discord.ButtonStyle.primary, emoji="⏳")
+    @discord.ui.button(label="🕰️ [#17] Tiến Hóa Sakuya Ace 2 (30 Thẻ)", style=discord.ButtonStyle.primary, emoji="⏳")
     async def button_evol_sakuya(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
-        await do_evolve_interaction(interaction, self.player, 16)
+        await do_evolve_interaction(interaction, self.player, 17)
 
-    @discord.ui.button(label="🌟 [#17] Tiến Hóa Marisa Ace 2 (25 Thẻ)", style=discord.ButtonStyle.success, emoji="✨")
+    @discord.ui.button(label="🌟 [#18] Tiến Hóa Marisa Ace 2 (25 Thẻ)", style=discord.ButtonStyle.success, emoji="✨")
     async def button_evol_marisa(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
-        await do_evolve_interaction(interaction, self.player, 17)
+        await do_evolve_interaction(interaction, self.player, 18)
 
     @discord.ui.button(label="🦇 [#09] Tiến Hóa Flandre Ace 2 (30 Thẻ)", style=discord.ButtonStyle.danger, emoji="💥")
     async def button_evol_flandre(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -2682,7 +2713,7 @@ def execute_card_evolution(player, cid: int):
     player["evolutions"][cid_str] = 2
     save_player(player)
 
-    color_map = {9: 0xDC2626, 13: 0xEF4444, 16: 0x3B82F6, 17: 0xF59E0B}
+    color_map = {9: 0xDC2626, 14: 0xEF4444, 17: 0x3B82F6, 18: 0xF59E0B}
     embed = discord.Embed(
         title=f"🌟 TIẾN HÓA THÀNH CÔNG: [{cfg['ace_level']}] [#{cfg['id']:02d}] {cfg['name'].upper()}!",
         description=(
@@ -2716,12 +2747,12 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     cid_target = None
     if nhan_vat_hoac_id:
         nv_clean = str(nhan_vat_hoac_id).lower().strip()
-        if "13" in nv_clean or "reimu" in nv_clean:
-            cid_target = 13
-        elif "16" in nv_clean or "sakuya" in nv_clean:
-            cid_target = 16
-        elif "17" in nv_clean or "marisa" in nv_clean:
+        if "14" in nv_clean or "reimu" in nv_clean:
+            cid_target = 14
+        elif "17" in nv_clean or "sakuya" in nv_clean:
             cid_target = 17
+        elif "18" in nv_clean or "marisa" in nv_clean:
+            cid_target = 18
         elif nv_clean in ("9", "#9", "09", "#09") or "flandre" in nv_clean or "flan" in nv_clean:
             cid_target = 9
 
@@ -2739,15 +2770,15 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
                 await ctx_or_interaction.send(embed=embed)
         return
 
-    reimu_cnt = player.get("inventory", {}).get("13", 0)
+    reimu_cnt = player.get("inventory", {}).get("14", 0)
     reimu_ace = is_card_ace2(player, 13)
     reimu_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐" if reimu_ace else ("🟢 SẴN SÀNG TIẾN HÓA!" if reimu_cnt >= 20 else f"🔴 Chưa đủ ({reimu_cnt}/20)")
 
-    sakuya_cnt = player.get("inventory", {}).get("16", 0)
+    sakuya_cnt = player.get("inventory", {}).get("17", 0)
     sakuya_ace = is_card_ace2(player, 16)
     sakuya_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐" if sakuya_ace else ("🟢 SẴN SÀNG TIẾN HÓA!" if sakuya_cnt >= 30 else f"🔴 Chưa đủ ({sakuya_cnt}/30)")
 
-    marisa_cnt = player.get("inventory", {}).get("17", 0)
+    marisa_cnt = player.get("inventory", {}).get("18", 0)
     marisa_ace = is_card_ace2(player, 17)
     marisa_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐" if marisa_ace else ("🟢 SẴN SÀNG TIẾN HÓA!" if marisa_cnt >= 25 else f"🔴 Chưa đủ ({marisa_cnt}/25)")
 
@@ -2761,13 +2792,13 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             "Thu thập đủ số lượng thẻ yêu cầu để tiến hóa nhân vật lên **Ace 2 ⭐⭐**!\n"
             "✨ **Quy tắc Ace mới:** Sau khi tiến hóa sẽ **trừ đi chi phí thẻ** tương ứng (ví dụ: 30 lá -> 0, 32 lá -> 2).\n"
             "💪 **Buff Ace 2 mới:** Cộng **+300 ATK** và **+300 HP** vĩnh viễn!\n\n"
-            "👉 **Cú pháp theo ID:** `/evol id_hoac_ten:13`, `/evol id_hoac_ten:16` hoặc `/evol id_hoac_ten:17`\n"
+            "👉 **Cú pháp theo ID:** `/evol id_hoac_ten:14`, `/evol id_hoac_ten:17` hoặc `/evol id_hoac_ten:18`\n"
             "Hoặc bấm các nút bên dưới để tiến hóa ngay:"
         ),
         color=0x8B5CF6
     )
 
-    reimu_cfg = EVOL_CONFIG[13]
+    reimu_cfg = EVOL_CONFIG[14]
     embed.add_field(
         name=f"⛩️ [#{reimu_cfg['id']:02d}] {reimu_cfg['name']} (Yêu cầu 20 thẻ):",
         value=(
@@ -2779,7 +2810,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
         inline=False
     )
 
-    sakuya_cfg = EVOL_CONFIG[16]
+    sakuya_cfg = EVOL_CONFIG[17]
     embed.add_field(
         name=f"🕰️ [#{sakuya_cfg['id']:02d}] {sakuya_cfg['name']} (Yêu cầu 30 thẻ):",
         value=(
@@ -2791,7 +2822,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
         inline=False
     )
 
-    marisa_cfg = EVOL_CONFIG[17]
+    marisa_cfg = EVOL_CONFIG[18]
     embed.add_field(
         name=f"🌟 [#{marisa_cfg['id']:02d}] {marisa_cfg['name']} (Yêu cầu 25 thẻ):",
         value=(
@@ -2822,12 +2853,12 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     else:
         await ctx_or_interaction.send(embed=embed, view=view)
 
-@bot.tree.command(name="evol", description="Tiến hóa nhân vật Touhou lên Ace 2 (9: Flandre, 13: Reimu, 16: Sakuya, 17: Marisa)")
+@bot.tree.command(name="evol", description="Tiến hóa nhân vật Touhou lên Ace 2 (9: Flandre, 14: Reimu, 17: Sakuya, 18: Marisa)")
 @app_commands.describe(id_hoac_ten="Nhập số ID thẻ (9, 13, 16 hoặc 17) hoặc chọn nhân vật")
 @app_commands.choices(id_hoac_ten=[
-    app_commands.Choice(name="[#13] Reimu Hakurei (Ace 2 - Cần 20 thẻ, trừ 20 khi Ace)", value="13"),
-    app_commands.Choice(name="[#16] Sakuya Izayoi (Ace 2 - Cần 30 thẻ, trừ 30 khi Ace)", value="16"),
-    app_commands.Choice(name="[#17] Marisa Kirisame (Ace 2 - Cần 25 thẻ, Master Spark x2.0)", value="17"),
+    app_commands.Choice(name="[#14] Reimu Hakurei (Ace 2 - Cần 20 thẻ, trừ 20 khi Ace)", value="14"),
+    app_commands.Choice(name="[#17] Sakuya Izayoi (Ace 2 - Cần 30 thẻ, trừ 30 khi Ace)", value="17"),
+    app_commands.Choice(name="[#18] Marisa Kirisame (Ace 2 - Cần 25 thẻ, Master Spark x2.0)", value="18"),
     app_commands.Choice(name="[#09] Flandre Scarlet (Ace 2 - Cần 30 thẻ, Ripples of 495 Years)", value="9")
 ])
 async def slash_evol(interaction: discord.Interaction, id_hoac_ten: str = None):
@@ -3001,7 +3032,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
 
     if act == "add":
         if not card_id or card_id not in CARDS_DATA:
-            msg = f"❌ Vui lòng nhập số ID thẻ hợp lệ (1-26 hoặc t1)!"
+            msg = f"❌ Vui lòng nhập số ID thẻ hợp lệ (1-27 hoặc t1)!"
             if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
             else: await ctx_or_interaction.send(msg)
             return
@@ -3103,7 +3134,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
     else: await ctx_or_interaction.send(embed=embed)
 
 @bot.tree.command(name="team", description="Quản lý đội hình 3 thẻ (view, add, remove)")
-@app_commands.describe(hanh_dong="view (xem), add (thêm thẻ), remove (gỡ thẻ)", id_the="ID thẻ (1-26 hoặc t1)")
+@app_commands.describe(hanh_dong="view (xem), add (thêm thẻ), remove (gỡ thẻ)", id_the="ID thẻ (1-27 hoặc t1)")
 @app_commands.choices(hanh_dong=[
     app_commands.Choice(name="👁️ Xem đội hình (view)", value="view"),
     app_commands.Choice(name="➕ Thêm thẻ (add)", value="add"),
@@ -3122,7 +3153,7 @@ async def handle_collection(ctx_or_interaction):
     player = get_player(user.id, user.display_name)
     owned = 0
     lines = []
-    for cid in range(1, 27):
+    for cid in range(1, 28):
         if cid not in CARDS_DATA:
             continue
         card = CARDS_DATA[cid]
@@ -3163,7 +3194,7 @@ async def handle_collection(ctx_or_interaction):
     if t_lines:
         desc_text += "\n\n🔮 **THẺ ĐẶC BIỆT (NHÓM T - ĐỔI TỪ MẢNH SHARDS):**\n" + "\n".join(t_lines)
 
-    embed = discord.Embed(title=f"📖 BỘ SƯU TẬP THẺ TOUHOU ({owned}/26)", description=desc_text, color=0x8B5CF6)
+    embed = discord.Embed(title=f"📖 BỘ SƯU TẬP THẺ TOUHOU ({owned}/27)", description=desc_text, color=0x8B5CF6)
 
     tut = player.get("tutorial", {})
     if tut.get("active") and tut.get("step") == "collection":
@@ -3179,7 +3210,7 @@ async def handle_collection(ctx_or_interaction):
     if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
     else: await ctx_or_interaction.send(embed=embed)
 
-@bot.tree.command(name="collection", description="Kiểm tra bộ sưu tập 26 nhân vật Touhou đã sở hữu")
+@bot.tree.command(name="collection", description="Kiểm tra bộ sưu tập 27 nhân vật Touhou đã sở hữu")
 async def slash_collection(interaction: discord.Interaction):
     await handle_collection(interaction)
 
@@ -3454,12 +3485,12 @@ async def slash_quest(interaction: discord.Interaction):
 async def prefix_quest(ctx):
     await handle_quest(ctx)
 # ==============================================================================
-# TÍNH NĂNG CHECK NHÂN VẬT & SOI KỸ NĂNG (TOÀN BỘ 26 NHÂN VẬT + ACE 2)
+# TÍNH NĂNG CHECK NHÂN VẬT & SOI KỸ NĂNG (TOÀN BỘ 27 NHÂN VẬT + ACE 2)
 # ==============================================================================
 class CharacterCheckView(discord.ui.View):
     def __init__(self, current_index: int = 0, user_id: int = None, show_ace: bool = False, show_t1: bool = False):
         super().__init__(timeout=180)
-        self.current_index = max(0, min(current_index, len(CARDS_DATA) - 1))
+        self.current_index = max(0, min(current_index, 26))
         self.user_id = user_id
         self.show_ace = show_ace
         self.show_t1 = show_t1
@@ -3468,7 +3499,7 @@ class CharacterCheckView(discord.ui.View):
     def rebuild_items(self):
         self.clear_items()
         cid = self.current_index + 1
-        has_ace = cid in (9, 13, 16, 17)
+        has_ace = cid in (9, 14, 17, 18)
 
         first_btn = discord.ui.Button(label="⏮️", style=discord.ButtonStyle.secondary, row=0)
         first_btn.callback = self.first_page
@@ -3478,7 +3509,7 @@ class CharacterCheckView(discord.ui.View):
         prev_btn.callback = self.prev_page
         self.add_item(prev_btn)
 
-        counter_btn = discord.ui.Button(label=f"#{cid:02d} / 26", style=discord.ButtonStyle.secondary, disabled=True, row=0)
+        counter_btn = discord.ui.Button(label=f"#{cid:02d} / 27", style=discord.ButtonStyle.secondary, disabled=True, row=0)
         self.add_item(counter_btn)
 
         next_btn = discord.ui.Button(label="Sau ▶", style=discord.ButtonStyle.primary, row=0)
@@ -3512,7 +3543,7 @@ class CharacterCheckView(discord.ui.View):
         opt_part1 = []
         for i in range(1, 14):
             c = CARDS_DATA[i]
-            star = " ⭐⭐" if i in (9, 13, 16, 17) else ""
+            star = " ⭐⭐" if i in (9, 14, 17, 18) else ""
             opt_part1.append(discord.SelectOption(
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
@@ -3520,7 +3551,7 @@ class CharacterCheckView(discord.ui.View):
                 default=(i == cid)
             ))
         select1 = discord.ui.Select(
-            placeholder="🔽 Chọn nhanh #01 - #13 (Hecatia ➔ Reimu)...",
+            placeholder="🔽 Chọn nhanh #01 - #14 (Hecatia ➔ Reimu)...",
             options=opt_part1,
             row=2
         )
@@ -3528,9 +3559,9 @@ class CharacterCheckView(discord.ui.View):
         self.add_item(select1)
 
         opt_part2 = []
-        for i in range(14, 27):
+        for i in range(14, 28):
             c = CARDS_DATA[i]
-            star = " ⭐⭐" if i in (9, 13, 16, 17) else ""
+            star = " ⭐⭐" if i in (9, 14, 17, 18) else ""
             opt_part2.append(discord.SelectOption(
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
@@ -3538,7 +3569,7 @@ class CharacterCheckView(discord.ui.View):
                 default=(i == cid)
             ))
         select2 = discord.ui.Select(
-            placeholder="🔽 Chọn nhanh #14 - #26 (Mokou ➔ Tewi)...",
+            placeholder="🔽 Chọn nhanh #14 - #27 (Reimu ➔ Tewi)...",
             options=opt_part2,
             row=3
         )
@@ -3551,7 +3582,7 @@ class CharacterCheckView(discord.ui.View):
         cid = self.current_index + 1
         card = CARDS_DATA[cid]
         details = CHARACTER_DETAILS.get(cid, {})
-        has_ace = cid in (9, 13, 16, 17)
+        has_ace = cid in (9, 14, 17, 18)
         is_ace_mode = self.show_ace and has_ace
 
         player = get_player(self.user_id) if self.user_id else None
@@ -3642,12 +3673,12 @@ class CharacterCheckView(discord.ui.View):
 
         embed.add_field(
             name="📊 HẠNG THẺ:",
-            value=f"• Thứ tự: **#{cid:02d} / 26**\n• Phẩm cấp: **Rank [{card['rank']}]**",
+            value=f"• Thứ tự: **#{cid:02d} / 27**\n• Phẩm cấp: **Rank [{card['rank']}]**",
             inline=True
         )
 
         embed.set_footer(
-            text=f"Trang {self.current_index + 1}/26 • Bấm ◀ / ▶ hoặc dùng Menu chọn nhanh nhân vật!"
+            text=f"Trang {self.current_index + 1}/27 • Bấm ◀ / ▶ hoặc dùng Menu chọn nhanh nhân vật!"
         )
         return embed
 
@@ -3714,7 +3745,7 @@ class CharacterCheckView(discord.ui.View):
             value="• Phẩm cấp: **Rank [T] — Đặc Biệt**\n• Nguồn: Đổi từ **10 Mảnh Seiki** (Boss Raid)",
             inline=True
         )
-        embed.set_footer(text="Thẻ nhóm T đặc biệt • Bấm ◀ / ▶ hoặc menu để xem 26 nhân vật chuẩn!")
+        embed.set_footer(text="Thẻ nhóm T đặc biệt • Bấm ◀ / ▶ hoặc menu để xem 27 nhân vật chuẩn!")
         return embed
 
     async def first_page(self, interaction: discord.Interaction):
@@ -3725,21 +3756,21 @@ class CharacterCheckView(discord.ui.View):
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
     async def prev_page(self, interaction: discord.Interaction):
-        self.current_index = (self.current_index - 1) % len(CARDS_DATA)
+        self.current_index = (self.current_index - 1) % 27
         self.show_ace = False
         self.show_t1 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
     async def next_page(self, interaction: discord.Interaction):
-        self.current_index = (self.current_index + 1) % len(CARDS_DATA)
+        self.current_index = (self.current_index + 1) % 27
         self.show_ace = False
         self.show_t1 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
     async def last_page(self, interaction: discord.Interaction):
-        self.current_index = len(CARDS_DATA) - 1
+        self.current_index = 26
         self.show_ace = False
         self.show_t1 = False
         self.rebuild_items()
@@ -3775,7 +3806,7 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
             return
         if nv_clean.isdigit():
             val = int(nv_clean)
-            if 1 <= val <= len(CARDS_DATA):
+            if 1 <= val <= 27:
                 target_idx = val - 1
         else:
             found = False
@@ -3793,7 +3824,7 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
         player = get_player(user.id, user.display_name)
         if player and player.get("team"):
             lead_id = player["team"][0]
-            if 1 <= lead_id <= len(CARDS_DATA):
+            if 1 <= lead_id <= 27:
                 target_idx = lead_id - 1
 
     view = CharacterCheckView(current_index=target_idx, user_id=user.id, show_ace=False)
@@ -3804,13 +3835,13 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
     else:
         await ctx_or_interaction.send(embed=embed, view=view)
 
-@bot.tree.command(name="check", description="Kiểm tra thông số sức mạnh, máu và kỹ năng của 26 nhân vật Touhou (kèm Ace 2)")
-@app_commands.describe(nhan_vat="Nhập số ID (1-26) hoặc tên nhân vật muốn xem ngay (để trống để duyệt từ đầu)")
+@bot.tree.command(name="check", description="Kiểm tra thông số sức mạnh, máu và kỹ năng của 27 nhân vật Touhou (kèm Ace 2)")
+@app_commands.describe(nhan_vat="Nhập số ID (1-27) hoặc tên nhân vật muốn xem ngay (để trống để duyệt từ đầu)")
 async def slash_check(interaction: discord.Interaction, nhan_vat: str = None):
     await handle_check_character(interaction, nhan_vat)
 
 @bot.tree.command(name="card_info", description="Xem chi tiết sức mạnh, máu và chiêu thức thẻ bài Touhou (kèm Ace 2)")
-@app_commands.describe(nhan_vat="Nhập số ID (1-26) hoặc tên nhân vật muốn xem ngay")
+@app_commands.describe(nhan_vat="Nhập số ID (1-27) hoặc tên nhân vật muốn xem ngay")
 async def slash_card_info(interaction: discord.Interaction, nhan_vat: str = None):
     await handle_check_character(interaction, nhan_vat)
 
@@ -3822,15 +3853,15 @@ async def prefix_check(ctx, *, nhan_vat: str = None):
 # HỆ THỐNG PVE BATTLE (ĐẤU THEO LƯỢT NPC GENSOKYO)
 # ==============================================================================
 GENSOKYO_NPCS = [
-    {"name": "Cirno Đệ Nhất", "badge": "❄️ Băng Tinh", "preferred": [18, 19, 20]},
-    {"name": "Marisa Đạo Tặc", "badge": "⭐ Tinh Linh", "preferred": [6, 13, 17]},
-    {"name": "Alice Ma Đạo", "badge": "🪆 Búp Bê", "preferred": [12, 15, 21]},
-    {"name": "Aya Phóng Viên", "badge": "🌪️ Phong Thần", "preferred": [13, 14, 16]},
-    {"name": "Youmu Kiếm Hồn", "badge": "⚔️ Song Kiếm", "preferred": [8, 14, 15]},
-    {"name": "Remilia Huyết Ma", "badge": "🦇 Huyết Tộc", "preferred": [3, 4, 10]},
+    {"name": "Cirno Đệ Nhất", "badge": "❄️ Băng Tinh", "preferred": [19, 20, 21]},
+    {"name": "Marisa Đạo Tặc", "badge": "⭐ Tinh Linh", "preferred": [6, 14, 18]},
+    {"name": "Alice Ma Đạo", "badge": "🪆 Búp Bê", "preferred": [13, 16, 22]},
+    {"name": "Aya Phóng Viên", "badge": "🌪️ Phong Thần", "preferred": [14, 15, 17]},
+    {"name": "Youmu Kiếm Hồn", "badge": "⚔️ Song Kiếm", "preferred": [8, 15, 16]},
+    {"name": "Remilia Huyết Ma", "badge": "🦇 Huyết Tộc", "preferred": [3, 4, 11]},
     {"name": "Flandre Hủy Diệt", "badge": "💎 Hủy Diệt", "preferred": [3, 5, 9]},
     {"name": "Suika Quỷ Vương", "badge": "🍶 Đại Quỷ", "preferred": [5, 6, 9]},
-    {"name": "Mokou Phượng Hoàng", "badge": "🔥 Bất Tử", "preferred": [6, 10, 13]},
+    {"name": "Mokou Phượng Hoàng", "badge": "🔥 Bất Tử", "preferred": [6, 11, 14]},
     {"name": "Hecatia Hỗn Mang", "badge": "🌌 Hỗn Mang", "preferred": [1, 2, 4]}
 ]
 
@@ -3942,33 +3973,33 @@ async def handle_battle(ctx_or_interaction):
         stunned_pc = False
         stunned_oc = False
 
-        if pc["cid"] == 16 and pc["is_ace2"] and not p_sakuya:
+        if pc["cid"] == 17 and pc["is_ace2"] and not p_sakuya:
             if random.random() < 0.40:
                 p_sakuya = True
                 stunned_oc = True
-                turn_image = EVOL_CONFIG[16]["skill_gif"]
-                msg_skill = f"⏳ **[Ace 2] [#16] Sakuya** kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {oc['name']} bị STUN mất lượt!"
+                turn_image = EVOL_CONFIG[17]["skill_gif"]
+                msg_skill = f"⏳ **[Ace 2] [#17] Sakuya** kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {oc['name']} bị STUN mất lượt!"
                 battle_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
-        if oc["cid"] == 16 and oc.get("is_ace2") and not o_sakuya:
+        if oc["cid"] == 17 and oc.get("is_ace2") and not o_sakuya:
             if random.random() < 0.30:
                 o_sakuya = True
                 stunned_pc = True
                 if not turn_image:
-                    turn_image = EVOL_CONFIG[16]["skill_gif"]
-                msg_skill = f"⏳ **Đối thủ [Ace 2] [#16] Sakuya** kích hoạt **Thời Gian Đóng Băng** (30%)! ❄️ {pc['name']} bị STUN mất lượt!"
+                    turn_image = EVOL_CONFIG[17]["skill_gif"]
+                msg_skill = f"⏳ **Đối thủ [Ace 2] [#17] Sakuya** kích hoạt **Thời Gian Đóng Băng** (30%)! ❄️ {pc['name']} bị STUN mất lượt!"
                 battle_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
         curr_pc_power = pc["power"]
-        if pc["cid"] == 17 and pc["is_ace2"] and not p_marisa:
+        if pc["cid"] == 18 and pc["is_ace2"] and not p_marisa:
             if random.random() < 0.30:
                 p_marisa = True
                 curr_pc_power = int(curr_pc_power * 2.0)
                 if not turn_image:
-                    turn_image = EVOL_CONFIG[17]["skill_gif"]
-                msg_m = f"🌟 **[Ace 2] [#17] Marisa** tung ra **Master Spark** (30%)! Bộc phá ×2.0 sát thương gây **{curr_pc_power:,} DMG**!"
+                    turn_image = EVOL_CONFIG[18]["skill_gif"]
+                msg_m = f"🌟 **[Ace 2] [#18] Marisa** tung ra **Master Spark** (30%)! Bộc phá ×2.0 sát thương gây **{curr_pc_power:,} DMG**!"
                 battle_logs.append(msg_m)
                 turn_actions.append(msg_m)
 
@@ -4008,25 +4039,25 @@ async def handle_battle(ctx_or_interaction):
                 turn_actions.append(msg_h)
 
         curr_oc_power = oc["power"]
-        if oc["cid"] == 17 and oc.get("is_ace2") and not o_marisa:
+        if oc["cid"] == 18 and oc.get("is_ace2") and not o_marisa:
             if random.random() < 0.25:
                 o_marisa = True
                 curr_oc_power = int(curr_oc_power * 2.0)
                 if not turn_image:
-                    turn_image = EVOL_CONFIG[17]["skill_gif"]
-                msg_m = f"🌟 **Đối thủ [Ace 2] [#17] Marisa** tung ra **Master Spark** (25%)! Bộc phá ×1.5 sát thương gây **{curr_oc_power:,} DMG**!"
+                    turn_image = EVOL_CONFIG[18]["skill_gif"]
+                msg_m = f"🌟 **Đối thủ [Ace 2] [#18] Marisa** tung ra **Master Spark** (25%)! Bộc phá ×1.5 sát thương gây **{curr_oc_power:,} DMG**!"
                 battle_logs.append(msg_m)
                 turn_actions.append(msg_m)
 
         if not stunned_pc:
             oc_invul = False
-            if oc["cid"] == 13 and oc.get("is_ace2") and not o_reimu:
+            if oc["cid"] == 14 and oc.get("is_ace2") and not o_reimu:
                 if random.random() < 0.30:
                     o_reimu = True
                     oc_invul = True
                     if not turn_image:
-                        turn_image = EVOL_CONFIG[13]["skill_gif"]
-                    msg_skill = f"🛡️ **Đối thủ [Ace 2] [#13] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (30%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
+                        turn_image = EVOL_CONFIG[14]["skill_gif"]
+                    msg_skill = f"🛡️ **Đối thủ [Ace 2] [#14] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (30%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
                     battle_logs.append(msg_skill)
                     turn_actions.append(msg_skill)
 
@@ -4040,13 +4071,13 @@ async def handle_battle(ctx_or_interaction):
 
         if not stunned_oc:
             pc_invul = False
-            if pc["cid"] == 13 and pc["is_ace2"] and not p_reimu:
+            if pc["cid"] == 14 and pc["is_ace2"] and not p_reimu:
                 if random.random() < 0.40:
                     p_reimu = True
                     pc_invul = True
                     if not turn_image:
-                        turn_image = EVOL_CONFIG[13]["skill_gif"]
-                    msg_skill = f"🛡️ **[Ace 2] [#13] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
+                        turn_image = EVOL_CONFIG[14]["skill_gif"]
+                    msg_skill = f"🛡️ **[Ace 2] [#14] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
                     battle_logs.append(msg_skill)
                     turn_actions.append(msg_skill)
             if not pc_invul and str(pc["cid"]).lower() == "t1" and not p_seiki_seal and p_seiki_used_turn != r_cnt:
@@ -4288,34 +4319,34 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
         c_stunned = False
         t_stunned = False
 
-        if cc["cid"] == 16 and cc["is_ace2"] and not c_sakuya:
+        if cc["cid"] == 17 and cc["is_ace2"] and not c_sakuya:
             if random.random() < 0.40:
                 c_sakuya = True
                 t_stunned = True
-                turn_image = EVOL_CONFIG[16]["skill_gif"]
-                msg_skill = f"⏳ **[Ace 2] [#16] Sakuya** ({challenger.display_name}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {tc['name']} bị STUN!"
+                turn_image = EVOL_CONFIG[17]["skill_gif"]
+                msg_skill = f"⏳ **[Ace 2] [#17] Sakuya** ({challenger.display_name}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {tc['name']} bị STUN!"
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
-        if tc["cid"] == 16 and tc["is_ace2"] and not t_sakuya:
+        if tc["cid"] == 17 and tc["is_ace2"] and not t_sakuya:
             if random.random() < 0.40:
                 t_sakuya = True
                 c_stunned = True
                 if not turn_image:
-                    turn_image = EVOL_CONFIG[16]["skill_gif"]
-                msg_skill = f"⏳ **[Ace 2] [#16] Sakuya** ({target.display_name}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {cc['name']} bị STUN!"
+                    turn_image = EVOL_CONFIG[17]["skill_gif"]
+                msg_skill = f"⏳ **[Ace 2] [#17] Sakuya** ({target.display_name}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {cc['name']} bị STUN!"
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
         c_invul = False
         t_invul = False
-        if cc["cid"] == 13 and cc["is_ace2"] and not c_reimu:
+        if cc["cid"] == 14 and cc["is_ace2"] and not c_reimu:
             if random.random() < 0.40:
                 c_reimu = True
                 c_invul = True
                 if not turn_image:
-                    turn_image = EVOL_CONFIG[13]["skill_gif"]
-                msg_skill = f"🛡️ **[Ace 2] [#13] Reimu** ({challenger.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                    turn_image = EVOL_CONFIG[14]["skill_gif"]
+                msg_skill = f"🛡️ **[Ace 2] [#14] Reimu** ({challenger.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
@@ -4330,13 +4361,13 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
-        if tc["cid"] == 13 and tc["is_ace2"] and not t_reimu:
+        if tc["cid"] == 14 and tc["is_ace2"] and not t_reimu:
             if random.random() < 0.40:
                 t_reimu = True
                 t_invul = True
                 if not turn_image:
-                    turn_image = EVOL_CONFIG[13]["skill_gif"]
-                msg_skill = f"🛡️ **[Ace 2] [#13] Reimu** ({target.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                    turn_image = EVOL_CONFIG[14]["skill_gif"]
+                msg_skill = f"🛡️ **[Ace 2] [#14] Reimu** ({target.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
@@ -4353,13 +4384,13 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
 
         c_curr_power = cc["power"]
         t_curr_power = tc["power"]
-        if cc["cid"] == 17 and cc["is_ace2"] and not c_marisa:
+        if cc["cid"] == 18 and cc["is_ace2"] and not c_marisa:
             if random.random() < 0.30:
                 c_marisa = True
                 c_curr_power = int(c_curr_power * 2.0)
                 if not turn_image:
-                    turn_image = EVOL_CONFIG[17]["skill_gif"]
-                msg_m = f"🌟 **[Ace 2] [#17] Marisa** ({challenger.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×2.0 sát thương ({c_curr_power:,} DMG)!"
+                    turn_image = EVOL_CONFIG[18]["skill_gif"]
+                msg_m = f"🌟 **[Ace 2] [#18] Marisa** ({challenger.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×2.0 sát thương ({c_curr_power:,} DMG)!"
                 pvp_logs.append(msg_m)
                 turn_actions.append(msg_m)
 
@@ -4398,13 +4429,13 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_h)
                 turn_actions.append(msg_h)
 
-        if tc["cid"] == 17 and tc["is_ace2"] and not t_marisa:
+        if tc["cid"] == 18 and tc["is_ace2"] and not t_marisa:
             if random.random() < 0.30:
                 t_marisa = True
                 t_curr_power = int(t_curr_power * 2.0)
                 if not turn_image:
-                    turn_image = EVOL_CONFIG[17]["skill_gif"]
-                msg_m = f"🌟 **[Ace 2] [#17] Marisa** ({target.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×2.0 sát thương ({t_curr_power:,} DMG)!"
+                    turn_image = EVOL_CONFIG[18]["skill_gif"]
+                msg_m = f"🌟 **[Ace 2] [#18] Marisa** ({target.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×2.0 sát thương ({t_curr_power:,} DMG)!"
                 pvp_logs.append(msg_m)
                 turn_actions.append(msg_m)
 
@@ -4705,23 +4736,24 @@ CARD_ALIASES = {
     "yuuka": 7, "kazami": 7,
     "yuyuko": 8, "saigyouji": 8,
     "flandre": 9, "flan": 9,
-    "kaguya": 10, "houraisan": 10,
-    "remilia": 11, "remi": 11,
-    "utsuho": 12, "okuu": 12, "reiuji": 12,
-    "reimu": 13, "hakurei": 13,
-    "mokou": 14, "fujiwara": 14,
-    "kasen": 15, "ibaraki": 15,
-    "sakuya": 16, "izayoi": 16,
-    "marisa": 17, "kirisame": 17,
-    "youmu": 18, "konpaku": 18,
-    "reisen": 19, "udongein": 19, "udonge": 19,
-    "patchouli": 20, "patchy": 20, "knowledge": 20,
-    "cirno": 21,
-    "meiling": 22, "hong": 22,
-    "rumia": 23,
-    "mystia": 24, "lorelei": 24,
-    "wriggle": 25, "nightbug": 25,
-    "tewi": 26,
+    "kaguya": 11, "houraisan": 11,
+    "remilia": 12, "remi": 12,
+    "utsuho": 13, "okuu": 13, "reiuji": 13,
+    "reimu": 14, "hakurei": 14,
+    "mokou": 15, "fujiwara": 15,
+    "kasen": 16, "ibaraki": 16,
+    "sakuya": 17, "izayoi": 17,
+    "marisa": 18, "kirisame": 18,
+    "youmu": 19, "konpaku": 19,
+    "reisen": 20, "udongein": 20, "udonge": 20,
+    "patchouli": 21, "patchy": 21, "knowledge": 21,
+    "cirno": 22,
+    "meiling": 23, "hong": 23,
+    "rumia": 24,
+    "mystia": 25, "lorelei": 25,
+    "wriggle": 26, "nightbug": 26,
+    "tewi": 27,
+    "koishi": 10, "komeiji": 10,
     "seiki": "t1", "t1": "t1", "dephap": "t1", "toannang": "t1"
 }
 
@@ -5242,14 +5274,14 @@ async def handle_help(ctx_or_interaction):
 • `/pull [số_lượng]`: Quay thẻ Touhou (Free 5 lượt/ngày). *Thẻ đã quay được sẽ mở khóa vĩnh viễn! Quay trúng lại thẻ bị lock sẽ mở khóa!*
 • `/daily`: Điểm danh nhận 1 vé pull mỗi ngày.
 • `/evol [id_hoac_ten]`: Tiến hóa Ace 2 ⭐⭐ (Buff +300 ATK, +300 HP, trừ thẻ sau khi evol):
-  - [#13] Reimu (20 thẻ): Vô Tưởng Chuyển Sinh (40% miễn sát thương).
-  - [#16] Sakuya (30 thẻ): Thời Gian Đóng Băng (40% stun đối thủ).
-  - [#17] Marisa (25 thẻ): Master Spark (30% kích hoạt sát thương ×2.0 lần).
+  - [#14] Reimu (20 thẻ): Vô Tưởng Chuyển Sinh (40% miễn sát thương).
+  - [#17] Sakuya (30 thẻ): Thời Gian Đóng Băng (40% stun đối thủ).
+  - [#18] Marisa (25 thẻ): Master Spark (30% kích hoạt sát thương ×2.0 lần).
   - [#09] Flandre (30 thẻ): Ripples of 495 Years (25% xóa 50% HP đối thủ / 30% HP Boss Raid, 1 lần/trận).
 • `/trade <user> [your] [their]`: Trao đổi thẻ bài (Cú pháp `your:tên:số_lượng` và `their:tên:số_lượng`, ví dụ: `your:reimu: 1 their:sakuya:12`, giao diện xác nhận 2 bên).
 • `/team [hanh_dong] [id_the]`: Quản lý đội hình (view, add, remove). Mỗi cấp độ tăng +20 ATK và +25 HP buff!
-• `/check [id_hoac_ten]`: Soi chi tiết sức mạnh, máu và kỹ năng của 26 nhân vật Touhou + thẻ đặc biệt [T] #t1 Seiki (gõ `seiki` hoặc `t1`, kèm Ace 2, có nút ◀ ▶ lướt danh sách, menu chọn nhanh và nút 🔮 xem thẻ T1).
-• `/collection`: Xem 26 nhân vật Touhou (SS, S, A, B, C).
+• `/check [id_hoac_ten]`: Soi chi tiết sức mạnh, máu và kỹ năng của 27 nhân vật Touhou + thẻ đặc biệt [T] #t1 Seiki (gõ `seiki` hoặc `t1`, kèm Ace 2, có nút ◀ ▶ lướt danh sách, menu chọn nhanh và nút 🔮 xem thẻ T1).
+• `/collection`: Xem 27 nhân vật Touhou (SS, S, A, B, C).
 
 **⚔️ CHIẾN ĐẤU & BOSS RAID:**
 • `/battle`: Giao đấu nhân vật nhận 50-100 XP (hồi chiêu 1 phút).
