@@ -23,6 +23,7 @@
 # ==============================================================================
 
 # UPDATE 2026-09-22: THEM [#10] KOISHI KOMEIJI (Rank S - 600 ATK / 6,060 HP) - ID CU 10-26 DAY LEN 11-27, TU DONG DI TRU DU LIEU NGUOI CHOI
+# UPDATE 2026-09-24: THEM ACE 2 MOI - [#12] REMILIA (25 THE, THUONG DO GUNGNIR THU DONG +3% MAX HP MUC TIEU) & [#20] REISEN (40 THE, RED EYE MIND EXPLOSION 25% - MUC TIEU 20% TU SAT TRONG 4 TURN)
 import os
 import re
 import time
@@ -364,12 +365,44 @@ EVOL_CONFIG = {
         "skill_gif": "https://static2.klipy.com/ii/e293a233a303a98e471f78d04e13a1b0/b2/cf/xq2ZW3uF.gif",
         "bonus_power": 300,
         "bonus_hp": 300
+    },
+    12: {
+        "id": 12,
+        "key": "remilia",
+        "name": "Remilia Scarlet",
+        "title": "[#12] Remilia Scarlet - Ace 2 ⭐⭐",
+        "ace_level": "Ace 2 ⭐⭐",
+        "required_cards": 25,
+        "required_pulls": 25,
+        "evol_gif": "https://static2.klipy.com/ii/f87f46a2c5aeaeed4c68910815f73eaf/a5/4b/tHDGMmEH.gif",
+        "skill_name": "Thương Đỏ Gungnir (Passive - Sát Thương Tối Đa)",
+        "skill_desc": "Kỹ năng THỤ ĐỘNG vĩnh viễn (không cần kích hoạt): Mọi đòn đánh đều gây thêm sát thương bằng **3% Máu Tối Đa (Max HP)** của mục tiêu! Hoạt động xuyên suốt trong Raid Boss, Battle & PvP, kèm GIF chiêu thức trực tiếp!",
+        "skill_gif": "https://static2.klipy.com/ii/2711dd8a75a85be822d136ec94899b3f/47/43/xa6lynan.gif",
+        "bonus_power": 300,
+        "bonus_hp": 300
+    },
+    20: {
+        "id": 20,
+        "key": "reisen",
+        "name": "Reisen Udongein Inaba",
+        "title": "[#20] Reisen Udongein Inaba - Ace 2 ⭐⭐",
+        "ace_level": "Ace 2 ⭐⭐",
+        "required_cards": 40,
+        "required_pulls": 40,
+        "evol_gif": "https://static2.klipy.com/ii/f87f46a2c5aeaeed4c68910815f73eaf/ba/a0/ddfDeM6F.gif",
+        "skill_name": "Red Eye Mind Explosion (Điều Khiển Tâm Trí)",
+        "skill_desc": "Kích hoạt 1 lần duy nhất trong trận (Tỷ lệ 25%): Gây ảo giác tâm lý khiến mục tiêu bị chọn có **20% tỷ lệ tự gây sát thương lên bản thân** sau mỗi lượt (không thể dùng lên chính mình). Hiệu ứng tồn tại trong **4 turn**, kèm GIF chiêu thức trực tiếp!",
+        "skill_gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/4d/a6/qKiFSu8x.gif",
+        "bonus_power": 300,
+        "bonus_hp": 300
     }
 }
 EVOL_CONFIG["14"] = EVOL_CONFIG[14]
 EVOL_CONFIG["17"] = EVOL_CONFIG[17]
 EVOL_CONFIG["18"] = EVOL_CONFIG[18]
 EVOL_CONFIG["9"] = EVOL_CONFIG[9]
+EVOL_CONFIG["12"] = EVOL_CONFIG[12]
+EVOL_CONFIG["20"] = EVOL_CONFIG[20]
 
 # ==============================================================================
 # 3.1 CHI TIẾT NĂNG LỰC & KỸ NĂNG 27 NHÂN VẬT TOUHOU (CHO TÍNH NĂNG CHECK NHÂN VẬT)
@@ -386,7 +419,7 @@ CHARACTER_DETAILS = {
     9: {"title": "Ác Ma Cuồng Loạn", "skill_name": "Tuyệt Đối Phá Hủy (Kyū)", "skill_desc": "Bóp nát 'mục tiêu tồn tại' trong lòng bàn tay, giải phóng sức mạnh ma cà rồng hủy diệt không thể ngăn cản (610 ATK / 5,700 HP). [Ace 2 ⭐⭐]: Ripples of 495 Years (25%) — Xóa sổ 50% HP đối thủ (Battle/PvP) hoặc 30% HP Boss (Raid), kích hoạt 1 lần trong trận!"},
     10: {"title": "Tiểu Thư Tâm Trí Khép Kín", "skill_name": "Tâm Linh Cảm Ứng (Subconscious)", "skill_desc": "Em gái của Satori Komeiji, tự khép kín trái tim để thoát khỏi sự dị nghị của thế gian. Lướt đi vô thức khắp Gensokyo và tung những đòn đánh lén từ tiềm thức mà không một ai kịp lường trước (600 ATK / 6,060 HP)."},
     11: {"title": "Công Chúa Ánh Trăng", "skill_name": "Vĩnh Cửu & Tức Thời", "skill_desc": "Công chúa Nguyệt Cung lưu đày tại Eientei, điều khiển dòng chảy thời gian vĩnh cửu và tức thời cùng thần bảo quý giá (590 ATK / 6,400 HP)."},
-    12: {"title": "Chúa Tể Hồng Ma Quán", "skill_name": "Thương Đỏ Gungnir (Vận Mệnh)", "skill_desc": "Ma cà rồng kiêu hãnh bẻ cong số mệnh kẻ thù, phóng ra ngọn giáo ánh sáng đỏ Gungnir xuyên thủng phòng ngự (560 ATK / 5,600 HP)."},
+    12: {"title": "Chúa Tể Hồng Ma Quán", "skill_name": "Thương Đỏ Gungnir (Vận Mệnh)", "skill_desc": "Ma cà rồng kiêu hãnh bẻ cong số mệnh kẻ thù, phóng ra ngọn giáo ánh sáng đỏ Gungnir xuyên thủng phòng ngự (560 ATK / 5,600 HP). [Ace 2 ⭐⭐]: Thương Đỏ Gungnir — kỹ năng THỤ ĐỘNG không cần kích hoạt: mọi đòn đánh gây thêm sát thương bằng 3% Máu Tối Đa (Max HP) của mục tiêu!"},
     13: {"title": "Mặt Trời Địa Ngục", "skill_name": "Hạch Tâm Phản Ứng (Nuclear)", "skill_desc": "Mang sức mạnh thần mặt trời Yatagarasu, thi triển hạch tâm nhiệt hạch thiêu đốt toàn bộ chiến trường (550 ATK / 5,300 HP)."},
     14: {"title": "Vu Nữ Đền Hakurei", "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh", "skill_desc": "Bay lượn khỏi thực tại và trừ tà ma thuật. [Ace 2 ⭐⭐]: Miễn toàn bộ sát thương 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
     15: {"title": "Phượng Hoàng Bất Tử", "skill_name": "Phượng Hoàng Bất Diệt", "skill_desc": "Cơ thể bất tử do uống tiên dược Hourai, triệu hồi ngọn lửa phượng hoàng thiêu đốt kẻ địch mà không hề sợ chết (490 ATK / 5,200 HP)."},
@@ -394,7 +427,7 @@ CHARACTER_DETAILS = {
     17: {"title": "Hầu Gái Trưởng Hoàn Hảo", "skill_name": "Thời Gian Đóng Băng", "skill_desc": "Bậc thầy phi dao bạc và không-thời gian. [Ace 2 ⭐⭐]: Đóng băng thời gian làm đối thủ/boss bị STUN mất lượt 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
     18: {"title": "Phù Thủy Bình Thường", "skill_name": "Bát Quái Lô - Master Spark", "skill_desc": "Ma thuật ánh sáng và nhiệt độ cao. [Ace 2 ⭐⭐]: Bắn đại bác ma thuật Master Spark gây sát thương ×2.0 lần sát thương gốc (Tỷ lệ 30% 1 lần trong trận)!"},
     19: {"title": "Kiếm Sĩ Nửa Người Nửa Ma", "skill_name": "Song Kiếm Lâu Quan & Bạch Lâu", "skill_desc": "Thần tốc kiếm đạo: Lâu Quan Kiếm chém vạn vật và Bạch Lâu Kiếm chém tan ảo tưởng mê muội (410 ATK / 4,100 HP)."},
-    20: {"title": "Thỏ Ngọc Chiến Binh", "skill_name": "Hồng Nhãn Cuồng Loạn", "skill_desc": "Thỏ ngọc từ Mặt Trăng phát sóng ảo giác từ ánh mắt đỏ rực làm hoa mắt và rối loạn phương hướng đối phương (390 ATK / 3,900 HP)."},
+    20: {"title": "Thỏ Ngọc Chiến Binh", "skill_name": "Hồng Nhãn Cuồng Loạn", "skill_desc": "Thỏ ngọc từ Mặt Trăng phát sóng ảo giác từ ánh mắt đỏ rực làm hoa mắt và rối loạn phương hướng đối phương (390 ATK / 3,900 HP). [Ace 2 ⭐⭐]: Red Eye Mind Explosion (25%, 1 lần/trận) — mục tiêu bị chọn có 20% tỷ lệ tự gây sát thương lên bản thân sau mỗi lượt (không dùng lên chính mình), hiệu ứng tồn tại 4 turn!"},
     21: {"title": "Đại Ma Đạo Sĩ Thất Diệu", "skill_name": "Thất Diệu Ma Thuật", "skill_desc": "Phù thủy thông thái trong thư viện ngầm, kết hợp 7 nguyên tố tự nhiên tạo thành ma trận công thủ liên hoàn (380 ATK / 3,200 HP)."},
     22: {"title": "Đệ Nhất Băng Tiên", "skill_name": "Perfect Freeze (Băng Đạn)", "skill_desc": "Tiên tử băng giá mạnh nhất Hồ Sương Mù, đóng băng mọi vật thể và phóng mưa mảnh băng sắc nhọn (300 ATK / 3,000 HP)."},
     23: {"title": "Thủ Môn Hồng Ma Quán", "skill_name": "Thái Cực Khí Công Quyền", "skill_desc": "Nữ võ sư tinh thông thể thuật khí công ngũ sắc, tạo rào chắn phòng thủ kiên cố bảo vệ tiền tuyến (260 ATK / 2,800 HP)."},
@@ -1058,7 +1091,7 @@ class OpponentTeamView(discord.ui.View):
         )
 
         skill_text = c.get("skill") or "Tấn công Danmaku cơ bản"
-        if is_ace and c["cid"] in [9, 14, 17, 18]:
+        if is_ace and c["cid"] in [9, 12, 14, 17, 18, 20]:
             if c["cid"] == 14:
                 skill_text += "\n🛡️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Vô Tưởng Chuyển Sinh* né toàn bộ sát thương."
             elif c["cid"] == 17:
@@ -1067,6 +1100,10 @@ class OpponentTeamView(discord.ui.View):
                 skill_text += "\n🌟 **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Master Spark* bộc phá ×2.0 sát thương."
             elif c["cid"] == 9:
                 skill_text += "\n🦇 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Ripples of 495 Years* xóa sổ 50% HP đối thủ (30% HP Boss trong Raid, 1 lần/trận)."
+            elif c["cid"] == 12:
+                skill_text += "\n🩸 **[Ace 2 Hiệu Ứng]** *Thương Đỏ Gungnir* (THỤ ĐỘNG): mọi đòn đánh gây thêm 3% Máu Tối Đa của mục tiêu."
+            elif c["cid"] == 20:
+                skill_text += "\n🔴 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Red Eye Mind Explosion* (1 lần/trận): mục tiêu 20% tự gây sát thương lên bản thân trong 4 turn."
         embed.add_field(name="✨ Kỹ Năng / Tuyệt Kỹ Danmaku:", value=f"*{skill_text}*", inline=False)
 
         summary_lines = []
@@ -1438,6 +1475,7 @@ async def execute_raid(channel, raid_data):
             "reimu_invul_used": False,
             "marisa_spark_used": False,
             "flandre_used": False,
+            "reisen_used": False,
             "seiki_seal_used": False,
             "seiki_spark_used": False,
             "seiki_heal_used": False,
@@ -1475,6 +1513,7 @@ async def execute_raid(channel, raid_data):
 
     p1_rounds = 0
     max_rounds = 35
+    boss_mind_turns = 0  # Đếm lượt ảo giác Red Eye Mind Explosion (Reisen Ace 2) lên Boss
     p1_battle_history = []
     all_raid_turns = []
 
@@ -1495,10 +1534,21 @@ async def execute_raid(channel, raid_data):
             if actual_healed > 0:
                 passive_log = f"💚 **[Nội Tại - Hồi Phục]** Seiki Dị Hình hấp thụ dị khí hồi phục **+{actual_healed:,} HP** (1.5% HP tối đa)!"
 
+        # ===== RED EYE MIND EXPLOSION (REISEN ACE 2): BOSS TỰ GÂY SÁT THƯƠNG 20%/LƯỢT, TỐI ĐA 4 LƯỢT =====
+        reisen_boss_log = None
+        if boss_mind_turns > 0:
+            boss_mind_turns -= 1
+            if random.random() < 0.20:
+                _mind_dmg = p1_power
+                p1_hp = max(0, p1_hp - _mind_dmg)
+                reisen_boss_log = f"🌀 **[Red Eye Mind Explosion]** Boss mất kiểm soát tâm trí và **tự gây {_mind_dmg:,} DMG** lên bản thân! (Còn {boss_mind_turns} lượt ảo giác)"
+
         boss_stunned = False
         sakuya_stun_notif = None
         marisa_spark_notif = None
         flandre_notif = None
+        remilia_notif = None
+        reisen_notif = None
         turn_image = None
 
         for c in active_combatants:
@@ -1552,6 +1602,23 @@ async def execute_raid(channel, raid_data):
                     if not turn_image:
                         turn_image = EVOL_CONFIG[9]["skill_gif"]
                     flandre_notif = f"🦇 **[Ace 2] [#09] Flandre Scarlet** ({c['username']}) kích hoạt **Ripples of 495 Years** (25%)! Xóa sổ **{rip_dmg:,} DMG (30% HP Boss)** ngay lập tức!"
+
+            # KỸ NĂNG ACE 2 REMILIA - THƯƠNG ĐỎ GUNGNIR (THỤ ĐỘNG: +3% MÁU TỐI ĐA BOSS MỖI ĐÒN ĐÁNH)
+            if ac["cid"] == 12 and ac["is_ace2"]:
+                gungnir_bonus = int(p1_max_hp * 0.03)
+                card_dmg += gungnir_bonus
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[12]["skill_gif"]
+                remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{gungnir_bonus:,} DMG** (3% Máu tối đa Boss)!"
+
+            # KỸ NĂNG ACE 2 REISEN - RED EYE MIND EXPLOSION (25%: BOSS 20% TỰ GÂY SÁT THƯƠNG TRONG 4 LƯỢT)
+            if ac["cid"] == 20 and ac["is_ace2"] and not c.get("reisen_used"):
+                if random.random() < 0.25:
+                    c["reisen_used"] = True
+                    boss_mind_turns = 4
+                    if not turn_image:
+                        turn_image = EVOL_CONFIG[20]["skill_gif"]
+                    reisen_notif = f"🔴 **[Ace 2] [#20] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
             
             # Kỹ năng Thẻ Seiki T1 (Tuân thủ: Không bao giờ kích hoạt 2 chiêu trong cùng 1 lượt!)
             if str(ac["cid"]).lower() == "t1":
@@ -1751,6 +1818,12 @@ async def execute_raid(channel, raid_data):
             round_embed.add_field(name="❄️ Kỹ Năng Đột Biến:", value=sakuya_stun_notif, inline=False)
         if marisa_spark_notif:
             round_embed.add_field(name="🌟 Master Spark Oanh Tạc:", value=marisa_spark_notif, inline=False)
+        if remilia_notif:
+            round_embed.add_field(name="🩸 Thương Đỏ Gungnir:", value=remilia_notif, inline=False)
+        if reisen_notif:
+            round_embed.add_field(name="🔴 Red Eye Mind Explosion:", value=reisen_notif, inline=False)
+        if reisen_boss_log:
+            round_embed.add_field(name="🌀 Ảo Giác Tâm Trí:", value=reisen_boss_log, inline=False)
         if flandre_notif:
             round_embed.add_field(name="🦇 Ripples of 495 Years:", value=flandre_notif, inline=False)
         round_embed.add_field(name="👺 Phản Kích Của Boss:", value=boss_action_log, inline=False)
@@ -1778,6 +1851,9 @@ async def execute_raid(channel, raid_data):
                 ("💥 Tiền Tuyến Tấn Công:", player_atk_str, False),
                 *([("❄️ Kỹ Năng Đột Biến:", sakuya_stun_notif, False)] if sakuya_stun_notif else []),
                 *([("🌟 Master Spark:", marisa_spark_notif, False)] if marisa_spark_notif else []),
+                *([("🩸 Thương Đỏ Gungnir:", remilia_notif, False)] if remilia_notif else []),
+                *([("🔴 Red Eye Mind Explosion:", reisen_notif, False)] if reisen_notif else []),
+                *([("🌀 Ảo Giác Tâm Trí:", reisen_boss_log, False)] if reisen_boss_log else []),
                 *([("🦇 Ripples of 495 Years:", flandre_notif, False)] if flandre_notif else []),
                 ("👺 Phản Kích Của Boss:", boss_action_log, False),
                 *([("🔄 Thay Đổi Tiền Tuyến & Đổi Sát Thương:", "\n".join(push_logs), False)] if push_logs else []),
@@ -1879,6 +1955,7 @@ async def execute_raid(channel, raid_data):
         c["reimu_invul_used"] = False
         c["marisa_spark_used"] = False
         c["flandre_used"] = False
+        c["reisen_used"] = False
         c["seiki_seal_used"] = False
         c["seiki_spark_used"] = False
         c["seiki_heal_used"] = False
@@ -1891,6 +1968,7 @@ async def execute_raid(channel, raid_data):
     p2_power = BOSS_PHASE2_CONFIG["power"]
     p2_rounds = 0
     p2_battle_history = []
+    boss_mind_turns = 0  # Reset hiệu ứng Red Eye Mind Explosion khi Boss chuyển Phase
 
     while p2_hp > 0 and p2_rounds < max_rounds:
         active_combatants = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
@@ -1900,10 +1978,21 @@ async def execute_raid(channel, raid_data):
         p2_rounds += 1
         frontline_cards = [c["team_cards"][c["current_card_index"]] for c in active_combatants]
 
+        # ===== RED EYE MIND EXPLOSION (REISEN ACE 2): BOSS TỰ GÂY SÁT THƯƠNG 20%/LƯỢT, TỐI ĐA 4 LƯỢT =====
+        reisen_boss_log = None
+        if boss_mind_turns > 0:
+            boss_mind_turns -= 1
+            if random.random() < 0.20:
+                _mind_dmg = p2_power
+                p2_hp = max(0, p2_hp - _mind_dmg)
+                reisen_boss_log = f"🌀 **[Red Eye Mind Explosion]** Boss mất kiểm soát tâm trí và **tự gây {_mind_dmg:,} DMG** lên bản thân! (Còn {boss_mind_turns} lượt ảo giác)"
+
         boss_stunned = False
         sakuya_stun_notif = None
         marisa_spark_notif = None
         flandre_notif = None
+        remilia_notif = None
+        reisen_notif = None
         turn_image = None
 
         for c in active_combatants:
@@ -1938,6 +2027,23 @@ async def execute_raid(channel, raid_data):
                     if not turn_image:
                         turn_image = EVOL_CONFIG[9]["skill_gif"]
                     flandre_notif = f"🦇 **[Ace 2] [#09] Flandre Scarlet** ({c['username']}) kích hoạt **Ripples of 495 Years** (25%)! Xóa sổ **{rip_dmg:,} DMG (30% HP Boss Phase 2)** ngay lập tức!"
+
+            # KỸ NĂNG ACE 2 REMILIA - THƯƠNG ĐỎ GUNGNIR (THỤ ĐỘNG: +3% MÁU TỐI ĐA BOSS PHASE 2 MỖI ĐÒN ĐÁNH)
+            if ac["cid"] == 12 and ac["is_ace2"]:
+                gungnir_bonus = int(p2_max_hp * 0.03)
+                card_dmg += gungnir_bonus
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[12]["skill_gif"]
+                remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{gungnir_bonus:,} DMG** (3% Máu tối đa Boss Phase 2)!"
+
+            # KỸ NĂNG ACE 2 REISEN - RED EYE MIND EXPLOSION (25%: BOSS PHASE 2 - 20% TỰ GÂY SÁT THƯƠNG TRONG 4 LƯỢT)
+            if ac["cid"] == 20 and ac["is_ace2"] and not c.get("reisen_used"):
+                if random.random() < 0.25:
+                    c["reisen_used"] = True
+                    boss_mind_turns = 4
+                    if not turn_image:
+                        turn_image = EVOL_CONFIG[20]["skill_gif"]
+                    reisen_notif = f"🔴 **[Ace 2] [#20] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss Phase 2 bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
 
             # Kỹ năng Thẻ Seiki T1 (Tuân thủ: Không bao giờ kích hoạt 2 chiêu trong cùng 1 lượt!)
             if str(ac["cid"]).lower() == "t1":
@@ -2051,6 +2157,12 @@ async def execute_raid(channel, raid_data):
             round_embed.add_field(name="❄️ Kỹ Năng Đột Biến:", value=sakuya_stun_notif, inline=False)
         if marisa_spark_notif:
             round_embed.add_field(name="🌟 Master Spark Oanh Tạc:", value=marisa_spark_notif, inline=False)
+        if remilia_notif:
+            round_embed.add_field(name="🩸 Thương Đỏ Gungnir:", value=remilia_notif, inline=False)
+        if reisen_notif:
+            round_embed.add_field(name="🔴 Red Eye Mind Explosion:", value=reisen_notif, inline=False)
+        if reisen_boss_log:
+            round_embed.add_field(name="🌀 Ảo Giác Tâm Trí:", value=reisen_boss_log, inline=False)
         if flandre_notif:
             round_embed.add_field(name="🦇 Ripples of 495 Years:", value=flandre_notif, inline=False)
         round_embed.add_field(name="👹 Boss Phase 2 Ra Đòn:", value=boss_action_log, inline=False)
@@ -2077,6 +2189,9 @@ async def execute_raid(channel, raid_data):
                 ("💥 Tiền Tuyến Tấn Công:", f"Toàn quân dồn **{round_player_dmg:,} DMG**!", False),
                 *([("❄️ Kỹ Năng Đột Biến:", sakuya_stun_notif, False)] if sakuya_stun_notif else []),
                 *([("🌟 Master Spark:", marisa_spark_notif, False)] if marisa_spark_notif else []),
+                *([("🩸 Thương Đỏ Gungnir:", remilia_notif, False)] if remilia_notif else []),
+                *([("🔴 Red Eye Mind Explosion:", reisen_notif, False)] if reisen_notif else []),
+                *([("🌀 Ảo Giác Tâm Trí:", reisen_boss_log, False)] if reisen_boss_log else []),
                 *([("🦇 Ripples of 495 Years:", flandre_notif, False)] if flandre_notif else []),
                 ("👹 Boss Phase 2 Ra Đòn:", boss_action_log, False),
                 *([("🔄 Thay Đổi Tiền Tuyến & Đổi Sát Thương:", "\n".join(push_logs), False)] if push_logs else []),
@@ -2683,6 +2798,20 @@ class EvolSelectView(discord.ui.View):
             return
         await do_evolve_interaction(interaction, self.player, 9)
 
+    @discord.ui.button(label="🌙 [#12] Tiến Hóa Remilia Ace 2 (25 Thẻ)", style=discord.ButtonStyle.primary, emoji="🩸", row=1)
+    async def button_evol_remilia(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
+            return
+        await do_evolve_interaction(interaction, self.player, 12)
+
+    @discord.ui.button(label="🐰 [#20] Tiến Hóa Reisen Ace 2 (40 Thẻ)", style=discord.ButtonStyle.success, emoji="🔴", row=1)
+    async def button_evol_reisen(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
+            return
+        await do_evolve_interaction(interaction, self.player, 20)
+
 def execute_card_evolution(player, cid: int):
     cfg = EVOL_CONFIG.get(cid)
     if not cfg:
@@ -2713,7 +2842,7 @@ def execute_card_evolution(player, cid: int):
     player["evolutions"][cid_str] = 2
     save_player(player)
 
-    color_map = {9: 0xDC2626, 14: 0xEF4444, 17: 0x3B82F6, 18: 0xF59E0B}
+    color_map = {9: 0xDC2626, 14: 0xEF4444, 17: 0x3B82F6, 18: 0xF59E0B, 12: 0x9333EA, 20: 0xEC4899}
     embed = discord.Embed(
         title=f"🌟 TIẾN HÓA THÀNH CÔNG: [{cfg['ace_level']}] [#{cfg['id']:02d}] {cfg['name'].upper()}!",
         description=(
@@ -2755,6 +2884,10 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             cid_target = 18
         elif nv_clean in ("9", "#9", "09", "#09") or "flandre" in nv_clean or "flan" in nv_clean:
             cid_target = 9
+        elif nv_clean in ("12", "#12") or "remilia" in nv_clean or "remi" in nv_clean:
+            cid_target = 12
+        elif nv_clean in ("20", "#20") or "reisen" in nv_clean or "udonge" in nv_clean:
+            cid_target = 20
 
     if cid_target:
         success, err_msg, embed = execute_card_evolution(player, cid_target)
@@ -2786,13 +2919,21 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     flandre_ace = is_card_ace2(player, 9)
     flandre_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐" if flandre_ace else ("🟢 SẴN SÀNG TIẾN HÓA!" if flandre_cnt >= 30 else f"🔴 Chưa đủ ({flandre_cnt}/30)")
 
+    remilia_cnt = player.get("inventory", {}).get("12", 0)
+    remilia_ace = is_card_ace2(player, 12)
+    remilia_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐" if remilia_ace else ("🟢 SẴN SÀNG TIẾN HÓA!" if remilia_cnt >= 25 else f"🔴 Chưa đủ ({remilia_cnt}/25)")
+
+    reisen_cnt = player.get("inventory", {}).get("20", 0)
+    reisen_ace = is_card_ace2(player, 20)
+    reisen_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐" if reisen_ace else ("🟢 SẴN SÀNG TIẾN HÓA!" if reisen_cnt >= 40 else f"🔴 Chưa đủ ({reisen_cnt}/40)")
+
     embed = discord.Embed(
         title="🌟 PHÒNG TIẾN HÓA NHÂN VẬT TOUHOU (EVOLUTION - ACE 2)",
         description=(
             "Thu thập đủ số lượng thẻ yêu cầu để tiến hóa nhân vật lên **Ace 2 ⭐⭐**!\n"
             "✨ **Quy tắc Ace mới:** Sau khi tiến hóa sẽ **trừ đi chi phí thẻ** tương ứng (ví dụ: 30 lá -> 0, 32 lá -> 2).\n"
             "💪 **Buff Ace 2 mới:** Cộng **+300 ATK** và **+300 HP** vĩnh viễn!\n\n"
-            "👉 **Cú pháp theo ID:** `/evol id_hoac_ten:14`, `/evol id_hoac_ten:17` hoặc `/evol id_hoac_ten:18`\n"
+            "👉 **Cú pháp theo ID:** `/evol id_hoac_ten:14`, `/evol id_hoac_ten:17`, `/evol id_hoac_ten:18`, `/evol id_hoac_ten:12` hoặc `/evol id_hoac_ten:20`\n"
             "Hoặc bấm các nút bên dưới để tiến hóa ngay:"
         ),
         color=0x8B5CF6
@@ -2845,6 +2986,30 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
         ),
         inline=False
     )
+
+    remilia_cfg = EVOL_CONFIG[12]
+    embed.add_field(
+        name=f"🌙 [#{remilia_cfg['id']:02d}] {remilia_cfg['name']} (Yêu cầu 25 thẻ):",
+        value=(
+            f"• Trạng thái: **{remilia_status}**\n"
+            f"• Trong túi đồ: **{remilia_cnt}/25** lá *(tiến hóa xong trừ 25 lá)*\n"
+            f"• Buff Ace: **+300 ATK** & **+300 HP**\n"
+            f"• Kỹ năng: **{remilia_cfg['skill_name']}** (THỤ ĐỘNG không cần kích hoạt: mọi đòn đánh +3% Máu Tối Đa mục tiêu, kèm GIF chiêu trực tiếp!)"
+        ),
+        inline=False
+    )
+
+    reisen_cfg = EVOL_CONFIG[20]
+    embed.add_field(
+        name=f"🐰 [#{reisen_cfg['id']:02d}] {reisen_cfg['name']} (Yêu cầu 40 thẻ):",
+        value=(
+            f"• Trạng thái: **{reisen_status}**\n"
+            f"• Trong túi đồ: **{reisen_cnt}/40** lá *(tiến hóa xong trừ 40 lá)*\n"
+            f"• Buff Ace: **+300 ATK** & **+300 HP**\n"
+            f"• Kỹ năng: **{reisen_cfg['skill_name']}** (25% kích hoạt 1 lần/trận: mục tiêu 20% tự gây sát thương lên bản thân trong 4 turn, không dùng lên chính mình!)"
+        ),
+        inline=False
+    )
     embed.set_footer(text="Bấm nút chọn hoặc dùng /evol kèm ID nhân vật!")
 
     view = EvolSelectView(player, user.id)
@@ -2853,13 +3018,15 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     else:
         await ctx_or_interaction.send(embed=embed, view=view)
 
-@bot.tree.command(name="evol", description="Tiến hóa nhân vật Touhou lên Ace 2 (9: Flandre, 14: Reimu, 17: Sakuya, 18: Marisa)")
+@bot.tree.command(name="evol", description="Tiến hóa nhân vật Touhou lên Ace 2 (9: Flandre, 12: Remilia, 14: Reimu, 17: Sakuya, 18: Marisa, 20: Reisen)")
 @app_commands.describe(id_hoac_ten="Nhập số ID thẻ (9, 13, 16 hoặc 17) hoặc chọn nhân vật")
 @app_commands.choices(id_hoac_ten=[
     app_commands.Choice(name="[#14] Reimu Hakurei (Ace 2 - Cần 20 thẻ, trừ 20 khi Ace)", value="14"),
     app_commands.Choice(name="[#17] Sakuya Izayoi (Ace 2 - Cần 30 thẻ, trừ 30 khi Ace)", value="17"),
     app_commands.Choice(name="[#18] Marisa Kirisame (Ace 2 - Cần 25 thẻ, Master Spark x2.0)", value="18"),
-    app_commands.Choice(name="[#09] Flandre Scarlet (Ace 2 - Cần 30 thẻ, Ripples of 495 Years)", value="9")
+    app_commands.Choice(name="[#09] Flandre Scarlet (Ace 2 - Cần 30 thẻ, Ripples of 495 Years)", value="9"),
+    app_commands.Choice(name="[#12] Remilia Scarlet (Ace 2 - Cần 25 thẻ, Gungnir thụ động +3% Max HP mục tiêu)", value="12"),
+    app_commands.Choice(name="[#20] Reisen Udongein Inaba (Ace 2 - Cần 40 thẻ, Red Eye Mind Explosion)", value="20")
 ])
 async def slash_evol(interaction: discord.Interaction, id_hoac_ten: str = None):
     await handle_evol(interaction, id_hoac_ten)
@@ -3499,7 +3666,7 @@ class CharacterCheckView(discord.ui.View):
     def rebuild_items(self):
         self.clear_items()
         cid = self.current_index + 1
-        has_ace = cid in (9, 14, 17, 18)
+        has_ace = cid in (9, 12, 14, 17, 18, 20)
 
         first_btn = discord.ui.Button(label="⏮️", style=discord.ButtonStyle.secondary, row=0)
         first_btn.callback = self.first_page
@@ -3543,7 +3710,7 @@ class CharacterCheckView(discord.ui.View):
         opt_part1 = []
         for i in range(1, 14):
             c = CARDS_DATA[i]
-            star = " ⭐⭐" if i in (9, 14, 17, 18) else ""
+            star = " ⭐⭐" if i in (9, 12, 14, 17, 18, 20) else ""
             opt_part1.append(discord.SelectOption(
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
@@ -3561,7 +3728,7 @@ class CharacterCheckView(discord.ui.View):
         opt_part2 = []
         for i in range(14, 28):
             c = CARDS_DATA[i]
-            star = " ⭐⭐" if i in (9, 14, 17, 18) else ""
+            star = " ⭐⭐" if i in (9, 12, 14, 17, 18, 20) else ""
             opt_part2.append(discord.SelectOption(
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
@@ -3582,7 +3749,7 @@ class CharacterCheckView(discord.ui.View):
         cid = self.current_index + 1
         card = CARDS_DATA[cid]
         details = CHARACTER_DETAILS.get(cid, {})
-        has_ace = cid in (9, 14, 17, 18)
+        has_ace = cid in (9, 12, 14, 17, 18, 20)
         is_ace_mode = self.show_ace and has_ace
 
         player = get_player(self.user_id) if self.user_id else None
@@ -3957,6 +4124,11 @@ async def handle_battle(ctx_or_interaction):
     p_sakuya, p_reimu, p_marisa = False, False, False
     p_flandre = False
     o_sakuya, o_reimu, o_marisa = False, False, False
+    # Cờ kỹ năng Ace 2 mới: Remilia (thụ động) & Reisen (Red Eye Mind Explosion)
+    reisen_used = False
+    o_reisen_used = False
+    o_mind_turns = 0
+    p_mind_turns = 0
     # Cờ tuyệt kỹ thẻ [T] #t1 Seiki (Battle): mỗi chiêu 1 lần/trận, tối đa 1 chiêu/lượt
     p_seiki_seal, p_seiki_spark, p_seiki_heal = False, False, False
     p_seiki_used_turn = -1
@@ -3972,6 +4144,25 @@ async def handle_battle(ctx_or_interaction):
         turn_trades = []
         stunned_pc = False
         stunned_oc = False
+
+        # ===== RED EYE MIND EXPLOSION: MỤC TIÊU BỊ ẢO GIÁC TỰ GÂY SÁT THƯƠNG (20%/LƯỢT) =====
+        if o_mind_turns > 0:
+            o_mind_turns -= 1
+            if random.random() < 0.20:
+                _mc_dmg = oc["power"]
+                oc["current_hp"] = max(0, oc["current_hp"] - _mc_dmg)
+                msg_mc = f"🌀 **[Red Eye Mind Explosion]** **{oc['name']}** mất kiểm soát và **tự gây {_mc_dmg:,} DMG** lên bản thân! (Còn {o_mind_turns} lượt ảo giác)"
+                battle_logs.append(msg_mc)
+                turn_actions.append(msg_mc)
+
+        if p_mind_turns > 0:
+            p_mind_turns -= 1
+            if random.random() < 0.20:
+                _mc_dmg = pc["power"]
+                pc["current_hp"] = max(0, pc["current_hp"] - _mc_dmg)
+                msg_mc = f"🌀 **[Red Eye Mind Explosion]** **{pc['name']}** mất kiểm soát và **tự gây {_mc_dmg:,} DMG** lên bản thân! (Còn {p_mind_turns} lượt ảo giác)"
+                battle_logs.append(msg_mc)
+                turn_actions.append(msg_mc)
 
         if pc["cid"] == 17 and pc["is_ace2"] and not p_sakuya:
             if random.random() < 0.40:
@@ -4002,6 +4193,25 @@ async def handle_battle(ctx_or_interaction):
                 msg_m = f"🌟 **[Ace 2] [#18] Marisa** tung ra **Master Spark** (30%)! Bộc phá ×2.0 sát thương gây **{curr_pc_power:,} DMG**!"
                 battle_logs.append(msg_m)
                 turn_actions.append(msg_m)
+
+        # ===== ACE 2 REMILIA - THƯƠNG ĐỎ GUNGNIR (THỤ ĐỘNG: +3% MÁU TỐI ĐA MỤC TIÊU MỖI ĐÒN ĐÁNH) =====
+        if pc["cid"] == 12 and pc["is_ace2"]:
+            gungnir_bonus = int(oc["hp"] * 0.03)
+            curr_pc_power += gungnir_bonus
+            if not turn_image:
+                turn_image = EVOL_CONFIG[12]["skill_gif"]
+            turn_actions.append(f"🩸 **[Ace 2] [#12] Remilia** - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{gungnir_bonus:,} DMG** (3% Máu tối đa đối thủ)!")
+
+        # ===== ACE 2 REISEN - RED EYE MIND EXPLOSION (25%: ĐIỀU KHIỂN TÂM TRÍ ĐỐI THỦ 4 TURN) =====
+        if pc["cid"] == 20 and pc["is_ace2"] and not reisen_used:
+            if random.random() < 0.25:
+                reisen_used = True
+                o_mind_turns = 4
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[20]["skill_gif"]
+                msg_r = f"🔴 **[Ace 2] [#20] Reisen** kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 **{oc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
+                battle_logs.append(msg_r)
+                turn_actions.append(msg_r)
 
         # ===== ACE 2 FLANDRE - RIPPLES OF 495 YEARS (25%: XÓA 50% HP ĐỐI THỦ, 1 LẦN/TRẬN) =====
         if pc["cid"] == 9 and pc["is_ace2"] and not p_flandre:
@@ -4048,6 +4258,25 @@ async def handle_battle(ctx_or_interaction):
                 msg_m = f"🌟 **Đối thủ [Ace 2] [#18] Marisa** tung ra **Master Spark** (25%)! Bộc phá ×1.5 sát thương gây **{curr_oc_power:,} DMG**!"
                 battle_logs.append(msg_m)
                 turn_actions.append(msg_m)
+
+        # ===== ĐỐI THỦ ACE 2 REMILIA - THƯƠNG ĐỎ GUNGNIR (THỤ ĐỘNG) =====
+        if oc["cid"] == 12 and oc.get("is_ace2"):
+            o_gungnir_bonus = int(pc["hp"] * 0.03)
+            curr_oc_power += o_gungnir_bonus
+            if not turn_image:
+                turn_image = EVOL_CONFIG[12]["skill_gif"]
+            turn_actions.append(f"🩸 **Đối thủ [Ace 2] [#12] Remilia** - **Thương Đỏ Gungnir** (Thụ động): +**{o_gungnir_bonus:,} DMG** (3% Máu tối đa)!")
+
+        # ===== ĐỐI THỦ ACE 2 REISEN - RED EYE MIND EXPLOSION (20%: ĐIỀU KHIỂN TÂM TRÍ 4 TURN) =====
+        if oc["cid"] == 20 and oc.get("is_ace2") and not o_reisen_used:
+            if random.random() < 0.20:
+                o_reisen_used = True
+                p_mind_turns = 4
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[20]["skill_gif"]
+                msg_r = f"🔴 **Đối thủ [Ace 2] [#20] Reisen** kích hoạt **Red Eye Mind Explosion** (20%)! 🌀 **{pc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
+                battle_logs.append(msg_r)
+                turn_actions.append(msg_r)
 
         if not stunned_pc:
             oc_invul = False
@@ -4300,6 +4529,11 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
     c_flandre = False
     t_sakuya, t_reimu, t_marisa = False, False, False
     t_flandre = False
+    # Cờ kỹ năng Ace 2 mới: Remilia (thụ động) & Reisen (Red Eye Mind Explosion)
+    c_reisen_used = False
+    t_reisen_used = False
+    c_mind_turns = 0
+    t_mind_turns = 0
     # Cờ tuyệt kỹ thẻ [T] #t1 Seiki (PvP): mỗi chiêu 1 lần/trận, tối đa 1 chiêu/lượt
     c_seiki_seal, c_seiki_spark, c_seiki_heal = False, False, False
     c_seiki_used_turn = -1
@@ -4315,6 +4549,25 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
         turn_image = None
         turn_actions = []
         turn_trades = []
+
+        # ===== RED EYE MIND EXPLOSION: MỤC TIÊU BỊ ẢO GIÁC TỰ GÂY SÁT THƯƠNG (20%/LƯỢT) =====
+        if t_mind_turns > 0:
+            t_mind_turns -= 1
+            if random.random() < 0.20:
+                _mc_dmg = tc["power"]
+                tc["current_hp"] = max(0, tc["current_hp"] - _mc_dmg)
+                msg_mc = f"🌀 **[Red Eye Mind Explosion]** **{tc['name']}** ({target.display_name}) mất kiểm soát và **tự gây {_mc_dmg:,} DMG** lên bản thân! (Còn {t_mind_turns} lượt ảo giác)"
+                pvp_logs.append(msg_mc)
+                turn_actions.append(msg_mc)
+
+        if c_mind_turns > 0:
+            c_mind_turns -= 1
+            if random.random() < 0.20:
+                _mc_dmg = cc["power"]
+                cc["current_hp"] = max(0, cc["current_hp"] - _mc_dmg)
+                msg_mc = f"🌀 **[Red Eye Mind Explosion]** **{cc['name']}** ({challenger.display_name}) mất kiểm soát và **tự gây {_mc_dmg:,} DMG** lên bản thân! (Còn {c_mind_turns} lượt ảo giác)"
+                pvp_logs.append(msg_mc)
+                turn_actions.append(msg_mc)
 
         c_stunned = False
         t_stunned = False
@@ -4394,6 +4647,25 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_m)
                 turn_actions.append(msg_m)
 
+        # ===== ACE 2 REMILIA (CHALLENGER) - THƯƠNG ĐỎ GUNGNIR (THỤ ĐỘNG) =====
+        if cc["cid"] == 12 and cc["is_ace2"]:
+            _gungnir = int(tc["max_hp"] * 0.03)
+            c_curr_power += _gungnir
+            if not turn_image:
+                turn_image = EVOL_CONFIG[12]["skill_gif"]
+            turn_actions.append(f"🩸 **[Ace 2] [#12] Remilia** ({challenger.display_name}) - **Thương Đỏ Gungnir** (Thụ động): +**{_gungnir:,} DMG** (3% Máu tối đa đối thủ)!")
+
+        # ===== ACE 2 REISEN (CHALLENGER) - RED EYE MIND EXPLOSION (25%, 4 TURN) =====
+        if cc["cid"] == 20 and cc["is_ace2"] and not c_reisen_used:
+            if random.random() < 0.25:
+                c_reisen_used = True
+                t_mind_turns = 4
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[20]["skill_gif"]
+                msg_r = f"🔴 **[Ace 2] [#20] Reisen** ({challenger.display_name}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 **{tc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
+                pvp_logs.append(msg_r)
+                turn_actions.append(msg_r)
+
         # ===== ACE 2 FLANDRE (Challenger) - RIPPLES OF 495 YEARS (25%: XÓA 50% HP ĐỐI THỦ) =====
         if cc["cid"] == 9 and cc["is_ace2"] and not c_flandre:
             if random.random() < 0.25:
@@ -4438,6 +4710,25 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 msg_m = f"🌟 **[Ace 2] [#18] Marisa** ({target.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×2.0 sát thương ({t_curr_power:,} DMG)!"
                 pvp_logs.append(msg_m)
                 turn_actions.append(msg_m)
+
+        # ===== ACE 2 REMILIA (TARGET) - THƯƠNG ĐỎ GUNGNIR (THỤ ĐỘNG) =====
+        if tc["cid"] == 12 and tc["is_ace2"]:
+            _gungnir = int(cc["max_hp"] * 0.03)
+            t_curr_power += _gungnir
+            if not turn_image:
+                turn_image = EVOL_CONFIG[12]["skill_gif"]
+            turn_actions.append(f"🩸 **[Ace 2] [#12] Remilia** ({target.display_name}) - **Thương Đỏ Gungnir** (Thụ động): +**{_gungnir:,} DMG** (3% Máu tối đa đối thủ)!")
+
+        # ===== ACE 2 REISEN (TARGET) - RED EYE MIND EXPLOSION (25%, 4 TURN) =====
+        if tc["cid"] == 20 and tc["is_ace2"] and not t_reisen_used:
+            if random.random() < 0.25:
+                t_reisen_used = True
+                c_mind_turns = 4
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[20]["skill_gif"]
+                msg_r = f"🔴 **[Ace 2] [#20] Reisen** ({target.display_name}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 **{cc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
+                pvp_logs.append(msg_r)
+                turn_actions.append(msg_r)
 
         # ===== ACE 2 FLANDRE (Target) - RIPPLES OF 495 YEARS (25%: XÓA 50% HP ĐỐI THỦ) =====
         if tc["cid"] == 9 and tc["is_ace2"] and not t_flandre:
@@ -5278,6 +5569,8 @@ async def handle_help(ctx_or_interaction):
   - [#17] Sakuya (30 thẻ): Thời Gian Đóng Băng (40% stun đối thủ).
   - [#18] Marisa (25 thẻ): Master Spark (30% kích hoạt sát thương ×2.0 lần).
   - [#09] Flandre (30 thẻ): Ripples of 495 Years (25% xóa 50% HP đối thủ / 30% HP Boss Raid, 1 lần/trận).
+  - [#12] Remilia (25 thẻ): Thương Đỏ Gungnir — THỤ ĐỘNG không cần kích hoạt: mọi đòn đánh +3% Máu Tối Đa (Max HP) mục tiêu, kèm GIF chiêu.
+  - [#20] Reisen (40 thẻ): Red Eye Mind Explosion (25% kích hoạt 1 lần/trận): mục tiêu có 20% tự gây sát thương lên bản thân trong 4 turn (không dùng lên chính mình).
 • `/trade <user> [your] [their]`: Trao đổi thẻ bài (Cú pháp `your:tên:số_lượng` và `their:tên:số_lượng`, ví dụ: `your:reimu: 1 their:sakuya:12`, giao diện xác nhận 2 bên).
 • `/team [hanh_dong] [id_the]`: Quản lý đội hình (view, add, remove). Mỗi cấp độ tăng +20 ATK và +25 HP buff!
 • `/check [id_hoac_ten]`: Soi chi tiết sức mạnh, máu và kỹ năng của 27 nhân vật Touhou + thẻ đặc biệt [T] #t1 Seiki (gõ `seiki` hoặc `t1`, kèm Ace 2, có nút ◀ ▶ lướt danh sách, menu chọn nhanh và nút 🔮 xem thẻ T1).
