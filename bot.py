@@ -303,6 +303,35 @@ SEIKI_BOSS_CONFIG = {
 boss_cooldown_until = 0.0
 
 # ==============================================================================
+# SEIKI DỊ HÌNH PHASE 2 - THỨC TỈNH (90K HP, 10K DMG CHIA ĐỀU, NUCLEAR + CLEAVE)
+# ==============================================================================
+SEIKI_BOSS_PHASE2_CONFIG = {
+    "id": "seiki_phase2",
+    "name": "Seiki Dị Hình - Thức Tỉnh (Phase 2)",
+    "desc": "Dị tà ma lực bùng nổ, thân xác dị hình đang thức tỉnh hoàn toàn!",
+    "reimu_quote": "Không thể nào... dị khí còn mạnh gấp bội! Mọi người cẩn thận, ngài ấy đã thức tỉnh rồi!",
+    "image": "https://media.discordapp.net/attachments/1543072032034521228/1550376618160169012/content.png?ex=6ab0bf3e&is=6aaf6dbe&hm=eb9bf84552e0b67e8e03f8ac403af2034904b4b48330bd8cd220f39feb3c11a2&=&format=webp&quality=lossless&width=357&height=512",
+    "hp": 90000,      # Phase 2: 90,000 HP
+    "power": 10000,   # Phase 2: 10,000 DMG đánh thường chia đều tiền tuyến
+    "skills": {
+        "nuclear_spell": {
+            "name": "Nuclear Spell Card",
+            "chance": 0.10,
+            "damage": 10000,
+            "desc": "10% kích hoạt, gây 10,000 DMG lên TẤT CẢ lá bài đang ở tiền tuyến!",
+            "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/9a/95/QC2Rgxlj7qvePDfZJte.gif"
+        },
+        "cleave": {
+            "name": "Cleave",
+            "chance": 1.0,
+            "pct": 0.20,
+            "desc": "Nội tại THỤ ĐỘNG 100% kích hoạt: Mọi đòn đánh thường gây thêm sát thương bằng 20% Máu Tối Đa của mục tiêu!",
+            "gif": "https://static2.klipy.com/ii/9ed0121ed465c12e1f3dda331ed33f0e/9b/b3/mOb3k5Ux7HWC.gif"
+        }
+    }
+}
+
+# ==============================================================================
 # CƠ CHẾ TIẾN HÓA ACE 2 (KÈM ID NHÂN VẬT & DIRECT GIF HIỂN THỊ TRỰC TIẾP)
 # ==============================================================================
 EVOL_CONFIG = {
@@ -1284,8 +1313,8 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
                 if is_admin else f"{reimu_line}👺 **{cfg['name']}**\n*{cfg['desc']}*")
         embed = discord.Embed(title=title, description=desc, color=0x7C3AED)
         embed.set_image(url=cfg["image"])
-        embed.add_field(name="❤️ Máu Boss (HP):", value=f"**{cfg['hp']:,} HP** *(Phase 1)*", inline=True)
-        embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Cơ bản: **{cfg['power']:,} DMG** *(chia đều)*\n• Khi có Spark: **4,500 DMG** *(x1.5)*", inline=True)
+        embed.add_field(name="❤️ Máu Boss (HP):", value=f"• Phase 1: **{cfg['hp']:,} HP**\n• Phase 2 Thức Tỉnh: **{SEIKI_BOSS_PHASE2_CONFIG['hp']:,} HP**", inline=True)
+        embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{cfg['power']:,} DMG** *(chia đều, Spark x1.5: 4,500)*\n• Phase 2: **{SEIKI_BOSS_PHASE2_CONFIG['power']:,} DMG** *(chia đều, kèm Cleave +20% Máu tối đa mục tiêu)*", inline=True)
         embed.add_field(name=f"👥 Người Tham Gia (0/{cfg['max_players']}):", value="Chưa có ai", inline=False)
         embed.add_field(
             name="🔮 Kỹ Năng & Nội Tại (Độc Quyền - Không Trùng Turn):",
@@ -1294,14 +1323,16 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
                 "• 🌟 **Multi Master Spark (15%):** Bộc phát ma lực x1.5 sát thương (4,500 DMG chia đều) duy trì trong **3 lượt**!\n"
                 "• 🛡️ **Fantasy Seal (20%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 turn!\n"
                 "• ⚡ **Blitz Attack (20%):** Oanh tạc chớp nhoáng gây **4,000 DMG** lên toàn bộ thẻ tiền tuyến!\n"
-                "*(Lưu ý: Không bao giờ kích hoạt trùng chiêu trong cùng một hiệp)*"
+                "*(Lưu ý: Không bao giờ kích hoạt trùng chiêu trong cùng một hiệp)*\n\n"
+                "👹 **PHASE 2 - THỨC TỈNH (90K HP / 10K DMG CHIA ĐỀU):**\n"
+                "• ☢️ **Nuclear Spell Card (10%):** Gây **10,000 DMG** lên **TẤT CẢ** lá bài đang ở tiền tuyến!\n"
+                "• 🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **20% Máu Tối Đa** của mục tiêu!"
             ),
             inline=False
         )
         embed.add_field(
             name="🎁 Phần Thưởng Thanh Tẩy Boss:",
-            value="• 10% cơ hội nhận **10 Vé Pull**, 40% nhận **5 Vé**, 50% nhận **3 Vé**!\n• 🔮 **2.5%** rơi **+1 Mảnh Seiki** (10 mảnh = 1 thẻ [T] #t1 Seiki - dùng `/t translate`)!\n• Nhận thêm **+100 XP** và điểm danh nhiệm vụ diệt Boss!",
-            inline=False
+            value="• **Phase 1:** 10% nhận **10 Vé**, 40% nhận **5 Vé**, 50% nhận **3 Vé**! (+100 XP)\n• **Phase 2 (Thức Tỉnh):** 10% nhận **30 Vé**, 40% nhận **20 Vé**, 50% nhận **10 Vé**! 🔮 **15%** rơi **+1 Mảnh Seiki**! (+150 XP)\n• 🔮 Mỗi Phase đều có **2.5%** rơi **+1 Mảnh Seiki** (10 mảnh = 1 thẻ [T] #t1 Seiki - dùng `/t translate`)!\n• Nhận thêm điểm danh nhiệm vụ diệt Boss!",
         )
         embed.add_field(
             name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
@@ -1913,21 +1944,360 @@ async def execute_raid(channel, raid_data):
         save_player(p)
         p1_rewards_data[uid] = {"total_pulls": t_val, "items": items_won, "username": p["username"]}
 
+    # ========================================================================
+    # PHASE 2 MỚI: SEIKI DỊ HÌNH - THỨC TỈNH (90K HP / 10K DMG / NUCLEAR + CLEAVE)
+    # ========================================================================
     if boss_type == "seiki":
+        p2_cfg = SEIKI_BOSS_PHASE2_CONFIG
+        p2_alert_embed = discord.Embed(
+            title="🚨 MA LỰC DỊ TÀ BÙNG NỔ - SEIKI DỊ HÌNH THỨC TỈNH! (PHASE 2)",
+            description=(
+                f"🌸 **Reimu thảng thốt:** *\"{p2_cfg['reimu_quote']}\"*\n\n"
+                f"👺 **{p2_cfg['name']}** đã thức tỉnh ma lực dị tà tối thượng!\n"
+                f"❤️ **Máu tăng lên:** **`{p2_cfg['hp']:,} HP`**\n"
+                f"⚔️ **Sát thương đánh thường:** **`{p2_cfg['power']:,} DMG`** *(chia đều tiền tuyến, kèm nội tại **Cleave** +20% Máu tối đa mục tiêu)*\n"
+                f"☢️ **Nuclear Spell Card (10%):** Gây **10,000 DMG** lên **TẤT CẢ** lá bài tiền tuyến!\n\n"
+                f"✨ **PHÉP MÀU THANH TẨY:**\n"
+                f"**Lập tức hồi sinh và hồi 100% sinh lực toàn bộ thẻ bài của tất cả dũng giả!**"
+            ),
+            color=0x7C3AED
+        )
+        p2_alert_embed.set_image(url=p2_cfg["image"])
+        battle_msg = await channel.send(embed=p2_alert_embed)
+        await asyncio.sleep(2.5)
+
+        for c in combatants:
+            c["current_card_index"] = 0
+            c["is_alive"] = len(c["team_cards"]) > 0
+            c["death_round"] = None
+            c["sakuya_stun_used"] = False
+            c["reimu_invul_used"] = False
+            c["marisa_spark_used"] = False
+            c["flandre_used"] = False
+            c["reisen_used"] = False
+            c["seiki_seal_used"] = False
+            c["seiki_spark_used"] = False
+            c["seiki_heal_used"] = False
+            c["seiki_used_turn"] = -1
+            for card in c["team_cards"]:
+                card["current_hp"] = card["max_hp"]
+
+        p2_max_hp = p2_cfg["hp"]
+        p2_hp = p2_max_hp
+        p2_power = p2_cfg["power"]
+        p2_rounds = 0
+        boss_mind_turns = 0  # Reset hiệu ứng Red Eye Mind Explosion khi Boss chuyển Phase
+
+        while p2_hp > 0 and p2_rounds < max_rounds:
+            active_combatants = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
+            if not active_combatants:
+                break
+
+            p2_rounds += 1
+            frontline_cards = [c["team_cards"][c["current_card_index"]] for c in active_combatants]
+
+            # ===== RED EYE MIND EXPLOSION (REISEN ACE 2): BOSS PHASE 2 TỰ GÂY SÁT THƯƠNG 20%/LƯỢT =====
+            reisen_boss_log = None
+            if boss_mind_turns > 0:
+                boss_mind_turns -= 1
+                if random.random() < 0.20:
+                    _mind_dmg = p2_power
+                    p2_hp = max(0, p2_hp - _mind_dmg)
+                    reisen_boss_log = f"🌀 **[Red Eye Mind Explosion]** Boss mất kiểm soát tâm trí và **tự gây {_mind_dmg:,} DMG** lên bản thân! (Còn {boss_mind_turns} lượt ảo giác)"
+
+            boss_stunned = False
+            sakuya_stun_notif = None
+            marisa_spark_notif = None
+            flandre_notif = None
+            remilia_notif = None
+            reisen_notif = None
+            turn_image = None
+
+            for c in active_combatants:
+                ac = c["team_cards"][c["current_card_index"]]
+                if ac["cid"] == 17 and ac["is_ace2"] and not c["sakuya_stun_used"]:
+                    if random.random() < 0.40:
+                        c["sakuya_stun_used"] = True
+                        boss_stunned = True
+                        turn_image = EVOL_CONFIG[17]["skill_gif"]
+                        sakuya_stun_notif = f"⏳ **[Ace 2] [#17] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss Phase 2 bị **STUN**!"
+                        break
+
+            round_player_dmg = 0
+            for c in active_combatants:
+                ac = c["team_cards"][c["current_card_index"]]
+                card_dmg = ac["power"]
+                if ac["cid"] == 18 and ac["is_ace2"] and not c.get("marisa_spark_used"):
+                    if random.random() < 0.30:
+                        c["marisa_spark_used"] = True
+                        card_dmg = int(card_dmg * 2.0)
+                        if not turn_image:
+                            turn_image = EVOL_CONFIG[18]["skill_gif"]
+                        marisa_spark_notif = f"🌟 **[Ace 2] [#18] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.0 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
+
+                if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
+                    if random.random() < 0.25:
+                        c["flandre_used"] = True
+                        rip_dmg = int(p2_hp * 0.30)
+                        p2_hp = max(0, p2_hp - rip_dmg)
+                        c["total_dmg"] += rip_dmg
+                        if not turn_image:
+                            turn_image = EVOL_CONFIG[9]["skill_gif"]
+                        flandre_notif = f"🦇 **[Ace 2] [#09] Flandre Scarlet** ({c['username']}) kích hoạt **Ripples of 495 Years** (25%)! Xóa sổ **{rip_dmg:,} DMG (30% HP Boss Phase 2)** ngay lập tức!"
+
+                if ac["cid"] == 12 and ac["is_ace2"]:
+                    gungnir_bonus = int(p2_max_hp * 0.03)
+                    card_dmg += gungnir_bonus
+                    if not turn_image:
+                        turn_image = EVOL_CONFIG[12]["skill_gif"]
+                    remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{gungnir_bonus:,} DMG** (3% Máu tối đa Boss Phase 2)!"
+
+                if ac["cid"] == 20 and ac["is_ace2"] and not c.get("reisen_used"):
+                    if random.random() < 0.25:
+                        c["reisen_used"] = True
+                        boss_mind_turns = 4
+                        if not turn_image:
+                            turn_image = EVOL_CONFIG[20]["skill_gif"]
+                        reisen_notif = f"🔴 **[Ace 2] [#20] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss Phase 2 bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
+
+                if str(ac["cid"]).lower() == "t1":
+                    if c.get("seiki_used_turn") != p2_rounds:
+                        if not c.get("seiki_spark_used") and random.random() < 0.30:
+                            c["seiki_spark_used"] = True
+                            c["seiki_used_turn"] = p2_rounds
+                            card_dmg = int(card_dmg * 1.5)
+                            if not turn_image:
+                                turn_image = T1_SPARK_GIF
+                            marisa_spark_notif = (marisa_spark_notif + "\n" if marisa_spark_notif else "") + f"🌟 **[Nhóm T] [#t1] Seiki** ({c['username']}) bộc phá **Master Spark** (30%)! Sát thương ×1.5 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
+                        elif not c.get("seiki_heal_used") and ac["current_hp"] < ac["max_hp"] and random.random() < 0.20:
+                            c["seiki_heal_used"] = True
+                            c["seiki_used_turn"] = p2_rounds
+                            heal_val = int(ac["max_hp"] * 0.30)
+                            ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_val)
+                            if not turn_image:
+                                turn_image = T1_HEAL_GIF
+
+                round_player_dmg += card_dmg
+                c["total_dmg"] += card_dmg
+
+            p2_hp = max(0, p2_hp - round_player_dmg)
+
+            # ===== BOSS PHASE 2: 10% NUCLEAR SPELL CARD, NGƯỢC LẠI ĐÁNH THƯỜNG + CLEAVE (100%) =====
+            boss_action_log = ""
+            if p2_hp <= 0:
+                boss_action_log = "💥 **Seiki Dị Hình Phase 2 đã bị thanh tẩy hoàn toàn! Dị tà ma thuật tiêu tan!**"
+            elif boss_stunned:
+                boss_action_log = "❄️ Boss Phase 2 bị đóng băng thời gian, bất lực không thể ra đòn!"
+            else:
+                if random.random() < 0.10:
+                    # ☢️ NUCLEAR SPELL CARD: 10K DMG LÊN TẤT CẢ LÁ BÀI TIỀN TUYẾN
+                    turn_image = p2_cfg["skills"]["nuclear_spell"]["gif"]
+                    boss_action_log = (
+                        f"☢️ **[KỸ NĂNG] Seiki Dị Hình Phase 2** kích hoạt **Nuclear Spell Card (10%)**! "
+                        f"Oanh tạc hạt nhân gây **10,000 DMG** lên **TẤT CẢ {len(frontline_cards)} lá bài** đang ở tiền tuyến!"
+                    )
+                    for c in active_combatants:
+                        ac = c["team_cards"][c["current_card_index"]]
+                        invul = False
+                        if ac["cid"] == 14 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                            if random.random() < 0.40:
+                                c["reimu_invul_used"] = True
+                                invul = True
+                                turn_image = EVOL_CONFIG[14]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                        elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used"):
+                            if c.get("seiki_used_turn") != p2_rounds and random.random() < 0.40:
+                                c["seiki_seal_used"] = True
+                                c["seiki_used_turn"] = p2_rounds
+                                invul = True
+                                turn_image = T1_SEAL_GIF
+                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                        if not invul:
+                            ac["current_hp"] -= 10000
+                else:
+                    # 🪓 ĐÁNH THƯỜNG 10K CHIA ĐỀU + NỘI TẠI CLEAVE (100%): +20% MÁU TỐI ĐA MỤC TIÊU
+                    num_front = len(frontline_cards)
+                    dmg_per_card = max(100, p2_power // num_front)
+                    turn_image = p2_cfg["skills"]["cleave"]["gif"]
+                    boss_action_log = (
+                        f"⚔️ Boss Phase 2 đánh thường tổng **{p2_power:,} DMG**, chia đều **{dmg_per_card:,} DMG** lên mỗi lá bài tiền tuyến ({num_front} lá)!\n"
+                        f"🪓 **[Nội Tại - Cleave (100%)]** Mọi đòn đánh kèm thêm **20% Máu Tối Đa** của từng mục tiêu!"
+                    )
+                    for c in active_combatants:
+                        ac = c["team_cards"][c["current_card_index"]]
+                        cleave_bonus = int(ac["max_hp"] * 0.20)
+                        invul = False
+                        if ac["cid"] == 14 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                            if random.random() < 0.40:
+                                c["reimu_invul_used"] = True
+                                invul = True
+                                turn_image = EVOL_CONFIG[14]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                        elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used"):
+                            if c.get("seiki_used_turn") != p2_rounds and random.random() < 0.40:
+                                c["seiki_seal_used"] = True
+                                c["seiki_used_turn"] = p2_rounds
+                                invul = True
+                                turn_image = T1_SEAL_GIF
+                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                        if not invul:
+                            ac["current_hp"] -= (dmg_per_card + cleave_bonus)
+                            boss_action_log += f"\n• 💢 **{ac['name']}** ({c['username']}) nhận **{dmg_per_card:,} + {cleave_bonus:,} (Cleave) = {dmg_per_card + cleave_bonus:,} DMG**!"
+
+            # ===== ĐỔI SÁT THƯƠNG & THAY THẾ TIỀN TUYẾN PHASE 2 =====
+            push_logs = []
+            for c in active_combatants:
+                ac = c["team_cards"][c["current_card_index"]]
+                if ac["current_hp"] <= 0:
+                    ac["current_hp"] = 0
+                    dead_name = ac["name"]
+                    trade_dmg = ac["power"]
+                    p2_hp = max(0, p2_hp - trade_dmg)
+                    c["total_dmg"] += trade_dmg
+                    push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{dead_name}** ({c['username']}) trước khi gục ngã đã thành công đổi **{trade_dmg:,} DMG** lên Boss Phase 2!")
+                    c["current_card_index"] += 1
+                    if c["current_card_index"] < len(c["team_cards"]):
+                        next_card = c["team_cards"][c["current_card_index"]]
+                        push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục! ➡️ Đẩy **{next_card['name']}** (❤️{next_card['current_hp']:,} HP) lên!")
+                    else:
+                        c["is_alive"] = False
+                        c["death_round"] = p2_rounds
+                        push_logs.append(f"☠️ **{c['username']}** cạn kiệt thẻ bài và tử trận!")
+
+            round_card_status = []
+            for c in combatants:
+                if c["current_card_index"] < len(c["team_cards"]):
+                    cur_c = c["team_cards"][c["current_card_index"]]
+                    round_card_status.append(f"• **{c['username']}**: {cur_c['name']} (❤️ {max(0, cur_c['current_hp']):,}/{cur_c['max_hp']:,} HP)")
+                else:
+                    round_card_status.append(f"• **{c['username']}**: ☠️ Đã tử trận")
+
+            round_embed = discord.Embed(
+                title=f"☢️ HIỆP {p2_rounds} - SEIKI DỊ HÌNH PHASE 2: THỨC TỈNH",
+                description=f"❤️ **Máu Boss Phase 2:** `{get_hp_bar(p2_hp, p2_max_hp)}` **{p2_hp:,}/{p2_max_hp:,} HP**",
+                color=0x7C3AED
+            )
+            round_embed.add_field(name="💥 Tiền Tuyến Tấn Công:", value=f"Toàn quân dồn **{round_player_dmg:,} DMG**!", inline=False)
+            if sakuya_stun_notif:
+                round_embed.add_field(name="❄️ Kỹ Năng Đột Biến:", value=sakuya_stun_notif, inline=False)
+            if marisa_spark_notif:
+                round_embed.add_field(name="🌟 Master Spark Oanh Tạc:", value=marisa_spark_notif, inline=False)
+            if remilia_notif:
+                round_embed.add_field(name="🩸 Thương Đỏ Gungnir:", value=remilia_notif, inline=False)
+            if reisen_notif:
+                round_embed.add_field(name="🔴 Red Eye Mind Explosion:", value=reisen_notif, inline=False)
+            if reisen_boss_log:
+                round_embed.add_field(name="🌀 Ảo Giác Tâm Trí:", value=reisen_boss_log, inline=False)
+            if flandre_notif:
+                round_embed.add_field(name="🦇 Ripples of 495 Years:", value=flandre_notif, inline=False)
+            round_embed.add_field(name="👹 Boss Phase 2 Ra Đòn:", value=boss_action_log, inline=False)
+            if push_logs:
+                round_embed.add_field(name="🔄 Thay Đổi Tiền Tuyến:", value="\n".join(push_logs), inline=False)
+            round_embed.add_field(name="🛡️ Tình Trạng Tiền Tuyến Hiện Tại:", value="\n".join(round_card_status), inline=False)
+
+            if turn_image:
+                round_embed.set_image(url=turn_image)
+            else:
+                round_embed.set_thumbnail(url=p2_cfg["image"])
+
+            all_raid_turns.append({
+                "round": p2_rounds,
+                "phase": 2,
+                "title": f"Seiki Phase 2 - Hiệp {p2_rounds}: Thức Tỉnh",
+                "short_label": f"S-P2 - Hiệp {p2_rounds}",
+                "short_desc": f"Boss Phase 2 còn {p2_hp:,} HP",
+                "desc": f"☢️ **Seiki Dị Hình - Phase 2 Thức Tỉnh**\n❤️ Máu Boss: `{get_hp_bar(p2_hp, p2_max_hp)}` **{p2_hp:,}/{p2_max_hp:,} HP**",
+                "color": 0x7C3AED,
+                "image": turn_image,
+                "fields": [
+                    ("💥 Tiền Tuyến Tấn Công:", f"Toàn quân dồn **{round_player_dmg:,} DMG**!", False),
+                    *([("❄️ Kỹ Năng Đột Biến:", sakuya_stun_notif, False)] if sakuya_stun_notif else []),
+                    *([("🌟 Master Spark:", marisa_spark_notif, False)] if marisa_spark_notif else []),
+                    *([("🩸 Thương Đỏ Gungnir:", remilia_notif, False)] if remilia_notif else []),
+                    *([("🔴 Red Eye Mind Explosion:", reisen_notif, False)] if reisen_notif else []),
+                    *([("🌀 Ảo Giác Tâm Trí:", reisen_boss_log, False)] if reisen_boss_log else []),
+                    *([("🦇 Ripples of 495 Years:", flandre_notif, False)] if flandre_notif else []),
+                    ("👹 Boss Phase 2 Ra Đòn:", boss_action_log, False),
+                    *([("🔄 Thay Đổi Tiền Tuyến & Đổi Sát Thương:", "\n".join(push_logs), False)] if push_logs else []),
+                    ("🛡️ Tình Trạng Tiền Tuyến Hiện Tại:", "\n".join(round_card_status), False)
+                ]
+            })
+            try:
+                await battle_msg.edit(embed=round_embed)
+            except Exception:
+                pass
+
+            if p2_hp <= 0:
+                break
+            await asyncio.sleep(1.8)
+
+        p2_defeated = (p2_hp <= 0)
         total_raid_dmg = sum(c["total_dmg"] for c in combatants)
+
+        # ===== PHẦN THƯỞNG PHASE 2 MỚI: 10% 30 VÉ, 40% 20 VÉ, 50% 10 VÉ, 15% +1 MẢNH SEIKI =====
+        p2_rewards_data = {}
+        if p2_defeated:
+            for uid in participants:
+                p = get_player(uid)
+                old_lvl = p["level"]
+                roll = random.random()
+                if roll < 0.10:
+                    t_val = 30.0
+                    d_str = "👑 **+30 Vé** (10%)"
+                elif roll < 0.50:
+                    t_val = 20.0
+                    d_str = "🔥 **+20 Vé** (40%)"
+                else:
+                    t_val = 10.0
+                    d_str = "💎 **+10 Vé** (50%)"
+
+                items_won = [d_str]
+                if random.random() < 0.15:
+                    p_shards = p.setdefault("shards", {})
+                    p_shards["seiki"] = p_shards.get("seiki", 0) + 1
+                    cur_shards = p_shards["seiki"]
+                    shard_notice = f"🔮 **+1 Mảnh Seiki** (15% Siêu Hiếm! Kho: {cur_shards}/10)"
+                    if cur_shards >= 10:
+                        shard_notice += " ✨ *(Đã đủ 10 mảnh! Dùng `/t translate`)*"
+                    items_won.append(shard_notice)
+
+                p["pull_tickets"] += t_val
+                p["xp"] += 150
+                save_player(p)
+                p2_rewards_data[uid] = {
+                    "total_pulls": t_val,
+                    "items": items_won,
+                    "username": p["username"],
+                    "new_level": p["level"],
+                    "old_level": old_lvl,
+                    "total_tickets": p["pull_tickets"]
+                }
+
         final_embed = discord.Embed(
-            title="🌟 CHIẾN THẮNG HUY HOÀNG: THANH TẨY SEIKI DỊ HÌNH!",
+            title="🌟 KẾT QUẢ ĐẠI CHIẾN: SEIKI DỊ HÌNH (FULL 2 PHASES)!",
             description=(
                 "🌸 **Reimu thở phào nhẹ nhõm:** *\"Đó không phải cha ta! Dị tà ma thuật đã tan biến, ngài ấy đã được thanh tẩy hoàn toàn! Cảm ơn mọi người nhiều lắm!\"*\n\n"
-                f"🎉 **Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư** đã bị khuất phục hoàn toàn sau **{p1_rounds} hiệp**!\n"
-                f"💥 **Tổng sát thương toàn quân:** **{total_raid_dmg:,} DMG**\n"
+                f"**Phase 1:** 🎉 Hạ gục sau **{p1_rounds} hiệp**\n"
+                f"**Phase 2:** {'🎉 TOÀN THẮNG HUY HOÀNG (Boss 0 HP)' if p2_defeated else f'❌ THẤT THỦ (Boss còn {p2_hp:,}/{p2_max_hp:,} HP)'} sau **{p2_rounds} hiệp**\n"
+                f"💥 **Tổng Sát Thương Cả 2 Phase:** **{total_raid_dmg:,} DMG**\n"
                 f"⏳ **Hồi chiêu Boss tiếp theo:** **15 phút**"
             ),
-            color=0x10B981
+            color=0x10B981 if p2_defeated else 0xF59E0B
         )
-        final_embed.set_thumbnail(url=boss_cfg["image"])
+        final_embed.set_thumbnail(url=p2_cfg["image"] if p2_defeated else boss_cfg["image"])
         p1_summary = [f"🎁 **{r['username']}**: +{r['total_pulls']:.0f} Vé Pull ({r['items'][0]}) + 100 XP" + (f"\n   └ {r['items'][1]}" if len(r['items']) > 1 else "") for r in p1_rewards_data.values()]
-        final_embed.add_field(name="📦 Phần Thưởng Dũng Giả (10% 10 vé, 40% 5 vé, 50% 3 vé, 2.5% Mảnh Seiki):", value="\n".join(p1_summary), inline=False)
+        final_embed.add_field(name="📦 Phần Thưởng Phase 1 (10% 10 vé, 40% 5 vé, 50% 3 vé, 2.5% Mảnh Seiki):", value="\n".join(p1_summary), inline=False)
+
+        if p2_defeated:
+            p2_summary = []
+            for r in p2_rewards_data.values():
+                lvl_up = f" 🌟 **LÊN CẤP {r['new_level']}!**" if r['new_level'] > r['old_level'] else ""
+                shard_line = f"\n   └ {r['items'][1]}" if len(r['items']) > 1 else ""
+                p2_summary.append(f"🏆 **{r['username']}**: Nhận **+{r['total_pulls']:.0f} Vé Pull** ({r['items'][0]}) + 150 XP!{lvl_up}{shard_line}\n   └ *Tổng vé hiện có: {r['total_tickets']:.2f} vé*")
+            final_embed.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (10% 30 vé, 40% 20 vé, 50% 10 vé, 15% Mảnh Seiki):", value="\n".join(p2_summary), inline=False)
+        else:
+            final_embed.add_field(name="⚠️ Kết Quả Phase 2:", value=f"Boss Phase 2 còn {p2_hp:,} HP! Toàn bộ quà Phase 1 vẫn được bảo lưu trọn vẹn.", inline=False)
+
         await channel.send(embed=final_embed, view=OpenDetailsView(all_raid_turns))
         return
 
@@ -5455,6 +5825,7 @@ async def slash_boss_status(interaction: discord.Interaction):
     check_and_clean_expired_raid()
     now = time.time()
     embed = discord.Embed(title="👹 TRẠNG THÁI BOSS RAID: REIMU DỊ HÌNH (2 PHASE)", color=0xDC2626)
+    embed.add_field(name="👹 Seiki Dị Hình (2 Phase):", value=f"• Phase 1: HP {SEIKI_BOSS_CONFIG['hp']:,} | {SEIKI_BOSS_CONFIG['power']:,} DMG (chia đều) + nội tại hồi 1.5% HP\n• Phase 2 Thức Tỉnh: HP {SEIKI_BOSS_PHASE2_CONFIG['hp']:,} | {SEIKI_BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều) + Cleave +20% Máu tối đa mục tiêu + Nuclear Spell Card (10%) 10K DMG toàn tiền tuyến!", inline=False)
     embed.set_thumbnail(url=BOSS_CONFIG["image"])
     embed.add_field(name="❤️ Chỉ Số 2 Phase:", value=f"• Phase 1: HP {BOSS_CONFIG['hp']:,} | Đánh thường {BOSS_CONFIG['power']:,} DMG (chia đều)\n• Phase 2: HP {BOSS_PHASE2_CONFIG['hp']:,} | Đánh thường {BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều)", inline=True)
     embed.add_field(name="🎁 Phần Thưởng:", value="100% Quy đổi thành Vé Pull tích lũy!", inline=True)
@@ -5585,6 +5956,9 @@ async def handle_help(ctx_or_interaction):
 **👹 DỊ BIẾN REIMU DỊ HÌNH (LIVE COMBAT):**
 • **Phase 1 (30k HP / 15k DMG):** Quà rơi: 10% 10 vé, 40% 5 vé, 50% 3 vé. Trận đấu phát sóng turn-by-turn trực tiếp!
 • **Phase 2 Thức Tỉnh (50k HP / 22k DMG):** Tự động hồi sinh & hồi 100% HP mọi thẻ bài! Quà siêu cấp: 10% 20 vé, 40% 10 vé, 50% 5 vé!
+**👹 DỊ BIẾN SEIKI DỊ HÌNH - DỊ TÀ ĐỆ NHẤT PHÁP SƯ (LIVE COMBAT 2 PHASE):**
+• **Phase 1 (30k HP / 3k DMG chia đều):** Nội tại hồi 1.5% HP, Multi Master Spark (15%), Fantasy Seal (20%), Blitz Attack (20%). Quà: 10% 10 vé, 40% 5 vé, 50% 3 vé!
+• **Phase 2 Thức Tỉnh (90k HP / 10k DMG chia đều):** Hồi sinh & hồi 100% HP mọi thẻ bài! Nội tại **Cleave (100%)**: +20% Máu tối đa mục tiêu! **Nuclear Spell Card (10%)**: 10K DMG toàn tiền tuyến! Quà: 10% 30 vé, 40% 20 vé, 50% 10 vé, 15% +1 Mảnh Seiki!
 
 **👑 LỆNH ADMIN (OWNER EXCLUSIVE - ID: 1502579398560317441):**
 • `/admin_lock <user> <id_the>`: Niêm phong thẻ bài của người chơi (chỉ mở khi pull ra lại).
