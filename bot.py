@@ -3388,7 +3388,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     else:
         await ctx_or_interaction.send(embed=embed, view=view)
 
-@bot.tree.command(name="evol", description="Tiến hóa nhân vật Touhou lên Ace 2 (9: Flandre, 12: Remilia, 14: Reimu, 17: Sakuya, 18: Marisa, 20: Reisen)")
+@bot.tree.command(name="evol", description="Tiến hóa nhân vật lên Ace 2 (9: Flandre, 12: Remilia, 14: Reimu, 17: Sakuya, 18: Marisa, 20: Reisen)")
 @app_commands.describe(id_hoac_ten="Nhập số ID thẻ (9, 13, 16 hoặc 17) hoặc chọn nhân vật")
 @app_commands.choices(id_hoac_ten=[
     app_commands.Choice(name="[#14] Reimu Hakurei (Ace 2 - Cần 20 thẻ, trừ 20 khi Ace)", value="14"),
