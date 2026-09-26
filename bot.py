@@ -21,7 +21,7 @@
 #      hoặc 30% HP Boss (Raid Phase 1 & 2), kích hoạt 1 lần/trận, kèm GIF kỹ năng trực tiếp!
 #    - Buff Marisa Ace 2 [#18]: Master Spark tăng sát thương từ ×1.5 lên ×2.0!
 #    - [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 ⭐⭐): Cleave (+5% Max HP mục tiêu mọi đòn) • Medicine Sign (35% hồi 40% máu) •
-#      Nhị Phân Vô Hạn (20% kết liễu quái/PvP, khi đánh Boss lấy đi 50% Máu Boss) • Bóng Khái Niệm (40%: 35% Max HP + xóa kỹ năng đối phương)!
+#      Fantasy Seal (40% ở Ace 1 / buff lên 50% ở Ace 2: Miễn toàn bộ sát thương) • Bóng Khái Niệm (40%: 35% Max HP + xóa kỹ năng đối phương)!
 # ==============================================================================
 
 # UPDATE 2026-09-22: THEM [#10] KOISHI KOMEIJI (Rank S - 600 ATK / 6,060 HP) - ID CU 10-26 DAY LEN 11-27, TU DONG DI TRU DU LIEU NGUOI CHOI
@@ -447,9 +447,9 @@ T1_ACE2_CONFIG = {
         "chance": 0.35, "heal_pct": 0.40,  # 35% kích hoạt, hồi 40% Máu tối đa bản thân, 1 lần/trận
         "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/8d/12/mwVdJaFQsefrsAuNS.gif"
     },
-    "nihi_phan_vo_han": {
-        "chance": 0.20,                # 20% kích hoạt 1 lần/trận: lập tức kết liễu mục tiêu (Boss lấy 50% HP)
-        "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/e1/1e/vyzqP4NnKOod9Se.gif"
+    "fantasy_seal": {
+        "chance": 0.50,                # 50% kích hoạt 1 lần/trận: Miễn toàn bộ sát thương (buff lên 50% ở dạng Ace 2)
+        "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/e7/fe/JOKpsPyd.gif"
     },
     "bong_khai_niem": {
         "chance": 0.40, "dmg_pct": 0.35,  # 40% kích hoạt 1 lần/trận: 35% Máu Tối Đa + xóa kỹ năng đối phương
@@ -467,11 +467,11 @@ EVOL_CONFIG["t1"] = {
     "required_pulls": 0,
     "required_shards": 10,
     "evol_gif": "https://static2.klipy.com/ii/9ed0121ed465c12e1f3dda331ed33f0e/9b/b3/mOb3k5Ux7HWC.gif",
-    "skill_name": "Tứ Đại Tuyệt Kỹ Thức Tỉnh (Cleave • Medicine Sign • Nhị Phân Vô Hạn • Bóng Khái Niệm)",
+    "skill_name": "Tứ Đại Tuyệt Kỹ Thức Tỉnh (Cleave • Medicine Sign • Fantasy Seal • Bóng Khái Niệm)",
     "skill_desc": (
         "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **5% Máu Tối Đa** của mục tiêu! "
         "💚 **Medicine Sign (35%):** Hồi phục **40% Máu Tối Đa** cho bản thân, 1 lần/trận. "
-        "♾️ **Nhị Phân Vô Hạn (20%):** Lập tức **kết liễu** mục tiêu (khi đánh Boss chỉ lấy đi **50% Máu Boss**), 1 lần/trận. "
+        "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận. "
         "🌑 **Bóng Khái Niệm (40%):** Gây **35% Máu Tối Đa** mục tiêu và **lập tức xóa kỹ năng của đối phương**, 1 lần/trận."
     ),
     "bonus_power": 300,
@@ -512,7 +512,7 @@ CHARACTER_DETAILS = {
     "t1": {
         "title": "Dị Tà Đệ Nhất Pháp Sư (Nhóm T-Đặc Biệt)",
         "skill_name": "Tam Đại Tuyệt Kỹ (Fantasy Seal • Master Spark • Medicine Sign)",
-        "skill_desc": "Thẻ bài thần thoại nhóm T. Bản thường: Fantasy Seal (40% miễn thương), Master Spark (30% ×1.5), Medicine Sign (20% hồi phục). [Ace 2 ⭐⭐ - Kỹ năng thay đổi]: 🪓 Cleave (thụ động 100%: mọi đòn đánh +5% Máu Tối Đa mục tiêu) • 💚 Medicine Sign (35% hồi 40% Máu, 1 lần/trận) • ♾️ Nhị Phân Vô Hạn (20% lập tức kết liễu, khi đánh Boss lấy đi 50% Máu Boss, 1 lần/trận) • 🌑 Bóng Khái Niệm (40%: 35% Máu Tối Đa + xóa kỹ năng đối phương, 1 lần/trận). Tuân thủ: tối đa 1 chiêu mỗi lượt!"
+        "skill_desc": "Thẻ bài thần thoại nhóm T. Bản thường: Fantasy Seal (40% miễn thương), Master Spark (30% ×1.5), Medicine Sign (20% hồi phục). [Ace 2 ⭐⭐ - Kỹ năng thay đổi]: 🪓 Cleave (thụ động 100%: mọi đòn đánh +5% Máu Tối Đa mục tiêu) • 💚 Medicine Sign (35% hồi 40% Máu, 1 lần/trận) • 🛡️ Fantasy Seal (50% miễn toàn bộ sát thương 1 hiệp, buff lên 50% ở dạng Ace 2, 1 lần/trận) • 🌑 Bóng Khái Niệm (40%: 35% Máu Tối Đa + xóa kỹ năng đối phương, 1 lần/trận). Tuân thủ: tối đa 1 chiêu mỗi lượt!"
     }
 }
 CHARACTER_DETAILS["T1"] = CHARACTER_DETAILS["t1"]
@@ -1073,7 +1073,7 @@ def execute_seiki_ace2(player):
             "⚡ **MA LỰC DỊ TÀ THỨC TỈNH - BỘ KỸ NĂNG ĐỘC QUYỀN ACE 2:**\n\n"
             "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **5% Máu Tối Đa** mục tiêu!\n"
             "💚 **Medicine Sign (35%):** Hồi phục **40% Máu Tối Đa** bản thân, 1 lần/trận.\n"
-            "♾️ **Nhị Phân Vô Hạn (20%):** Lập tức **kết liễu** mục tiêu (khi đánh Boss chỉ lấy đi **50% Máu Boss**), 1 lần/trận.\n"
+            "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận.\n"
             "🌑 **Bóng Khái Niệm (40%):** Gây **35% Máu Tối Đa** mục tiêu và **xóa kỹ năng đối phương**, 1 lần/trận.\n\n"
             f"📉 **Chi phí:** Đã tiêu hao **10 Mảnh Seiki** (Còn lại: `{shards['seiki']}` mảnh)\n"
             "⚖️ *Quy tắc cân bằng: tối đa 1 chiêu mỗi lượt, mỗi chiêu kích hoạt 1 lần trong trận!*"
@@ -1086,10 +1086,10 @@ def execute_seiki_ace2(player):
 
 def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=False):
     """Kỹ năng Ace 2 ⭐⭐ [#t1] Seiki - dùng chung Raid / Battle / PvP.
-    t1_flags: dict lưu cờ (nhipan_used / bong_used / med_used / used_turn).
+    t1_flags: dict lưu cờ (seal_used / bong_used / med_used / used_turn).
     Quy tắc: Cleave thụ động 100% mọi đòn đánh; tối đa 1 chiêu/lượt; mỗi chiêu 1 lần/trận.
-    ĐẶC BIỆT: Khi đánh Boss (is_boss=True), Nhị Phân Vô Hạn chỉ lấy đi 50% Máu Boss thay vì kết liễu!"""
-    out = {"bonus": 0, "direct": 0, "heal": 0, "instant_kill": False, "boss_half_hp": False,
+    ĐẶC BIỆT: Chiêu Fantasy Seal được buff tỷ lệ kích hoạt lên 50% ở dạng Ace 2 (Miễn toàn bộ sát thương 1 hiệp)!"""
+    out = {"bonus": 0, "direct": 0, "heal": 0, "invul": False, "instant_kill": False, "boss_half_hp": False,
            "disable": False, "logs": [], "gif": None}
 
     # 🪓 CLEAVE - Nội tại thụ động 100%: đánh thường +5% Máu Tối Đa mục tiêu
@@ -1103,25 +1103,24 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
         return out  # đã dùng chiêu trong lượt này rồi
 
     roll = random.random()
-    if not t1_flags.get("nhipan_used") and roll < T1_ACE2_CONFIG["nihi_phan_vo_han"]["chance"]:
-        # ♾️ NHỊ PHÂN VÔ HẠN - 20%:
-        # QUY TẮC MỚI: Nếu đánh Boss -> chỉ lấy đi 50% Máu Boss; nếu PvP/Battle thường -> kết liễu!
-        t1_flags["nhipan_used"] = True
+    seal_cfg = T1_ACE2_CONFIG.get("fantasy_seal", {"chance": 0.50, "gif": T1_SEAL_GIF})
+    seal_chance = seal_cfg["chance"]
+    bong_chance = T1_ACE2_CONFIG["bong_khai_niem"]["chance"]
+    med_chance = T1_ACE2_CONFIG["medicine_sign"]["chance"]
+
+    if not t1_flags.get("seal_used") and not t1_flags.get("seiki_seal_used") and roll < seal_chance:
+        # 🛡️ FANTASY SEAL - 50% (ĐƯỢC BUFF LÊN 50% Ở DẠNG ACE 2, MIỄN TOÀN BỘ SÁT THƯƠNG 1 HIỆP):
+        t1_flags["seal_used"] = True
+        t1_flags["seiki_seal_used"] = True
+        t1_flags["seal_used"] = True
         t1_flags["used_turn"] = round_no
-        out["gif"] = T1_ACE2_CONFIG["nihi_phan_vo_han"]["gif"]
-        if is_boss:
-            out["boss_half_hp"] = True
-            out["logs"].append(
-                f"♾️ **[Ace 2] [#t1] Seiki** kích hoạt **NHỊ PHÂN VÔ HẠN** (20%)! "
-                f"Không gian dị giới phân đôi — **LẤY ĐI 50% MÁU {target_desc}**!"
-            )
-        else:
-            out["instant_kill"] = True
-            out["logs"].append(
-                f"♾️ **[Ace 2] [#t1] Seiki** kích hoạt **NHỊ PHÂN VÔ HẠN** (20%)! "
-                f"Không gian bị phân đôi — **LẬP TỨC KẾT LIỄU** {target_desc}!"
-            )
-    elif not t1_flags.get("bong_used") and roll < T1_ACE2_CONFIG["nihi_phan_vo_han"]["chance"] + T1_ACE2_CONFIG["bong_khai_niem"]["chance"]:
+        out["invul"] = True
+        out["gif"] = seal_cfg.get("gif", T1_SEAL_GIF)
+        out["logs"].append(
+            f"🛡️ **[Ace 2] [#t1] Seiki** kích hoạt **FANTASY SEAL** (50%)! "
+            f"Vận khởi kết giới phong ấn tuyệt đối — **MIỄN TOÀN BỘ SÁT THƯƠNG** trong hiệp này!"
+        )
+    elif not t1_flags.get("bong_used") and roll < seal_chance + bong_chance:
         # 🌑 BÓNG KHÁI NIỆM - 40%: 35% Máu Tối Đa + xóa kỹ năng đối phương
         t1_flags["bong_used"] = True
         t1_flags["used_turn"] = round_no
@@ -1133,7 +1132,7 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
             f"Gây **{out['direct']:,} DMG** (35% Máu Tối Đa {target_desc}) và **LẬP TỨC XÓA KỸ NĂNG của đối phương**!"
         )
     elif not t1_flags.get("med_used") and ac.get("current_hp", 1) < ac.get("max_hp", ac.get("hp", 1)) \
-            and roll < T1_ACE2_CONFIG["nihi_phan_vo_han"]["chance"] + T1_ACE2_CONFIG["bong_khai_niem"]["chance"] + T1_ACE2_CONFIG["medicine_sign"]["chance"]:
+            and roll < seal_chance + bong_chance + med_chance:
         # 💚 MEDICINE SIGN - 35%: hồi 40% Máu Tối Đa bản thân (đã buff)
         t1_flags["med_used"] = True
         t1_flags["used_turn"] = round_no
@@ -1315,7 +1314,7 @@ class OpponentTeamView(discord.ui.View):
             elif c["cid"] == 20:
                 skill_text += "\n🔴 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Red Eye Mind Explosion* (1 lần/trận): mục tiêu 20% tự gây sát thương lên bản thân trong 4 turn."
         if is_ace and str(c["cid"]).lower() == "t1":
-            skill_text += "\n♾️ **[Ace 2 Hiệu Ứng]** *Cleave* (thụ động, +5% Máu tối đa mỗi đòn) • *Medicine Sign* (35% hồi 40% máu) • *Nhị Phân Vô Hạn* (20% kết liễu, khi đánh Boss lấy 50% máu Boss) • *Bóng Khái Niệm* (40%: 35% máu tối đa + xóa kỹ năng đối phương — mỗi chiêu 1 lần/trận)."
+            skill_text += "\n♾️ **[Ace 2 Hiệu Ứng]** *Cleave* (thụ động, +5% Máu tối đa mỗi đòn) • *Medicine Sign* (35% hồi 40% máu) • *Fantasy Seal* (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • *Bóng Khái Niệm* (40%: 35% máu tối đa + xóa kỹ năng đối phương — mỗi chiêu 1 lần/trận)."
         embed.add_field(name="✨ Kỹ Năng / Tuyệt Kỹ Danmaku:", value=f"*{skill_text}*", inline=False)
 
         summary_lines = []
@@ -1694,7 +1693,7 @@ async def execute_raid(channel, raid_data):
             "seiki_spark_used": False,
             "seiki_heal_used": False,
             "seiki_used_turn": -1,
-            "nhipan_used": False,
+            "seal_used": False,
             "bong_used": False,
             "med_used": False,
             "death_round": None
@@ -1839,7 +1838,7 @@ async def execute_raid(channel, raid_data):
                         turn_image = EVOL_CONFIG[20]["skill_gif"]
                     reisen_notif = f"🔴 **[Ace 2] [#20] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
 
-            # ===== THẺ [#t1] SEIKI: Bản thường / Bản Ace 2 ⭐⭐ (Cleave + 3 tuyệt kỹ mới - Đòn Nhị Phân Vô Hạn lấy 50% HP Boss) =====
+            # ===== THẺ [#t1] SEIKI: Bản thường / Bản Ace 2 ⭐⭐ (Cleave + 3 tuyệt kỹ mới - Fantasy Seal 50% miễn thương) =====
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
                     _t1 = t1_ace2_attack(c, ac, p1_rounds, p1_max_hp, f"Boss {boss_cfg['name']}", is_boss=True)
@@ -1847,10 +1846,10 @@ async def execute_raid(channel, raid_data):
                     if _t1["direct"]:
                         p1_hp = max(0, p1_hp - _t1["direct"])
                         c["total_dmg"] += _t1["direct"]
-                    if _t1.get("boss_half_hp"):
-                        half_dmg = int(p1_hp * 0.50)
-                        p1_hp = max(0, p1_hp - half_dmg)
-                        c["total_dmg"] += half_dmg
+                    if _t1.get("invul"):
+                        c["seiki_seal_used"] = True
+                        c["seiki_used_turn"] = p1_rounds
+                        c["seiki_invul_turn"] = p1_rounds
                     if _t1["disable"]:
                         boss_skill_erased = True
                     if _t1["heal"]:
@@ -1906,13 +1905,14 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 turn_image = EVOL_CONFIG[14]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used") and not ac.get("is_ace2"):
-                            if c.get("seiki_used_turn") != p1_rounds and random.random() < 0.40:
-                                c["seiki_seal_used"] = True
-                                c["seiki_used_turn"] = p1_rounds
-                                invul = True
-                                turn_image = T1_SEAL_GIF
-                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                            c["seiki_seal_used"] = True
+                            c["seiki_used_turn"] = p1_rounds
+                            invul = True
+                            turn_image = T1_SEAL_GIF
+                            title_t1 = "[Ace 2] [#t1] Seiki" if ac.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                            pct_t1 = "50%" if ac.get("is_ace2") else "40%"
+                            boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         if not invul:
                             ac["current_hp"] -= 4000
                 elif seiki_action in ["spark_start", "spark_active"]:
@@ -1933,13 +1933,14 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 turn_image = EVOL_CONFIG[14]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used") and not ac.get("is_ace2"):
-                            if c.get("seiki_used_turn") != p1_rounds and random.random() < 0.40:
-                                c["seiki_seal_used"] = True
-                                c["seiki_used_turn"] = p1_rounds
-                                invul = True
-                                turn_image = T1_SEAL_GIF
-                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                            c["seiki_seal_used"] = True
+                            c["seiki_used_turn"] = p1_rounds
+                            invul = True
+                            turn_image = T1_SEAL_GIF
+                            title_t1 = "[Ace 2] [#t1] Seiki" if ac.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                            pct_t1 = "50%" if ac.get("is_ace2") else "40%"
+                            boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         if not invul:
                             ac["current_hp"] -= dmg_per_card
                 else:
@@ -1955,13 +1956,14 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 turn_image = EVOL_CONFIG[14]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used") and not ac.get("is_ace2"):
-                            if c.get("seiki_used_turn") != p1_rounds and random.random() < 0.40:
-                                c["seiki_seal_used"] = True
-                                c["seiki_used_turn"] = p1_rounds
-                                invul = True
-                                turn_image = T1_SEAL_GIF
-                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                            c["seiki_seal_used"] = True
+                            c["seiki_used_turn"] = p1_rounds
+                            invul = True
+                            turn_image = T1_SEAL_GIF
+                            title_t1 = "[Ace 2] [#t1] Seiki" if ac.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                            pct_t1 = "50%" if ac.get("is_ace2") else "40%"
+                            boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         if not invul:
                             ac["current_hp"] -= dmg_per_card
         else:
@@ -1983,13 +1985,14 @@ async def execute_raid(channel, raid_data):
                                 if not turn_image or turn_image == BOSS_SKILL_CONFIG["gif"]:
                                     turn_image = EVOL_CONFIG[14]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used") and not ac.get("is_ace2"):
-                            if c.get("seiki_used_turn") != p1_rounds and random.random() < 0.40:
-                                c["seiki_seal_used"] = True
-                                c["seiki_used_turn"] = p1_rounds
-                                invul = True
-                                turn_image = T1_SEAL_GIF
-                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal** (40%)! MIỄN THƯƠNG!"
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                            c["seiki_seal_used"] = True
+                            c["seiki_used_turn"] = p1_rounds
+                            invul = True
+                            turn_image = T1_SEAL_GIF
+                            title_t1 = "[Ace 2] [#t1] Seiki" if ac.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                            pct_t1 = "50%" if ac.get("is_ace2") else "40%"
+                            boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         if not invul:
                             ac["current_hp"] -= 5000
                 else:
@@ -2005,13 +2008,14 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 turn_image = EVOL_CONFIG[14]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used") and not ac.get("is_ace2"):
-                            if c.get("seiki_used_turn") != p1_rounds and random.random() < 0.40:
-                                c["seiki_seal_used"] = True
-                                c["seiki_used_turn"] = p1_rounds
-                                invul = True
-                                turn_image = T1_SEAL_GIF
-                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal** (40%)! MIỄN THƯƠNG!"
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                            c["seiki_seal_used"] = True
+                            c["seiki_used_turn"] = p1_rounds
+                            invul = True
+                            turn_image = T1_SEAL_GIF
+                            title_t1 = "[Ace 2] [#t1] Seiki" if ac.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                            pct_t1 = "50%" if ac.get("is_ace2") else "40%"
+                            boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         if not invul:
                             ac["current_hp"] -= dmg_per_card
 
@@ -2186,7 +2190,7 @@ async def execute_raid(channel, raid_data):
             c["seiki_spark_used"] = False
             c["seiki_heal_used"] = False
             c["seiki_used_turn"] = -1
-            c["nhipan_used"] = False
+            c["seal_used"] = False
             c["bong_used"] = False
             c["med_used"] = False
             for card in c["team_cards"]:
@@ -2270,7 +2274,7 @@ async def execute_raid(channel, raid_data):
                             turn_image = EVOL_CONFIG[20]["skill_gif"]
                         reisen_notif = f"🔴 **[Ace 2] [#20] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss Phase 2 bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
 
-                # ===== THẺ [#t1] SEIKI PHASE 2: Đòn Nhị Phân Vô Hạn lấy 50% HP Boss =====
+                # ===== THẺ [#t1] SEIKI PHASE 2: Fantasy Seal 50% miễn thương =====
                 if str(ac["cid"]).lower() == "t1":
                     if ac.get("is_ace2"):
                         _t1 = t1_ace2_attack(c, ac, p2_rounds, p2_max_hp, f"Boss Seiki Phase 2", is_boss=True)
@@ -2278,10 +2282,10 @@ async def execute_raid(channel, raid_data):
                         if _t1["direct"]:
                             p2_hp = max(0, p2_hp - _t1["direct"])
                             c["total_dmg"] += _t1["direct"]
-                        if _t1.get("boss_half_hp"):
-                            half_dmg = int(p2_hp * 0.50)
-                            p2_hp = max(0, p2_hp - half_dmg)
-                            c["total_dmg"] += half_dmg
+                        if _t1.get("invul"):
+                            c["seiki_seal_used"] = True
+                            c["seiki_used_turn"] = p2_rounds
+                            c["seiki_invul_turn"] = p2_rounds
                         if _t1["disable"]:
                             boss_skill_erased = True
                         if _t1["heal"]:
@@ -2331,13 +2335,14 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 turn_image = EVOL_CONFIG[14]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used") and not ac.get("is_ace2"):
-                            if c.get("seiki_used_turn") != p2_rounds and random.random() < 0.40:
-                                c["seiki_seal_used"] = True
-                                c["seiki_used_turn"] = p2_rounds
-                                invul = True
-                                turn_image = T1_SEAL_GIF
-                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                            c["seiki_seal_used"] = True
+                            c["seiki_used_turn"] = p2_rounds
+                            invul = True
+                            turn_image = T1_SEAL_GIF
+                            title_t1 = "[Ace 2] [#t1] Seiki" if ac.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                            pct_t1 = "50%" if ac.get("is_ace2") else "40%"
+                            boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         if not invul:
                             ac["current_hp"] -= 10000
                 else:
@@ -2358,13 +2363,14 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 turn_image = EVOL_CONFIG[14]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used") and not ac.get("is_ace2"):
-                            if c.get("seiki_used_turn") != p2_rounds and random.random() < 0.40:
-                                c["seiki_seal_used"] = True
-                                c["seiki_used_turn"] = p2_rounds
-                                invul = True
-                                turn_image = T1_SEAL_GIF
-                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                            c["seiki_seal_used"] = True
+                            c["seiki_used_turn"] = p2_rounds
+                            invul = True
+                            turn_image = T1_SEAL_GIF
+                            title_t1 = "[Ace 2] [#t1] Seiki" if ac.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                            pct_t1 = "50%" if ac.get("is_ace2") else "40%"
+                            boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         if not invul:
                             ac["current_hp"] -= (dmg_per_card + cleave_bonus)
                             boss_action_log += f"\n• 💢 **{ac['name']}** ({c['username']}) nhận **{dmg_per_card:,} + {cleave_bonus:,} (Cleave) = {dmg_per_card + cleave_bonus:,} DMG**!"
@@ -2559,7 +2565,7 @@ async def execute_raid(channel, raid_data):
         c["seiki_spark_used"] = False
         c["seiki_heal_used"] = False
         c["seiki_used_turn"] = -1
-        c["nhipan_used"] = False
+        c["seal_used"] = False
         c["bong_used"] = False
         c["med_used"] = False
         for card in c["team_cards"]:
@@ -2644,7 +2650,7 @@ async def execute_raid(channel, raid_data):
                         turn_image = EVOL_CONFIG[20]["skill_gif"]
                     reisen_notif = f"🔴 **[Ace 2] [#20] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss Phase 2 bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
 
-            # ===== THẺ [#t1] SEIKI REIMU PHASE 2: Đòn Nhị Phân Vô Hạn lấy 50% HP Boss =====
+            # ===== THẺ [#t1] SEIKI REIMU PHASE 2: Fantasy Seal 50% miễn thương =====
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
                     _t1 = t1_ace2_attack(c, ac, p2_rounds, p2_max_hp, f"Boss Reimu Phase 2", is_boss=True)
@@ -2652,10 +2658,10 @@ async def execute_raid(channel, raid_data):
                     if _t1["direct"]:
                         p2_hp = max(0, p2_hp - _t1["direct"])
                         c["total_dmg"] += _t1["direct"]
-                    if _t1.get("boss_half_hp"):
-                        half_dmg = int(p2_hp * 0.50)
-                        p2_hp = max(0, p2_hp - half_dmg)
-                        c["total_dmg"] += half_dmg
+                    if _t1.get("invul"):
+                        c["seiki_seal_used"] = True
+                        c["seiki_used_turn"] = p2_rounds
+                        c["seiki_invul_turn"] = p2_rounds
                     if _t1["disable"]:
                         boss_skill_erased = True
                     if _t1["heal"]:
@@ -2703,13 +2709,14 @@ async def execute_raid(channel, raid_data):
                             if not turn_image or turn_image == BOSS_SKILL_CONFIG["gif"]:
                                 turn_image = EVOL_CONFIG[14]["skill_gif"]
                             boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                    elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used") and not ac.get("is_ace2"):
-                        if c.get("seiki_used_turn") != p2_rounds and random.random() < 0.40:
-                            c["seiki_seal_used"] = True
-                            c["seiki_used_turn"] = p2_rounds
-                            invul = True
-                            turn_image = T1_SEAL_GIF
-                            boss_action_log += f"\n🛡️ **[Nhóm T] [#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        c["seiki_seal_used"] = True
+                        c["seiki_used_turn"] = p2_rounds
+                        invul = True
+                        turn_image = T1_SEAL_GIF
+                        title_t1 = "[Ace 2] [#t1] Seiki" if ac.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                        pct_t1 = "50%" if ac.get("is_ace2") else "40%"
+                        boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                     if not invul:
                         ac["current_hp"] -= 5000
             else:
@@ -2725,13 +2732,14 @@ async def execute_raid(channel, raid_data):
                             invul = True
                             turn_image = EVOL_CONFIG[14]["skill_gif"]
                             boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                    elif str(ac["cid"]).lower() == "t1" and not c.get("seiki_seal_used") and not ac.get("is_ace2"):
-                        if c.get("seiki_used_turn") != p2_rounds and random.random() < 0.40:
-                            c["seiki_seal_used"] = True
-                            c["seiki_used_turn"] = p2_rounds
-                            invul = True
-                            turn_image = T1_SEAL_GIF
-                            boss_action_log += f"\n🛡️ **[Nhóm T] [#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        c["seiki_seal_used"] = True
+                        c["seiki_used_turn"] = p2_rounds
+                        invul = True
+                        turn_image = T1_SEAL_GIF
+                        title_t1 = "[Ace 2] [#t1] Seiki" if ac.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                        pct_t1 = "50%" if ac.get("is_ace2") else "40%"
+                        boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                     if not invul:
                         ac["current_hp"] -= dmg_per_card
 
@@ -3651,7 +3659,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             "• Điều kiện: **[#18] Marisa + [#14] Reimu + [#17] Sakuya** đều Ace 2 ⭐⭐\n"
             "• Chi phí: **10 Mảnh Seiki** (không khấu trừ thẻ bài)\n"
             "• Buff Ace: **+300 ATK** & **+300 HP**\n"
-            "• Kỹ năng: **Cleave** (thụ động +5% Máu tối đa mỗi đòn) • **Medicine Sign** (35% hồi 40% máu) • **Nhị Phân Vô Hạn** (20% kết liễu quái/PvP, đánh Boss lấy 50% máu Boss) • **Bóng Khái Niệm** (40%: 35% máu tối đa + xóa kỹ năng đối thủ)"
+            "• Kỹ năng: **Cleave** (thụ động +5% Máu tối đa mỗi đòn) • **Medicine Sign** (35% hồi 40% máu) • **Fantasy Seal** (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • **Bóng Khái Niệm** (40%: 35% máu tối đa + xóa kỹ năng đối thủ)"
         ),
         inline=False
     )
@@ -4550,8 +4558,8 @@ class CharacterCheckView(discord.ui.View):
                     "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường +**5% Máu Tối Đa** mục tiêu!\n"
                     "💚 **Medicine Sign (35%):** Hồi **40% Máu Tối Đa** bản thân, 1 lần/trận.\n"
                     f"🎬 {T1_ACE2_CONFIG['medicine_sign']['gif']}\n"
-                    "♾️ **Nhị Phân Vô Hạn (20%):** Lập tức **kết liễu** mục tiêu (khi đánh Boss chỉ lấy đi **50% Máu Boss**), 1 lần/trận.\n"
-                    f"🎬 {T1_ACE2_CONFIG['nihi_phan_vo_han']['gif']}\n"
+                    "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận.\n"
+                    f"🎬 {T1_ACE2_CONFIG['fantasy_seal']['gif']}\n"
                     "🌑 **Bóng Khái Niệm (40%):** Gây **35% Máu Tối Đa** + **xóa kỹ năng đối phương**, 1 lần/trận.\n"
                     f"🎬 {T1_ACE2_CONFIG['bong_khai_niem']['gif']}\n"
                     "⚖️ *Tối đa 1 chiêu mỗi lượt. Hoạt động xuyên suốt Raid, Battle & PvP!*"
@@ -4788,7 +4796,7 @@ async def handle_battle(ctx_or_interaction):
     o_reisen_used = False
     o_mind_turns = 0
     p_mind_turns = 0
-    p_t1 = {"nhipan_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
+    p_t1 = {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
     p_seiki_seal, p_seiki_spark, p_seiki_heal = False, False, False
     p_seiki_used_turn = -1
     battle_logs = []
@@ -4887,8 +4895,10 @@ async def handle_battle(ctx_or_interaction):
                 curr_pc_power += _t1["bonus"]
                 if _t1["direct"]:
                     oc["current_hp"] = max(0, oc["current_hp"] - _t1["direct"])
-                if _t1["instant_kill"]:
-                    oc["current_hp"] = 0
+                if _t1.get("invul"):
+                    pc_invul = True
+                    p_seiki_seal = True
+                    p_seiki_used_turn = r_cnt
                 if _t1["heal"]:
                     pc["current_hp"] = min(pc["hp"], pc["current_hp"] + _t1["heal"])
                 if _t1["disable"]:
@@ -4985,14 +4995,17 @@ async def handle_battle(ctx_or_interaction):
                     msg_skill = f"🛡️ **[Ace 2] [#14] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
                     battle_logs.append(msg_skill)
                     turn_actions.append(msg_skill)
-            if not pc_invul and str(pc["cid"]).lower() == "t1" and not p_seiki_seal and p_seiki_used_turn != r_cnt and not pc.get("is_ace2"):
-                if random.random() < 0.40:
+            if not pc_invul and str(pc["cid"]).lower() == "t1" and not p_seiki_seal and p_seiki_used_turn != r_cnt:
+                seal_chance = 0.50 if pc.get("is_ace2") else 0.40
+                if random.random() < seal_chance:
                     p_seiki_seal = True
                     p_seiki_used_turn = r_cnt
                     pc_invul = True
                     if not turn_image:
                         turn_image = T1_SEAL_GIF
-                    msg_skill = f"🛡️ **[Nhóm T] [#t1] Seiki** ({user.display_name}) kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                    title_t1 = "[Ace 2] [#t1] Seiki" if pc.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                    pct_t1 = "50%" if pc.get("is_ace2") else "40%"
+                    msg_skill = f"🛡️ **{title_t1}** ({user.display_name}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                     battle_logs.append(msg_skill)
                     turn_actions.append(msg_skill)
             if not pc_invul:
@@ -5209,8 +5222,8 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
     t_reisen_used = False
     c_mind_turns = 0
     t_mind_turns = 0
-    c_t1 = {"nhipan_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
-    t_t1 = {"nhipan_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
+    c_t1 = {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
+    t_t1 = {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
     c_seiki_seal, c_seiki_spark, c_seiki_heal = False, False, False
     c_seiki_used_turn = -1
     t_seiki_seal, t_seiki_spark, t_seiki_heal = False, False, False
@@ -5278,14 +5291,17 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
-        if not c_invul and str(cc["cid"]).lower() == "t1" and not c_seiki_seal and c_seiki_used_turn != r_cnt and not cc.get("is_ace2"):
-            if random.random() < 0.40:
+        if not c_invul and str(cc["cid"]).lower() == "t1" and not c_seiki_seal and c_seiki_used_turn != r_cnt:
+            seal_chance = 0.50 if cc.get("is_ace2") else 0.40
+            if random.random() < seal_chance:
                 c_seiki_seal = True
                 c_seiki_used_turn = r_cnt
                 c_invul = True
                 if not turn_image:
                     turn_image = T1_SEAL_GIF
-                msg_skill = f"🛡️ **[Nhóm T] [#t1] Seiki** ({challenger.display_name}) kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                title_seiki = "[Ace 2] [#t1] Seiki" if cc.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                pct_seiki = "50%" if cc.get("is_ace2") else "40%"
+                msg_skill = f"🛡️ **{title_seiki}** ({challenger.display_name}) kích hoạt **Fantasy Seal** ({pct_seiki})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
@@ -5299,14 +5315,17 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
-        if not t_invul and str(tc["cid"]).lower() == "t1" and not t_seiki_seal and t_seiki_used_turn != r_cnt and not tc.get("is_ace2"):
-            if random.random() < 0.40:
+        if not t_invul and str(tc["cid"]).lower() == "t1" and not t_seiki_seal and t_seiki_used_turn != r_cnt:
+            seal_chance = 0.50 if tc.get("is_ace2") else 0.40
+            if random.random() < seal_chance:
                 t_seiki_seal = True
                 t_seiki_used_turn = r_cnt
                 t_invul = True
                 if not turn_image:
                     turn_image = T1_SEAL_GIF
-                msg_skill = f"🛡️ **[Nhóm T] [#t1] Seiki** ({target.display_name}) kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                title_seiki = "[Ace 2] [#t1] Seiki" if tc.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                pct_seiki = "50%" if tc.get("is_ace2") else "40%"
+                msg_skill = f"🛡️ **{title_seiki}** ({target.display_name}) kích hoạt **Fantasy Seal** ({pct_seiki})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
@@ -5357,8 +5376,10 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 c_curr_power += _t1["bonus"]
                 if _t1["direct"]:
                     tc["current_hp"] = max(0, tc["current_hp"] - _t1["direct"])
-                if _t1["instant_kill"]:
-                    tc["current_hp"] = 0
+                if _t1.get("invul"):
+                    c_invul = True
+                    c_seiki_seal = True
+                    c_seiki_used_turn = r_cnt
                 if _t1["heal"]:
                     cc["current_hp"] = min(cc["max_hp"], cc["current_hp"] + _t1["heal"])
                 if _t1["disable"]:
@@ -5442,8 +5463,10 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 t_curr_power += _t1["bonus"]
                 if _t1["direct"]:
                     cc["current_hp"] = max(0, cc["current_hp"] - _t1["direct"])
-                if _t1["instant_kill"]:
-                    cc["current_hp"] = 0
+                if _t1.get("invul"):
+                    t_invul = True
+                    t_seiki_seal = True
+                    t_seiki_used_turn = r_cnt
                 if _t1["heal"]:
                     tc["current_hp"] = min(tc["max_hp"], tc["current_hp"] + _t1["heal"])
                 if _t1["disable"]:
@@ -6254,7 +6277,7 @@ async def handle_help(ctx_or_interaction):
   - [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Điều kiện đặc biệt: Marisa, Reimu, Sakuya đều Ace 2 & 10 Mảnh Seiki):
     * Cleave: Thụ động 100% mọi đòn đánh thường +5% Máu Tối Đa mục tiêu!
     * Medicine Sign: 35% hồi 40% Máu Tối Đa bản thân, 1 lần/trận.
-    * Nhị Phân Vô Hạn: 20% lập tức kết liễu mục tiêu (khi đánh Boss chỉ lấy đi 50% Máu Boss), 1 lần/trận.
+    * Fantasy Seal: Buff lên 50% miễn toàn bộ sát thương 1 hiệp (dạng Ace 2), 1 lần/trận.
     * Bóng Khái Niệm: 40% gây 35% Máu Tối Đa mục tiêu và lập tức xóa kỹ năng đối phương, 1 lần/trận.
 • `/trade <user> [your] [their]`: Trao đổi thẻ bài (Cú pháp `your:tên:số_lượng` và `their:tên:số_lượng`, ví dụ: `your:reimu: 1 their:sakuya:12`, giao diện xác nhận 2 bên).
 • `/team [hanh_dong] [id_the]`: Quản lý đội hình (view, add, remove). Mỗi cấp độ tăng +20 ATK và +25 HP buff!
