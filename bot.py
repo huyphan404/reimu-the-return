@@ -26,6 +26,7 @@
 
 # UPDATE 2026-09-22: THEM [#10] KOISHI KOMEIJI (Rank S - 600 ATK / 6,060 HP) - ID CU 10-26 DAY LEN 11-27, TU DONG DI TRU DU LIEU NGUOI CHOI
 # UPDATE 2026-09-24: THEM ACE 2 MOI - [#12] REMILIA (25 THE, THUONG DO GUNGNIR THU DONG +3% MAX HP MUC TIEU) & [#20] REISEN (40 THE, RED EYE MIND EXPLOSION 25% - MUC TIEU 20% TU SAT TRONG 4 TURN)
+# UPDATE 2026-09-27: THEM BOSS MOI [BAT ACH KIEM THAN TUONG MAHORAGA] (90K HP / 6K DMG CHIA DEU) - THE TRUE ADAPT (HOI 3% HP + GIAM 3% ST MOI TURN) + THOAI MA KIEM (DON MUC TIEU), TI LE SPAWN 3 BOSS DEU 1/3, THEM MAHORAGA SHARD (5% DROP)
 import os
 import re
 import time
@@ -334,6 +335,36 @@ SEIKI_BOSS_PHASE2_CONFIG = {
 }
 
 # ==============================================================================
+# BOSS MAHORAGA - BÁT ÁCH KIẾM THẦN TƯỚNG (90K HP / 6K DMG CHIA ĐỀU / THE TRUE ADAPT)
+# ==============================================================================
+MAHORAGA_BOSS_CONFIG = {
+    "id": "mahoraga",
+    "name": "Bát Ách Kiếm Thần Tướng Mahoraga",
+    "desc": "Thần tướng thuật thức tối thượng - kẻ thích nghi với mọi hiện tượng. Mọi đòn đánh chỉ khiến nó trở nên cứng cáp hơn!",
+    "reimu_quote": "Cái thứ yêu quái nào vậy, cái thằng nhóc đầu nhím kia vừa triệu hồi cái gì vậy?",
+    "image": "https://kimi-web-img.kimi.ai/img/gbaike-image.cdn.bcebos.com/84b485484cf2279a8a3412643b2a1c4f99bf0cd2",
+    "hp": 90000,      # 90,000 HP
+    "power": 6000,    # 6,000 DMG đánh thường chia đều tiền tuyến
+    "passive_regen_pct": 0.03,   # The True Adapt: Hồi 3% HP tối đa mỗi turn (2,700 HP)
+    "passive_adapt_pct": 0.03,   # The True Adapt: Giảm 3% ST phải nhận mỗi turn (cộng dồn, tối đa 90%)
+    "max_players": 6,
+    "cooldown_seconds": 15 * 60,
+    "skills": {
+        "the_true_adapt": {
+            "name": "The True Adapt (Thích Nghi Tuyệt Đối)",
+            "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/12/48/UtccMb4buubM.gif",
+            "desc": "Nội tại THỤ ĐỘNG 100% kích hoạt: Mỗi hiệp tự hồi phục 3% HP tối đa và GIẢM 3% sát thương phải nhận (cộng dồn mỗi hiệp)!"
+        },
+        "thoai_ma_kiem": {
+            "name": "Thoái Ma Kiếm",
+            "chance": 0.25,
+            "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/fd/9a/evpBLiollsxMmiF1wK18.gif",
+            "desc": "25% kích hoạt: Gây 1x sát thương (6,000 DMG) lên MỘT mục tiêu duy nhất - sát thương thuần, KHÔNG chia đều!"
+        }
+    }
+}
+
+# ==============================================================================
 # CƠ CHẾ TIẾN HÓA ACE 2 (KÈM ID NHÂN VẬT & DIRECT GIF HIỂN THỊ TRỰC TIẾP)
 # ==============================================================================
 EVOL_CONFIG = {
@@ -596,7 +627,8 @@ def get_default_player(user_id, username):
         "evolutions": {},
         "team": [],
         "shards": {
-            "seiki": 0  # KHO MẢNH ĐẶC BIỆT SEIKI (10 MẢNH = 1 THẺ SEIKI T1)
+            "seiki": 0,      # KHO MẢNH ĐẶC BIỆT SEIKI (10 MẢNH = 1 THẺ SEIKI T1)
+            "mahoraga": 0    # KHO MẢNH MAHORAGA (VẬT PHẨM ĐẶC BIỆT - THẺ T SẼ CÓ SAU)
         },
         "language": "vi",
         "id_schema": 2,
@@ -844,9 +876,10 @@ def get_player(user_id, username="Visitor"):
     if "evolutions" not in data: data["evolutions"] = {}
     if "team" not in data: data["team"] = []
     if "shards" not in data or not isinstance(data.get("shards"), dict):
-        data["shards"] = {"seiki": 0}
+        data["shards"] = {"seiki": 0, "mahoraga": 0}
     else:
         data["shards"].setdefault("seiki", 0)
+        data["shards"].setdefault("mahoraga", 0)
     if "xp" not in data: data["xp"] = 0
     if "pull_tickets" not in data: data["pull_tickets"] = 0.0
     if "language" not in data: data["language"] = "vi"
@@ -1462,11 +1495,18 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
             active_raid["task"].cancel()
         active_raid = None
 
-    if boss_type not in ["reimu", "seiki"]:
-        boss_type = "seiki" if random.random() < 0.50 else "reimu"
+    if boss_type not in ["reimu", "seiki", "mahoraga"]:
+        boss_spawn_roll = random.random()
+        if boss_spawn_roll < (1.0 / 3.0):
+            boss_type = "seiki"
+        elif boss_spawn_roll < (2.0 / 3.0):
+            boss_type = "reimu"
+        else:
+            boss_type = "mahoraga"
 
     is_seiki = (boss_type == "seiki")
-    cfg = SEIKI_BOSS_CONFIG if is_seiki else BOSS_CONFIG
+    is_mahoraga = (boss_type == "mahoraga")
+    cfg = SEIKI_BOSS_CONFIG if is_seiki else (MAHORAGA_BOSS_CONFIG if is_mahoraga else BOSS_CONFIG)
 
     start_event = asyncio.Event()
     raid_data = {
@@ -1522,6 +1562,38 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
                 "• Có đúng **2 phút (120 giây)** để bấm **'Tham Gia'** (Miễn phí)!\n"
                 "• **Tự động mở raid:** Khi hết 2 phút, nếu có dũng giả tham chiến, trận đại chiến sẽ **TỰ ĐỘNG KHỞI TRANH** ngay lập tức!\n"
                 "• **Tự động đóng:** Nếu sau 2 phút không có ai tham gia, Dị Hình sẽ xé toạc không gian và trốn thoát!"
+            ),
+            inline=False
+        )
+    elif boss_type == "mahoraga":
+        reimu_line = f"🌸 **Reimu thảng thốt:** *\"{cfg['reimu_quote']}\"*\n\n"
+        desc = (f"👑 **Được triệu hồi bởi Admin:** {author.mention}\n\n{reimu_line}👺 **{cfg['name']}**\n*{cfg['desc']}*"
+                if is_admin else f"{reimu_line}👺 **{cfg['name']}**\n*{cfg['desc']}*")
+        embed = discord.Embed(title=title, description=desc, color=0x1F2937)
+        embed.set_image(url=cfg["image"])
+        embed.add_field(name="❤️ Máu Boss (HP):", value=f"**{cfg['hp']:,} HP** *(Single Phase - không hồi sinh!)*", inline=True)
+        embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"**{cfg['power']:,} DMG** *(chia đều tiền tuyến)*", inline=True)
+        embed.add_field(name=f"👥 Người Tham Gia (0/{cfg['max_players']}):", value="Chưa có ai", inline=False)
+        embed.add_field(
+            name="♾️ Nội Tại & Kỹ Năng (Độc Quyền - The True Adapt):",
+            value=(
+                "• ♾️ **The True Adapt (100% - THỤ ĐỘNG):**\n"
+                "  - Mỗi hiệp tự hồi phục **3% HP tối đa (2,700 HP)**!\n"
+                "  - Mỗi hiệp **GIẢM 3% sát thương phải nhận** (cộng dồn mỗi hiệp - càng đánh càng cứng)!\n"
+                "• ⚔️ **Thoái Ma Kiếm (25%):** Rút trường kiếm giáng **6,000 DMG sát thương thuần** lên **MỘT mục tiêu** duy nhất (không chia đều)!"
+            ),
+            inline=False
+        )
+        embed.add_field(
+            name="🎁 Phần Thưởng Thanh Tẩy Boss:",
+            value="• **10%** nhận **20 Vé** | **40%** nhận **15 Vé** | **50%** nhận **10 Vé**! (+100 XP)\n• 🔱 **5%** rơi **+1 Mảnh Mahoraga** (vật phẩm đặc biệt - Thẻ Mahoraga sắp ra mắt)!\n• Nhận thêm điểm danh nhiệm vụ diệt Boss!",
+        )
+        embed.add_field(
+            name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
+            value=(
+                "• Có đúng **2 phút (120 giây)** để bấm **'Tham Gia'** (Miễn phí)!\n"
+                "• **Tự động mở raid:** Khi hết 2 phút, nếu có dũng giả tham chiến, trận đại chiến sẽ **TỰ ĐỘNG KHỞI TRANH** ngay lập tức!\n"
+                "• **Tự động đóng:** Nếu sau 2 phút không có ai tham gia, Mahoraga sẽ tan biến vào hư không!"
             ),
             inline=False
         )
@@ -1717,6 +1789,16 @@ async def execute_raid(channel, raid_data):
             ),
             color=0x7C3AED
         )
+    elif boss_type == "mahoraga":
+        init_embed = discord.Embed(
+            title="⚔️ ĐẠI CHIẾN BẮT ĐẦU: BÁT ÁCH KIẾM THẦN TƯỚNG MAHORAGA",
+            description=(
+                f"🌸 **Reimu thảng thốt:** *\"{boss_cfg['reimu_quote']}\"*\n\n"
+                f"🔥 **{len(combatants)} Dũng Giả** cùng đội quân thẻ bài đã dàn trận nghênh chiến!\n"
+                f"Theo dõi diễn biến từng hiệp trực tiếp ngay bên dưới!"
+            ),
+            color=0x1F2937
+        )
     else:
         init_embed = discord.Embed(
             title="⚔️ ĐẠI CHIẾN BẮT ĐẦU: REIMU DỊ HÌNH (PHASE 1)",
@@ -1731,6 +1813,7 @@ async def execute_raid(channel, raid_data):
     p1_rounds = 0
     max_rounds = 35
     boss_mind_turns = 0
+    mahoraga_adapt_red = 0.0
     p1_battle_history = []
     all_raid_turns = []
 
@@ -1750,6 +1833,16 @@ async def execute_raid(channel, raid_data):
             actual_healed = p1_hp - old_hp
             if actual_healed > 0:
                 passive_log = f"💚 **[Nội Tại - Hồi Phục]** Seiki Dị Hình hấp thụ dị khí hồi phục **+{actual_healed:,} HP** (1.5% HP tối đa)!"
+        elif boss_type == "mahoraga":
+            mahoraga_adapt_red = min(0.90, mahoraga_adapt_red + boss_cfg.get("passive_adapt_pct", 0.03))
+            heal_amt = int(p1_max_hp * boss_cfg.get("passive_regen_pct", 0.03))
+            old_hp = p1_hp
+            p1_hp = min(p1_max_hp, p1_hp + heal_amt)
+            actual_healed = p1_hp - old_hp
+            passive_log = (
+                f"♾️ **[Nội Tại - The True Adapt (100%)]** Mahoraga thích nghi tuyệt đối: "
+                f"Hồi phục **+{actual_healed:,} HP** (3% HP tối đa) và **GIẢM {int(mahoraga_adapt_red * 100)}% sát thương phải nhận** (cộng dồn mỗi hiệp)!"
+            )
 
         reisen_boss_log = None
         if boss_mind_turns > 0:
@@ -1880,8 +1973,16 @@ async def execute_raid(channel, raid_data):
         if boss_type == "seiki" and seiki_invul and not boss_stunned:
             player_atk_str = f"🛡️ Toàn quân dồn **{round_player_dmg:,} DMG** nhưng **Seiki Dị Hình** đã kích hoạt **Fantasy Seal**, MIỄN TOÀN BỘ SÁT THƯƠNG trong hiệp này!"
         else:
-            p1_hp = max(0, p1_hp - round_player_dmg)
-            player_atk_str = f"Toàn quân gây **{round_player_dmg:,} DMG** lên Boss!"
+            if boss_type == "mahoraga":
+                mahoraga_reduced_dmg = int(round_player_dmg * (1.0 - mahoraga_adapt_red))
+                p1_hp = max(0, p1_hp - mahoraga_reduced_dmg)
+                player_atk_str = (
+                    f"Toàn quân dồn **{round_player_dmg:,} DMG**, nhưng **[The True Adapt]** của Mahoraga đã thích nghi: "
+                    f"Chặn đứng và giảm còn **{mahoraga_reduced_dmg:,} DMG** (Giảm {int(mahoraga_adapt_red * 100)}% - cộng dồn mỗi hiệp)!"
+                )
+            else:
+                p1_hp = max(0, p1_hp - round_player_dmg)
+                player_atk_str = f"Toàn quân gây **{round_player_dmg:,} DMG** lên Boss!"
 
         boss_action_log = ""
         if boss_type == "seiki":
@@ -1947,6 +2048,68 @@ async def execute_raid(channel, raid_data):
                     num_front = len(frontline_cards)
                     dmg_per_card = max(100, p1_power // num_front)
                     boss_action_log = f"⚔️ Seiki Dị Hình phóng đạn hắc ám tổng **{p1_power:,} DMG**, chia đều **{dmg_per_card:,} DMG** lên mỗi lá bài tiền tuyến ({num_front} lá)!"
+                    for c in active_combatants:
+                        ac = c["team_cards"][c["current_card_index"]]
+                        invul = False
+                        if ac["cid"] == 14 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                            if random.random() < 0.40:
+                                c["reimu_invul_used"] = True
+                                invul = True
+                                turn_image = EVOL_CONFIG[14]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#14] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                            c["seiki_seal_used"] = True
+                            c["seiki_used_turn"] = p1_rounds
+                            invul = True
+                            turn_image = T1_SEAL_GIF
+                            title_t1 = "[Ace 2] [#t1] Seiki" if ac.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                            pct_t1 = "50%" if ac.get("is_ace2") else "40%"
+                            boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                        if not invul:
+                            ac["current_hp"] -= dmg_per_card
+        elif boss_type == "mahoraga":
+            if p1_hp <= 0:
+                boss_action_log = "💥 **Bát Ách Kiếm Thần Tướng Mahoraga đã bị đánh bại! Thần tướng tan biến vào hư không!**"
+            elif boss_stunned:
+                boss_action_log = "❄️ Mahoraga bị đóng băng thời gian, bất lực không thể ra đòn!"
+            else:
+                if (not boss_skill_erased) and random.random() < MAHORAGA_BOSS_CONFIG["skills"]["thoai_ma_kiem"]["chance"]:
+                    turn_image = MAHORAGA_BOSS_CONFIG["skills"]["thoai_ma_kiem"]["gif"]
+                    target_c = random.choice(active_combatants)
+                    ac = target_c["team_cards"][target_c["current_card_index"]]
+                    invul = False
+                    if ac["cid"] == 14 and ac["is_ace2"] and not target_c["reimu_invul_used"]:
+                        if random.random() < 0.40:
+                            target_c["reimu_invul_used"] = True
+                            invul = True
+                            turn_image = EVOL_CONFIG[14]["skill_gif"]
+                            boss_action_log = (
+                                f"⚔️ **[KỸ NĂNG] Mahoraga** rút kiếm tung **THOÁI MA KIẾM** (25%)! "
+                                f"Trường kiếm khổng lồ giáng **{p1_power:,} DMG sát thương thuần** (không chia đều) thẳng vào **{ac['name']}** ({target_c['username']})!\n"
+                                f"🛡️ **[Ace 2] [#14] Reimu** ({target_c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                            )
+                    if not invul and str(ac["cid"]).lower() == "t1" and (target_c.get("seiki_invul_turn") == p1_rounds or (not target_c.get("seiki_seal_used") and target_c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        target_c["seiki_seal_used"] = True
+                        target_c["seiki_used_turn"] = p1_rounds
+                        invul = True
+                        turn_image = T1_SEAL_GIF
+                        title_t1 = "[Ace 2] [#t1] Seiki" if ac.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                        pct_t1 = "50%" if ac.get("is_ace2") else "40%"
+                        boss_action_log = (
+                            f"⚔️ **[KỸ NĂNG] Mahoraga** rút kiếm tung **THOÁI MA KIẾM** (25%)! "
+                            f"Trường kiếm khổng lồ giáng **{p1_power:,} DMG sát thương thuần** (không chia đều) thẳng vào **{ac['name']}** ({target_c['username']})!\n"
+                            f"🛡️ **{title_t1}** ({target_c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                        )
+                    if not invul:
+                        ac["current_hp"] -= p1_power
+                        boss_action_log = (
+                            f"⚔️ **[KỸ NĂNG] Mahoraga** rút kiếm tung **THOÁI MA KIẾM** (25%)! "
+                            f"Trường kiếm khổng lồ giáng **{p1_power:,} DMG sát thương thuần** (không chia đều) thẳng vào **{ac['name']}** ({target_c['username']})!"
+                        )
+                else:
+                    num_front = len(frontline_cards)
+                    dmg_per_card = max(100, p1_power // num_front)
+                    boss_action_log = f"⚔️ Mahoraga đánh thường tổng **{p1_power:,} DMG**, chia đều **{dmg_per_card:,} DMG** lên mỗi lá bài tiền tuyến ({num_front} lá)!"
                     for c in active_combatants:
                         ac = c["team_cards"][c["current_card_index"]]
                         invul = False
@@ -2129,31 +2292,77 @@ async def execute_raid(channel, raid_data):
     for uid in participants:
         p = get_player(uid)
         roll = random.random()
-        if roll < 0.10:
-            t_val = 10.0
-            d_str = "🔥 **+10 Vé** (10%)"
-        elif roll < 0.50:
-            t_val = 5.0
-            d_str = "💎 **+5 Vé** (40%)"
+        if boss_type == "mahoraga":
+            if roll < 0.10:
+                t_val = 20.0
+                d_str = "👑 **+20 Vé** (10%)"
+            elif roll < 0.50:
+                t_val = 15.0
+                d_str = "🔥 **+15 Vé** (40%)"
+            else:
+                t_val = 10.0
+                d_str = "💎 **+10 Vé** (50%)"
         else:
-            t_val = 3.0
-            d_str = "✨ **+3 Vé** (50%)"
+            if roll < 0.10:
+                t_val = 10.0
+                d_str = "🔥 **+10 Vé** (10%)"
+            elif roll < 0.50:
+                t_val = 5.0
+                d_str = "💎 **+5 Vé** (40%)"
+            else:
+                t_val = 3.0
+                d_str = "✨ **+3 Vé** (50%)"
 
         items_won = [d_str]
-        if random.random() < 0.025:
-            p_shards = p.setdefault("shards", {})
-            p_shards["seiki"] = p_shards.get("seiki", 0) + 1
-            cur_shards = p_shards["seiki"]
-            shard_notice = f"🔮 **+1 Mảnh Seiki** (2.5% Siêu Hiếm! Kho: {cur_shards}/10)"
-            if cur_shards >= 10:
-                shard_notice += " ✨ *(Đã đủ 10 mảnh! Dùng `/t translate`)*"
-            items_won.append(shard_notice)
+        p_shards = p.setdefault("shards", {})
+        if boss_type == "mahoraga":
+            if random.random() < 0.05:
+                p_shards["mahoraga"] = p_shards.get("mahoraga", 0) + 1
+                items_won.append(f"🔱 **+1 Mảnh Mahoraga** (5% Siêu Hiếm! Kho: {p_shards['mahoraga']} mảnh)")
+        else:
+            if random.random() < 0.025:
+                p_shards["seiki"] = p_shards.get("seiki", 0) + 1
+                cur_shards = p_shards["seiki"]
+                shard_notice = f"🔮 **+1 Mảnh Seiki** (2.5% Siêu Hiếm! Kho: {cur_shards}/10)"
+                if cur_shards >= 10:
+                    shard_notice += " ✨ *(Đã đủ 10 mảnh! Dùng `/t translate`)*"
+                items_won.append(shard_notice)
 
         p["pull_tickets"] += t_val
         p["xp"] += 100
         update_daily_quest_progress(p, "raid", 1)
         save_player(p)
         p1_rewards_data[uid] = {"total_pulls": t_val, "items": items_won, "username": p["username"]}
+
+    # ========================================================================
+    # BOSS MAHORAGA - KẾT THÚC ĐẠI CHIẾN (SINGLE PHASE, KHÔNG CÓ PHASE 2)
+    # ========================================================================
+    if boss_type == "mahoraga":
+        total_raid_dmg = sum(c["total_dmg"] for c in combatants)
+        final_embed = discord.Embed(
+            title="⚔️ KẾT QUẢ ĐẠI CHIẾN: BÁT ÁCH KIẾM THẦN TƯỚNG MAHORAGA!",
+            description=(
+                "🌸 **Reimu thở phào nhẹ nhõm:** *\"Phù... cuối cùng cũng hạ được cái thứ yêu quái đó. "
+                "Vụ này chắc chắn là do thằng nhóc đầu nhím kia gây ra rồi...\"*\n\n"
+                f"🎉 Đội quân đã hạ gục **Mahoraga** sau **{p1_rounds} hiệp**!\n"
+                f"💥 **Tổng Sát Thương:** **{total_raid_dmg:,} DMG**\n"
+                f"⏳ **Hồi chiêu Boss tiếp theo:** **15 phút**"
+            ),
+            color=0x10B981
+        )
+        final_embed.set_thumbnail(url=boss_cfg["image"])
+        m_summary = [
+            f"🏆 **{r['username']}**: Nhận **+{r['total_pulls']:.0f} Vé Pull** ({r['items'][0]}) + 100 XP!"
+            + (f"\n   └ {r['items'][1]}" if len(r["items"]) > 1 else "")
+            for r in p1_rewards_data.values()
+        ]
+        final_embed.add_field(
+            name="🎁 Phần Thưởng (10% 20 vé, 40% 15 vé, 50% 10 vé, 5% Mảnh Mahoraga):",
+            value="\n".join(m_summary),
+            inline=False
+        )
+        await channel.send(embed=final_embed, view=OpenDetailsView(all_raid_turns))
+        return
 
     # ========================================================================
     # PHASE 2: SEIKI DỊ HÌNH - THỨC TỈNH (90K HP / 10K DMG / NUCLEAR + CLEAVE)
@@ -2936,6 +3145,8 @@ async def on_message(message: discord.Message):
         b_type = None
         if "seiki" in clean_stripped:
             b_type = "seiki"
+        elif "mahoraga" in clean_stripped:
+            b_type = "mahoraga"
         elif "reimu" in clean_stripped:
             b_type = "reimu"
         await admin_spawn_boss(message.channel, message.author, boss_type=b_type)
@@ -2954,10 +3165,12 @@ async def on_message(message: discord.Message):
     
     if active_raid is None and now_ts >= boss_cooldown_until and not content_lower.startswith("!") and not content_lower.startswith("/"):
         spawn_roll = random.random()
-        if spawn_roll < 0.05:
+        if spawn_roll < (1.0 / 3.0):
             await spawn_boss_raid(message.channel, None, boss_type="seiki")
-        elif spawn_roll < 0.10:
+        elif spawn_roll < (2.0 / 3.0):
             await spawn_boss_raid(message.channel, None, boss_type="reimu")
+        else:
+            await spawn_boss_raid(message.channel, None, boss_type="mahoraga")
 
     is_reply_to_reimu = False
     if message.reference and message.reference.resolved:
@@ -4050,8 +4263,14 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
         shard_key = "seiki"
         target_card_id = "t1"
         needed_shards = 10
+    elif shard_key in ["mahoraga", "batach", "than_tuong", "kiem_than_tuong", "mahoraga_shard"]:
+        msg = (
+            "🚧 **Mảnh Mahoraga chưa thể quy đổi!**\n"
+            f"• Bạn đang có: **{shards_dict.get('mahoraga', 0)} Mảnh Mahoraga**\n"
+            "• Thẻ Mahoraga sẽ được cập nhật trong bản sau, hãy tích trữ mảnh nhé!"
+        )
     else:
-        msg = f"❌ Loại mảnh `{loai_shard}` không tồn tại! Hiện tại Gensokyo có mảnh: `seiki` (đổi ra Thẻ T1 Seiki Đệ Pháp Toàn Năng)."
+        msg = f"❌ Loại mảnh `{loai_shard}` không tồn tại! Hiện tại có: `seiki` (đổi Thẻ T1 Seiki) và `mahoraga` (vật phẩm - sắp mở quy đổi)."
         if isinstance(ctx_or_interaction, discord.Interaction):
             await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else:
@@ -4110,6 +4329,7 @@ async def handle_view_shards(ctx_or_interaction):
     player = get_player(user.id, user.display_name)
     shards_dict = player.get("shards", {})
     seiki_shards = shards_dict.get("seiki", 0)
+    mahoraga_shards = shards_dict.get("mahoraga", 0)
     card_info = CARDS_DATA["t1"]
     has_card = player["inventory"].get("t1", 0)
 
@@ -4124,6 +4344,15 @@ async def handle_view_shards(ctx_or_interaction):
             f"• Nguồn rơi: Tỉ lệ 2.5% rơi ngẫu nhiên khi tham gia diệt Boss Raid (Phase 1 & Phase 2)."
         ),
         color=0x8B5CF6
+    )
+    embed.add_field(
+        name="🔱 Mảnh Bát Ách Kiếm Thần Tướng Mahoraga:",
+        value=(
+            f"• Hiện có: **`{mahoraga_shards}` mảnh**\n"
+            "• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Mahoraga** (90K HP).\n"
+            "• 🚧 *Thẻ Mahoraga sẽ được mở khóa trong bản cập nhật sau - hiện tại hãy tích trữ mảnh!*"
+        ),
+        inline=False
     )
     embed.set_thumbnail(url=card_info["image"])
     if isinstance(ctx_or_interaction, discord.Interaction):
@@ -6157,6 +6386,7 @@ async def slash_boss_status(interaction: discord.Interaction):
     check_and_clean_expired_raid()
     now = time.time()
     embed = discord.Embed(title="👹 TRẠNG THÁI BOSS RAID: REIMU DỊ HÌNH (2 PHASE)", color=0xDC2626)
+    embed.add_field(name="👺 Bát Ách Kiếm Thần Tướng Mahoraga (Single Phase):", value=f"• 90,000 HP | 6,000 DMG (chia đều)\n• Nội tại The True Adapt (100%): tự hồi 3% HP tối đa (2,700 HP) và GIẢM 3% sát thương phải nhận mỗi lượt (cộng dồn)!\n• Kỹ năng Thoái Ma Kiếm (25%): 6,000 DMG sát thương thuần lên 1 mục tiêu duy nhất!\n• Phần thưởng: 10% 20 vé, 40% 15 vé, 50% 10 vé, 5% Mảnh Mahoraga!", inline=False)
     embed.add_field(name="👹 Seiki Dị Hình (2 Phase):", value=f"• Phase 1: HP {SEIKI_BOSS_CONFIG['hp']:,} | {SEIKI_BOSS_CONFIG['power']:,} DMG (chia đều) + nội tại hồi 1.5% HP\n• Phase 2 Thức Tỉnh: HP {SEIKI_BOSS_PHASE2_CONFIG['hp']:,} | {SEIKI_BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều) + Cleave +20% Máu tối đa mục tiêu + Nuclear Spell Card (10%) 10K DMG toàn tiền tuyến!", inline=False)
     embed.set_thumbnail(url=BOSS_CONFIG["image"])
     embed.add_field(name="❤️ Chỉ Số 2 Phase:", value=f"• Phase 1: HP {BOSS_CONFIG['hp']:,} | Đánh thường {BOSS_CONFIG['power']:,} DMG (chia đều)\n• Phase 2: HP {BOSS_PHASE2_CONFIG['hp']:,} | Đánh thường {BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều)", inline=True)
@@ -6184,7 +6414,9 @@ async def prefix_boss_status(ctx, *args):
                 await ctx.send(f"⛔ {ctx.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được triệu hồi Boss Raid!")
                 return
             b_type = None
-            if "seiki" in sub:
+            if "mahoraga" in sub:
+                b_type = "mahoraga"
+            elif "seiki" in sub:
                 b_type = "seiki"
             elif "reimu" in sub:
                 b_type = "reimu"
@@ -6209,7 +6441,7 @@ async def prefix_boss_status(ctx, *args):
         rem = int(boss_cooldown_until - now)
         await ctx.send(f"⏳ Boss đang hồi chiêu 15 phút (Còn lại: {rem // 60}m {rem % 60}s).")
     else:
-        await ctx.send("🟢 Boss đã sẵn sàng xuất hiện (Tỉ lệ 5% Seiki Dị Hình, 5% Reimu Dị Hình khi chat, hoặc dùng `boss admin spawn [seiki|reimu]`)!")
+        await ctx.send("🟢 Boss đã sẵn sàng xuất hiện (Tỉ lệ đều 1/3 Mahoraga, Seiki, Reimu khi chat, hoặc dùng `boss admin spawn [mahoraga|seiki|reimu]`)!")
 
 @bot.tree.command(name="boss_admin", description="[Admin] Quản trị Boss Raid (Reimu Dị Hình hoặc Seiki Dị Hình)")
 @app_commands.describe(action="Hành động muốn thực hiện với Boss Raid", loai_boss="Loại Boss muốn triệu hồi (nếu chọn spawn)")
@@ -6217,9 +6449,10 @@ async def prefix_boss_status(ctx, *args):
     app_commands.Choice(name="spawn - Triệu hồi Boss ngay tại kênh này", value="spawn"),
     app_commands.Choice(name="reset - Giải phóng Boss kẹt và xóa hồi chiêu", value="reset")
 ], loai_boss=[
+    app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (90k HP / The True Adapt)", value="mahoraga"),
     app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
     app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
-    app_commands.Choice(name="Ngẫu nhiên 50/50 giữa 2 Boss", value="random")
+    app_commands.Choice(name="Ngẫu nhiên tỉ lệ 1/3 giữa 3 Boss", value="random")
 ])
 async def slash_boss_admin(interaction: discord.Interaction, action: str, loai_boss: str = "random"):
     if not is_authorized_admin(interaction.user):
@@ -6227,7 +6460,7 @@ async def slash_boss_admin(interaction: discord.Interaction, action: str, loai_b
         return
     if action == "spawn":
         b_type = None if loai_boss == "random" else loai_boss
-        boss_label = "Seiki Dị Hình" if b_type == "seiki" else ("Reimu Dị Hình" if b_type == "reimu" else "Boss Raid ngẫu nhiên")
+        boss_label = "Mahoraga" if b_type == "mahoraga" else ("Seiki Dị Hình" if b_type == "seiki" else ("Reimu Dị Hình" if b_type == "reimu" else "Boss Raid ngẫu nhiên"))
         await interaction.response.send_message(f"⚡ Đang cưỡng chế triệu hồi {boss_label}...", ephemeral=True)
         await admin_spawn_boss(interaction.channel, interaction.user, boss_type=b_type)
     elif action == "reset":
@@ -6236,16 +6469,17 @@ async def slash_boss_admin(interaction: discord.Interaction, action: str, loai_b
 @bot.tree.command(name="admin_boss_spawn", description="[Admin] Triệu hồi ngay Boss Raid (Seiki Dị Hình hoặc Reimu Dị Hình) tại kênh này")
 @app_commands.describe(loai_boss="Chọn Boss muốn triệu hồi")
 @app_commands.choices(loai_boss=[
+    app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (90k HP / The True Adapt)", value="mahoraga"),
     app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
     app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
-    app_commands.Choice(name="Ngẫu nhiên 50/50 giữa 2 Boss", value="random")
+    app_commands.Choice(name="Ngẫu nhiên tỉ lệ 1/3 giữa 3 Boss", value="random")
 ])
 async def slash_admin_boss_spawn(interaction: discord.Interaction, loai_boss: str = "random"):
     if not is_authorized_admin(interaction.user):
         await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN HẠN!**", ephemeral=True)
         return
     b_type = None if loai_boss == "random" else loai_boss
-    boss_label = "Seiki Dị Hình" if b_type == "seiki" else ("Reimu Dị Hình" if b_type == "reimu" else "Boss Raid ngẫu nhiên")
+    boss_label = "Mahoraga" if b_type == "mahoraga" else ("Seiki Dị Hình" if b_type == "seiki" else ("Reimu Dị Hình" if b_type == "reimu" else "Boss Raid ngẫu nhiên"))
     await interaction.response.send_message(f"⚡ Đang triệu hồi {boss_label}...", ephemeral=True)
     await admin_spawn_boss(interaction.channel, interaction.user, boss_type=b_type)
 
@@ -6296,6 +6530,11 @@ async def handle_help(ctx_or_interaction):
 **👹 DỊ BIẾN SEIKI DỊ HÌNH - DỊ TÀ ĐỆ NHẤT PHÁP SƯ (LIVE COMBAT 2 PHASE):**
 • **Phase 1 (30k HP / 3k DMG chia đều):** Nội tại hồi 1.5% HP, Multi Master Spark (15%), Fantasy Seal (20%), Blitz Attack (20%). Quà: 10% 10 vé, 40% 5 vé, 50% 3 vé!
 • **Phase 2 Thức Tỉnh (90k HP / 10k DMG chia đều):** Hồi sinh & hồi 100% HP mọi thẻ bài! Nội tại **Cleave (100%)**: +20% Máu tối đa mục tiêu! **Nuclear Spell Card (10%)**: 10K DMG toàn tiền tuyến! Quà: 10% 30 vé, 40% 20 vé, 50% 10 vé, 15% +1 Mảnh Seiki!
+**👺 DỊ BIẾN BÁT ÁCH KIẾM THẦN TƯỚNG MAHORAGA (SINGLE PHASE - 90K HP):**
+• **90,000 HP / 6,000 DMG (chia đều tiền tuyến):**
+  - **The True Adapt (100% Thụ Động):** Mỗi hiệp tự hồi 3% HP tối đa (2,700 HP) & giảm 3% sát thương phải nhận (cộng dồn mỗi hiệp, tối đa 90%)!
+  - **Thoái Ma Kiếm (25%):** Rút kiếm chém 6,000 DMG sát thương thuần lên MỘT mục tiêu duy nhất (không chia đều)!
+• **Quà thanh tẩy:** 10% 20 vé, 40% 15 vé, 50% 10 vé (+100 XP), và 5% rơi +1 Mảnh Mahoraga (tích trữ cho Thẻ Mahoraga sắp ra mắt)!
 
 **👑 LỆNH ADMIN (OWNER EXCLUSIVE - ID: 1502579398560317441):**
 • `/admin_lock <user> <id_the>`: Niêm phong thẻ bài của người chơi (chỉ mở khi pull ra lại).
