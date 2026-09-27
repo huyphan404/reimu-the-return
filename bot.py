@@ -222,9 +222,36 @@ CARDS_DATA = {
                 "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/8d/12/mwVdJaFQsefrsAuNS.gif"
             }
         }
+    },
+    "t2": {
+        "id": "t2",
+        "name": "Mahoraga Bát ách kiếm thần tướng",
+        "rank": "T",
+        "power": 550,
+        "hp": 7000,
+        "image": "https://static2.klipy.com/ii/da290b156d64898341638f3c299e7478/86/35/wnul0BmH.gif",
+        "passive": {
+            "name": "The True adapt",
+            "chance": 1.0,
+            "heal_pct": 0.05,
+            "damage_reduction_pct": 0.05,
+            "desc": "Nội tại 100% kích hoạt: Mỗi turn hồi 5% máu tối đa & mỗi turn giảm 5% sát thương phải nhận (cộng dồn)",
+            "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/12/48/UtccMb4buubM.gif"
+        },
+        "skills": {
+            "thoai_ma_kiem": {
+                "name": "Thoái Ma kiếm",
+                "chance": 0.30,
+                "multiplier": 1.5,
+                "desc": "Gây ra 1.5x sát thương cho mục tiêu",
+                "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/fd/9a/evpBLiollsxMmiF1wK18.gif"
+            }
+        }
     }
 }
 CARDS_DATA["T1"] = CARDS_DATA["t1"]
+CARDS_DATA["T2"] = CARDS_DATA["t2"]
+CARDS_DATA["t2"] = CARDS_DATA["t2"]
 
 # ==============================================================================
 # GIF HOẠT ẢNH TUYỆT KỸ THẺ [T] #t1 SEIKI (dùng chung cho Raid, Battle & PvP)
@@ -233,6 +260,8 @@ T1_SKILL_CONFIGS = CARDS_DATA["t1"]["skills"]
 T1_SEAL_GIF = T1_SKILL_CONFIGS["fantasy_seal"]["gif"]    # https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/e7/fe/JOKpsPyd.gif
 T1_SPARK_GIF = T1_SKILL_CONFIGS["master_spark"]["gif"]   # https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/f4/32/3xCGLkOw.gif
 T1_HEAL_GIF = T1_SKILL_CONFIGS["medicine_sign"]["gif"]   # https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/8d/12/mwVdJaFQsefrsAuNS.gif
+T2_PASSIVE_GIF = CARDS_DATA["t2"]["passive"]["gif"]      # https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/12/48/UtccMb4buubM.gif
+T2_THOAI_MA_GIF = CARDS_DATA["t2"]["skills"]["thoai_ma_kiem"]["gif"] # https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/fd/9a/evpBLiollsxMmiF1wK18.gif
 
 CARDS_BY_RANK = {
     "SS": [c for c in CARDS_DATA.values() if c["rank"] == "SS"],
@@ -544,9 +573,15 @@ CHARACTER_DETAILS = {
         "title": "Dị Tà Đệ Nhất Pháp Sư (Nhóm T-Đặc Biệt)",
         "skill_name": "Tam Đại Tuyệt Kỹ (Fantasy Seal • Master Spark • Medicine Sign)",
         "skill_desc": "Thẻ bài thần thoại nhóm T. Bản thường: Fantasy Seal (40% miễn thương), Master Spark (30% ×1.5), Medicine Sign (20% hồi phục). [Ace 2 ⭐⭐ - Kỹ năng thay đổi]: 🪓 Cleave (thụ động 100%: mọi đòn đánh +2% Máu Tối Đa mục tiêu) • 💚 Medicine Sign (35% hồi 40% Máu, 1 lần/trận) • 🛡️ Fantasy Seal (50% miễn toàn bộ sát thương 1 hiệp, buff lên 50% ở dạng Ace 2, 1 lần/trận) • 🌑 Bóng Khái Niệm (40%: 15% Máu Tối Đa + xóa kỹ năng đối phương, 1 lần/trận). Tuân thủ: tối đa 1 chiêu mỗi lượt!"
+    },
+    "t2": {
+        "title": "Bát Ách Kiếm Thần Tướng (Nhóm T-Đặc Biệt)",
+        "skill_name": "The True adapt • Thoái Ma Kiếm",
+        "skill_desc": "Thần tướng thuật thức tối thượng Mahoraga nhóm T. Nội tại The True adapt (100% kích hoạt): Mỗi turn hồi 5% Máu tối đa và giảm 5% sát thương phải nhận (cộng dồn mỗi lượt). Tuyệt kỹ Thoái Ma kiếm (30% kích hoạt): Gây 1.5x sát thương cho mục tiêu (550 ATK / 7,000 HP)."
     }
 }
 CHARACTER_DETAILS["T1"] = CHARACTER_DETAILS["t1"]
+CHARACTER_DETAILS["T2"] = CHARACTER_DETAILS["t2"]
 
 BOSS_SKILL_CONFIG = {
     "name": "Dị Hình Bùa Chú",
@@ -774,7 +809,8 @@ CARD_ALIASES = {
     "wriggle": 26, "nightbug": 26,
     "tewi": 27,
     "koishi": 10, "komeiji": 10,
-    "seiki": "t1", "t1": "t1", "dephap": "t1", "toannang": "t1"
+    "seiki": "t1", "t1": "t1", "dephap": "t1", "toannang": "t1",
+    "mahoraga": "t2", "t2": "t2", "batach": "t2"
 }
 
 def normalize_card_id(raw_id):
@@ -1348,6 +1384,8 @@ class OpponentTeamView(discord.ui.View):
                 skill_text += "\n🔴 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Red Eye Mind Explosion* (1 lần/trận): mục tiêu 20% tự gây sát thương lên bản thân trong 4 turn."
         if is_ace and str(c["cid"]).lower() == "t1":
             skill_text += "\n♾️ **[Ace 2 Hiệu Ứng]** *Cleave* (thụ động, +2% Máu tối đa mỗi đòn) • *Medicine Sign* (35% hồi 40% máu) • *Fantasy Seal* (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • *Bóng Khái Niệm* (40%: 15% máu tối đa + xóa kỹ năng đối phương — mỗi chiêu 1 lần/trận)."
+        if str(c["cid"]).lower() == "t2":
+            skill_text += "\n🔱 **[Thần Tướng Hiệu Ứng]** *The True adapt* (thụ động 100%: mỗi turn hồi 5% Máu tối đa và giảm 5% sát thương phải nhận - cộng dồn) • *Thoái Ma kiếm* (30% kích hoạt gây ×1.5 sát thương)."
         embed.add_field(name="✨ Kỹ Năng / Tuyệt Kỹ Danmaku:", value=f"*{skill_text}*", inline=False)
 
         summary_lines = []
@@ -1859,6 +1897,7 @@ async def execute_raid(channel, raid_data):
         remilia_notif = None
         reisen_notif = None
         t1_notif = None
+        t2_notif = None
         turn_image = None
 
         for c in active_combatants:
@@ -1967,6 +2006,30 @@ async def execute_raid(channel, raid_data):
                             turn_image = T1_HEAL_GIF
                         passive_log = (passive_log + "\n" if passive_log else "") + f"💚 **[Nhóm T] [#t1] Seiki** ({c['username']}) thi triển **Medicine Sign** (20%)! Hồi phục **+{heal_val:,} HP** cho bản thân! ({ac['current_hp']:,}/{ac['max_hp']:,} HP)"
 
+            # ===== THẺ [#t2] MAHORAGA: The True adapt (Hồi 5% HP + Giảm 5% ST mỗi turn) + Thoái Ma kiếm (30% x1.5 DMG) =====
+            if str(ac["cid"]).lower() == "t2":
+                heal_mahoraga = int(ac["max_hp"] * 0.05)
+                ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_mahoraga)
+                c["mahoraga_adapt_turns"] = c.get("mahoraga_adapt_turns", 0) + 1
+                adapt_pct = min(0.90, c["mahoraga_adapt_turns"] * 0.05)
+                if random.random() < 0.30:
+                    card_dmg = int(card_dmg * 1.5)
+                    if not turn_image:
+                        turn_image = T2_THOAI_MA_GIF
+                    t2_notif_str = (
+                        f"🔱 **[Nhóm T] [#t2] Mahoraga** ({c['username']}) kích hoạt **The True Adapt** "
+                        f"(Hồi +{heal_mahoraga:,} HP, Kháng ST {int(adapt_pct*100)}%) & vung **Thoái Ma Kiếm** (30%)! "
+                        f"Sát thương ×1.5 giáng **{card_dmg:,} DMG** lên Boss!"
+                    )
+                else:
+                    if not turn_image:
+                        turn_image = T2_PASSIVE_GIF
+                    t2_notif_str = (
+                        f"🔱 **[Nhóm T] [#t2] Mahoraga** ({c['username']}) kích hoạt **The True Adapt**! "
+                        f"Hồi phục **+{heal_mahoraga:,} HP** ({ac['current_hp']:,}/{ac['max_hp']:,} HP) và tăng kháng sát thương lên **{int(adapt_pct*100)}%**!"
+                    )
+                t2_notif = (t2_notif + "\n" if t2_notif else "") + t2_notif_str
+
             round_player_dmg += card_dmg
             c["total_dmg"] += card_dmg
 
@@ -2015,7 +2078,13 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         if not invul:
-                            ac["current_hp"] -= 4000
+                            if str(ac["cid"]).lower() == "t2":
+                                adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                                actual_dmg = int(4000 * (1.0 - adapt_pct))
+                                ac["current_hp"] -= actual_dmg
+                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t2] Mahoraga** ({c['username']}) Thích Nghi (-{int(adapt_pct*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!"
+                            else:
+                                ac["current_hp"] -= 4000
                 elif seiki_action in ["spark_start", "spark_active"]:
                     turn_image = SEIKI_BOSS_CONFIG["skills"]["multi_spark"]["gif"]
                     num_front = len(frontline_cards)
@@ -2043,7 +2112,13 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         if not invul:
-                            ac["current_hp"] -= dmg_per_card
+                            if str(ac["cid"]).lower() == "t2":
+                                adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                                actual_dmg = int(dmg_per_card * (1.0 - adapt_pct))
+                                ac["current_hp"] -= actual_dmg
+                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t2] Mahoraga** ({c['username']}) Thích Nghi (-{int(adapt_pct*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!"
+                            else:
+                                ac["current_hp"] -= dmg_per_card
                 else:
                     num_front = len(frontline_cards)
                     dmg_per_card = max(100, p1_power // num_front)
@@ -2066,7 +2141,13 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         if not invul:
-                            ac["current_hp"] -= dmg_per_card
+                            if str(ac["cid"]).lower() == "t2":
+                                adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                                actual_dmg = int(dmg_per_card * (1.0 - adapt_pct))
+                                ac["current_hp"] -= actual_dmg
+                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t2] Mahoraga** ({c['username']}) Thích Nghi (-{int(adapt_pct*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!"
+                            else:
+                                ac["current_hp"] -= dmg_per_card
         elif boss_type == "mahoraga":
             if p1_hp <= 0:
                 boss_action_log = "💥 **Bát Ách Kiếm Thần Tướng Mahoraga đã bị đánh bại! Thần tướng tan biến vào hư không!**"
@@ -2101,11 +2182,21 @@ async def execute_raid(channel, raid_data):
                             f"🛡️ **{title_t1}** ({target_c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         )
                     if not invul:
-                        ac["current_hp"] -= p1_power
-                        boss_action_log = (
-                            f"⚔️ **[KỸ NĂNG] Mahoraga** rút kiếm tung **THOÁI MA KIẾM** (25%)! "
-                            f"Trường kiếm khổng lồ giáng **{p1_power:,} DMG sát thương thuần** (không chia đều) thẳng vào **{ac['name']}** ({target_c['username']})!"
-                        )
+                        if str(ac["cid"]).lower() == "t2":
+                            adapt_pct = min(0.90, target_c.get("mahoraga_adapt_turns", 1) * 0.05)
+                            actual_dmg = int(p1_power * (1.0 - adapt_pct))
+                            ac["current_hp"] -= actual_dmg
+                            boss_action_log = (
+                                f"⚔️ **[KỸ NĂNG] Mahoraga** rút kiếm tung **THOÁI MA KIẾM** (25%)! "
+                                f"Trường kiếm khổng lồ giáng **{p1_power:,} DMG** thẳng vào **{ac['name']}** ({target_c['username']})!\n"
+                                f"🛡️ **[Nhóm T] [#t2] Mahoraga** Thích Nghi (The True Adapt: -{int(adapt_pct*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!"
+                            )
+                        else:
+                            ac["current_hp"] -= p1_power
+                            boss_action_log = (
+                                f"⚔️ **[KỸ NĂNG] Mahoraga** rút kiếm tung **THOÁI MA KIẾM** (25%)! "
+                                f"Trường kiếm khổng lồ giáng **{p1_power:,} DMG sát thương thuần** (không chia đều) thẳng vào **{ac['name']}** ({target_c['username']})!"
+                            )
                 else:
                     num_front = len(frontline_cards)
                     dmg_per_card = max(100, p1_power // num_front)
@@ -2128,7 +2219,13 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         if not invul:
-                            ac["current_hp"] -= dmg_per_card
+                            if str(ac["cid"]).lower() == "t2":
+                                adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                                actual_dmg = int(dmg_per_card * (1.0 - adapt_pct))
+                                ac["current_hp"] -= actual_dmg
+                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t2] Mahoraga** ({c['username']}) Thích Nghi (-{int(adapt_pct*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!"
+                            else:
+                                ac["current_hp"] -= dmg_per_card
         else:
             if p1_hp <= 0:
                 boss_action_log = "💥 **Reimu Dị Hình Phase 1 đã bị đánh gục hoàn toàn!**"
@@ -2157,7 +2254,13 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         if not invul:
-                            ac["current_hp"] -= 5000
+                            if str(ac["cid"]).lower() == "t2":
+                                adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                                actual_dmg = int(5000 * (1.0 - adapt_pct))
+                                ac["current_hp"] -= actual_dmg
+                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t2] Mahoraga** ({c['username']}) Thích Nghi (-{int(adapt_pct*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!"
+                            else:
+                                ac["current_hp"] -= 5000
                 else:
                     num_front = len(frontline_cards)
                     dmg_per_card = max(100, p1_power // num_front)
@@ -2180,7 +2283,13 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         if not invul:
-                            ac["current_hp"] -= dmg_per_card
+                            if str(ac["cid"]).lower() == "t2":
+                                adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                                actual_dmg = int(dmg_per_card * (1.0 - adapt_pct))
+                                ac["current_hp"] -= actual_dmg
+                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t2] Mahoraga** ({c['username']}) Thích Nghi (-{int(adapt_pct*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!"
+                            else:
+                                ac["current_hp"] -= dmg_per_card
 
         push_logs = []
         for c in active_combatants:
@@ -2231,6 +2340,8 @@ async def execute_raid(channel, raid_data):
             round_embed.add_field(name="🦇 Ripples of 495 Years:", value=flandre_notif, inline=False)
         if t1_notif:
             round_embed.add_field(name="🔮 Tuyệt Kỹ [Ace 2] [#t1] Seiki:", value=t1_notif, inline=False)
+        if t2_notif:
+            round_embed.add_field(name="🔱 Thần Tướng [Nhóm T] [#t2] Mahoraga:", value=t2_notif, inline=False)
         round_embed.add_field(name="👺 Phản Kích Của Boss:", value=boss_action_log, inline=False)
         if push_logs:
             round_embed.add_field(name="🔄 Thay Đổi Tiền Tuyến:", value="\n".join(push_logs), inline=False)
@@ -2261,6 +2372,7 @@ async def execute_raid(channel, raid_data):
                 *([("🌀 Ảo Giác Tâm Trí:", reisen_boss_log, False)] if reisen_boss_log else []),
                 *([("🦇 Ripples of 495 Years:", flandre_notif, False)] if flandre_notif else []),
                 *([("🔮 Tuyệt Kỹ [Ace 2] [#t1] Seiki:", t1_notif, False)] if t1_notif else []),
+                *([("🔱 Thần Tướng [Nhóm T] [#t2] Mahoraga:", t2_notif, False)] if t2_notif else []),
                 ("👺 Phản Kích Của Boss:", boss_action_log, False),
                 *([("🔄 Thay Đổi Tiền Tuyến & Đổi Sát Thương:", "\n".join(push_logs), False)] if push_logs else []),
                 ("🛡️ Tình Trạng Tiền Tuyến Hiện Tại:", "\n".join(round_card_status), False)
@@ -2434,6 +2546,7 @@ async def execute_raid(channel, raid_data):
             remilia_notif = None
             reisen_notif = None
             t1_notif = None
+            t2_notif = None
             turn_image = None
 
             for c in active_combatants:
@@ -2518,6 +2631,30 @@ async def execute_raid(channel, raid_data):
                             if not turn_image:
                                 turn_image = T1_HEAL_GIF
 
+                # ===== THẺ [#t2] MAHORAGA: The True adapt + Thoái Ma kiếm =====
+                if str(ac["cid"]).lower() == "t2":
+                    heal_mahoraga = int(ac["max_hp"] * 0.05)
+                    ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_mahoraga)
+                    c["mahoraga_adapt_turns"] = c.get("mahoraga_adapt_turns", 0) + 1
+                    adapt_pct = min(0.90, c["mahoraga_adapt_turns"] * 0.05)
+                    if random.random() < 0.30:
+                        card_dmg = int(card_dmg * 1.5)
+                        if not turn_image:
+                            turn_image = T2_THOAI_MA_GIF
+                        t2_notif_str = (
+                            f"🔱 **[Nhóm T] [#t2] Mahoraga** ({c['username']}) kích hoạt **The True Adapt** "
+                            f"(Hồi +{heal_mahoraga:,} HP, Kháng ST {int(adapt_pct*100)}%) & vung **Thoái Ma Kiếm** (30%)! "
+                            f"Sát thương ×1.5 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
+                        )
+                    else:
+                        if not turn_image:
+                            turn_image = T2_PASSIVE_GIF
+                        t2_notif_str = (
+                            f"🔱 **[Nhóm T] [#t2] Mahoraga** ({c['username']}) kích hoạt **The True Adapt**! "
+                            f"Hồi phục **+{heal_mahoraga:,} HP** ({ac['current_hp']:,}/{ac['max_hp']:,} HP) và tăng kháng sát thương lên **{int(adapt_pct*100)}%**!"
+                        )
+                    t2_notif = (t2_notif + "\n" if t2_notif else "") + t2_notif_str
+
                 round_player_dmg += card_dmg
                 c["total_dmg"] += card_dmg
 
@@ -2553,7 +2690,13 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         if not invul:
-                            ac["current_hp"] -= 10000
+                            if str(ac["cid"]).lower() == "t2":
+                                adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                                actual_dmg = int(10000 * (1.0 - adapt_pct))
+                                ac["current_hp"] -= actual_dmg
+                                boss_action_log += f"\n🛡️ **[Nhóm T] [#t2] Mahoraga** ({c['username']}) Thích Nghi (-{int(adapt_pct*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!"
+                            else:
+                                ac["current_hp"] -= 10000
                 else:
                     num_front = len(frontline_cards)
                     dmg_per_card = max(100, p2_power // num_front)
@@ -2581,8 +2724,15 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         if not invul:
-                            ac["current_hp"] -= (dmg_per_card + cleave_bonus)
-                            boss_action_log += f"\n• 💢 **{ac['name']}** ({c['username']}) nhận **{dmg_per_card:,} + {cleave_bonus:,} (Cleave) = {dmg_per_card + cleave_bonus:,} DMG**!"
+                            raw_cleave_dmg = dmg_per_card + cleave_bonus
+                            if str(ac["cid"]).lower() == "t2":
+                                adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                                actual_dmg = int(raw_cleave_dmg * (1.0 - adapt_pct))
+                                ac["current_hp"] -= actual_dmg
+                                boss_action_log += f"\n• 💢 **{ac['name']}** ({c['username']}) nhận **{raw_cleave_dmg:,} DMG** nhưng Thích Nghi (-{int(adapt_pct*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!"
+                            else:
+                                ac["current_hp"] -= raw_cleave_dmg
+                                boss_action_log += f"\n• 💢 **{ac['name']}** ({c['username']}) nhận **{dmg_per_card:,} + {cleave_bonus:,} (Cleave) = {raw_cleave_dmg:,} DMG**!"
 
             push_logs = []
             for c in active_combatants:
@@ -2659,6 +2809,7 @@ async def execute_raid(channel, raid_data):
                     *([("🌀 Ảo Giác Tâm Trí:", reisen_boss_log, False)] if reisen_boss_log else []),
                     *([("🦇 Ripples of 495 Years:", flandre_notif, False)] if flandre_notif else []),
                     *([("🔮 Tuyệt Kỹ [Ace 2] [#t1] Seiki:", t1_notif, False)] if t1_notif else []),
+                *([("🔱 Thần Tướng [Nhóm T] [#t2] Mahoraga:", t2_notif, False)] if t2_notif else []),
                     ("👹 Boss Phase 2 Ra Đòn:", boss_action_log, False),
                     *([("🔄 Thay Đổi Tiền Tuyến & Đổi Sát Thương:", "\n".join(push_logs), False)] if push_logs else []),
                     ("🛡️ Tình Trạng Tiền Tuyến Hiện Tại:", "\n".join(round_card_status), False)
@@ -2810,6 +2961,7 @@ async def execute_raid(channel, raid_data):
         remilia_notif = None
         reisen_notif = None
         t1_notif = None
+        t2_notif = None
         turn_image = None
 
         for c in active_combatants:
@@ -2893,6 +3045,30 @@ async def execute_raid(channel, raid_data):
                         ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_val)
                         if not turn_image:
                             turn_image = T1_HEAL_GIF
+
+            # ===== THẺ [#t2] MAHORAGA: The True adapt + Thoái Ma kiếm =====
+            if str(ac["cid"]).lower() == "t2":
+                heal_mahoraga = int(ac["max_hp"] * 0.05)
+                ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_mahoraga)
+                c["mahoraga_adapt_turns"] = c.get("mahoraga_adapt_turns", 0) + 1
+                adapt_pct = min(0.90, c["mahoraga_adapt_turns"] * 0.05)
+                if random.random() < 0.30:
+                    card_dmg = int(card_dmg * 1.5)
+                    if not turn_image:
+                        turn_image = T2_THOAI_MA_GIF
+                    t2_notif_str = (
+                        f"🔱 **[Nhóm T] [#t2] Mahoraga** ({c['username']}) kích hoạt **The True Adapt** "
+                        f"(Hồi +{heal_mahoraga:,} HP, Kháng ST {int(adapt_pct*100)}%) & vung **Thoái Ma Kiếm** (30%)! "
+                        f"Sát thương ×1.5 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
+                    )
+                else:
+                    if not turn_image:
+                        turn_image = T2_PASSIVE_GIF
+                    t2_notif_str = (
+                        f"🔱 **[Nhóm T] [#t2] Mahoraga** ({c['username']}) kích hoạt **The True Adapt**! "
+                        f"Hồi phục **+{heal_mahoraga:,} HP** ({ac['current_hp']:,}/{ac['max_hp']:,} HP) và tăng kháng sát thương lên **{int(adapt_pct*100)}%**!"
+                    )
+                t2_notif = (t2_notif + "\n" if t2_notif else "") + t2_notif_str
 
             round_player_dmg += card_dmg
             c["total_dmg"] += card_dmg
@@ -3000,6 +3176,8 @@ async def execute_raid(channel, raid_data):
             round_embed.add_field(name="🦇 Ripples of 495 Years:", value=flandre_notif, inline=False)
         if t1_notif:
             round_embed.add_field(name="🔮 Tuyệt Kỹ [Ace 2] [#t1] Seiki:", value=t1_notif, inline=False)
+        if t2_notif:
+            round_embed.add_field(name="🔱 Thần Tướng [Nhóm T] [#t2] Mahoraga:", value=t2_notif, inline=False)
         round_embed.add_field(name="👹 Boss Phase 2 Ra Đòn:", value=boss_action_log, inline=False)
         if push_logs:
             round_embed.add_field(name="🔄 Thay Đổi Tiền Tuyến:", value="\n".join(push_logs), inline=False)
@@ -3029,6 +3207,7 @@ async def execute_raid(channel, raid_data):
                 *([("🌀 Ảo Giác Tâm Trí:", reisen_boss_log, False)] if reisen_boss_log else []),
                 *([("🦇 Ripples of 495 Years:", flandre_notif, False)] if flandre_notif else []),
                 *([("🔮 Tuyệt Kỹ [Ace 2] [#t1] Seiki:", t1_notif, False)] if t1_notif else []),
+                *([("🔱 Thần Tướng [Nhóm T] [#t2] Mahoraga:", t2_notif, False)] if t2_notif else []),
                 ("👹 Boss Phase 2 Ra Đòn:", boss_action_log, False),
                 *([("🔄 Thay Đổi Tiền Tuyến & Đổi Sát Thương:", "\n".join(push_logs), False)] if push_logs else []),
                 ("🛡️ Tình Trạng Tiền Tuyến Hiện Tại:", "\n".join(round_card_status), False)
@@ -4207,19 +4386,25 @@ async def handle_collection(ctx_or_interaction):
 
     t_lines = []
     shards_cnt = player.get("shards", {}).get("seiki", 0)
-    for t_cid in ["t1"]:
+    for t_cid in ["t1", "t2"]:
         if t_cid in CARDS_DATA:
             t_card = CARDS_DATA[t_cid]
             t_cnt = player["inventory"].get(t_cid, 0)
             t_unlocked = is_card_unlocked(player, t_cid)
-            t_ace_mark = " ⭐⭐ [Ace 2]" if is_card_ace2(player, "t1") else ""
+            t_ace_mark = " ⭐⭐ [Ace 2]" if is_card_ace2(player, t_cid) else ""
             if t_cnt > 0 or t_unlocked:
                 t_status = f"✅ **{format_card_id(t_card['id'])} [{t_card['rank']}] {t_card['name']}** ×{t_cnt}{t_ace_mark}"
             else:
                 t_status = f"🔒 `{format_card_id(t_card['id'])}` [{t_card['rank']}] {t_card['name']} *(Chưa sở hữu)*"
-            t_shard_info = f"   └ 💎 **Mảnh Seiki:** `{shards_cnt}/10` mảnh"
-            if shards_cnt >= 10:
-                t_shard_info += " ✨ *(Đủ 10 mảnh! Dùng `/t translate` để đổi ngay!)*"
+            if t_cid == "t1":
+                t_shard_info = f"   └ 💎 **Mảnh Seiki:** `{shards_cnt}/10` mảnh"
+                if shards_cnt >= 10:
+                    t_shard_info += " ✨ *(Đủ 10 mảnh! Dùng `/t translate` để đổi ngay!)*"
+            else:
+                mahoraga_shards = player.get("shards", {}).get("mahoraga", 0)
+                t_shard_info = f"   └ 🔱 **Mảnh Mahoraga:** `{mahoraga_shards}/10` mảnh"
+                if mahoraga_shards >= 10:
+                    t_shard_info += " ✨ *(Đủ 10 mảnh! Dùng `/t translate loai_shard:mahoraga` để đổi ngay!)*"
             t_lines.append(f"{t_status}\n{t_shard_info}")
 
     desc_text = "\n".join(lines)
@@ -4263,14 +4448,12 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
         shard_key = "seiki"
         target_card_id = "t1"
         needed_shards = 10
-    elif shard_key in ["mahoraga", "batach", "than_tuong", "kiem_than_tuong", "mahoraga_shard"]:
-        msg = (
-            "🚧 **Mảnh Mahoraga chưa thể quy đổi!**\n"
-            f"• Bạn đang có: **{shards_dict.get('mahoraga', 0)} Mảnh Mahoraga**\n"
-            "• Thẻ Mahoraga sẽ được cập nhật trong bản sau, hãy tích trữ mảnh nhé!"
-        )
+    elif shard_key in ["mahoraga", "t2", "batach", "than_tuong", "kiem_than_tuong", "mahoraga_shard"]:
+        shard_key = "mahoraga"
+        target_card_id = "t2"
+        needed_shards = 10
     else:
-        msg = f"❌ Loại mảnh `{loai_shard}` không tồn tại! Hiện tại có: `seiki` (đổi Thẻ T1 Seiki) và `mahoraga` (vật phẩm - sắp mở quy đổi)."
+        msg = f"❌ Loại mảnh `{loai_shard}` không tồn tại! Hiện tại có: `seiki` (đổi Thẻ T1 Seiki) và `mahoraga` (đổi Thẻ T2 Mahoraga)."
         if isinstance(ctx_or_interaction, discord.Interaction):
             await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else:
@@ -4281,11 +4464,13 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
     card_info = CARDS_DATA[target_card_id]
 
     if cur_shards < needed_shards:
+        shard_name_display = "Mảnh Seiki" if shard_key == "seiki" else "Mảnh Mahoraga"
+        hint_text = "Tham gia đánh Boss Raid (Seiki Dị Hình hoặc Reimu Dị Hình) để nhận tỉ lệ 2.5% rơi mảnh Seiki!" if shard_key == "seiki" else "Tham gia đánh Boss Raid Mahoraga 90K HP để nhận tỉ lệ 5% rơi mảnh Mahoraga!"
         msg = (
             f"❌ **Không đủ mảnh quy đổi!**\n"
-            f"• Bạn đang có: **{cur_shards}/{needed_shards} Mảnh Seiki**\n"
+            f"• Bạn đang có: **{cur_shards}/{needed_shards} {shard_name_display}**\n"
             f"• Cần thêm: **{needed_shards - cur_shards} mảnh** nữa để quy đổi ra thẻ bài **[{card_info['rank']}] #{target_card_id} {card_info['name']}**!\n"
-            f"💡 *Mẹo: Tham gia đánh Boss Raid (Seiki Dị Hình hoặc Reimu Dị Hình) để nhận tỉ lệ 2.5% rơi mảnh Seiki!*"
+            f"💡 *Mẹo: {hint_text}*"
         )
         if isinstance(ctx_or_interaction, discord.Interaction):
             await ctx_or_interaction.response.send_message(msg, ephemeral=True)
@@ -4299,25 +4484,44 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
     player["inventory"][target_card_id] = player["inventory"].get(target_card_id, 0) + 1
     save_player(player)
 
-    embed = discord.Embed(
-        title="🔮 QUY ĐỔI MẢNH THÀNH CÔNG: TRIỆU HỒI SEIKI ĐỆ PHÁP TOÀN NĂNG!",
-        description=(
-            f"✨ **Chúc mừng {user.mention}!** Bạn đã dung hợp thành công **10 Mảnh Seiki**!\n\n"
-            f"🎴 **THẺ BÀI ĐẶC BIỆT NHẬN ĐƯỢC:**\n"
-            f"• **Tên:** **[{card_info['rank']}] #{target_card_id} {card_info['name']}**\n"
-            f"• **Chỉ số:** ⚔️ Power: **{card_info['power']:,}** | ❤️ HP: **{card_info['hp']:,}**\n"
-            f"• **Kỹ năng tối thượng:**\n"
-            f"  - 🛡️ **Fantasy Seal (40%):** Miễn toàn bộ sát thương 1 lần trong trận.\n"
-            f"  - 🌟 **Master Spark (30%):** Bộc phát ×1.5 sát thương 1 lần trong trận.\n"
-            f"  - 💚 **Medicine Sign (20%):** Hồi phục 30% sinh lực cho bản thân 1 lần trong trận.\n"
-            f"*(Tuân thủ nguyên tắc cân bằng: không bao giờ kích hoạt 2 chiêu cùng 1 hiệp)*\n\n"
-            f"📦 **Kho mảnh còn lại:** `{shards_dict[shard_key]} Mảnh Seiki`\n"
-            f"🎒 **Kho đồ hiện tại:** Đang sở hữu `{player['inventory'][target_card_id]} lá`!"
-        ),
-        color=0x7C3AED
-    )
-    embed.set_image(url=card_info["image"])
-    embed.set_footer(text="Dùng /team add id_the:t1 để đưa Seiki vào đội hình chiến đấu!")
+    if target_card_id == "t2":
+        embed = discord.Embed(
+            title="🔱 QUY ĐỔI MẢNH THÀNH CÔNG: TRIỆU HỒI MAHORAGA BÁT ÁCH KIẾM THẦN TƯỚNG!",
+            description=(
+                f"✨ **Chúc mừng {user.mention}!** Bạn đã dung hợp thành công **10 Mảnh Mahoraga**!\n\n"
+                f"🎴 **THẺ BÀI ĐẶC BIỆT NHẬN ĐƯỢC:**\n"
+                f"• **Tên:** **[{card_info['rank']}] #{target_card_id} {card_info['name']}**\n"
+                f"• **Chỉ số:** ⚔️ Power: **{card_info['power']:,}** | ❤️ HP: **{card_info['hp']:,}**\n"
+                f"• **Nội tại & Tuyệt kỹ tối thượng:**\n"
+                f"  - 🌀 **The True adapt (100%):** Mỗi turn hồi 5% máu tối đa & mỗi turn giảm 5% sát thương phải nhận (cộng dồn).\n"
+                f"  - ⚔️ **Thoái Ma kiếm (30%):** Gây ra 1.5x sát thương cho mục tiêu.\n\n"
+                f"📦 **Kho mảnh còn lại:** `{shards_dict[shard_key]} Mảnh Mahoraga`\n"
+                f"🎒 **Kho đồ hiện tại:** Đang sở hữu `{player['inventory'][target_card_id]} lá`!"
+            ),
+            color=0xDC2626
+        )
+        embed.set_image(url=card_info["image"])
+        embed.set_footer(text="Dùng /team add id_the:t2 để đưa Mahoraga vào đội hình chiến đấu!")
+    else:
+        embed = discord.Embed(
+            title="🔮 QUY ĐỔI MẢNH THÀNH CÔNG: TRIỆU HỒI SEIKI ĐỆ PHÁP TOÀN NĂNG!",
+            description=(
+                f"✨ **Chúc mừng {user.mention}!** Bạn đã dung hợp thành công **10 Mảnh Seiki**!\n\n"
+                f"🎴 **THẺ BÀI ĐẶC BIỆT NHẬN ĐƯỢC:**\n"
+                f"• **Tên:** **[{card_info['rank']}] #{target_card_id} {card_info['name']}**\n"
+                f"• **Chỉ số:** ⚔️ Power: **{card_info['power']:,}** | ❤️ HP: **{card_info['hp']:,}**\n"
+                f"• **Kỹ năng tối thượng:**\n"
+                f"  - 🛡️ **Fantasy Seal (40%):** Miễn toàn bộ sát thương 1 lần trong trận.\n"
+                f"  - 🌟 **Master Spark (30%):** Bộc phát ×1.5 sát thương 1 lần trong trận.\n"
+                f"  - 💚 **Medicine Sign (20%):** Hồi phục 30% sinh lực cho bản thân 1 lần trong trận.\n"
+                f"*(Tuân thủ nguyên tắc cân bằng: không bao giờ kích hoạt 2 chiêu cùng 1 hiệp)*\n\n"
+                f"📦 **Kho mảnh còn lại:** `{shards_dict[shard_key]} Mảnh Seiki`\n"
+                f"🎒 **Kho đồ hiện tại:** Đang sở hữu `{player['inventory'][target_card_id]} lá`!"
+            ),
+            color=0x7C3AED
+        )
+        embed.set_image(url=card_info["image"])
+        embed.set_footer(text="Dùng /team add id_the:t1 để đưa Seiki vào đội hình chiến đấu!")
 
     if isinstance(ctx_or_interaction, discord.Interaction):
         await ctx_or_interaction.response.send_message(embed=embed)
@@ -4345,12 +4549,15 @@ async def handle_view_shards(ctx_or_interaction):
         ),
         color=0x8B5CF6
     )
+    has_mahoraga = player["inventory"].get("t2", 0)
     embed.add_field(
         name="🔱 Mảnh Bát Ách Kiếm Thần Tướng Mahoraga:",
         value=(
-            f"• Hiện có: **`{mahoraga_shards}` mảnh**\n"
-            "• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Mahoraga** (90K HP).\n"
-            "• 🚧 *Thẻ Mahoraga sẽ được mở khóa trong bản cập nhật sau - hiện tại hãy tích trữ mảnh!*"
+            f"• Hiện có: **`{mahoraga_shards}/10` mảnh**\n"
+            f"• Tiến độ: `{get_hp_bar(min(10, mahoraga_shards), 10)}` ({min(100, mahoraga_shards * 10)}%)\n"
+            f"• Thẻ quy đổi: **[T] #t2 Mahoraga Bát ách kiếm thần tướng** (Kho: {has_mahoraga} lá)\n"
+            f"• Thao tác: Gõ `/t translate loai_shard:mahoraga` khi đủ 10 mảnh để quy đổi ngay!\n"
+            f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Mahoraga** (90K HP)."
         ),
         inline=False
     )
@@ -4535,12 +4742,13 @@ async def prefix_quest(ctx):
 # TÍNH NĂNG CHECK NHÂN VẬT & SOI KỸ NĂNG (TOÀN BỘ 27 NHÂN VẬT + ACE 2)
 # ==============================================================================
 class CharacterCheckView(discord.ui.View):
-    def __init__(self, current_index: int = 0, user_id: int = None, show_ace: bool = False, show_t1: bool = False):
+    def __init__(self, current_index: int = 0, user_id: int = None, show_ace: bool = False, show_t1: bool = False, show_t2: bool = False):
         super().__init__(timeout=180)
         self.current_index = max(0, min(current_index, 26))
         self.user_id = user_id
         self.show_ace = show_ace
         self.show_t1 = show_t1
+        self.show_t2 = show_t2
         self.rebuild_items()
 
     def rebuild_items(self):
@@ -4579,13 +4787,22 @@ class CharacterCheckView(discord.ui.View):
             self.add_item(no_ace_btn)
 
         t1_btn = discord.ui.Button(
-            label="🔮 [T] #t1 Seiki Đệ Pháp Toàn Năng",
+            label="🔮 [T] #t1 Seiki",
             style=discord.ButtonStyle.success if self.show_t1 else discord.ButtonStyle.secondary,
             emoji="🔮",
             row=1
         )
         t1_btn.callback = self.show_t1_card
         self.add_item(t1_btn)
+
+        t2_btn = discord.ui.Button(
+            label="🔱 [T] #t2 Mahoraga",
+            style=discord.ButtonStyle.success if self.show_t2 else discord.ButtonStyle.secondary,
+            emoji="🔱",
+            row=1
+        )
+        t2_btn.callback = self.show_t2_card
+        self.add_item(t2_btn)
 
         opt_part1 = []
         for i in range(1, 14):
@@ -4626,6 +4843,8 @@ class CharacterCheckView(discord.ui.View):
     def get_current_embed(self) -> discord.Embed:
         if self.show_t1:
             return self.get_t1_embed()
+        if self.show_t2:
+            return self.get_t2_embed()
         cid = self.current_index + 1
         card = CARDS_DATA[cid]
         details = CHARACTER_DETAILS.get(cid, {})
@@ -4731,9 +4950,78 @@ class CharacterCheckView(discord.ui.View):
 
     async def show_t1_card(self, interaction: discord.Interaction):
         self.show_t1 = True
+        self.show_t2 = False
         self.show_ace = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def show_t2_card(self, interaction: discord.Interaction):
+        self.show_t2 = True
+        self.show_t1 = False
+        self.show_t2 = False
+        self.show_ace = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    def get_t2_embed(self) -> discord.Embed:
+        card = CARDS_DATA["t2"]
+        details = CHARACTER_DETAILS.get("t2", {})
+        player = get_player(self.user_id) if self.user_id else None
+        user_level = player.get("level", 1) if player else 1
+        lvl_atk_buff = (user_level - 1) * 20
+        lvl_hp_buff = (user_level - 1) * 25
+        owned_cnt = player.get("inventory", {}).get("t2", 0) if player else 0
+        shards_cnt = player.get("shards", {}).get("mahoraga", 0) if player else 0
+        is_locked = is_card_locked(player, "t2") if player else False
+
+        embed = discord.Embed(
+            title="🔱 [THẺ ĐẶC BIỆT NHÓM T] #t2 MAHORAGA BÁT ÁCH KIẾM THẦN TƯỚNG",
+            description=(
+                f"*{details.get('title', 'Bát Ách Kiếm Thần Tướng')}*\n"
+                "✨ Thần tướng thuật thức tối thượng - Thẻ bài thần thoại nhóm T chỉ có thể nhận bằng cách thu thập **10 Mảnh Mahoraga** "
+                "(tỉ lệ rơi 5% khi tham gia diệt Boss Mahoraga 90K HP) rồi dùng lệnh `/t translate loai_shard:mahoraga`."
+            ),
+            color=0xDC2626
+        )
+        embed.set_image(url=card["image"])
+
+        power_val = card["power"]
+        hp_val = card["hp"]
+        stats_text = (
+            f"• ⚔️ **Sức Mạnh (Power / ATK):** `{power_val:,}`\n"
+            f"• ❤️ **Máu (HP):** `{hp_val:,}`\n"
+            f"• 🛡️ **Trong Đội Hình (Cấp {user_level}):** `{power_val + lvl_atk_buff:,}` ATK | `{hp_val + lvl_hp_buff:,}` HP\n"
+            f"*(Mỗi cấp người chơi tăng +20 ATK và +25 HP)*"
+        )
+        embed.add_field(name="⚔️ SỨC MẠNH & CHỈ SỐ:", value=stats_text, inline=False)
+
+        pas = card.get("passive", {})
+        sk = card.get("skills", {})
+        skills_text = (
+            f"🌀 **NỘI TẠI — {pas.get('name', 'The True adapt')} (100% Thụ Động):**\n"
+            f"• {pas.get('desc', 'Mỗi turn hồi 5% máu tối đa & mỗi turn giảm 5% sát thương phải nhận (cộng dồn)')}\n"
+            f"   🎬 Hoạt ảnh: {pas.get('gif', '')}\n\n"
+            f"⚔️ **TUYỆT KỸ — {sk.get('thoai_ma_kiem', {}).get('name', 'Thoái Ma kiếm')} (30% kích hoạt):**\n"
+            f"• {sk.get('thoai_ma_kiem', {}).get('desc', 'Gây ra 1.5x sát thương cho mục tiêu')}\n"
+            f"   🎬 Hoạt ảnh: {sk.get('thoai_ma_kiem', {}).get('gif', '')}\n"
+        )
+        embed.add_field(name="🔱 BỘ KỸ NĂNG BÁT ÁCH THẦN TƯỚNG:", value=skills_text, inline=False)
+
+        if player:
+            lock_str = "\n🔒 **CẢNH BÁO: Thẻ này hiện đang bị ADMIN KHÓA!**" if is_locked else ""
+            shard_str = "\n✨ *Đã đủ 10 mảnh! Dùng `/t translate loai_shard:mahoraga` để đổi thẻ ngay!*" if shards_cnt >= 10 else ""
+            embed.add_field(
+                name="🎒 TÚI ĐỒ CỦA BẠN:",
+                value=f"• Sở hữu: **{owned_cnt}** lá{lock_str}\n• 🔱 Mảnh Mahoraga: **{shards_cnt}/10**{shard_str}",
+                inline=True
+            )
+        embed.add_field(
+            name="📊 HẠNG THẺ:",
+            value="• Phẩm cấp: **Rank [T] — Đặc Biệt**\n• Nguồn: Đổi từ **10 Mảnh Mahoraga** (Boss Mahoraga 90K HP)",
+            inline=True
+        )
+        embed.set_footer(text="Thẻ nhóm T đặc biệt • Bấm ◀ / ▶ hoặc menu để xem 27 nhân vật chuẩn!")
+        return embed
 
     def get_t1_embed(self) -> discord.Embed:
         card = CARDS_DATA["t1"]
@@ -4817,6 +5105,7 @@ class CharacterCheckView(discord.ui.View):
         self.current_index = 0
         self.show_ace = False
         self.show_t1 = False
+        self.show_t2 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
@@ -4824,6 +5113,7 @@ class CharacterCheckView(discord.ui.View):
         self.current_index = (self.current_index - 1) % 27
         self.show_ace = False
         self.show_t1 = False
+        self.show_t2 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
@@ -4831,6 +5121,7 @@ class CharacterCheckView(discord.ui.View):
         self.current_index = (self.current_index + 1) % 27
         self.show_ace = False
         self.show_t1 = False
+        self.show_t2 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
@@ -4838,12 +5129,14 @@ class CharacterCheckView(discord.ui.View):
         self.current_index = 26
         self.show_ace = False
         self.show_t1 = False
+        self.show_t2 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
     async def toggle_ace(self, interaction: discord.Interaction):
         self.show_ace = not self.show_ace
         self.show_t1 = False
+        self.show_t2 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
@@ -4852,6 +5145,7 @@ class CharacterCheckView(discord.ui.View):
         self.current_index = selected_id - 1
         self.show_ace = False
         self.show_t1 = False
+        self.show_t2 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
@@ -4862,12 +5156,20 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
     if nhan_vat:
         nv_clean = nhan_vat.strip().lower()
         if nv_clean in ("t1", "seiki", "dephap", "toannang"):
-            view_t1 = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=True)
+            view_t1 = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=True, show_t2=False)
             embed_t1 = view_t1.get_current_embed()
             if isinstance(ctx_or_interaction, discord.Interaction):
                 await ctx_or_interaction.response.send_message(embed=embed_t1, view=view_t1)
             else:
                 await ctx_or_interaction.send(embed=embed_t1, view=view_t1)
+            return
+        if nv_clean in ("t2", "mahoraga", "batach", "thantuong", "kiemthantuong"):
+            view_t2 = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=False, show_t2=True)
+            embed_t2 = view_t2.get_current_embed()
+            if isinstance(ctx_or_interaction, discord.Interaction):
+                await ctx_or_interaction.response.send_message(embed=embed_t2, view=view_t2)
+            else:
+                await ctx_or_interaction.send(embed=embed_t2, view=view_t2)
             return
         if nv_clean.isdigit():
             val = int(nv_clean)
@@ -5027,6 +5329,7 @@ async def handle_battle(ctx_or_interaction):
     p_mind_turns = 0
     p_t1 = {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
     p_seiki_seal, p_seiki_spark, p_seiki_heal = False, False, False
+    p_mahoraga_turns = 0
     p_seiki_used_turn = -1
     battle_logs = []
     battle_turns = []
@@ -5165,6 +5468,31 @@ async def handle_battle(ctx_or_interaction):
                     battle_logs.append(msg_h)
                     turn_actions.append(msg_h)
 
+        # ===== THẺ [#t2] MAHORAGA: The True adapt + Thoái Ma kiếm =====
+        if str(pc["cid"]).lower() == "t2":
+            p_mahoraga_turns += 1
+            heal_val = int(pc["hp"] * 0.05)
+            pc["current_hp"] = min(pc["hp"], pc["current_hp"] + heal_val)
+            adapt_pct = min(0.90, p_mahoraga_turns * 0.05)
+            if random.random() < 0.30:
+                curr_pc_power = int(curr_pc_power * 1.5)
+                if not turn_image:
+                    turn_image = T2_THOAI_MA_GIF
+                msg_t2 = (
+                    f"🔱 **[Nhóm T] [#t2] Mahoraga** ({user.display_name}) kích hoạt **The True Adapt** "
+                    f"(Hồi +{heal_val:,} HP, Kháng ST {int(adapt_pct*100)}%) & vung **Thoái Ma Kiếm** (30%)! "
+                    f"Sát thương ×1.5 giáng **{curr_pc_power:,} DMG** lên **{oc['name']}**!"
+                )
+            else:
+                if not turn_image:
+                    turn_image = T2_PASSIVE_GIF
+                msg_t2 = (
+                    f"🔱 **[Nhóm T] [#t2] Mahoraga** ({user.display_name}) kích hoạt **The True Adapt**! "
+                    f"Hồi phục **+{heal_val:,} HP** ({pc['current_hp']:,}/{pc['hp']:,} HP) và tăng kháng sát thương lên **{int(adapt_pct*100)}%**!"
+                )
+            battle_logs.append(msg_t2)
+            turn_actions.append(msg_t2)
+
         curr_oc_power = oc["power"]
         if oc["cid"] == 18 and oc.get("is_ace2") and not o_marisa:
             if random.random() < 0.25:
@@ -5238,8 +5566,14 @@ async def handle_battle(ctx_or_interaction):
                     battle_logs.append(msg_skill)
                     turn_actions.append(msg_skill)
             if not pc_invul:
-                pc["current_hp"] -= curr_oc_power
-                turn_actions.append(f"⚔️ **{oc['name']}** phản công gây **{curr_oc_power:,} DMG** lên **{pc['name']}**!")
+                if str(pc["cid"]).lower() == "t2":
+                    adapt_pct = min(0.90, p_mahoraga_turns * 0.05)
+                    actual_dmg = int(curr_oc_power * (1.0 - adapt_pct))
+                    pc["current_hp"] -= actual_dmg
+                    turn_actions.append(f"⚔️ **{oc['name']}** phản công gây **{curr_oc_power:,} DMG** nhưng **Mahoraga** Thích Nghi (-{int(adapt_pct*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!")
+                else:
+                    pc["current_hp"] -= curr_oc_power
+                    turn_actions.append(f"⚔️ **{oc['name']}** phản công gây **{curr_oc_power:,} DMG** lên **{pc['name']}**!")
             else:
                 turn_actions.append(f"🛡️ **{pc['name']}** miễn nhiễm toàn bộ đòn đánh của **{oc['name']}**!")
         else:
@@ -5453,6 +5787,8 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
     t_mind_turns = 0
     c_t1 = {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
     t_t1 = {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
+    c_mahoraga_turns = 0
+    t_mahoraga_turns = 0
     c_seiki_seal, c_seiki_spark, c_seiki_heal = False, False, False
     c_seiki_used_turn = -1
     t_seiki_seal, t_seiki_spark, t_seiki_heal = False, False, False
@@ -5647,6 +5983,31 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                     pvp_logs.append(msg_h)
                     turn_actions.append(msg_h)
 
+        # ===== THẺ [#t2] MAHORAGA (Challenger): The True adapt + Thoái Ma kiếm =====
+        if str(cc["cid"]).lower() == "t2":
+            c_mahoraga_turns += 1
+            heal_val = int(cc["max_hp"] * 0.05)
+            cc["current_hp"] = min(cc["max_hp"], cc["current_hp"] + heal_val)
+            adapt_pct = min(0.90, c_mahoraga_turns * 0.05)
+            if random.random() < 0.30:
+                c_curr_power = int(c_curr_power * 1.5)
+                if not turn_image:
+                    turn_image = T2_THOAI_MA_GIF
+                msg_t2 = (
+                    f"🔱 **[Nhóm T] [#t2] Mahoraga** ({challenger.display_name}) kích hoạt **The True Adapt** "
+                    f"(Hồi +{heal_val:,} HP, Kháng ST {int(adapt_pct*100)}%) & vung **Thoái Ma Kiếm** (30%)! "
+                    f"Sát thương ×1.5 giáng **{c_curr_power:,} DMG** lên **{tc['name']}**!"
+                )
+            else:
+                if not turn_image:
+                    turn_image = T2_PASSIVE_GIF
+                msg_t2 = (
+                    f"🔱 **[Nhóm T] [#t2] Mahoraga** ({challenger.display_name}) kích hoạt **The True Adapt**! "
+                    f"Hồi phục **+{heal_val:,} HP** ({cc['current_hp']:,}/{cc['max_hp']:,} HP) và tăng kháng sát thương lên **{int(adapt_pct*100)}%**!"
+                )
+            pvp_logs.append(msg_t2)
+            turn_actions.append(msg_t2)
+
         if tc["cid"] == 18 and tc["is_ace2"] and not t_marisa:
             if random.random() < 0.30:
                 t_marisa = True
@@ -5734,17 +6095,54 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                     pvp_logs.append(msg_h)
                     turn_actions.append(msg_h)
 
+        # ===== THẺ [#t2] MAHORAGA (Target): The True adapt + Thoái Ma kiếm =====
+        if str(tc["cid"]).lower() == "t2":
+            t_mahoraga_turns += 1
+            heal_val = int(tc["max_hp"] * 0.05)
+            tc["current_hp"] = min(tc["max_hp"], tc["current_hp"] + heal_val)
+            adapt_pct = min(0.90, t_mahoraga_turns * 0.05)
+            if random.random() < 0.30:
+                t_curr_power = int(t_curr_power * 1.5)
+                if not turn_image:
+                    turn_image = T2_THOAI_MA_GIF
+                msg_t2 = (
+                    f"🔱 **[Nhóm T] [#t2] Mahoraga** ({target.display_name}) kích hoạt **The True Adapt** "
+                    f"(Hồi +{heal_val:,} HP, Kháng ST {int(adapt_pct*100)}%) & vung **Thoái Ma Kiếm** (30%)! "
+                    f"Sát thương ×1.5 giáng **{t_curr_power:,} DMG** lên **{cc['name']}**!"
+                )
+            else:
+                if not turn_image:
+                    turn_image = T2_PASSIVE_GIF
+                msg_t2 = (
+                    f"🔱 **[Nhóm T] [#t2] Mahoraga** ({target.display_name}) kích hoạt **The True Adapt**! "
+                    f"Hồi phục **+{heal_val:,} HP** ({tc['current_hp']:,}/{tc['max_hp']:,} HP) và tăng kháng sát thương lên **{int(adapt_pct*100)}%**!"
+                )
+            pvp_logs.append(msg_t2)
+            turn_actions.append(msg_t2)
+
         if not c_stunned and not t_invul:
-            tc["current_hp"] -= c_curr_power
-            turn_actions.append(f"⚔️ **{cc['name']}** giáng **{c_curr_power:,} DMG** lên **{tc['name']}**!")
+            if str(tc["cid"]).lower() == "t2":
+                t_adapt = min(0.90, t_mahoraga_turns * 0.05)
+                actual_dmg = int(c_curr_power * (1.0 - t_adapt))
+                tc["current_hp"] -= actual_dmg
+                turn_actions.append(f"⚔️ **{cc['name']}** giáng **{c_curr_power:,} DMG** nhưng **{tc['name']}** Thích Nghi (-{int(t_adapt*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!")
+            else:
+                tc["current_hp"] -= c_curr_power
+                turn_actions.append(f"⚔️ **{cc['name']}** giáng **{c_curr_power:,} DMG** lên **{tc['name']}**!")
         elif c_stunned:
             turn_actions.append(f"❄️ **{cc['name']}** bị đóng băng không thể tấn công!")
         elif t_invul:
             turn_actions.append(f"🛡️ **{tc['name']}** miễn nhiễm toàn bộ đòn đánh!")
 
         if not t_stunned and not c_invul:
-            cc["current_hp"] -= t_curr_power
-            turn_actions.append(f"⚔️ **{tc['name']}** giáng **{t_curr_power:,} DMG** lên **{cc['name']}**!")
+            if str(cc["cid"]).lower() == "t2":
+                c_adapt = min(0.90, c_mahoraga_turns * 0.05)
+                actual_dmg = int(t_curr_power * (1.0 - c_adapt))
+                cc["current_hp"] -= actual_dmg
+                turn_actions.append(f"⚔️ **{tc['name']}** giáng **{t_curr_power:,} DMG** nhưng **{cc['name']}** Thích Nghi (-{int(c_adapt*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!")
+            else:
+                cc["current_hp"] -= t_curr_power
+                turn_actions.append(f"⚔️ **{tc['name']}** giáng **{t_curr_power:,} DMG** lên **{cc['name']}**!")
         elif t_stunned:
             turn_actions.append(f"❄️ **{tc['name']}** bị đóng băng không thể tấn công!")
         elif c_invul:
