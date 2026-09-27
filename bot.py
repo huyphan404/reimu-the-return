@@ -20,8 +20,8 @@
 #    - [#09] Flandre Scarlet (30 thẻ): Ripples of 495 Years — 25% xóa 50% HP đối thủ (Battle/PvP)
 #      hoặc 30% HP Boss (Raid Phase 1 & 2), kích hoạt 1 lần/trận, kèm GIF kỹ năng trực tiếp!
 #    - Buff Marisa Ace 2 [#18]: Master Spark tăng sát thương từ ×1.5 lên ×2.0!
-#    - [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 ⭐⭐): Cleave (+5% Max HP mục tiêu mọi đòn) • Medicine Sign (35% hồi 40% máu) •
-#      Fantasy Seal (40% ở Ace 1 / buff lên 50% ở Ace 2: Miễn toàn bộ sát thương) • Bóng Khái Niệm (40%: 35% Max HP + xóa kỹ năng đối phương)!
+#    - [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 ⭐⭐): Cleave (+2% Max HP mục tiêu mọi đòn) • Medicine Sign (35% hồi 40% máu) •
+#      Fantasy Seal (40% ở Ace 1 / buff lên 50% ở Ace 2: Miễn toàn bộ sát thương) • Bóng Khái Niệm (40%: 15% Max HP + xóa kỹ năng đối phương)!
 # ==============================================================================
 
 # UPDATE 2026-09-22: THEM [#10] KOISHI KOMEIJI (Rank S - 600 ATK / 6,060 HP) - ID CU 10-26 DAY LEN 11-27, TU DONG DI TRU DU LIEU NGUOI CHOI
@@ -472,7 +472,7 @@ EVOL_CONFIG["20"] = EVOL_CONFIG[20]
 T1_ACE2_CONFIG = {
     "required_ace2": [18, 14, 17],   # [#18] Marisa, [#14] Reimu, [#17] Sakuya phải đạt Ace 2
     "required_shards": 10,           # Chi phí: 10 Mảnh Seiki
-    "cleave_pct": 0.05,              # Clave (thụ động 100%): đánh thường +5% Máu Tối Đa mục tiêu
+    "cleave_pct": 0.02,              # Clave (thụ động 100%): đánh thường +2% Máu Tối Đa mục tiêu
     "gif_cleave": "https://static2.klipy.com/ii/9ed0121ed465c12e1f3dda331ed33f0e/9b/b3/mOb3k5Ux7HWC.gif",
     "medicine_sign": {
         "chance": 0.35, "heal_pct": 0.40,  # 35% kích hoạt, hồi 40% Máu tối đa bản thân, 1 lần/trận
@@ -483,7 +483,7 @@ T1_ACE2_CONFIG = {
         "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/e7/fe/JOKpsPyd.gif"
     },
     "bong_khai_niem": {
-        "chance": 0.40, "dmg_pct": 0.35,  # 40% kích hoạt 1 lần/trận: 35% Máu Tối Đa + xóa kỹ năng đối phương
+        "chance": 0.40, "dmg_pct": 0.15,  # 40% kích hoạt 1 lần/trận: 15% Máu Tối Đa + xóa kỹ năng đối phương
         "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/38/ec/4v5klqIf3v2WuSLgB.gif"
     }
 }
@@ -500,10 +500,10 @@ EVOL_CONFIG["t1"] = {
     "evol_gif": "https://static2.klipy.com/ii/9ed0121ed465c12e1f3dda331ed33f0e/9b/b3/mOb3k5Ux7HWC.gif",
     "skill_name": "Tứ Đại Tuyệt Kỹ Thức Tỉnh (Cleave • Medicine Sign • Fantasy Seal • Bóng Khái Niệm)",
     "skill_desc": (
-        "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **5% Máu Tối Đa** của mục tiêu! "
+        "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **2% Máu Tối Đa** của mục tiêu! "
         "💚 **Medicine Sign (35%):** Hồi phục **40% Máu Tối Đa** cho bản thân, 1 lần/trận. "
         "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận. "
-        "🌑 **Bóng Khái Niệm (40%):** Gây **35% Máu Tối Đa** mục tiêu và **lập tức xóa kỹ năng của đối phương**, 1 lần/trận."
+        "🌑 **Bóng Khái Niệm (40%):** Gây **15% Máu Tối Đa** mục tiêu và **lập tức xóa kỹ năng của đối phương**, 1 lần/trận."
     ),
     "bonus_power": 300,
     "bonus_hp": 300
@@ -543,7 +543,7 @@ CHARACTER_DETAILS = {
     "t1": {
         "title": "Dị Tà Đệ Nhất Pháp Sư (Nhóm T-Đặc Biệt)",
         "skill_name": "Tam Đại Tuyệt Kỹ (Fantasy Seal • Master Spark • Medicine Sign)",
-        "skill_desc": "Thẻ bài thần thoại nhóm T. Bản thường: Fantasy Seal (40% miễn thương), Master Spark (30% ×1.5), Medicine Sign (20% hồi phục). [Ace 2 ⭐⭐ - Kỹ năng thay đổi]: 🪓 Cleave (thụ động 100%: mọi đòn đánh +5% Máu Tối Đa mục tiêu) • 💚 Medicine Sign (35% hồi 40% Máu, 1 lần/trận) • 🛡️ Fantasy Seal (50% miễn toàn bộ sát thương 1 hiệp, buff lên 50% ở dạng Ace 2, 1 lần/trận) • 🌑 Bóng Khái Niệm (40%: 35% Máu Tối Đa + xóa kỹ năng đối phương, 1 lần/trận). Tuân thủ: tối đa 1 chiêu mỗi lượt!"
+        "skill_desc": "Thẻ bài thần thoại nhóm T. Bản thường: Fantasy Seal (40% miễn thương), Master Spark (30% ×1.5), Medicine Sign (20% hồi phục). [Ace 2 ⭐⭐ - Kỹ năng thay đổi]: 🪓 Cleave (thụ động 100%: mọi đòn đánh +2% Máu Tối Đa mục tiêu) • 💚 Medicine Sign (35% hồi 40% Máu, 1 lần/trận) • 🛡️ Fantasy Seal (50% miễn toàn bộ sát thương 1 hiệp, buff lên 50% ở dạng Ace 2, 1 lần/trận) • 🌑 Bóng Khái Niệm (40%: 15% Máu Tối Đa + xóa kỹ năng đối phương, 1 lần/trận). Tuân thủ: tối đa 1 chiêu mỗi lượt!"
     }
 }
 CHARACTER_DETAILS["T1"] = CHARACTER_DETAILS["t1"]
@@ -1104,10 +1104,10 @@ def execute_seiki_ace2(player):
         title="🌟 TIẾN HÓA THÀNH CÔNG: [#t1] SEIKI ĐỆ NHẤT PHÁP SƯ - ACE 2 ⭐⭐!",
         description=(
             "⚡ **MA LỰC DỊ TÀ THỨC TỈNH - BỘ KỸ NĂNG ĐỘC QUYỀN ACE 2:**\n\n"
-            "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **5% Máu Tối Đa** mục tiêu!\n"
+            "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **2% Máu Tối Đa** mục tiêu!\n"
             "💚 **Medicine Sign (35%):** Hồi phục **40% Máu Tối Đa** bản thân, 1 lần/trận.\n"
             "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận.\n"
-            "🌑 **Bóng Khái Niệm (40%):** Gây **35% Máu Tối Đa** mục tiêu và **xóa kỹ năng đối phương**, 1 lần/trận.\n\n"
+            "🌑 **Bóng Khái Niệm (40%):** Gây **15% Máu Tối Đa** mục tiêu và **xóa kỹ năng đối phương**, 1 lần/trận.\n\n"
             f"📉 **Chi phí:** Đã tiêu hao **10 Mảnh Seiki** (Còn lại: `{shards['seiki']}` mảnh)\n"
             "⚖️ *Quy tắc cân bằng: tối đa 1 chiêu mỗi lượt, mỗi chiêu kích hoạt 1 lần trong trận!*"
         ),
@@ -1125,11 +1125,11 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
     out = {"bonus": 0, "direct": 0, "heal": 0, "invul": False, "instant_kill": False, "boss_half_hp": False,
            "disable": False, "logs": [], "gif": None}
 
-    # 🪓 CLEAVE - Nội tại thụ động 100%: đánh thường +5% Máu Tối Đa mục tiêu
+    # 🪓 CLEAVE - Nội tại thụ động 100%: đánh thường +2% Máu Tối Đa mục tiêu
     out["bonus"] = int(target_max_hp * T1_ACE2_CONFIG["cleave_pct"])
     out["logs"].append(
         f"🪓 **[Ace 2] [#t1] Seiki Đệ Nhất Pháp Sư** - **Cleave (Nội Tại - 100%)**: "
-        f"Mọi đòn đánh +**{out['bonus']:,} DMG** (5% Máu Tối Đa {target_desc})!"
+        f"Mọi đòn đánh +**{out['bonus']:,} DMG** (2% Máu Tối Đa {target_desc})!"
     )
 
     if t1_flags.get("used_turn") == round_no:
@@ -1154,7 +1154,7 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
             f"Vận khởi kết giới phong ấn tuyệt đối — **MIỄN TOÀN BỘ SÁT THƯƠNG** trong hiệp này!"
         )
     elif not t1_flags.get("bong_used") and roll < seal_chance + bong_chance:
-        # 🌑 BÓNG KHÁI NIỆM - 40%: 35% Máu Tối Đa + xóa kỹ năng đối phương
+        # 🌑 BÓNG KHÁI NIỆM - 40%: 15% Máu Tối Đa + xóa kỹ năng đối phương
         t1_flags["bong_used"] = True
         t1_flags["used_turn"] = round_no
         out["direct"] = int(target_max_hp * T1_ACE2_CONFIG["bong_khai_niem"]["dmg_pct"])
@@ -1162,7 +1162,7 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
         out["gif"] = T1_ACE2_CONFIG["bong_khai_niem"]["gif"]
         out["logs"].append(
             f"🌑 **[Ace 2] [#t1] Seiki** kích hoạt **BÓNG KHÁI NIỆM** (40%)! "
-            f"Gây **{out['direct']:,} DMG** (35% Máu Tối Đa {target_desc}) và **LẬP TỨC XÓA KỸ NĂNG của đối phương**!"
+            f"Gây **{out['direct']:,} DMG** (15% Máu Tối Đa {target_desc}) và **LẬP TỨC XÓA KỸ NĂNG của đối phương**!"
         )
     elif not t1_flags.get("med_used") and ac.get("current_hp", 1) < ac.get("max_hp", ac.get("hp", 1)) \
             and roll < seal_chance + bong_chance + med_chance:
@@ -1347,7 +1347,7 @@ class OpponentTeamView(discord.ui.View):
             elif c["cid"] == 20:
                 skill_text += "\n🔴 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Red Eye Mind Explosion* (1 lần/trận): mục tiêu 20% tự gây sát thương lên bản thân trong 4 turn."
         if is_ace and str(c["cid"]).lower() == "t1":
-            skill_text += "\n♾️ **[Ace 2 Hiệu Ứng]** *Cleave* (thụ động, +5% Máu tối đa mỗi đòn) • *Medicine Sign* (35% hồi 40% máu) • *Fantasy Seal* (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • *Bóng Khái Niệm* (40%: 35% máu tối đa + xóa kỹ năng đối phương — mỗi chiêu 1 lần/trận)."
+            skill_text += "\n♾️ **[Ace 2 Hiệu Ứng]** *Cleave* (thụ động, +2% Máu tối đa mỗi đòn) • *Medicine Sign* (35% hồi 40% máu) • *Fantasy Seal* (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • *Bóng Khái Niệm* (40%: 15% máu tối đa + xóa kỹ năng đối phương — mỗi chiêu 1 lần/trận)."
         embed.add_field(name="✨ Kỹ Năng / Tuyệt Kỹ Danmaku:", value=f"*{skill_text}*", inline=False)
 
         summary_lines = []
@@ -3872,7 +3872,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             "• Điều kiện: **[#18] Marisa + [#14] Reimu + [#17] Sakuya** đều Ace 2 ⭐⭐\n"
             "• Chi phí: **10 Mảnh Seiki** (không khấu trừ thẻ bài)\n"
             "• Buff Ace: **+300 ATK** & **+300 HP**\n"
-            "• Kỹ năng: **Cleave** (thụ động +5% Máu tối đa mỗi đòn) • **Medicine Sign** (35% hồi 40% máu) • **Fantasy Seal** (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • **Bóng Khái Niệm** (40%: 35% máu tối đa + xóa kỹ năng đối thủ)"
+            "• Kỹ năng: **Cleave** (thụ động +2% Máu tối đa mỗi đòn) • **Medicine Sign** (35% hồi 40% máu) • **Fantasy Seal** (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • **Bóng Khái Niệm** (40%: 15% máu tối đa + xóa kỹ năng đối thủ)"
         ),
         inline=False
     )
@@ -4784,12 +4784,12 @@ class CharacterCheckView(discord.ui.View):
             embed.add_field(
                 name="🌟 TRẠNG THÁI ACE 2 ⭐⭐ - BỘ KỸ NĂNG THỨC TỈNH:",
                 value=(
-                    "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường +**5% Máu Tối Đa** mục tiêu!\n"
+                    "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường +**2% Máu Tối Đa** mục tiêu!\n"
                     "💚 **Medicine Sign (35%):** Hồi **40% Máu Tối Đa** bản thân, 1 lần/trận.\n"
                     f"🎬 {T1_ACE2_CONFIG['medicine_sign']['gif']}\n"
                     "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận.\n"
                     f"🎬 {T1_ACE2_CONFIG['fantasy_seal']['gif']}\n"
-                    "🌑 **Bóng Khái Niệm (40%):** Gây **35% Máu Tối Đa** + **xóa kỹ năng đối phương**, 1 lần/trận.\n"
+                    "🌑 **Bóng Khái Niệm (40%):** Gây **15% Máu Tối Đa** + **xóa kỹ năng đối phương**, 1 lần/trận.\n"
                     f"🎬 {T1_ACE2_CONFIG['bong_khai_niem']['gif']}\n"
                     "⚖️ *Tối đa 1 chiêu mỗi lượt. Hoạt động xuyên suốt Raid, Battle & PvP!*"
                 ),
@@ -6509,10 +6509,10 @@ async def handle_help(ctx_or_interaction):
   - [#12] Remilia (25 thẻ): Thương Đỏ Gungnir — THỤ ĐỘNG không cần kích hoạt: mọi đòn đánh +3% Máu Tối Đa (Max HP) mục tiêu, kèm GIF chiêu.
   - [#20] Reisen (40 thẻ): Red Eye Mind Explosion (25% kích hoạt 1 lần/trận): mục tiêu có 20% tự gây sát thương lên bản thân trong 4 turn (không dùng lên chính mình).
   - [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Điều kiện đặc biệt: Marisa, Reimu, Sakuya đều Ace 2 & 10 Mảnh Seiki):
-    * Cleave: Thụ động 100% mọi đòn đánh thường +5% Máu Tối Đa mục tiêu!
+    * Cleave: Thụ động 100% mọi đòn đánh thường +2% Máu Tối Đa mục tiêu!
     * Medicine Sign: 35% hồi 40% Máu Tối Đa bản thân, 1 lần/trận.
     * Fantasy Seal: Buff lên 50% miễn toàn bộ sát thương 1 hiệp (dạng Ace 2), 1 lần/trận.
-    * Bóng Khái Niệm: 40% gây 35% Máu Tối Đa mục tiêu và lập tức xóa kỹ năng đối phương, 1 lần/trận.
+    * Bóng Khái Niệm: 40% gây 15% Máu Tối Đa mục tiêu và lập tức xóa kỹ năng đối phương, 1 lần/trận.
 • `/trade <user> [your] [their]`: Trao đổi thẻ bài (Cú pháp `your:tên:số_lượng` và `their:tên:số_lượng`, ví dụ: `your:reimu: 1 their:sakuya:12`, giao diện xác nhận 2 bên).
 • `/team [hanh_dong] [id_the]`: Quản lý đội hình (view, add, remove). Mỗi cấp độ tăng +20 ATK và +25 HP buff!
 • `/check [id_hoac_ten]`: Soi chi tiết sức mạnh, máu và kỹ năng của 27 nhân vật Touhou + thẻ đặc biệt [T] #t1 Seiki (gõ `seiki` hoặc `t1`, kèm Ace 2, có nút ◀ ▶ lướt danh sách, menu chọn nhanh và nút 🔮 xem thẻ T1).
