@@ -27,6 +27,7 @@
 # UPDATE 2026-09-22: THEM [#10] KOISHI KOMEIJI (Rank S - 600 ATK / 6,060 HP) - ID CU 10-26 DAY LEN 11-27, TU DONG DI TRU DU LIEU NGUOI CHOI
 # UPDATE 2026-09-24: THEM ACE 2 MOI - [#12] REMILIA (25 THE, THUONG DO GUNGNIR THU DONG +3% MAX HP MUC TIEU) & [#20] REISEN (40 THE, RED EYE MIND EXPLOSION 25% - MUC TIEU 20% TU SAT TRONG 4 TURN)
 # UPDATE 2026-09-27: THEM BOSS MOI [BAT ACH KIEM THAN TUONG MAHORAGA] (90K HP / 6K DMG CHIA DEU) - THE TRUE ADAPT (HOI 3% HP + GIAM 3% ST MOI TURN) + THOAI MA KIEM (DON MUC TIEU), TI LE SPAWN 3 BOSS DEU 1/3, THEM MAHORAGA SHARD (5% DROP)
+# UPDATE 2026-09-27: CAP NHAT ACE 2 MOI - [#22] CIRNO (60 THE, PERFECT FREEZE 40% - 2 TURN TIEP 45% DONG BANG KHONG DANH TRA) & [#13] UTSUHO REIUJI (30 THE, NUCLEAR SPELL CARD 25% - 3.0x DMG & DUNG NHAM BONG 2% MAX HP TRONG 3 TURN)
 import os
 import re
 import time
@@ -486,6 +487,36 @@ EVOL_CONFIG = {
         "skill_gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/4d/a6/qKiFSu8x.gif",
         "bonus_power": 300,
         "bonus_hp": 300
+    },
+    22: {
+        "id": 22,
+        "key": "cirno",
+        "name": "Cirno",
+        "title": "[#22] Cirno - Ace 2 ⭐⭐",
+        "ace_level": "Ace 2 ⭐⭐",
+        "required_cards": 60,
+        "required_pulls": 60,
+        "evol_gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/3e/e0/xSNtB708MaDM.gif",
+        "skill_name": "Perfect Freeze (Băng Đóng Tuyệt Đối)",
+        "skill_desc": "Kích hoạt 1 lần trong trận (Tỷ lệ 40%): Khiến đối phương bị đóng băng dẫn đến trong 2 turn tiếp theo có 45% không thể đánh trả, kèm GIF chiêu thức trực tiếp!",
+        "skill_gif": "https://static2.klipy.com/ii/e293a233a303a98e471f78d04e13a1b0/c3/f4/HRq1eslb.gif",
+        "bonus_power": 300,
+        "bonus_hp": 300
+    },
+    13: {
+        "id": 13,
+        "key": "utsuho",
+        "name": "Utsuho Reiuji (Okuu)",
+        "title": "[#13] Utsuho Reiuji - Ace 2 ⭐⭐",
+        "ace_level": "Ace 2 ⭐⭐",
+        "required_cards": 30,
+        "required_pulls": 30,
+        "evol_gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/06/9b/o5Pa7BgCiYHgJEb.gif",
+        "skill_name": "Nuclear Spell Card (Hạch Tâm Bộc Phá)",
+        "skill_desc": "25% kích hoạt: Gây ra 3.0x sát thương và khiến mặt đất nung chảy gây bỏng 2% Máu Tối Đa cho những lá bài địch ra sân sau đó trong 3 turn thì mặt đất sẽ bình thường trở lại, kèm GIF chiêu thức trực tiếp!",
+        "skill_gif": "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/5a/61/6mcQnspY.gif",
+        "bonus_power": 300,
+        "bonus_hp": 300
     }
 }
 EVOL_CONFIG["14"] = EVOL_CONFIG[14]
@@ -494,6 +525,8 @@ EVOL_CONFIG["18"] = EVOL_CONFIG[18]
 EVOL_CONFIG["9"] = EVOL_CONFIG[9]
 EVOL_CONFIG["12"] = EVOL_CONFIG[12]
 EVOL_CONFIG["20"] = EVOL_CONFIG[20]
+EVOL_CONFIG["22"] = EVOL_CONFIG[22]
+EVOL_CONFIG["13"] = EVOL_CONFIG[13]
 
 # ==============================================================================
 # ACE 2 MỚI: [#t1] SEIKI ĐỆ NHẤT PHÁP SƯ (BỘ KỸ NĂNG THAY ĐỔI HOÀN TOÀN)
@@ -554,7 +587,7 @@ CHARACTER_DETAILS = {
     10: {"title": "Tiểu Thư Tâm Trí Khép Kín", "skill_name": "Tâm Linh Cảm Ứng (Subconscious)", "skill_desc": "Em gái của Satori Komeiji, tự khép kín trái tim để thoát khỏi sự dị nghị của thế gian. Lướt đi vô thức khắp Gensokyo và tung những đòn đánh lén từ tiềm thức mà không một ai kịp lường trước (600 ATK / 6,060 HP)."},
     11: {"title": "Công Chúa Ánh Trăng", "skill_name": "Vĩnh Cửu & Tức Thời", "skill_desc": "Công chúa Nguyệt Cung lưu đày tại Eientei, điều khiển dòng chảy thời gian vĩnh cửu và tức thời cùng thần bảo quý giá (590 ATK / 6,400 HP)."},
     12: {"title": "Chúa Tể Hồng Ma Quán", "skill_name": "Thương Đỏ Gungnir (Vận Mệnh)", "skill_desc": "Ma cà rồng kiêu hãnh bẻ cong số mệnh kẻ thù, phóng ra ngọn giáo ánh sáng đỏ Gungnir xuyên thủng phòng ngự (560 ATK / 5,600 HP). [Ace 2 ⭐⭐]: Thương Đỏ Gungnir — kỹ năng THỤ ĐỘNG không cần kích hoạt: mọi đòn đánh gây thêm sát thương bằng 3% Máu Tối Đa (Max HP) của mục tiêu!"},
-    13: {"title": "Mặt Trời Địa Ngục", "skill_name": "Hạch Tâm Phản Ứng (Nuclear)", "skill_desc": "Mang sức mạnh thần mặt trời Yatagarasu, thi triển hạch tâm nhiệt hạch thiêu đốt toàn bộ chiến trường (550 ATK / 5,300 HP)."},
+    13: {"title": "Mặt Trời Địa Ngục", "skill_name": "Hạch Tâm Phản Ứng (Nuclear)", "skill_desc": "Mang sức mạnh thần mặt trời Yatagarasu, thi triển hạch tâm nhiệt hạch thiêu đốt toàn bộ chiến trường (550 ATK / 5,300 HP). [Ace 2 ⭐⭐]: Nuclear Spell Card (25%) — Gây 3.0x sát thương và khiến mặt đất nung chảy gây bỏng 2% Máu Tối Đa cho những lá bài địch ra sân sau đó trong 3 turn!"},
     14: {"title": "Vu Nữ Đền Hakurei", "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh", "skill_desc": "Bay lượn khỏi thực tại và trừ tà ma thuật. [Ace 2 ⭐⭐]: Miễn toàn bộ sát thương 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
     15: {"title": "Phượng Hoàng Bất Tử", "skill_name": "Phượng Hoàng Bất Diệt", "skill_desc": "Cơ thể bất tử do uống tiên dược Hourai, triệu hồi ngọn lửa phượng hoàng thiêu đốt kẻ địch mà không hề sợ chết (490 ATK / 5,200 HP)."},
     16: {"title": "Tiên Nhân Một Tay", "skill_name": "Thần Thú Giáng Lâm", "skill_desc": "Một trong Tứ Thiên Vương ẩn mình dưới thân phận tiên nhân dạy dỗ yêu quái và điều khiển muôn loài linh thú (480 ATK / 4,900 HP)."},
@@ -563,7 +596,7 @@ CHARACTER_DETAILS = {
     19: {"title": "Kiếm Sĩ Nửa Người Nửa Ma", "skill_name": "Song Kiếm Lâu Quan & Bạch Lâu", "skill_desc": "Thần tốc kiếm đạo: Lâu Quan Kiếm chém vạn vật và Bạch Lâu Kiếm chém tan ảo tưởng mê muội (410 ATK / 4,100 HP)."},
     20: {"title": "Thỏ Ngọc Chiến Binh", "skill_name": "Hồng Nhãn Cuồng Loạn", "skill_desc": "Thỏ ngọc từ Mặt Trăng phát sóng ảo giác từ ánh mắt đỏ rực làm hoa mắt và rối loạn phương hướng đối phương (390 ATK / 3,900 HP). [Ace 2 ⭐⭐]: Red Eye Mind Explosion (25%, 1 lần/trận) — mục tiêu bị chọn có 20% tỷ lệ tự gây sát thương lên bản thân sau mỗi lượt (không dùng lên chính mình), hiệu ứng tồn tại 4 turn!"},
     21: {"title": "Đại Ma Đạo Sĩ Thất Diệu", "skill_name": "Thất Diệu Ma Thuật", "skill_desc": "Phù thủy thông thái trong thư viện ngầm, kết hợp 7 nguyên tố tự nhiên tạo thành ma trận công thủ liên hoàn (380 ATK / 3,200 HP)."},
-    22: {"title": "Đệ Nhất Băng Tiên", "skill_name": "Perfect Freeze (Băng Đạn)", "skill_desc": "Tiên tử băng giá mạnh nhất Hồ Sương Mù, đóng băng mọi vật thể và phóng mưa mảnh băng sắc nhọn (300 ATK / 3,000 HP)."},
+    22: {"title": "Đệ Nhất Băng Tiên", "skill_name": "Perfect Freeze (Băng Đạn)", "skill_desc": "Tiên tử băng giá mạnh nhất Hồ Sương Mù, đóng băng mọi vật thể và phóng mưa mảnh băng sắc nhọn (300 ATK / 3,000 HP). [Ace 2 ⭐⭐]: Perfect Freeze (40%) — 1 lần trong trận khiến đối phương đóng băng, trong 2 turn tiếp theo có 45% không thể đánh trả!"},
     23: {"title": "Thủ Môn Hồng Ma Quán", "skill_name": "Thái Cực Khí Công Quyền", "skill_desc": "Nữ võ sư tinh thông thể thuật khí công ngũ sắc, tạo rào chắn phòng thủ kiên cố bảo vệ tiền tuyến (260 ATK / 2,800 HP)."},
     24: {"title": "Yêu Quái Hoàng Hôn", "skill_name": "Dạ Tối Kết Giới", "skill_desc": "Yêu quái bóng đêm bao bọc mình trong vòm đêm thuần túy, tung những đòn cắn xé bất ngờ từ bóng tối (220 ATK / 2,200 HP)."},
     25: {"title": "Dạ Tước Huyễn Ca", "skill_name": "Huyễn Ca Dạ Manh", "skill_desc": "Giọng hát chim đêm mê hoặc khiến đối thủ bị chứng quáng gà và suy giảm độ chính xác đòn đánh (200 ATK / 2,000 HP)."},
@@ -1098,7 +1131,7 @@ TÍNH CÁCH:
 - QUAN HỆ ĐẶC BIỆT: Han Seiki là BỐ NUÔI đã nuôi bạn từ bé. Dù bị bỏ lại, bạn vẫn tôn trọng, kính yêu và coi trọng ông nhất trên đời.
 - XƯNG HÔ:
   + Với người thường: Tự xưng là "ta", gọi đối phương là "ngươi", "nhà ngươi".
-  + VỚI Han Seiki(prime): Tự xưng là "con", gọi Han Seiki là "ba", thái độ lập tức ngoan ngoãn đi.
+  + VỚI HAN SEIKI: Tự xưng là "con", gọi Han Seiki là "ba", thái độ lập tức ngoan ngoãn, dịu dàng, hiếu thảo, hỏi thăm sức khỏe, tuyệt đối không đòi tiền!
 """
 
 intents = discord.Intents.default()
@@ -1369,7 +1402,7 @@ class OpponentTeamView(discord.ui.View):
         )
 
         skill_text = c.get("skill") or "Tấn công Danmaku cơ bản"
-        if is_ace and c["cid"] in [9, 12, 14, 17, 18, 20]:
+        if is_ace and c["cid"] in [9, 12, 13, 14, 17, 18, 20, 22]:
             if c["cid"] == 14:
                 skill_text += "\n🛡️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Vô Tưởng Chuyển Sinh* né toàn bộ sát thương."
             elif c["cid"] == 17:
@@ -1382,6 +1415,10 @@ class OpponentTeamView(discord.ui.View):
                 skill_text += "\n🩸 **[Ace 2 Hiệu Ứng]** *Thương Đỏ Gungnir* (THỤ ĐỘNG): mọi đòn đánh gây thêm 3% Máu Tối Đa của mục tiêu."
             elif c["cid"] == 20:
                 skill_text += "\n🔴 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Red Eye Mind Explosion* (1 lần/trận): mục tiêu 20% tự gây sát thương lên bản thân trong 4 turn."
+            elif c["cid"] == 22:
+                skill_text += "\n❄️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Perfect Freeze* (1 lần/trận): đóng băng đối thủ, trong 2 turn tiếp theo có 45% không thể đánh trả."
+            elif c["cid"] == 13:
+                skill_text += "\n☢️ **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Nuclear Spell Card* bộc phá ×3.0 sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn."
         if is_ace and str(c["cid"]).lower() == "t1":
             skill_text += "\n♾️ **[Ace 2 Hiệu Ứng]** *Cleave* (thụ động, +2% Máu tối đa mỗi đòn) • *Medicine Sign* (35% hồi 40% máu) • *Fantasy Seal* (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • *Bóng Khái Niệm* (40%: 15% máu tối đa + xóa kỹ năng đối phương — mỗi chiêu 1 lần/trận)."
         if str(c["cid"]).lower() == "t2":
@@ -1799,6 +1836,7 @@ async def execute_raid(channel, raid_data):
             "marisa_spark_used": False,
             "flandre_used": False,
             "reisen_used": False,
+            "cirno_freeze_used": False,
             "seiki_seal_used": False,
             "seiki_spark_used": False,
             "seiki_heal_used": False,
@@ -1851,6 +1889,8 @@ async def execute_raid(channel, raid_data):
     p1_rounds = 0
     max_rounds = 35
     boss_mind_turns = 0
+    boss_freeze_debuff_turns = 0
+    boss_molten_ground_turns = 0
     mahoraga_adapt_red = 0.0
     p1_battle_history = []
     all_raid_turns = []
@@ -1890,12 +1930,28 @@ async def execute_raid(channel, raid_data):
                 p1_hp = max(0, p1_hp - _mind_dmg)
                 reisen_boss_log = f"🌀 **[Red Eye Mind Explosion]** Boss mất kiểm soát tâm trí và **tự gây {_mind_dmg:,} DMG** lên bản thân! (Còn {boss_mind_turns} lượt ảo giác)"
 
+        if boss_molten_ground_turns > 0:
+            boss_molten_ground_turns -= 1
+            burn_dmg = int(p1_max_hp * 0.02)
+            p1_hp = max(0, p1_hp - burn_dmg)
+            boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Dung nham hạt nhân thiêu đốt Boss gây **{burn_dmg:,} DMG** (2% Máu Tối Đa)! (Còn {boss_molten_ground_turns} lượt)"
+
+        if boss_molten_ground_turns > 0:
+            boss_molten_ground_turns -= 1
+            burn_dmg = int(p1_max_hp * 0.02)
+            p1_hp = max(0, p1_hp - burn_dmg)
+            boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Dung nham hạt nhân thiêu đốt Boss gây **{burn_dmg:,} DMG** (2% Máu Tối Đa)! (Còn {boss_molten_ground_turns} lượt)"
+
         boss_stunned = False
         sakuya_stun_notif = None
         marisa_spark_notif = None
         flandre_notif = None
         remilia_notif = None
         reisen_notif = None
+        cirno_notif = None
+        utsuho_notif = None
+        boss_molten_log = None
+        cirno_freeze_log = None
         t1_notif = None
         t2_notif = None
         turn_image = None
@@ -1909,6 +1965,18 @@ async def execute_raid(channel, raid_data):
                     turn_image = EVOL_CONFIG[17]["skill_gif"]
                     sakuya_stun_notif = f"⏳ **[Ace 2] [#17] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss bị **STUN** mất lượt!"
                     break
+
+        if boss_freeze_debuff_turns > 0 and not boss_stunned:
+            boss_freeze_debuff_turns -= 1
+            if random.random() < 0.45:
+                boss_stunned = True
+                cirno_freeze_log = f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%), không thể hành động trong hiệp này! (Còn {boss_freeze_debuff_turns} lượt duy trì)"
+
+        if boss_freeze_debuff_turns > 0 and not boss_stunned:
+            boss_freeze_debuff_turns -= 1
+            if random.random() < 0.45:
+                boss_stunned = True
+                cirno_freeze_log = f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%), không thể hành động trong hiệp này! (Còn {boss_freeze_debuff_turns} lượt duy trì)"
 
         seiki_invul = False
         seiki_action = "normal"
@@ -1969,6 +2037,42 @@ async def execute_raid(channel, raid_data):
                     if not turn_image:
                         turn_image = EVOL_CONFIG[20]["skill_gif"]
                     reisen_notif = f"🔴 **[Ace 2] [#20] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
+
+            # ❄️ CIRNO ACE 2: Perfect freeze (40% - Đóng băng đối phương, trong 2 turn tiếp có 45% không đánh trả)
+            if ac["cid"] == 22 and ac["is_ace2"] and not c.get("cirno_freeze_used"):
+                if random.random() < 0.40:
+                    c["cirno_freeze_used"] = True
+                    boss_freeze_debuff_turns = 2
+                    if not turn_image:
+                        turn_image = EVOL_CONFIG[22]["skill_gif"]
+                    cirno_notif = f"❄️ **[Ace 2] [#22] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
+
+            # ☢️ UTSUHO REIUJI ACE 2: Nuclear spell card (25% - 3.0x sát thương + dung nham đốt 2% Max HP bài địch trong 3 turn)
+            if ac["cid"] == 13 and ac["is_ace2"]:
+                if random.random() < 0.25:
+                    card_dmg = int(card_dmg * 3.0)
+                    boss_molten_ground_turns = 3
+                    if not turn_image:
+                        turn_image = EVOL_CONFIG[13]["skill_gif"]
+                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
+
+            # ❄️ CIRNO ACE 2: Perfect freeze (40% - Đóng băng đối phương, trong 2 turn tiếp có 45% không đánh trả)
+            if ac["cid"] == 22 and ac["is_ace2"] and not c.get("cirno_freeze_used"):
+                if random.random() < 0.40:
+                    c["cirno_freeze_used"] = True
+                    boss_freeze_debuff_turns = 2
+                    if not turn_image:
+                        turn_image = EVOL_CONFIG[22]["skill_gif"]
+                    cirno_notif = f"❄️ **[Ace 2] [#22] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
+
+            # ☢️ UTSUHO REIUJI ACE 2: Nuclear spell card (25% - 3.0x sát thương + dung nham đốt 2% Max HP bài địch trong 3 turn)
+            if ac["cid"] == 13 and ac["is_ace2"]:
+                if random.random() < 0.25:
+                    card_dmg = int(card_dmg * 3.0)
+                    boss_molten_ground_turns = 3
+                    if not turn_image:
+                        turn_image = EVOL_CONFIG[13]["skill_gif"]
+                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
 
             # ===== THẺ [#t1] SEIKI: Bản thường / Bản Ace 2 ⭐⭐ (Cleave + 3 tuyệt kỹ mới - Fantasy Seal 50% miễn thương) =====
             if str(ac["cid"]).lower() == "t1":
@@ -2336,6 +2440,30 @@ async def execute_raid(channel, raid_data):
             round_embed.add_field(name="🔴 Red Eye Mind Explosion:", value=reisen_notif, inline=False)
         if reisen_boss_log:
             round_embed.add_field(name="🌀 Ảo Giác Tâm Trí:", value=reisen_boss_log, inline=False)
+        if cirno_notif:
+            round_embed.add_field(name="❄️ Perfect Freeze (Cirno):", value=cirno_notif, inline=False)
+        if cirno_freeze_log:
+            round_embed.add_field(name="🧊 Băng Đóng Tuyệt Đối:", value=cirno_freeze_log, inline=False)
+        if utsuho_notif:
+            round_embed.add_field(name="☢️ Nuclear Spell Card (Utsuho):", value=utsuho_notif, inline=False)
+        if boss_molten_log:
+            round_embed.add_field(name="🌋 Mặt Đất Nung Chảy:", value=boss_molten_log, inline=False)
+        if cirno_notif:
+            round_embed.add_field(name="❄️ Perfect Freeze (Cirno):", value=cirno_notif, inline=False)
+        if cirno_freeze_log:
+            round_embed.add_field(name="🧊 Băng Đóng Tuyệt Đối:", value=cirno_freeze_log, inline=False)
+        if utsuho_notif:
+            round_embed.add_field(name="☢️ Nuclear Spell Card (Utsuho):", value=utsuho_notif, inline=False)
+        if boss_molten_log:
+            round_embed.add_field(name="🌋 Mặt Đất Nung Chảy:", value=boss_molten_log, inline=False)
+        if cirno_notif:
+            round_embed.add_field(name="❄️ Perfect Freeze (Cirno):", value=cirno_notif, inline=False)
+        if cirno_freeze_log:
+            round_embed.add_field(name="🧊 Băng Đóng Tuyệt Đối:", value=cirno_freeze_log, inline=False)
+        if utsuho_notif:
+            round_embed.add_field(name="☢️ Nuclear Spell Card (Utsuho):", value=utsuho_notif, inline=False)
+        if boss_molten_log:
+            round_embed.add_field(name="🌋 Mặt Đất Nung Chảy:", value=boss_molten_log, inline=False)
         if flandre_notif:
             round_embed.add_field(name="🦇 Ripples of 495 Years:", value=flandre_notif, inline=False)
         if t1_notif:
@@ -2370,6 +2498,18 @@ async def execute_raid(channel, raid_data):
                 *([("🩸 Thương Đỏ Gungnir:", remilia_notif, False)] if remilia_notif else []),
                 *([("🔴 Red Eye Mind Explosion:", reisen_notif, False)] if reisen_notif else []),
                 *([("🌀 Ảo Giác Tâm Trí:", reisen_boss_log, False)] if reisen_boss_log else []),
+                *([("❄️ Perfect Freeze (Cirno):", cirno_notif, False)] if cirno_notif else []),
+                *([("🧊 Băng Đóng Tuyệt Đối:", cirno_freeze_log, False)] if cirno_freeze_log else []),
+                *([("☢️ Nuclear Spell Card (Utsuho):", utsuho_notif, False)] if utsuho_notif else []),
+                *([("🌋 Mặt Đất Nung Chảy:", boss_molten_log, False)] if boss_molten_log else []),
+                *([("❄️ Perfect Freeze (Cirno):", cirno_notif, False)] if cirno_notif else []),
+                *([("🧊 Băng Đóng Tuyệt Đối:", cirno_freeze_log, False)] if cirno_freeze_log else []),
+                *([("☢️ Nuclear Spell Card (Utsuho):", utsuho_notif, False)] if utsuho_notif else []),
+                *([("🌋 Mặt Đất Nung Chảy:", boss_molten_log, False)] if boss_molten_log else []),
+                *([("❄️ Perfect Freeze (Cirno):", cirno_notif, False)] if cirno_notif else []),
+                *([("🧊 Băng Đóng Tuyệt Đối:", cirno_freeze_log, False)] if cirno_freeze_log else []),
+                *([("☢️ Nuclear Spell Card (Utsuho):", utsuho_notif, False)] if utsuho_notif else []),
+                *([("🌋 Mặt Đất Nung Chảy:", boss_molten_log, False)] if boss_molten_log else []),
                 *([("🦇 Ripples of 495 Years:", flandre_notif, False)] if flandre_notif else []),
                 *([("🔮 Tuyệt Kỹ [Ace 2] [#t1] Seiki:", t1_notif, False)] if t1_notif else []),
                 *([("🔱 Thần Tướng [Nhóm T] [#t2] Mahoraga:", t2_notif, False)] if t2_notif else []),
@@ -2507,6 +2647,7 @@ async def execute_raid(channel, raid_data):
             c["marisa_spark_used"] = False
             c["flandre_used"] = False
             c["reisen_used"] = False
+            c["cirno_freeze_used"] = False
             c["seiki_seal_used"] = False
             c["seiki_spark_used"] = False
             c["seiki_heal_used"] = False
@@ -2522,6 +2663,8 @@ async def execute_raid(channel, raid_data):
         p2_power = p2_cfg["power"]
         p2_rounds = 0
         boss_mind_turns = 0
+        boss_freeze_debuff_turns = 0
+        boss_molten_ground_turns = 0
 
         while p2_hp > 0 and p2_rounds < max_rounds:
             active_combatants = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
@@ -2539,12 +2682,22 @@ async def execute_raid(channel, raid_data):
                     p2_hp = max(0, p2_hp - _mind_dmg)
                     reisen_boss_log = f"🌀 **[Red Eye Mind Explosion]** Boss mất kiểm soát tâm trí và **tự gây {_mind_dmg:,} DMG** lên bản thân! (Còn {boss_mind_turns} lượt ảo giác)"
 
+            if boss_molten_ground_turns > 0:
+                boss_molten_ground_turns -= 1
+                burn_dmg = int(p2_max_hp * 0.02)
+                p2_hp = max(0, p2_hp - burn_dmg)
+                boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Dung nham hạt nhân thiêu đốt Boss Phase 2 gây **{burn_dmg:,} DMG** (2% Máu Tối Đa)! (Còn {boss_molten_ground_turns} lượt)"
+
             boss_stunned = False
             sakuya_stun_notif = None
             marisa_spark_notif = None
             flandre_notif = None
             remilia_notif = None
             reisen_notif = None
+            cirno_notif = None
+            utsuho_notif = None
+            boss_molten_log = None
+            cirno_freeze_log = None
             t1_notif = None
             t2_notif = None
             turn_image = None
@@ -2558,6 +2711,12 @@ async def execute_raid(channel, raid_data):
                         turn_image = EVOL_CONFIG[17]["skill_gif"]
                         sakuya_stun_notif = f"⏳ **[Ace 2] [#17] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss Phase 2 bị **STUN**!"
                         break
+
+            if boss_freeze_debuff_turns > 0 and not boss_stunned:
+                boss_freeze_debuff_turns -= 1
+                if random.random() < 0.45:
+                    boss_stunned = True
+                    cirno_freeze_log = f"❄️ **[Perfect Freeze]** Boss Phase 2 bị đóng băng cứng đờ (45%), không thể hành động trong hiệp này! (Còn {boss_freeze_debuff_turns} lượt duy trì)"
 
             round_player_dmg = 0
             for c in active_combatants:
@@ -2595,6 +2754,24 @@ async def execute_raid(channel, raid_data):
                         if not turn_image:
                             turn_image = EVOL_CONFIG[20]["skill_gif"]
                         reisen_notif = f"🔴 **[Ace 2] [#20] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss Phase 2 bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
+
+                # ❄️ CIRNO ACE 2
+                if ac["cid"] == 22 and ac["is_ace2"] and not c.get("cirno_freeze_used"):
+                    if random.random() < 0.40:
+                        c["cirno_freeze_used"] = True
+                        boss_freeze_debuff_turns = 2
+                        if not turn_image:
+                            turn_image = EVOL_CONFIG[22]["skill_gif"]
+                        cirno_notif = f"❄️ **[Ace 2] [#22] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss Phase 2: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
+
+                # ☢️ UTSUHO REIUJI ACE 2
+                if ac["cid"] == 13 and ac["is_ace2"]:
+                    if random.random() < 0.25:
+                        card_dmg = int(card_dmg * 3.0)
+                        boss_molten_ground_turns = 3
+                        if not turn_image:
+                            turn_image = EVOL_CONFIG[13]["skill_gif"]
+                        utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho Boss Phase 2 trong 3 turn)!"
 
                 # ===== THẺ [#t1] SEIKI PHASE 2: Fantasy Seal 50% miễn thương =====
                 if str(ac["cid"]).lower() == "t1":
@@ -2937,6 +3114,8 @@ async def execute_raid(channel, raid_data):
     p2_rounds = 0
     p2_battle_history = []
     boss_mind_turns = 0
+    boss_freeze_debuff_turns = 0
+    boss_molten_ground_turns = 0
 
     while p2_hp > 0 and p2_rounds < max_rounds:
         active_combatants = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
@@ -2960,6 +3139,10 @@ async def execute_raid(channel, raid_data):
         flandre_notif = None
         remilia_notif = None
         reisen_notif = None
+        cirno_notif = None
+        utsuho_notif = None
+        boss_molten_log = None
+        cirno_freeze_log = None
         t1_notif = None
         t2_notif = None
         turn_image = None
@@ -3823,7 +4006,21 @@ class EvolSelectView(discord.ui.View):
             return
         await do_evolve_interaction(interaction, self.player, 20)
 
-    @discord.ui.button(label="🔮 [#t1] Tiến Hóa Seiki Ace 2 (10 Mảnh + Ace2 Marisa/Reimu/Sakuya)", style=discord.ButtonStyle.secondary, emoji="♾️", row=1)
+    @discord.ui.button(label="❄️ [#22] Tiến Hóa Cirno Ace 2 (60 Thẻ)", style=discord.ButtonStyle.primary, emoji="🧊", row=2)
+    async def button_evol_cirno(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
+            return
+        await do_evolve_interaction(interaction, self.player, 22)
+
+    @discord.ui.button(label="☢️ [#13] Tiến Hóa Utsuho Ace 2 (30 Thẻ)", style=discord.ButtonStyle.danger, emoji="💥", row=2)
+    async def button_evol_utsuho(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
+            return
+        await do_evolve_interaction(interaction, self.player, 13)
+
+    @discord.ui.button(label="🔮 [#t1] Tiến Hóa Seiki Ace 2 (10 Mảnh + Ace2 Marisa/Reimu/Sakuya)", style=discord.ButtonStyle.secondary, emoji="♾️", row=3)
     async def button_evol_seiki(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
@@ -3863,7 +4060,7 @@ def execute_card_evolution(player, cid: Union[int, str]):
     player["evolutions"][cid_str] = 2
     save_player(player)
 
-    color_map = {9: 0xDC2626, 14: 0xEF4444, 17: 0x3B82F6, 18: 0xF59E0B, 12: 0x9333EA, 20: 0xEC4899}
+    color_map = {9: 0xDC2626, 14: 0xEF4444, 17: 0x3B82F6, 18: 0xF59E0B, 12: 0x9333EA, 20: 0xEC4899, 22: 0x06B6D4, 13: 0xF97316}
     embed = discord.Embed(
         title=f"🌟 TIẾN HÓA THÀNH CÔNG: [{cfg['ace_level']}] [#{cfg['id']:02d}] {cfg['name'].upper()}!",
         description=(
@@ -3909,6 +4106,10 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             cid_target = 12
         elif nv_clean in ("20", "#20") or "reisen" in nv_clean or "udonge" in nv_clean:
             cid_target = 20
+        elif nv_clean in ("22", "#22") or "cirno" in nv_clean or "băng" in nv_clean:
+            cid_target = 22
+        elif nv_clean in ("13", "#13") or "utsuho" in nv_clean or "okuu" in nv_clean or "reiuji" in nv_clean:
+            cid_target = 13
         elif nv_clean in ("t1", "#t1", "seiki", "dephap", "toannang"):
             cid_target = "t1"
 
@@ -3950,6 +4151,14 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     reisen_ace = is_card_ace2(player, 20)
     reisen_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐" if reisen_ace else ("🟢 SẴN SÀNG TIẾN HÓA!" if reisen_cnt >= 40 else f"🔴 Chưa đủ ({reisen_cnt}/40)")
 
+    cirno_cnt = player.get("inventory", {}).get("22", 0)
+    cirno_ace = is_card_ace2(player, 22)
+    cirno_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐" if cirno_ace else ("🟢 SẴN SÀNG TIẾN HÓA!" if cirno_cnt >= 60 else f"🔴 Chưa đủ ({cirno_cnt}/60)")
+
+    utsuho_cnt = player.get("inventory", {}).get("13", 0)
+    utsuho_ace = is_card_ace2(player, 13)
+    utsuho_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐" if utsuho_ace else ("🟢 SẴN SÀNG TIẾN HÓA!" if utsuho_cnt >= 30 else f"🔴 Chưa đủ ({utsuho_cnt}/30)")
+
     seiki_shards = player.get("shards", {}).get("seiki", 0)
     seiki_ace = is_card_ace2(player, "t1")
     seiki_req_ok = all(is_card_ace2(player, c) for c in T1_ACE2_CONFIG["required_ace2"])
@@ -3966,7 +4175,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             "Thu thập đủ số lượng thẻ yêu cầu để tiến hóa nhân vật lên **Ace 2 ⭐⭐**!\n"
             "✨ **Quy tắc Ace:** Sau khi tiến hóa sẽ **trừ đi chi phí thẻ** tương ứng.\n"
             "💪 **Buff Ace 2:** Cộng **+300 ATK** và **+300 HP** vĩnh viễn!\n\n"
-            "👉 **Cú pháp theo ID:** `/evol id_hoac_ten:14`, `/evol id_hoac_ten:17`, `/evol id_hoac_ten:18`, `/evol id_hoac_ten:9`, `/evol id_hoac_ten:12`, `/evol id_hoac_ten:20`, hoặc `/evol id_hoac_ten:t1`\n"
+            "👉 **Cú pháp theo ID:** `/evol id_hoac_ten:14`, `/evol id_hoac_ten:17`, `/evol id_hoac_ten:18`, `/evol id_hoac_ten:9`, `/evol id_hoac_ten:12`, `/evol id_hoac_ten:20`, `/evol id_hoac_ten:22`, `/evol id_hoac_ten:13`, hoặc `/evol id_hoac_ten:t1`\n"
             "Hoặc bấm các nút bên dưới để tiến hóa ngay:"
         ),
         color=0x8B5CF6
@@ -4044,6 +4253,30 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
         inline=False
     )
 
+    cirno_cfg = EVOL_CONFIG[22]
+    embed.add_field(
+        name=f"❄️ [#{cirno_cfg['id']:02d}] {cirno_cfg['name']} (Yêu cầu 60 thẻ):",
+        value=(
+            f"• Trạng thái: **{cirno_status}**\n"
+            f"• Trong túi đồ: **{cirno_cnt}/60** lá *(tiến hóa xong trừ 60 lá)*\n"
+            f"• Buff Ace: **+300 ATK** & **+300 HP**\n"
+            f"• Kỹ năng: **{cirno_cfg['skill_name']}** (40% đóng băng đối phương 1 lần/trận, trong 2 turn tiếp theo có 45% không thể đánh trả)"
+        ),
+        inline=False
+    )
+
+    utsuho_cfg = EVOL_CONFIG[13]
+    embed.add_field(
+        name=f"☢️ [#{utsuho_cfg['id']:02d}] {utsuho_cfg['name']} (Yêu cầu 30 thẻ):",
+        value=(
+            f"• Trạng thái: **{utsuho_status}**\n"
+            f"• Trong túi đồ: **{utsuho_cnt}/30** lá *(tiến hóa xong trừ 30 lá)*\n"
+            f"• Buff Ace: **+300 ATK** & **+300 HP**\n"
+            f"• Kỹ năng: **{utsuho_cfg['skill_name']}** (25% gây 3.0x sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch ra sân sau đó trong 3 turn)"
+        ),
+        inline=False
+    )
+
     embed.add_field(
         name="🔮 [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Điều kiện đặc biệt):",
         value=(
@@ -4063,7 +4296,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     else:
         await ctx_or_interaction.send(embed=embed, view=view)
 
-@bot.tree.command(name="evol", description="Tiến hóa nhân vật lên Ace 2 (9, 12, 14, 17, 18, 20 hoặc t1)")
+@bot.tree.command(name="evol", description="Tiến hóa nhân vật lên Ace 2 (9, 12, 13, 14, 17, 18, 20, 22 hoặc t1)")
 @app_commands.describe(id_hoac_ten="Nhập số ID thẻ hoặc chọn nhân vật")
 @app_commands.choices(id_hoac_ten=[
     app_commands.Choice(name="[#14] Reimu Hakurei (Ace 2 - Cần 20 thẻ, trừ 20 khi Ace)", value="14"),
@@ -4072,6 +4305,8 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     app_commands.Choice(name="[#09] Flandre Scarlet (Ace 2 - Cần 30 thẻ, Ripples of 495 Years)", value="9"),
     app_commands.Choice(name="[#12] Remilia Scarlet (Ace 2 - Cần 25 thẻ, Gungnir thụ động +3% Max HP)", value="12"),
     app_commands.Choice(name="[#20] Reisen Udongein Inaba (Ace 2 - Cần 40 thẻ, Red Eye Mind Explosion)", value="20"),
+    app_commands.Choice(name="[#22] Cirno (Ace 2 - Cần 60 thẻ, Perfect Freeze)", value="22"),
+    app_commands.Choice(name="[#13] Utsuho Reiuji (Ace 2 - Cần 30 thẻ, Nuclear Spell Card)", value="13"),
     app_commands.Choice(name="[#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Cần Ace2 Marisa + Reimu + Sakuya & 10 Mảnh Seiki)", value="t1")
 ])
 async def slash_evol(interaction: discord.Interaction, id_hoac_ten: str = None):
@@ -4754,7 +4989,7 @@ class CharacterCheckView(discord.ui.View):
     def rebuild_items(self):
         self.clear_items()
         cid = self.current_index + 1
-        has_ace = cid in (9, 12, 14, 17, 18, 20)
+        has_ace = cid in (9, 12, 13, 14, 17, 18, 20, 22)
 
         first_btn = discord.ui.Button(label="⏮️", style=discord.ButtonStyle.secondary, row=0)
         first_btn.callback = self.first_page
@@ -4807,7 +5042,7 @@ class CharacterCheckView(discord.ui.View):
         opt_part1 = []
         for i in range(1, 14):
             c = CARDS_DATA[i]
-            star = " ⭐⭐" if i in (9, 12, 14, 17, 18, 20) else ""
+            star = " ⭐⭐" if i in (9, 12, 13, 14, 17, 18, 20, 22) else ""
             opt_part1.append(discord.SelectOption(
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
@@ -4825,7 +5060,7 @@ class CharacterCheckView(discord.ui.View):
         opt_part2 = []
         for i in range(14, 28):
             c = CARDS_DATA[i]
-            star = " ⭐⭐" if i in (9, 12, 14, 17, 18, 20) else ""
+            star = " ⭐⭐" if i in (9, 12, 13, 14, 17, 18, 20, 22) else ""
             opt_part2.append(discord.SelectOption(
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
@@ -4848,7 +5083,7 @@ class CharacterCheckView(discord.ui.View):
         cid = self.current_index + 1
         card = CARDS_DATA[cid]
         details = CHARACTER_DETAILS.get(cid, {})
-        has_ace = cid in (9, 12, 14, 17, 18, 20)
+        has_ace = cid in (9, 12, 13, 14, 17, 18, 20, 22)
         is_ace_mode = self.show_ace and has_ace
 
         player = get_player(self.user_id) if self.user_id else None
@@ -5331,6 +5566,12 @@ async def handle_battle(ctx_or_interaction):
     p_seiki_seal, p_seiki_spark, p_seiki_heal = False, False, False
     p_mahoraga_turns = 0
     p_seiki_used_turn = -1
+    p_cirno_freeze_used = False
+    o_cirno_freeze_used = False
+    o_freeze_debuff_turns = 0
+    p_freeze_debuff_turns = 0
+    o_molten_ground_turns = 0
+    p_molten_ground_turns = 0
     battle_logs = []
     battle_turns = []
 
@@ -5358,6 +5599,40 @@ async def handle_battle(ctx_or_interaction):
             if random.random() < 0.20:
                 _mc_dmg = pc["power"]
                 pc["current_hp"] = max(0, pc["current_hp"] - _mc_dmg)
+
+        # Kiểm tra bỏng dung nham từ Nuclear Spell Card:
+        if o_molten_ground_turns > 0:
+            o_molten_ground_turns -= 1
+            burn_dmg = int(oc["hp"] * 0.02)
+            oc["current_hp"] = max(0, oc["current_hp"] - burn_dmg)
+            msg_b = f"🌋 **[Mặt Đất Nung Chảy]** Dung nham thiêu đốt **{oc['name']}** gây **{burn_dmg:,} DMG** (2% Máu Tối Đa)! (Còn {o_molten_ground_turns} turn)"
+            battle_logs.append(msg_b)
+            turn_actions.append(msg_b)
+
+        if p_molten_ground_turns > 0:
+            p_molten_ground_turns -= 1
+            burn_dmg = int(pc["hp"] * 0.02)
+            pc["current_hp"] = max(0, pc["current_hp"] - burn_dmg)
+            msg_b = f"🌋 **[Mặt Đất Nung Chảy]** Dung nham thiêu đốt **{pc['name']}** gây **{burn_dmg:,} DMG** (2% Máu Tối Đa)! (Còn {p_molten_ground_turns} turn)"
+            battle_logs.append(msg_b)
+            turn_actions.append(msg_b)
+
+        # Kiểm tra đóng băng từ Perfect Freeze:
+        if o_freeze_debuff_turns > 0 and not stunned_oc:
+            o_freeze_debuff_turns -= 1
+            if random.random() < 0.45:
+                stunned_oc = True
+                msg_fz = f"❄️ **[Perfect Freeze]** **{oc['name']}** bị đóng băng cứng đờ (45%), không thể phản công trong hiệp này! (Còn {o_freeze_debuff_turns} turn duy trì)"
+                battle_logs.append(msg_fz)
+                turn_actions.append(msg_fz)
+
+        if p_freeze_debuff_turns > 0 and not stunned_pc:
+            p_freeze_debuff_turns -= 1
+            if random.random() < 0.45:
+                stunned_pc = True
+                msg_fz = f"❄️ **[Perfect Freeze]** **{pc['name']}** bị đóng băng cứng đờ (45%), không thể tấn công trong hiệp này! (Còn {p_freeze_debuff_turns} turn duy trì)"
+                battle_logs.append(msg_fz)
+                turn_actions.append(msg_fz)
                 msg_mc = f"🌀 **[Red Eye Mind Explosion]** **{pc['name']}** mất kiểm soát và **tự gây {_mc_dmg:,} DMG** lên bản thân! (Còn {p_mind_turns} lượt ảo giác)"
                 battle_logs.append(msg_mc)
                 turn_actions.append(msg_mc)
@@ -5408,6 +5683,28 @@ async def handle_battle(ctx_or_interaction):
                 msg_r = f"🔴 **[Ace 2] [#20] Reisen** kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 **{oc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
                 battle_logs.append(msg_r)
                 turn_actions.append(msg_r)
+
+        # ❄️ CIRNO ACE 2: Perfect freeze (40% - Đóng băng đối phương, trong 2 turn tiếp có 45% không đánh trả)
+        if pc["cid"] == 22 and pc["is_ace2"] and not p_cirno_freeze_used:
+            if random.random() < 0.40:
+                p_cirno_freeze_used = True
+                o_freeze_debuff_turns = 2
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[22]["skill_gif"]
+                msg_c = f"❄️ **[Ace 2] [#22] Cirno** ({user.display_name}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
+                battle_logs.append(msg_c)
+                turn_actions.append(msg_c)
+
+        # ☢️ UTSUHO REIUJI ACE 2: Nuclear spell card (25% - 3.0x sát thương + dung nham đốt 2% Max HP bài địch trong 3 turn)
+        if pc["cid"] == 13 and pc["is_ace2"]:
+            if random.random() < 0.25:
+                curr_pc_power = int(curr_pc_power * 3.0)
+                o_molten_ground_turns = 3
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[13]["skill_gif"]
+                msg_u = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({user.display_name}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{curr_pc_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
+                battle_logs.append(msg_u)
+                turn_actions.append(msg_u)
 
         if pc["cid"] == 9 and pc["is_ace2"] and not p_flandre:
             if random.random() < 0.25:
@@ -5520,6 +5817,26 @@ async def handle_battle(ctx_or_interaction):
                 msg_r = f"🔴 **Đối thủ [Ace 2] [#20] Reisen** kích hoạt **Red Eye Mind Explosion** (20%)! 🌀 **{pc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
                 battle_logs.append(msg_r)
                 turn_actions.append(msg_r)
+
+        if oc["cid"] == 22 and oc.get("is_ace2") and not o_cirno_freeze_used:
+            if random.random() < 0.40:
+                o_cirno_freeze_used = True
+                p_freeze_debuff_turns = 2
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[22]["skill_gif"]
+                msg_c = f"❄️ **Đối thủ [Ace 2] [#22] Cirno** kích hoạt **Perfect Freeze** (40%)! Đóng băng bạn: Trong 2 turn tiếp theo có **45% không thể đánh trả**!"
+                battle_logs.append(msg_c)
+                turn_actions.append(msg_c)
+
+        if oc["cid"] == 13 and oc.get("is_ace2"):
+            if random.random() < 0.25:
+                curr_oc_power = int(curr_oc_power * 3.0)
+                p_molten_ground_turns = 3
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[13]["skill_gif"]
+                msg_u = f"☢️ **Đối thủ [Ace 2] [#13] Utsuho Reiuji** bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{curr_oc_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa trong 3 turn)!"
+                battle_logs.append(msg_u)
+                turn_actions.append(msg_u)
 
         if not stunned_pc:
             oc_invul = False
@@ -5789,6 +6106,12 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
     t_t1 = {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
     c_mahoraga_turns = 0
     t_mahoraga_turns = 0
+    c_cirno_freeze_used = False
+    t_cirno_freeze_used = False
+    c_freeze_debuff_turns = 0
+    t_freeze_debuff_turns = 0
+    c_molten_ground_turns = 0
+    t_molten_ground_turns = 0
     c_seiki_seal, c_seiki_spark, c_seiki_heal = False, False, False
     c_seiki_used_turn = -1
     t_seiki_seal, t_seiki_spark, t_seiki_heal = False, False, False
@@ -5821,6 +6144,40 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 msg_mc = f"🌀 **[Red Eye Mind Explosion]** **{cc['name']}** ({challenger.display_name}) mất kiểm soát và **tự gây {_mc_dmg:,} DMG** lên bản thân! (Còn {c_mind_turns} lượt ảo giác)"
                 pvp_logs.append(msg_mc)
                 turn_actions.append(msg_mc)
+
+        # Kiểm tra bỏng dung nham từ Nuclear Spell Card (PvP):
+        if t_molten_ground_turns > 0:
+            t_molten_ground_turns -= 1
+            burn_dmg = int(tc["max_hp"] * 0.02)
+            tc["current_hp"] = max(0, tc["current_hp"] - burn_dmg)
+            msg_b = f"🌋 **[Mặt Đất Nung Chảy]** Dung nham thiêu đốt **{tc['name']}** ({target.display_name}) gây **{burn_dmg:,} DMG** (2% Máu Tối Đa)! (Còn {t_molten_ground_turns} turn)"
+            pvp_logs.append(msg_b)
+            turn_actions.append(msg_b)
+
+        if c_molten_ground_turns > 0:
+            c_molten_ground_turns -= 1
+            burn_dmg = int(cc["max_hp"] * 0.02)
+            cc["current_hp"] = max(0, cc["current_hp"] - burn_dmg)
+            msg_b = f"🌋 **[Mặt Đất Nung Chảy]** Dung nham thiêu đốt **{cc['name']}** ({challenger.display_name}) gây **{burn_dmg:,} DMG** (2% Máu Tối Đa)! (Còn {c_molten_ground_turns} turn)"
+            pvp_logs.append(msg_b)
+            turn_actions.append(msg_b)
+
+        # Kiểm tra đóng băng từ Perfect Freeze (PvP):
+        if t_freeze_debuff_turns > 0 and not t_stunned:
+            t_freeze_debuff_turns -= 1
+            if random.random() < 0.45:
+                t_stunned = True
+                msg_fz = f"❄️ **[Perfect Freeze]** **{tc['name']}** ({target.display_name}) bị đóng băng cứng đờ (45%), không thể ra đòn trong hiệp này! (Còn {t_freeze_debuff_turns} turn duy trì)"
+                pvp_logs.append(msg_fz)
+                turn_actions.append(msg_fz)
+
+        if c_freeze_debuff_turns > 0 and not c_stunned:
+            c_freeze_debuff_turns -= 1
+            if random.random() < 0.45:
+                c_stunned = True
+                msg_fz = f"❄️ **[Perfect Freeze]** **{cc['name']}** ({challenger.display_name}) bị đóng băng cứng đờ (45%), không thể ra đòn trong hiệp này! (Còn {c_freeze_debuff_turns} turn duy trì)"
+                pvp_logs.append(msg_fz)
+                turn_actions.append(msg_fz)
 
         c_stunned = False
         t_stunned = False
@@ -5922,6 +6279,28 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 msg_r = f"🔴 **[Ace 2] [#20] Reisen** ({challenger.display_name}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 **{tc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
                 pvp_logs.append(msg_r)
                 turn_actions.append(msg_r)
+
+        # ❄️ CIRNO ACE 2 (Challenger)
+        if cc["cid"] == 22 and cc["is_ace2"] and not c_cirno_freeze_used:
+            if random.random() < 0.40:
+                c_cirno_freeze_used = True
+                t_freeze_debuff_turns = 2
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[22]["skill_gif"]
+                msg_c = f"❄️ **[Ace 2] [#22] Cirno** ({challenger.display_name}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% không thể đánh trả**!"
+                pvp_logs.append(msg_c)
+                turn_actions.append(msg_c)
+
+        # ☢️ UTSUHO REIUJI ACE 2 (Challenger)
+        if cc["cid"] == 13 and cc["is_ace2"]:
+            if random.random() < 0.25:
+                c_curr_power = int(c_curr_power * 3.0)
+                t_molten_ground_turns = 3
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[13]["skill_gif"]
+                msg_u = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({challenger.display_name}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{c_curr_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
+                pvp_logs.append(msg_u)
+                turn_actions.append(msg_u)
 
         if cc["cid"] == 9 and cc["is_ace2"] and not c_flandre:
             if random.random() < 0.25:
@@ -6034,6 +6413,28 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 msg_r = f"🔴 **[Ace 2] [#20] Reisen** ({target.display_name}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 **{cc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
                 pvp_logs.append(msg_r)
                 turn_actions.append(msg_r)
+
+        # ❄️ CIRNO ACE 2 (Target)
+        if tc["cid"] == 22 and tc["is_ace2"] and not t_cirno_freeze_used:
+            if random.random() < 0.40:
+                t_cirno_freeze_used = True
+                c_freeze_debuff_turns = 2
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[22]["skill_gif"]
+                msg_c = f"❄️ **[Ace 2] [#22] Cirno** ({target.display_name}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% không thể đánh trả**!"
+                pvp_logs.append(msg_c)
+                turn_actions.append(msg_c)
+
+        # ☢️ UTSUHO REIUJI ACE 2 (Target)
+        if tc["cid"] == 13 and tc["is_ace2"]:
+            if random.random() < 0.25:
+                t_curr_power = int(t_curr_power * 3.0)
+                c_molten_ground_turns = 3
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[13]["skill_gif"]
+                msg_u = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({target.display_name}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{t_curr_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
+                pvp_logs.append(msg_u)
+                turn_actions.append(msg_u)
 
         if tc["cid"] == 9 and tc["is_ace2"] and not t_flandre:
             if random.random() < 0.25:
@@ -6906,6 +7307,8 @@ async def handle_help(ctx_or_interaction):
   - [#09] Flandre (30 thẻ): Ripples of 495 Years (25% xóa 50% HP đối thủ / 30% HP Boss Raid, 1 lần/trận).
   - [#12] Remilia (25 thẻ): Thương Đỏ Gungnir — THỤ ĐỘNG không cần kích hoạt: mọi đòn đánh +3% Máu Tối Đa (Max HP) mục tiêu, kèm GIF chiêu.
   - [#20] Reisen (40 thẻ): Red Eye Mind Explosion (25% kích hoạt 1 lần/trận): mục tiêu có 20% tự gây sát thương lên bản thân trong 4 turn (không dùng lên chính mình).
+  - [#22] Cirno (60 thẻ): Perfect Freeze (40% kích hoạt 1 lần/trận): đóng băng khiến đối phương trong 2 turn tiếp có 45% không thể đánh trả, kèm GIF chiêu trực tiếp.
+  - [#13] Utsuho Reiuji (30 thẻ): Nuclear Spell Card (25% kích hoạt): gây 3.0x sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch ra sân sau đó trong 3 turn, kèm GIF chiêu trực tiếp.
   - [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Điều kiện đặc biệt: Marisa, Reimu, Sakuya đều Ace 2 & 10 Mảnh Seiki):
     * Cleave: Thụ động 100% mọi đòn đánh thường +2% Máu Tối Đa mục tiêu!
     * Medicine Sign: 35% hồi 40% Máu Tối Đa bản thân, 1 lần/trận.
