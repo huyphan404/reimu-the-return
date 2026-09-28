@@ -715,6 +715,13 @@ def get_default_player(user_id, username):
             "date": "",
             "quests": [],
             "all_completed_claimed": False
+        },
+        "story": {
+            "current_stage": 0,       # 0: Mở đầu & Quest 10 battle, 1: Stage 1 Rumia, 2: Xong Stage 1
+            "battles_done": 0,        # Đếm số trận battle đã đánh
+            "quest_claimed": False,   # Cờ đã nhận 10 pull của Prologue
+            "rumia_boss_level": None, # Cấp độ cố định của Boss Rumia lúc mở quest
+            "stage1_completed": False
         }
     }
 
@@ -962,6 +969,14 @@ def get_player(user_id, username="Visitor"):
         }
     if "pull_used" not in data["tutorial"]:
         data["tutorial"]["pull_used"] = data["tutorial"].get("completed", False)
+    if "story" not in data or not isinstance(data.get("story"), dict):
+        data["story"] = {
+            "current_stage": 0,
+            "battles_done": 0,
+            "quest_claimed": False,
+            "rumia_boss_level": None,
+            "stage1_completed": False
+        }
     
     # ===== HỆ THỐNG DI TRÚ ID - THÊM [#10] KOISHI (ID cũ 10-26 -> 11-27), CHỈ TỰ ĐỘNG CHẠY 1 LẦN =====
     if data.get("id_schema", 1) < 2:
@@ -6079,6 +6094,11 @@ async def handle_battle(ctx_or_interaction):
     player["battles_total"] = player.get("battles_total", 0) + 1
     if win: player["battles_won"] = player.get("battles_won", 0) + 1
 
+    # TỰ ĐỘNG ĐẾM TIẾN TRÌNH CHO NHIỆM VỤ CỐT TRUYỆN (/STORY)
+    st = player.setdefault("story", {})
+    if st.get("current_stage", 0) == 0:
+        st["battles_done"] = st.get("battles_done", 0) + 1
+
     dq_notifs = update_daily_quest_progress(player, "battle", 1)
 
     tut = player.get("tutorial", {})
@@ -7416,12 +7436,354 @@ async def slash_admin_boss_reset(interaction: discord.Interaction):
         return
     await admin_reset_boss(interaction, interaction.user)
 
+# ==============================================================================
+# LIVE BATTLE STORY MODE - STAGE 1: RUMIA (HỒ SƯƠNG MÙ)
+# ==============================================================================
+async def run_story_rumia_battle(channel_or_interaction, user, player):
+    st = player.setdefault("story", {})
+    boss_lvl = st.get("rumia_boss_level") or player.get("level", 1)
+    
+    # Chỉ số Rumia: Power 440, HP 4400 + Buff theo boss_lvl cố định lúc mở quest
+    boss_atk_buff = get_level_atk_buff(boss_lvl)
+    boss_hp_buff = get_level_hp_buff(boss_lvl)
+    rumia_max_hp = 4400 + boss_hp_buff
+    rumia_hp = rumia_max_hp
+    rumia_power = 440 + boss_atk_buff
+
+    # Chuẩn bị đội hình player
+    team_cids = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
+    if len(team_cids) < 3:
+        owned = get_owned_card_ids(player)
+        owned.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
+        for cid in owned:
+            if cid not in team_cids: team_cids.append(cid)
+            if len(team_cids) >= 3: break
+        player["team"] = team_cids
+        save_player(player)
+
+    p_buff_pwr = get_level_atk_buff(player["level"])
+    p_buff_hp = get_level_hp_buff(player["level"])
+
+    player_cards = []
+    for cid in team_cids[:3]:
+        c = CARDS_DATA[cid]
+        is_ace = is_card_ace2(player, cid)
+        ace_pwr = ACE_POWER_BUFF if is_ace else 0
+        ace_hp = ACE_HP_BUFF if is_ace else 0
+        card_pwr = c["power"] + p_buff_pwr + ace_pwr
+        card_hp = c["hp"] + p_buff_hp + ace_hp
+        player_cards.append({
+            "cid": cid,
+            "name": f"[Ace 2 ⭐⭐] #{c['id']} {c['name']}" if is_ace else f"#{c['id']} {c['name']}",
+            "power": card_pwr,
+            "max_hp": card_hp,
+            "current_hp": card_hp,
+            "is_ace2": is_ace
+        })
+
+    embed_init = discord.Embed(
+        title="⚔️ [LIVE BATTLE] STAGE 1: HỒ SƯƠNG MÙ - ĐẠI CHIẾN RUMIA!",
+        description=(
+            f"👤 **Trợ thủ xuất trận:** {user.mention} (Lv.{player['level']})\n"
+            f"👺 **Đối thủ:** [Rank C] **#24 Rumia (Yêu Quái Của Hoàng Hôn)** (Lv.{boss_lvl})\n"
+            f"❤️ Máu Boss: `{get_hp_bar(rumia_hp, rumia_max_hp)}` **{rumia_hp:,}/{rumia_max_hp:,} HP**\n"
+            f"⚔️ Sức mạnh: **{rumia_power:,} DMG**"
+        ),
+        color=0x7C3AED
+    )
+    embed_init.set_thumbnail(url=CARDS_DATA[24]["image"])
+    
+    if isinstance(channel_or_interaction, discord.Interaction):
+        if channel_or_interaction.response.is_done():
+            msg = await channel_or_interaction.followup.send(embed=embed_init)
+        else:
+            await channel_or_interaction.response.send_message(embed=embed_init)
+            msg = await channel_or_interaction.original_response()
+    else:
+        msg = await channel_or_interaction.send(embed=embed_init)
+
+    await asyncio.sleep(2.0)
+
+    p_idx = 0
+    rounds = 0
+    sakuya_used, reimu_used, marisa_used = False, False, False
+
+    while rumia_hp > 0 and p_idx < len(player_cards) and rounds < 25:
+        rounds += 1
+        pc = player_cards[p_idx]
+        turn_image = None
+        turn_logs = []
+        card_dmg = pc["power"]
+
+        # Kỹ năng Ace 2
+        if pc["cid"] == 17 and pc["is_ace2"] and not sakuya_used:
+            if random.random() < 0.40:
+                sakuya_used = True
+                turn_image = EVOL_CONFIG[17]["skill_gif"]
+                turn_logs.append("⏳ **[Ace 2] Sakuya** kích hoạt **Thời Gian Đóng Băng**! Rumia bị STUN mất lượt!")
+
+        if pc["cid"] == 18 and pc["is_ace2"] and not marisa_used:
+            if random.random() < 0.30:
+                marisa_used = True
+                card_dmg = int(card_dmg * 2.0)
+                if not turn_image: turn_image = EVOL_CONFIG[18]["skill_gif"]
+                turn_logs.append(f"🌟 **[Ace 2] Marisa** tung **Master Spark** (×2.0)! Giáng {card_dmg:,} DMG!")
+
+        rumia_hp = max(0, rumia_hp - card_dmg)
+        turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Rumia!")
+
+        if rumia_hp <= 0:
+            turn_logs.append("💥 **Rumia đã bị đánh bay hoàn toàn!**")
+        else:
+            if sakuya_used and rounds == 1:
+                turn_logs.append("❄️ Rumia bị đóng băng không thể phản công!")
+            else:
+                invul = False
+                if pc["cid"] == 14 and pc["is_ace2"] and not reimu_used:
+                    if random.random() < 0.40:
+                        reimu_used = True
+                        invul = True
+                        if not turn_image: turn_image = EVOL_CONFIG[14]["skill_gif"]
+                        turn_logs.append(f"🛡️ **[Ace 2] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh**! Miễn toàn bộ sát thương!")
+                if not invul:
+                    pc["current_hp"] -= rumia_power
+                    turn_logs.append(f"🌑 **Rumia** phản kích bằng **Dạ Tối Kết Giới** gây **{rumia_power:,} DMG** lên {pc['name']}!")
+
+        if pc["current_hp"] <= 0:
+            pc["current_hp"] = 0
+            trade = pc["power"]
+            rumia_hp = max(0, rumia_hp - trade)
+            turn_logs.append(f"💥 [Đổi Sát Thương] {pc['name']} trước khi gục đã đổi **{trade:,} DMG** vào Rumia!")
+            p_idx += 1
+            if p_idx < len(player_cards):
+                turn_logs.append(f"💀 Đẩy **{player_cards[p_idx]['name']}** lên tiền tuyến!")
+
+        r_embed = discord.Embed(
+            title=f"⚔️ HIỆP {rounds} - QUYẾT ĐẤU RUMIA (STAGE 1)",
+            description=(
+                f"❤️ Máu Rumia: `{get_hp_bar(rumia_hp, rumia_max_hp)}` **{rumia_hp:,}/{rumia_max_hp:,} HP**\n\n"
+                + "\n".join(turn_logs)
+            ),
+            color=0x7C3AED if rumia_hp > 0 else 0x10B981
+        )
+        if turn_image: r_embed.set_image(url=turn_image)
+        else: r_embed.set_thumbnail(url=CARDS_DATA[24]["image"])
+        try: await msg.edit(embed=r_embed)
+        except Exception: pass
+
+        if rumia_hp <= 0: break
+        await asyncio.sleep(2.0)
+
+    # Kết quả trận đấu
+    if rumia_hp <= 0:
+        # CHIẾN THẮNG: Thưởng 10 thẻ ID 24 (Rumia) cộng thẳng túi đồ + 10 Pull
+        inv = player.setdefault("inventory", {})
+        inv["24"] = inv.get("24", 0) + 10
+        if 24 not in player.get("unlocked_cards", []):
+            player.setdefault("unlocked_cards", []).append(24)
+        player["pull_tickets"] += 10.0
+        st["stage1_completed"] = True
+        st["current_stage"] = 2
+        save_player(player)
+
+        embed_win = discord.Embed(
+            title="🎉 CHIẾN THẮNG STAGE 1: HỒ SƯƠNG MÙ!",
+            description=(
+                "🌸 **\"Rumia bị Reimu cùng trợ thủ cô đánh bay trong khi còn không biết gì về làn sương\"**\n\n"
+                "⛩️ **Reimu:** *\"Hừ, chỉ là một con yêu quái tép riu chắn đường thôi. Mau thu dọn chiến lợi phẩm rồi tiến sâu vào hồ nào trợ thủ!\"*\n\n"
+                "🎁 **PHẦN THƯỞNG CHIẾN TÍCH:**\n"
+                f"• 🎴 **+10 Thẻ bài [#24] Rumia (Rank C)** cộng thẳng vào túi đồ! (Hiện có: `{inv['24']}` lá)\n"
+                f"• 🎟️ **+10 Lượt Pull Tích Lũy** (Tổng vé hiện có: `{player['pull_tickets']:.2f}` vé)!\n"
+                f"• 🌟 **Mở khóa danh hiệu:** Người Thanh Tẩy Màn Đêm Hồ Sương Mù"
+            ),
+            color=0x10B981
+        )
+        embed_win.set_image(url="https://c.tenor.com/gc4ws16CrTYAAAAC/reimu-touhou.gif")
+        embed_win.set_footer(text="Stage 1 Completed • Kiểm tra túi đồ bằng /collection hoặc /team")
+        try: await msg.edit(embed=embed_win)
+        except Exception: pass
+    else:
+        embed_loss = discord.Embed(
+            title="💀 THẤT BẠI TẠI STAGE 1!",
+            description=(
+                f"Đội hình của {user.mention} đã bị quả cầu bóng tối của Rumia nuốt chửng!\n"
+                "Rumia còn lại: **" + f"{rumia_hp:,}/{rumia_max_hp:,} HP**\n\n"
+                "💡 *Hãy rèn luyện nâng cấp thẻ bài, xếp lại đội hình qua `/team` và gõ lại `/story` để phục thù!*"
+            ),
+            color=0xEF4444
+        )
+        embed_loss.set_thumbnail(url=CARDS_DATA[24]["image"])
+        try: await msg.edit(embed=embed_loss)
+        except Exception: pass
+
+# ==============================================================================
+# GIAO DIỆN & BỘ ĐIỀU HƯỚNG CỐT TRUYỆN (/STORY)
+# ==============================================================================
+class StoryBattleView(discord.ui.View):
+    def __init__(self, user, player):
+        super().__init__(timeout=180)
+        self.user = user
+        self.player = player
+
+    @discord.ui.button(label="⚔️ Xuất Trận Quyết Đấu Rumia (Live Battle)", style=discord.ButtonStyle.danger, emoji="💥")
+    async def fight_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+            return
+        for child in self.children: child.disabled = True
+        await interaction.response.edit_message(content="🔥 **Trận chiến bắt đầu nghênh chiến Rumia!**", view=self)
+        self.stop()
+        await run_story_rumia_battle(interaction, self.user, self.player)
+
+async def handle_story(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    st = player.setdefault("story", {
+        "current_stage": 0, "battles_done": 0, "quest_claimed": False, "rumia_boss_level": None, "stage1_completed": False
+    })
+    
+    stage = st.get("current_stage", 0)
+
+    # --------------------------------------------------------------------------
+    # GIAI ĐOẠN 0: PROLOGUE - LÀN SƯƠNG ĐỎ BÙNG PHÁT & NHIỆM VỤ TẬP HUẤN
+    # --------------------------------------------------------------------------
+    if stage == 0:
+        battles_cnt = st.get("battles_done", 0)
+        user_lvl = player.get("level", 1)
+        req_battle_ok = battles_cnt >= 10
+        req_lvl_ok = user_lvl >= 10
+
+        # Nếu đã đủ cả 2 điều kiện -> Trao thưởng 10 Pull & Mở khóa Stage 1
+        if req_battle_ok and req_lvl_ok:
+            st["quest_claimed"] = True
+            st["current_stage"] = 1
+            st["rumia_boss_level"] = user_lvl  # Cố định cấp độ của Boss Rumia ngay lúc này
+            player["pull_tickets"] += 10.0
+            save_player(player)
+
+            embed_unlock = discord.Embed(
+                title="🎉 HOÀN THÀNH NHIỆM VỤ MỞ ĐẦU CỐT TRUYỆN!",
+                description=(
+                    f"⛩️ **Reimu:** *\"Khá lắm trợ thủ! Ngươi đã có đủ thực lực để cùng ta tiến sâu vào làn sương rồi đấy!\"*\n\n"
+                    f"🎁 **PHẦN THƯỞNG HOÀN THÀNH:**\n"
+                    f"• 🎟️ **+10 Lượt Pull Tích Lũy** (Đã cộng vào tài khoản! Hiện có: `{player['pull_tickets']:.2f}` vé)\n"
+                    f"• 🗺️ **Mở khóa địa điểm mới:** **Stage 1: Hồ Sương Mù (Misty Lake)**!\n\n"
+                    f"👉 **LƯU Ý:** Hãy gõ lại lệnh `/story` ngay bây giờ để tiến vào **Stage 1: Hồ Sương Mù** và bắt đầu hành trình!"
+                ),
+                color=0x10B981
+            )
+            embed_unlock.set_thumbnail(url="https://c.tenor.com/39VGItAUUCYAAAAC/reimu-reimu-hakurei.gif")
+            if isinstance(ctx_or_interaction, discord.Interaction):
+                await ctx_or_interaction.response.send_message(embed=embed_unlock)
+            else:
+                await ctx_or_interaction.send(embed=embed_unlock)
+            return
+
+        # Nếu chưa đủ điều kiện -> Hiển thị cốt truyện mở đầu & tiến độ
+        status_battle = "✅ ĐÃ HOÀN THÀNH" if req_battle_ok else f"🔴 Chưa đủ ({battles_cnt}/10 trận)"
+        status_lvl = "✅ ĐÃ ĐẠT" if req_lvl_ok else f"🔴 Chưa đủ (Cấp hiện tại: Lv.{user_lvl}/10)"
+
+        embed_prologue = discord.Embed(
+            title="📜 CỐT TRUYỆN: HỒNG MA DỊ BIẾN (EMBODIMENT OF SCARLET DEVIL)",
+            description=(
+                "Vào một ngày hè oi ả tại Ảo Tưởng Hương (Gensokyo), một làn sương màu đỏ dày đặc bất ngờ bùng phát "
+                "và bao phủ khắp bầu trời, che khuất hoàn toàn ánh nắng mặt trời. Làn sương ấy làm nhiệt độ giảm xuống "
+                "và khiến nơi đây sống trong chật vật. Thấy vậy Reimu bắt đầu lên đường xử lý vấn đề nhức nhối này.\n\n"
+                f"⛩️ **Reimu:** *\"Được rồi trợ thủ {user.mention}, cùng tôi lên đường xử lý cái đám phiền phức này nào!\"*"
+            ),
+            color=0xDC2626
+        )
+        embed_prologue.set_image(url="https://media.discordapp.net/attachments/1533528571509866497/1549078962746171463/images.png?ex=6aa963b5&is=6aa81235&hm=3fa720bd7311e4ca45789c6a0112327878135e9d9944c31c6ed2ea1f60885853&=&format=webp&quality=lossless")
+        embed_prologue.add_field(
+            name="🎯 NHIỆM VỤ YÊU CẦU ĐỂ BƯỚC VÀO STAGE 1 (GAME STORY QUEST):",
+            value=(
+                f"• ⚔️ **Đánh `/battle` 10 lần:** **{status_battle}**\n"
+                f"• ⭐ **Level tối thiểu 10:** **{status_lvl}**\n\n"
+                "🎁 **Phần thưởng hoàn thành:** **+10 Lượt Pull** 🎟️ & Mở khóa **Stage 1: Hồ Sương Mù (Misty Lake)**!\n"
+                "💡 *Sau khi hoàn thành đủ 2 điều kiện trên, hãy gõ lại `/story` để nhận thưởng và gặp gỡ Rumia!*"
+            ),
+            inline=False
+        )
+        embed_prologue.set_footer(text="Touhou Story Mode • Embodiment of Scarlet Devil • Gõ /battle để luyện cấp")
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=embed_prologue)
+        else:
+            await ctx_or_interaction.send(embed=embed_prologue)
+        return
+
+    # --------------------------------------------------------------------------
+    # GIAI ĐOẠN 1: STAGE 1 - HỒ SƯƠNG MÙ & HỘI THOẠI RUMIA
+    # --------------------------------------------------------------------------
+    elif stage == 1:
+        boss_lvl = st.get("rumia_boss_level") or player.get("level", 1)
+        dialogue_text = (
+            "Trên đường tiến về phía hồ, họ gặp Rumia đang lơ lửng trong một cầu bóng tối do chính cô tạo ra...\n\n"
+            "• 🌑 **Rumia:** *\"Phải rồi đó~ Có ma nữa nè, đơn giản là tuyệt vời thôi~\"*\n"
+            "• ⛩️ **Reimu:** *\"Ờm... Ngươi là ai...?\"*\n"
+            "• 🌑 **Rumia:** *\"Yêu quái của hoàng hôn, Rumia.\"*\n"
+            "• ⛩️ **Reimu:** *\"...Ừ, và cô là?\"*\n"
+            "• 🌑 **Rumia:** *\"Chẳng phải chúng ta đã gặp nhau vài phút trước rồi sao? Bộ cô bị quáng gà hả?\"*\n"
+            "• ⛩️ **Reimu:** *\"Mắt người đâu phải để đi đêm!\"*\n"
+            "• 🌑 **Rumia:** *\"Ồ? Nhưng tôi có gặp một số người chuyên làm việc vào ban đêm mà.\"*\n"
+            "• ⛩️ **Reimu:** *\"Đối với loại người đó, cô có thể lấy họ làm bữa tối.\"*\n"
+            "• 🌑 **Rumia:** *\"Ồ~ vậy à~\"*\n"
+            "• ⛩️ **Reimu:** *\"Cô biết không, cô đang ngáng đường tôi đấy.\"*\n"
+            "• 🌑 **Rumia:** *\"Thế kẻ đang đứng trước mặt tôi đây có phải loại người ăn thịt được không?\"*\n\n"
+            "⚠️ **CẢNH BÁO:** Rumia đã mở rộng quả cầu hắc ám chuẩn bị tấn công! Hãy bấm nút **'Xuất Trận Quyết Đấu Rumia'** bên dưới để khai màn trận Live Battle!"
+        )
+
+        embed_stage1 = discord.Embed(
+            title="🗺️ STAGE 1: HỒ SƯƠNG MÙ (MISTY LAKE)",
+            description=dialogue_text,
+            color=0x4F46E5
+        )
+        embed_stage1.set_thumbnail(url=CARDS_DATA[24]["image"])
+        embed_stage1.add_field(
+            name="👺 Thông Số Boss Rumia:",
+            value=f"• Sức mạnh gốc: **440 DMG** | Máu gốc: **4,400 HP**\n• Cấp độ Boss: **Lv.{boss_lvl}** (Cố định bằng cấp độ của bạn lúc mở quest)",
+            inline=True
+        )
+        embed_stage1.add_field(
+            name="🎁 Phần Thưởng Sau Khi Hạ Gục:",
+            value="• 🎴 **10 Thẻ bài ID 24 (Thẻ Rumia)** cộng thẳng vào túi đồ\n• 🎟️ **+10 Lượt Pull** tích lũy",
+            inline=True
+        )
+        embed_stage1.set_footer(text="Bấm nút màu đỏ bên dưới để chiến đấu trực tiếp!")
+        view = StoryBattleView(user, player)
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=embed_stage1, view=view)
+        else:
+            await ctx_or_interaction.send(embed=embed_stage1, view=view)
+        return
+
+    # --------------------------------------------------------------------------
+    # GIAI ĐOẠN 2: ĐÃ HOÀN THÀNH STAGE 1
+    # --------------------------------------------------------------------------
+    else:
+        embed_cleared = discord.Embed(
+            title="🏆 BẠN ĐÃ VƯỢT QUA STAGE 1: HỒ SƯƠNG MÙ!",
+            description=(
+                "🌸 **\"Rumia bị Reimu cùng trợ thủ cô đánh bay trong khi còn không biết gì về làn sương\"**\n\n"
+                f"👤 Trợ thủ: {user.mention}\n"
+                "✅ Bạn đã đánh bại Rumia, nhận **10 Thẻ bài ID 24 (Rumia)** và **10 Vé Pull**!\n\n"
+                "🌫️ *Phía trước mặt nước Hồ Sương Mù, làn sương đỏ ngày càng nồng nặc và buốt giá...*\n"
+                "🌟 **Stage 2 (Hồ Sương Mù Băng Giá - Cirno) sẽ sớm cập bến trong bản cập nhật kế tiếp!**"
+            ),
+            color=0x10B981
+        )
+        embed_cleared.set_thumbnail(url=CARDS_DATA[24]["image"])
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=embed_cleared)
+        else:
+            await ctx_or_interaction.send(embed=embed_cleared)
+
 async def handle_help(ctx_or_interaction):
     desc = """
 ⛩️ **HAKUREI REIMU DISCORD BOT - BẢN ĐỒ LỆNH**
 
 **🌸 TÂN THỦ & NHIỆM VỤ:**
 • `/tutorial`: Khóa huấn luyện tân thủ (Thưởng 10 lượt pull, cấp 3 lượt pull 100% không trùng lá, không bao giờ ra thẻ SS, tiến trình 1 chiều).
+• `/story`: Chế độ cốt truyện Touhou Story Mode (Hồng Ma Dị Biến - Đánh 10 trận /battle & Lv.10 để mở khóa Stage 1: Hồ Sương Mù vs Rumia).
 • `/quest`: Xem 3/3 Nhiệm vụ Hàng Ngày (Nhận vé pull & thưởng lớn +10 lượt pull khi xong cả 3).
 
 **🎮 GACHA, TIẾN HÓA & TRAO ĐỔI:**
@@ -7483,6 +7845,14 @@ async def slash_help(interaction: discord.Interaction):
 @bot.command(name="help")
 async def prefix_help(ctx):
     await handle_help(ctx)
+
+@bot.tree.command(name="story", description="Tham gia chế độ cốt truyện Touhou Story Mode (Hồng Ma Dị Biến)")
+async def slash_story(interaction: discord.Interaction):
+    await handle_story(interaction)
+
+@bot.command(name="story", aliases=["cotruyen"])
+async def prefix_story(ctx):
+    await handle_story(ctx)
 
 @bot.tree.command(name="wiki", description="Tra cứu nhân vật Touhou")
 @app_commands.describe(nhan_vat="Tên nhân vật Touhou")
