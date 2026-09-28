@@ -1775,6 +1775,40 @@ def get_hp_bar(current_hp, max_hp, total_blocks=10):
     filled = int(round(ratio * total_blocks))
     return "▰" * filled + "▱" * (total_blocks - filled)
 
+# ==============================================================================
+# HÀM BẢO HIỂM: GIỚI HẠN 50% SÁT THƯƠNG CHUẨN TRONG RAID BOSS
+# ==============================================================================
+def apply_raid_true_damage(requested_dmg: int, current_accumulated: int, max_cap: int, skill_label: str):
+    """
+    Giới hạn sát thương chuẩn tối đa bằng 50% Max HP của Boss trong trận Raid.
+    - Nếu đã đạt trần (100% của 50% HP): Sát thương chuẩn = 0.
+    - Nếu đòn này làm vượt trần: Chỉ nhận lượng còn thiếu cho đến khi chạm trần, phần dư bị khóa.
+    - Trả về: (sát thương thực tế được cộng, tổng tích lũy mới, thông báo trạng thái trần)
+    """
+    if requested_dmg <= 0:
+        return 0, current_accumulated, None
+
+    rem = max(0, max_cap - current_accumulated)
+    if rem <= 0:
+        cap_note = (
+            f"🔒 **[TRẦN SÁT THƯƠNG CHUẨN 50%]** Đã đạt giới hạn tối đa ({max_cap:,} DMG)! "
+            f"Kỹ năng {skill_label} bị vô hiệu hóa phần sát thương chuẩn, đòn đánh chỉ còn gây sát thương thuần "
+            f"(hiệu ứng đi kèm vẫn kích hoạt bình thường)."
+        )
+        return 0, current_accumulated, cap_note
+    elif requested_dmg > rem:
+        actual_applied = rem
+        new_accum = max_cap
+        excess = requested_dmg - rem
+        cap_note = (
+            f"⚠️ **[CHẠM TRẦN 50% MAX HP]** {skill_label} chỉ được ghi nhận **{actual_applied:,} DMG** sát thương chuẩn "
+            f"(phần vượt mức {excess:,} DMG bị triệt tiêu)! Từ giờ Boss chỉ còn nhận sát thương thuần."
+        )
+        return actual_applied, new_accum, cap_note
+    else:
+        new_accum = current_accumulated + requested_dmg
+        return requested_dmg, new_accum, None
+
 async def execute_raid(channel, raid_data):
     global active_raid, boss_cooldown_until
     active_raid = None
@@ -1895,6 +1929,10 @@ async def execute_raid(channel, raid_data):
     p1_battle_history = []
     all_raid_turns = []
 
+    # 🛡️ CƠ CHẾ CÂN BẰNG: GIỚI HẠN 50% SÁT THƯƠNG CHUẨN CỦA BOSS PHASE 1
+    p1_true_cap = int(p1_max_hp * 0.50)
+    p1_true_dmg_accum = 0
+
     while p1_hp > 0 and p1_rounds < max_rounds:
         active_combatants = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
         if not active_combatants:
@@ -1932,15 +1970,15 @@ async def execute_raid(channel, raid_data):
 
         if boss_molten_ground_turns > 0:
             boss_molten_ground_turns -= 1
-            burn_dmg = int(p1_max_hp * 0.02)
-            p1_hp = max(0, p1_hp - burn_dmg)
-            boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Dung nham hạt nhân thiêu đốt Boss gây **{burn_dmg:,} DMG** (2% Máu Tối Đa)! (Còn {boss_molten_ground_turns} lượt)"
-
-        if boss_molten_ground_turns > 0:
-            boss_molten_ground_turns -= 1
-            burn_dmg = int(p1_max_hp * 0.02)
-            p1_hp = max(0, p1_hp - burn_dmg)
-            boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Dung nham hạt nhân thiêu đốt Boss gây **{burn_dmg:,} DMG** (2% Máu Tối Đa)! (Còn {boss_molten_ground_turns} lượt)"
+            raw_burn = int(p1_max_hp * 0.02)
+            actual_burn, p1_true_dmg_accum, cap_burn_msg = apply_raid_true_damage(raw_burn, p1_true_dmg_accum, p1_true_cap, "Bỏng Mặt Đất (Utsuho)")
+            if actual_burn > 0:
+                p1_hp = max(0, p1_hp - actual_burn)
+                boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Dung nham hạt nhân thiêu đốt Boss gây **{actual_burn:,} DMG** (2% Máu Tối Đa)! (Còn {boss_molten_ground_turns} lượt)"
+            else:
+                boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Mặt đất vẫn sôi trào nhưng sát thương chuẩn đã bị triệt tiêu (0 DMG)! (Còn {boss_molten_ground_turns} lượt)"
+            if cap_burn_msg:
+                boss_molten_log += f"\n{cap_burn_msg}"
 
         boss_stunned = False
         sakuya_stun_notif = None
@@ -1965,12 +2003,6 @@ async def execute_raid(channel, raid_data):
                     turn_image = EVOL_CONFIG[17]["skill_gif"]
                     sakuya_stun_notif = f"⏳ **[Ace 2] [#17] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss bị **STUN** mất lượt!"
                     break
-
-        if boss_freeze_debuff_turns > 0 and not boss_stunned:
-            boss_freeze_debuff_turns -= 1
-            if random.random() < 0.45:
-                boss_stunned = True
-                cirno_freeze_log = f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%), không thể hành động trong hiệp này! (Còn {boss_freeze_debuff_turns} lượt duy trì)"
 
         if boss_freeze_debuff_turns > 0 and not boss_stunned:
             boss_freeze_debuff_turns -= 1
@@ -2016,19 +2048,31 @@ async def execute_raid(channel, raid_data):
             if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
                 if random.random() < 0.25:
                     c["flandre_used"] = True
-                    rip_dmg = int(p1_hp * 0.30)
-                    p1_hp = max(0, p1_hp - rip_dmg)
-                    c["total_dmg"] += rip_dmg
+                    raw_rip = int(p1_hp * 0.30)
+                    actual_rip, p1_true_dmg_accum, cap_rip_msg = apply_raid_true_damage(raw_rip, p1_true_dmg_accum, p1_true_cap, "Ripples of 495 Years (Flandre)")
+                    p1_hp = max(0, p1_hp - actual_rip)
+                    c["total_dmg"] += actual_rip
                     if not turn_image:
                         turn_image = EVOL_CONFIG[9]["skill_gif"]
-                    flandre_notif = f"🦇 **[Ace 2] [#09] Flandre Scarlet** ({c['username']}) kích hoạt **Ripples of 495 Years** (25%)! Xóa sổ **{rip_dmg:,} DMG (30% HP Boss)** ngay lập tức!"
+                    if actual_rip > 0:
+                        flandre_notif = f"🦇 **[Ace 2] [#09] Flandre Scarlet** ({c['username']}) kích hoạt **Ripples of 495 Years** (25%)! Gây **{actual_rip:,} DMG** sát thương chuẩn lên Boss!"
+                    else:
+                        flandre_notif = f"🦇 **[Ace 2] [#09] Flandre Scarlet** ({c['username']}) kích hoạt **Ripples of 495 Years** nhưng sát thương chuẩn đã chạm trần (0 DMG)!"
+                    if cap_rip_msg:
+                        flandre_notif += f"\n{cap_rip_msg}"
 
             if ac["cid"] == 12 and ac["is_ace2"]:
-                gungnir_bonus = int(p1_max_hp * 0.03)
-                card_dmg += gungnir_bonus
+                raw_gungnir = int(p1_max_hp * 0.03)
+                actual_gungnir, p1_true_dmg_accum, cap_gungnir_msg = apply_raid_true_damage(raw_gungnir, p1_true_dmg_accum, p1_true_cap, "Thương Đỏ Gungnir (Remilia)")
+                card_dmg += actual_gungnir
                 if not turn_image:
                     turn_image = EVOL_CONFIG[12]["skill_gif"]
-                remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{gungnir_bonus:,} DMG** (3% Máu tối đa Boss)!"
+                if actual_gungnir > 0:
+                    remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{actual_gungnir:,} DMG** (3% Máu tối đa Boss)!"
+                else:
+                    remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir**: Sát thương chuẩn đã chạm trần (0 DMG)!"
+                if cap_gungnir_msg:
+                    remilia_notif += f"\n{cap_gungnir_msg}"
 
             if ac["cid"] == 20 and ac["is_ace2"] and not c.get("reisen_used"):
                 if random.random() < 0.25:
@@ -2056,32 +2100,23 @@ async def execute_raid(channel, raid_data):
                         turn_image = EVOL_CONFIG[13]["skill_gif"]
                     utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
 
-            # ❄️ CIRNO ACE 2: Perfect freeze (40% - Đóng băng đối phương, trong 2 turn tiếp có 45% không đánh trả)
-            if ac["cid"] == 22 and ac["is_ace2"] and not c.get("cirno_freeze_used"):
-                if random.random() < 0.40:
-                    c["cirno_freeze_used"] = True
-                    boss_freeze_debuff_turns = 2
-                    if not turn_image:
-                        turn_image = EVOL_CONFIG[22]["skill_gif"]
-                    cirno_notif = f"❄️ **[Ace 2] [#22] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
-
-            # ☢️ UTSUHO REIUJI ACE 2: Nuclear spell card (25% - 3.0x sát thương + dung nham đốt 2% Max HP bài địch trong 3 turn)
-            if ac["cid"] == 13 and ac["is_ace2"]:
-                if random.random() < 0.25:
-                    card_dmg = int(card_dmg * 3.0)
-                    boss_molten_ground_turns = 3
-                    if not turn_image:
-                        turn_image = EVOL_CONFIG[13]["skill_gif"]
-                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
-
             # ===== THẺ [#t1] SEIKI: Bản thường / Bản Ace 2 ⭐⭐ (Cleave + 3 tuyệt kỹ mới - Fantasy Seal 50% miễn thương) =====
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
                     _t1 = t1_ace2_attack(c, ac, p1_rounds, p1_max_hp, f"Boss {boss_cfg['name']}", is_boss=True)
-                    card_dmg += _t1["bonus"]
+                    if _t1["bonus"]:
+                        raw_cleave = _t1["bonus"]
+                        actual_cleave, p1_true_dmg_accum, cap_cleave_msg = apply_raid_true_damage(raw_cleave, p1_true_dmg_accum, p1_true_cap, "Cleave (Seiki Ace 2)")
+                        card_dmg += actual_cleave
+                        if cap_cleave_msg:
+                            _t1["logs"].append(cap_cleave_msg)
                     if _t1["direct"]:
-                        p1_hp = max(0, p1_hp - _t1["direct"])
-                        c["total_dmg"] += _t1["direct"]
+                        raw_bong = _t1["direct"]
+                        actual_bong, p1_true_dmg_accum, cap_bong_msg = apply_raid_true_damage(raw_bong, p1_true_dmg_accum, p1_true_cap, "Bóng Khái Niệm (Seiki Ace 2)")
+                        p1_hp = max(0, p1_hp - actual_bong)
+                        c["total_dmg"] += actual_bong
+                        if cap_bong_msg:
+                            _t1["logs"].append(cap_bong_msg)
                     if _t1.get("invul"):
                         c["seiki_seal_used"] = True
                         c["seiki_used_turn"] = p1_rounds
@@ -2110,7 +2145,7 @@ async def execute_raid(channel, raid_data):
                             turn_image = T1_HEAL_GIF
                         passive_log = (passive_log + "\n" if passive_log else "") + f"💚 **[Nhóm T] [#t1] Seiki** ({c['username']}) thi triển **Medicine Sign** (20%)! Hồi phục **+{heal_val:,} HP** cho bản thân! ({ac['current_hp']:,}/{ac['max_hp']:,} HP)"
 
-            # ===== THẺ [#t2] MAHORAGA: The True adapt (Hồi 5% HP + Giảm 5% ST mỗi turn) + Thoái Ma kiếm (30% x1.5 DMG) =====
+        # ===== THẺ [#t2] MAHORAGA: The True adapt (Hồi 5% HP + Giảm 5% ST mỗi turn) + Thoái Ma kiếm (30% x1.5 DMG) =====
             if str(ac["cid"]).lower() == "t2":
                 heal_mahoraga = int(ac["max_hp"] * 0.05)
                 ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_mahoraga)
@@ -2666,6 +2701,10 @@ async def execute_raid(channel, raid_data):
         boss_freeze_debuff_turns = 0
         boss_molten_ground_turns = 0
 
+        # 🛡️ CƠ CHẾ CÂN BẰNG: GIỚI HẠN 50% SÁT THƯƠNG CHUẨN CỦA BOSS PHASE 2
+        p2_true_cap = int(p2_max_hp * 0.50)
+        p2_true_dmg_accum = 0
+
         while p2_hp > 0 and p2_rounds < max_rounds:
             active_combatants = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
             if not active_combatants:
@@ -2684,9 +2723,15 @@ async def execute_raid(channel, raid_data):
 
             if boss_molten_ground_turns > 0:
                 boss_molten_ground_turns -= 1
-                burn_dmg = int(p2_max_hp * 0.02)
-                p2_hp = max(0, p2_hp - burn_dmg)
-                boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Dung nham hạt nhân thiêu đốt Boss Phase 2 gây **{burn_dmg:,} DMG** (2% Máu Tối Đa)! (Còn {boss_molten_ground_turns} lượt)"
+                raw_burn = int(p2_max_hp * 0.02)
+                actual_burn, p2_true_dmg_accum, cap_burn_msg = apply_raid_true_damage(raw_burn, p2_true_dmg_accum, p2_true_cap, "Bỏng Mặt Đất (Utsuho)")
+                if actual_burn > 0:
+                    p2_hp = max(0, p2_hp - actual_burn)
+                    boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Dung nham hạt nhân thiêu đốt Boss Phase 2 gây **{actual_burn:,} DMG** (2% Máu Tối Đa)! (Còn {boss_molten_ground_turns} lượt)"
+                else:
+                    boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Mặt đất vẫn sôi trào nhưng sát thương chuẩn đã bị triệt tiêu (0 DMG)! (Còn {boss_molten_ground_turns} lượt)"
+                if cap_burn_msg:
+                    boss_molten_log += f"\n{cap_burn_msg}"
 
             boss_stunned = False
             sakuya_stun_notif = None
@@ -2733,19 +2778,31 @@ async def execute_raid(channel, raid_data):
                 if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
                     if random.random() < 0.25:
                         c["flandre_used"] = True
-                        rip_dmg = int(p2_hp * 0.30)
-                        p2_hp = max(0, p2_hp - rip_dmg)
-                        c["total_dmg"] += rip_dmg
+                        raw_rip = int(p2_hp * 0.30)
+                        actual_rip, p2_true_dmg_accum, cap_rip_msg = apply_raid_true_damage(raw_rip, p2_true_dmg_accum, p2_true_cap, "Ripples of 495 Years (Flandre)")
+                        p2_hp = max(0, p2_hp - actual_rip)
+                        c["total_dmg"] += actual_rip
                         if not turn_image:
                             turn_image = EVOL_CONFIG[9]["skill_gif"]
-                        flandre_notif = f"🦇 **[Ace 2] [#09] Flandre Scarlet** ({c['username']}) kích hoạt **Ripples of 495 Years** (25%)! Xóa sổ **{rip_dmg:,} DMG (30% HP Boss Phase 2)** ngay lập tức!"
+                        if actual_rip > 0:
+                            flandre_notif = f"🦇 **[Ace 2] [#09] Flandre Scarlet** ({c['username']}) kích hoạt **Ripples of 495 Years** (25%)! Gây **{actual_rip:,} DMG** sát thương chuẩn lên Boss Phase 2!"
+                        else:
+                            flandre_notif = f"🦇 **[Ace 2] [#09] Flandre Scarlet** ({c['username']}) kích hoạt **Ripples of 495 Years** nhưng sát thương chuẩn đã chạm trần (0 DMG)!"
+                        if cap_rip_msg:
+                            flandre_notif += f"\n{cap_rip_msg}"
 
                 if ac["cid"] == 12 and ac["is_ace2"]:
-                    gungnir_bonus = int(p2_max_hp * 0.03)
-                    card_dmg += gungnir_bonus
+                    raw_gungnir = int(p2_max_hp * 0.03)
+                    actual_gungnir, p2_true_dmg_accum, cap_gungnir_msg = apply_raid_true_damage(raw_gungnir, p2_true_dmg_accum, p2_true_cap, "Thương Đỏ Gungnir (Remilia)")
+                    card_dmg += actual_gungnir
                     if not turn_image:
                         turn_image = EVOL_CONFIG[12]["skill_gif"]
-                    remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{gungnir_bonus:,} DMG** (3% Máu tối đa Boss Phase 2)!"
+                    if actual_gungnir > 0:
+                        remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{actual_gungnir:,} DMG** (3% Máu tối đa Boss Phase 2)!"
+                    else:
+                        remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir**: Sát thương chuẩn đã chạm trần (0 DMG)!"
+                    if cap_gungnir_msg:
+                        remilia_notif += f"\n{cap_gungnir_msg}"
 
                 if ac["cid"] == 20 and ac["is_ace2"] and not c.get("reisen_used"):
                     if random.random() < 0.25:
@@ -2777,10 +2834,19 @@ async def execute_raid(channel, raid_data):
                 if str(ac["cid"]).lower() == "t1":
                     if ac.get("is_ace2"):
                         _t1 = t1_ace2_attack(c, ac, p2_rounds, p2_max_hp, f"Boss Seiki Phase 2", is_boss=True)
-                        card_dmg += _t1["bonus"]
+                        if _t1["bonus"]:
+                            raw_cleave = _t1["bonus"]
+                            actual_cleave, p2_true_dmg_accum, cap_cleave_msg = apply_raid_true_damage(raw_cleave, p2_true_dmg_accum, p2_true_cap, "Cleave (Seiki Ace 2)")
+                            card_dmg += actual_cleave
+                            if cap_cleave_msg:
+                                _t1["logs"].append(cap_cleave_msg)
                         if _t1["direct"]:
-                            p2_hp = max(0, p2_hp - _t1["direct"])
-                            c["total_dmg"] += _t1["direct"]
+                            raw_bong = _t1["direct"]
+                            actual_bong, p2_true_dmg_accum, cap_bong_msg = apply_raid_true_damage(raw_bong, p2_true_dmg_accum, p2_true_cap, "Bóng Khái Niệm (Seiki Ace 2)")
+                            p2_hp = max(0, p2_hp - actual_bong)
+                            c["total_dmg"] += actual_bong
+                            if cap_bong_msg:
+                                _t1["logs"].append(cap_bong_msg)
                         if _t1.get("invul"):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p2_rounds
@@ -3117,6 +3183,10 @@ async def execute_raid(channel, raid_data):
     boss_freeze_debuff_turns = 0
     boss_molten_ground_turns = 0
 
+    # 🛡️ CƠ CHẾ CÂN BẰNG: GIỚI HẠN 50% SÁT THƯƠNG CHUẨN CỦA BOSS PHASE 2
+    p2_true_cap = int(p2_max_hp * 0.50)
+    p2_true_dmg_accum = 0
+
     while p2_hp > 0 and p2_rounds < max_rounds:
         active_combatants = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
         if not active_combatants:
@@ -3132,6 +3202,18 @@ async def execute_raid(channel, raid_data):
                 _mind_dmg = p2_power
                 p2_hp = max(0, p2_hp - _mind_dmg)
                 reisen_boss_log = f"🌀 **[Red Eye Mind Explosion]** Boss mất kiểm soát tâm trí và **tự gây {_mind_dmg:,} DMG** lên bản thân! (Còn {boss_mind_turns} lượt ảo giác)"
+
+        if boss_molten_ground_turns > 0:
+            boss_molten_ground_turns -= 1
+            raw_burn = int(p2_max_hp * 0.02)
+            actual_burn, p2_true_dmg_accum, cap_burn_msg = apply_raid_true_damage(raw_burn, p2_true_dmg_accum, p2_true_cap, "Bỏng Mặt Đất (Utsuho)")
+            if actual_burn > 0:
+                p2_hp = max(0, p2_hp - actual_burn)
+                boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Dung nham hạt nhân thiêu đốt Boss Phase 2 gây **{actual_burn:,} DMG** (2% Máu Tối Đa)! (Còn {boss_molten_ground_turns} lượt)"
+            else:
+                boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Mặt đất vẫn sôi trào nhưng sát thương chuẩn đã bị triệt tiêu (0 DMG)! (Còn {boss_molten_ground_turns} lượt)"
+            if cap_burn_msg:
+                boss_molten_log += f"\n{cap_burn_msg}"
 
         boss_stunned = False
         sakuya_stun_notif = None
@@ -3157,6 +3239,12 @@ async def execute_raid(channel, raid_data):
                     sakuya_stun_notif = f"⏳ **[Ace 2] [#17] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss Phase 2 bị **STUN**!"
                     break
 
+        if boss_freeze_debuff_turns > 0 and not boss_stunned:
+            boss_freeze_debuff_turns -= 1
+            if random.random() < 0.45:
+                boss_stunned = True
+                cirno_freeze_log = f"❄️ **[Perfect Freeze]** Boss Phase 2 bị đóng băng cứng đờ (45%), không thể hành động trong hiệp này! (Còn {boss_freeze_debuff_turns} lượt duy trì)"
+
         round_player_dmg = 0
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
@@ -3172,19 +3260,31 @@ async def execute_raid(channel, raid_data):
             if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
                 if random.random() < 0.25:
                     c["flandre_used"] = True
-                    rip_dmg = int(p2_hp * 0.30)
-                    p2_hp = max(0, p2_hp - rip_dmg)
-                    c["total_dmg"] += rip_dmg
+                    raw_rip = int(p2_hp * 0.30)
+                    actual_rip, p2_true_dmg_accum, cap_rip_msg = apply_raid_true_damage(raw_rip, p2_true_dmg_accum, p2_true_cap, "Ripples of 495 Years (Flandre)")
+                    p2_hp = max(0, p2_hp - actual_rip)
+                    c["total_dmg"] += actual_rip
                     if not turn_image:
                         turn_image = EVOL_CONFIG[9]["skill_gif"]
-                    flandre_notif = f"🦇 **[Ace 2] [#09] Flandre Scarlet** ({c['username']}) kích hoạt **Ripples of 495 Years** (25%)! Xóa sổ **{rip_dmg:,} DMG (30% HP Boss Phase 2)** ngay lập tức!"
+                    if actual_rip > 0:
+                        flandre_notif = f"🦇 **[Ace 2] [#09] Flandre Scarlet** ({c['username']}) kích hoạt **Ripples of 495 Years** (25%)! Gây **{actual_rip:,} DMG** sát thương chuẩn lên Boss Phase 2!"
+                    else:
+                        flandre_notif = f"🦇 **[Ace 2] [#09] Flandre Scarlet** ({c['username']}) kích hoạt **Ripples of 495 Years** nhưng sát thương chuẩn đã chạm trần (0 DMG)!"
+                    if cap_rip_msg:
+                        flandre_notif += f"\n{cap_rip_msg}"
 
             if ac["cid"] == 12 and ac["is_ace2"]:
-                gungnir_bonus = int(p2_max_hp * 0.03)
-                card_dmg += gungnir_bonus
+                raw_gungnir = int(p2_max_hp * 0.03)
+                actual_gungnir, p2_true_dmg_accum, cap_gungnir_msg = apply_raid_true_damage(raw_gungnir, p2_true_dmg_accum, p2_true_cap, "Thương Đỏ Gungnir (Remilia)")
+                card_dmg += actual_gungnir
                 if not turn_image:
                     turn_image = EVOL_CONFIG[12]["skill_gif"]
-                remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{gungnir_bonus:,} DMG** (3% Máu tối đa Boss Phase 2)!"
+                if actual_gungnir > 0:
+                    remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{actual_gungnir:,} DMG** (3% Máu tối đa Boss Phase 2)!"
+                else:
+                    remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir**: Sát thương chuẩn đã chạm trần (0 DMG)!"
+                if cap_gungnir_msg:
+                    remilia_notif += f"\n{cap_gungnir_msg}"
 
             if ac["cid"] == 20 and ac["is_ace2"] and not c.get("reisen_used"):
                 if random.random() < 0.25:
@@ -3194,14 +3294,41 @@ async def execute_raid(channel, raid_data):
                         turn_image = EVOL_CONFIG[20]["skill_gif"]
                     reisen_notif = f"🔴 **[Ace 2] [#20] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss Phase 2 bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
 
+            # ❄️ CIRNO ACE 2: Perfect freeze (40%)
+            if ac["cid"] == 22 and ac["is_ace2"] and not c.get("cirno_freeze_used"):
+                if random.random() < 0.40:
+                    c["cirno_freeze_used"] = True
+                    boss_freeze_debuff_turns = 2
+                    if not turn_image:
+                        turn_image = EVOL_CONFIG[22]["skill_gif"]
+                    cirno_notif = f"❄️ **[Ace 2] [#22] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss Phase 2: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
+
+            # ☢️ UTSUHO REIUJI ACE 2: Nuclear spell card (25%)
+            if ac["cid"] == 13 and ac["is_ace2"]:
+                if random.random() < 0.25:
+                    card_dmg = int(card_dmg * 3.0)
+                    boss_molten_ground_turns = 3
+                    if not turn_image:
+                        turn_image = EVOL_CONFIG[13]["skill_gif"]
+                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho Boss Phase 2 trong 3 turn)!"
+
             # ===== THẺ [#t1] SEIKI REIMU PHASE 2: Fantasy Seal 50% miễn thương =====
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
                     _t1 = t1_ace2_attack(c, ac, p2_rounds, p2_max_hp, f"Boss Reimu Phase 2", is_boss=True)
-                    card_dmg += _t1["bonus"]
+                    if _t1["bonus"]:
+                        raw_cleave = _t1["bonus"]
+                        actual_cleave, p2_true_dmg_accum, cap_cleave_msg = apply_raid_true_damage(raw_cleave, p2_true_dmg_accum, p2_true_cap, "Cleave (Seiki Ace 2)")
+                        card_dmg += actual_cleave
+                        if cap_cleave_msg:
+                            _t1["logs"].append(cap_cleave_msg)
                     if _t1["direct"]:
-                        p2_hp = max(0, p2_hp - _t1["direct"])
-                        c["total_dmg"] += _t1["direct"]
+                        raw_bong = _t1["direct"]
+                        actual_bong, p2_true_dmg_accum, cap_bong_msg = apply_raid_true_damage(raw_bong, p2_true_dmg_accum, p2_true_cap, "Bóng Khái Niệm (Seiki Ace 2)")
+                        p2_hp = max(0, p2_hp - actual_bong)
+                        c["total_dmg"] += actual_bong
+                        if cap_bong_msg:
+                            _t1["logs"].append(cap_bong_msg)
                     if _t1.get("invul"):
                         c["seiki_seal_used"] = True
                         c["seiki_used_turn"] = p2_rounds
