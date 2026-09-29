@@ -717,11 +717,17 @@ def get_default_player(user_id, username):
             "all_completed_claimed": False
         },
         "story": {
-            "current_stage": 0,       # 0: Mở đầu & Quest 10 battle, 1: Stage 1 Rumia, 2: Xong Stage 1
-            "battles_done": 0,        # Đếm số trận battle đã đánh
-            "quest_claimed": False,   # Cờ đã nhận 10 pull của Prologue
-            "rumia_boss_level": None, # Cấp độ cố định của Boss Rumia lúc mở quest
-            "stage1_completed": False
+            "current_stage": 0,          # 0: Prologue, 1: Stage 1 (Rumia), 2: Stage 2 (Cirno), 3: Xong Stage 2
+            "battles_done": 0,           # Đếm battle cho Prologue (10 trận)
+            "quest_claimed": False,      # Cờ nhận 10 pull Prologue
+            "rumia_boss_level": None,    # Level Rumia cố định
+            "stage1_completed": False,   # Hoàn thành Stage 1
+            # --- CÁC TRƯỜNG DÀNH CHO STAGE 2 MỚI ---
+            "stage2_quiz_passed": False, # Đã trả lời đúng câu đố Reimu hay chưa
+            "stage2_battles_done": 0,    # Đếm /battle cho Stage 2 (cần 6 trận)
+            "stage2_quest_claimed": False,# Cờ nhận 10 pull Stage 2
+            "cirno_boss_level": None,    # Cấp độ Cirno cố định lúc mở quest
+            "stage2_completed": False    # Hoàn thành Stage 2
         }
     }
 
@@ -971,12 +977,15 @@ def get_player(user_id, username="Visitor"):
         data["tutorial"]["pull_used"] = data["tutorial"].get("completed", False)
     if "story" not in data or not isinstance(data.get("story"), dict):
         data["story"] = {
-            "current_stage": 0,
-            "battles_done": 0,
-            "quest_claimed": False,
-            "rumia_boss_level": None,
-            "stage1_completed": False
+            "current_stage": 0, "battles_done": 0, "quest_claimed": False, "rumia_boss_level": None, "stage1_completed": False,
+            "stage2_quiz_passed": False, "stage2_battles_done": 0, "stage2_quest_claimed": False, "cirno_boss_level": None, "stage2_completed": False
         }
+    else:
+        data["story"].setdefault("stage2_quiz_passed", False)
+        data["story"].setdefault("stage2_battles_done", 0)
+        data["story"].setdefault("stage2_quest_claimed", False)
+        data["story"].setdefault("cirno_boss_level", None)
+        data["story"].setdefault("stage2_completed", False)
     
     # ===== HỆ THỐNG DI TRÚ ID - THÊM [#10] KOISHI (ID cũ 10-26 -> 11-27), CHỈ TỰ ĐỘNG CHẠY 1 LẦN =====
     if data.get("id_schema", 1) < 2:
@@ -3722,10 +3731,10 @@ async def on_message(message: discord.Message):
 # ==============================================================================
 def execute_single_pull(player):
     roll = random.random()
-    if roll < 0.001: chosen = random.choice(CARDS_BY_RANK["SS"])
-    elif roll < 0.031: chosen = random.choice(CARDS_BY_RANK["S"])
-    elif roll < 0.231: chosen = random.choice(CARDS_BY_RANK["A"])
-    elif roll < 0.531: chosen = random.choice(CARDS_BY_RANK["B"])
+    if roll < 0.0001: chosen = random.choice(CARDS_BY_RANK["SS"])
+    elif roll < 0.0301: chosen = random.choice(CARDS_BY_RANK["S"])
+    elif roll < 0.2301: chosen = random.choice(CARDS_BY_RANK["A"])
+    elif roll < 0.5301: chosen = random.choice(CARDS_BY_RANK["B"])
     else: chosen = random.choice(CARDS_BY_RANK["C"])
 
     cid_str = str(chosen["id"])
@@ -6098,6 +6107,8 @@ async def handle_battle(ctx_or_interaction):
     st = player.setdefault("story", {})
     if st.get("current_stage", 0) == 0:
         st["battles_done"] = st.get("battles_done", 0) + 1
+    elif st.get("current_stage", 0) == 2 and st.get("stage2_quiz_passed", False) and not st.get("stage2_quest_claimed", False):
+        st["stage2_battles_done"] = st.get("stage2_battles_done", 0) + 1
 
     dq_notifs = update_daily_quest_progress(player, "battle", 1)
 
@@ -7635,6 +7646,288 @@ class StoryBattleView(discord.ui.View):
         self.stop()
         await run_story_rumia_battle(interaction, self.user, self.player)
 
+# ==============================================================================
+# GIAO DIỆN CÂU ĐỐ STAGE 2: BỀ MẶT HỒ SƯƠNG MÙ (TỰ ĐỘNG XÁO TRỘN KHI SAI)
+# ==============================================================================
+class Stage2QuizView(discord.ui.View):
+    def __init__(self, user, player):
+        super().__init__(timeout=180)
+        self.user = user
+        self.player = player
+        self.options = [
+            {"id": "1", "label": "Là 1 tiên nữ", "correct": True, "reply": "Phải rồi, xem nào."},
+            {"id": "2", "label": "Là 1 con nhóc", "correct": False, "reply": "Ờ thì con nhóc rồi sao nữa?"},
+            {"id": "3", "label": "Là 1 con yêu quái", "correct": False, "reply": "Chịu chết."},
+            {"id": "4", "label": "Là vợ tôi?", "correct": False, "reply": "Gì cơ? Cậu muốn chết à?"}
+        ]
+        self.build_buttons()
+
+    def build_buttons(self):
+        self.clear_items()
+        random.shuffle(self.options)  # Xáo trộn thứ tự nút bấm
+        for opt in self.options:
+            btn = discord.ui.Button(
+                label=opt["label"],
+                style=discord.ButtonStyle.secondary,
+                custom_id=opt["id"]
+            )
+            btn.callback = self.make_callback(opt)
+            self.add_item(btn)
+
+    def make_callback(self, opt):
+        async def button_callback(interaction: discord.Interaction):
+            if interaction.user.id != self.user.id:
+                await interaction.response.send_message("❌ Đây không phải lượt trả lời của bạn!", ephemeral=True)
+                return
+
+            if opt["correct"]:
+                # TRẢ LỜI ĐÚNG -> Reimu: "Phải rồi, xem nào." -> Lưu cờ và chuyển tiếp!
+                st = self.player.setdefault("story", {})
+                st["stage2_quiz_passed"] = True
+                save_player(self.player)
+
+                embed_correct = discord.Embed(
+                    title="✨ TRẢ LỜI CHÍNH XÁC!",
+                    description=(
+                        f"⛩️ **Reimu:** *\"{opt['reply']}\"*\n\n"
+                        "🌫️ *Phía trước sương mù dày đặc, một luồng hàn khí thấu xương đang ập tới...*\n"
+                        "👉 Đang mở khóa nhiệm vụ tập luyện chuẩn bị nghênh chiến!"
+                    ),
+                    color=0x10B981
+                )
+                for child in self.children: child.disabled = True
+                await interaction.response.edit_message(embed=embed_correct, view=None)
+                await handle_story(interaction)
+            else:
+                # TRẢ LỜI SAI -> Reimu mắng tương ứng & TỰ ĐỘNG XÁO TRỘN CÂU TRẢ LỜI!
+                self.build_buttons()
+                embed_wrong = discord.Embed(
+                    title="❄️ BỀ MẶT HỒ SƯƠNG MÙ (LAKE SURFACE)",
+                    description=(
+                        "Khi tiến sâu vào lòng hồ để đến hòn đảo trung tâm, không khí trở nên lạnh giá.\n"
+                        "Reimu quay sang hỏi trợ thủ:\n"
+                        "**\"Thứ gì vậy?\"**\n\n"
+                        f"💢 **Reimu:** *\"{opt['reply']}\"*\n"
+                        "*(Đáp án chưa đúng! Các phương án bên dưới đã được xáo trộn lại, hãy chọn lại!)*"
+                    ),
+                    color=0xEF4444
+                )
+                await interaction.response.edit_message(embed=embed_wrong, view=self)
+        return button_callback
+
+# ==============================================================================
+# LIVE BATTLE STORY MODE - STAGE 2: CIRNO ACE 2 (BỀ MẶT HỒ SƯƠNG MÙ)
+# ==============================================================================
+class StoryCirnoBattleView(discord.ui.View):
+    def __init__(self, user, player):
+        super().__init__(timeout=180)
+        self.user = user
+        self.player = player
+
+    @discord.ui.button(label="⚔️ Xuất Trận Quyết Đấu Cirno Ace 2 (Live Battle)", style=discord.ButtonStyle.danger, emoji="💥")
+    async def fight_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+            return
+        for child in self.children: child.disabled = True
+        await interaction.response.edit_message(content="🔥 **Trận chiến bắt đầu nghênh chiến Cirno Ace 2!**", view=self)
+        self.stop()
+        await run_story_cirno_battle(interaction, self.user, self.player)
+
+async def run_story_cirno_battle(channel_or_interaction, user, player):
+    st = player.setdefault("story", {})
+    boss_lvl = st.get("cirno_boss_level") or player.get("level", 20)
+
+    # Cirno Ace 2: Power 1200, HP 6600 + Buff theo boss_lvl cố định lúc mở quest
+    boss_atk_buff = get_level_atk_buff(boss_lvl)
+    boss_hp_buff = get_level_hp_buff(boss_lvl)
+    cirno_max_hp = 6600 + boss_hp_buff
+    cirno_hp = cirno_max_hp
+    cirno_power = 1200 + boss_atk_buff
+
+    team_cids = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
+    if len(team_cids) < 3:
+        owned = get_owned_card_ids(player)
+        owned.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
+        for cid in owned:
+            if cid not in team_cids: team_cids.append(cid)
+            if len(team_cids) >= 3: break
+        player["team"] = team_cids
+        save_player(player)
+
+    p_buff_pwr = get_level_atk_buff(player["level"])
+    p_buff_hp = get_level_hp_buff(player["level"])
+
+    player_cards = []
+    for cid in team_cids[:3]:
+        c = CARDS_DATA[cid]
+        is_ace = is_card_ace2(player, cid)
+        ace_pwr = ACE_POWER_BUFF if is_ace else 0
+        ace_hp = ACE_HP_BUFF if is_ace else 0
+        card_pwr = c["power"] + p_buff_pwr + ace_pwr
+        card_hp = c["hp"] + p_buff_hp + ace_hp
+        player_cards.append({
+            "cid": cid,
+            "name": f"[Ace 2 ⭐⭐] #{c['id']} {c['name']}" if is_ace else f"#{c['id']} {c['name']}",
+            "power": card_pwr,
+            "max_hp": card_hp,
+            "current_hp": card_hp,
+            "is_ace2": is_ace
+        })
+
+    embed_init = discord.Embed(
+        title="⚔️ [LIVE BATTLE] STAGE 2: BỀ MẶT HỒ SƯƠNG MÙ - CIRNO ACE 2!",
+        description=(
+            f"👤 **Trợ thủ xuất trận:** {user.mention} (Lv.{player['level']})\n"
+            f"❄️ **Boss:** **[#22] Cirno (Đệ Nhất Băng Tiên - Ace 2 ⭐⭐)** (Lv.{boss_lvl})\n"
+            f"❤️ Máu Boss: `{get_hp_bar(cirno_hp, cirno_max_hp)}` **{cirno_hp:,}/{cirno_max_hp:,} HP**\n"
+            f"⚔️ Sức mạnh: **{cirno_power:,} DMG**\n"
+            f"🧊 Tuyệt kỹ: **Perfect Freeze** (40% đóng băng, 2 turn tiếp có 45% không thể đánh trả)"
+        ),
+        color=0x06B6D4
+    )
+    embed_init.set_thumbnail(url=CARDS_DATA[22]["image"])
+
+    if isinstance(channel_or_interaction, discord.Interaction):
+        if channel_or_interaction.response.is_done():
+            msg = await channel_or_interaction.followup.send(embed=embed_init)
+        else:
+            await channel_or_interaction.response.send_message(embed=embed_init)
+            msg = await channel_or_interaction.original_response()
+    else:
+        msg = await channel_or_interaction.send(embed=embed_init)
+
+    await asyncio.sleep(2.0)
+
+    p_idx = 0
+    rounds = 0
+    cirno_freeze_turns = 0
+    cirno_skill_used = False
+    sakuya_used, reimu_used, marisa_used = False, False, False
+
+    while cirno_hp > 0 and p_idx < len(player_cards) and rounds < 25:
+        rounds += 1
+        pc = player_cards[p_idx]
+        turn_image = None
+        turn_logs = []
+        card_dmg = pc["power"]
+        player_stunned = False
+
+        # Kiểm tra debuff đóng băng của Cirno lên người chơi
+        if cirno_freeze_turns > 0:
+            cirno_freeze_turns -= 1
+            if random.random() < 0.45:
+                player_stunned = True
+                turn_logs.append(f"🧊 **[Perfect Freeze]** {pc['name']} bị đóng băng cứng đờ (45%), không thể ra đòn!")
+
+        # Kỹ năng Ace 2 của player
+        if not player_stunned:
+            if pc["cid"] == 17 and pc["is_ace2"] and not sakuya_used:
+                if random.random() < 0.40:
+                    sakuya_used = True
+                    turn_image = EVOL_CONFIG[17]["skill_gif"]
+                    turn_logs.append("⏳ **[Ace 2] Sakuya** kích hoạt **Thời Gian Đóng Băng**! Cirno bị STUN mất lượt!")
+
+            if pc["cid"] == 18 and pc["is_ace2"] and not marisa_used:
+                if random.random() < 0.30:
+                    marisa_used = True
+                    card_dmg = int(card_dmg * 2.0)
+                    if not turn_image: turn_image = EVOL_CONFIG[18]["skill_gif"]
+                    turn_logs.append(f"🌟 **[Ace 2] Marisa** tung **Master Spark** (×2.0)! Giáng {card_dmg:,} DMG!")
+
+            cirno_hp = max(0, cirno_hp - card_dmg)
+            turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Cirno!")
+
+        if cirno_hp <= 0:
+            turn_logs.append("💥 **Cirno đã bị đánh văng xuống làn nước băng giá!**")
+        else:
+            if sakuya_used and rounds == 1:
+                turn_logs.append("❄️ Cirno bị đóng băng thời gian nên không thể phản công!")
+            else:
+                # Cirno Ace 2 dùng Perfect Freeze
+                if not cirno_skill_used and random.random() < 0.40:
+                    cirno_skill_used = True
+                    cirno_freeze_turns = 2
+                    turn_image = EVOL_CONFIG[22]["skill_gif"]
+                    turn_logs.append("❄️ **[Ace 2] Cirno** tung tuyệt kỹ **PERFECT FREEZE** (40%)! Đóng băng người chơi: trong 2 turn tiếp có 45% không thể đánh trả!")
+
+                invul = False
+                if pc["cid"] == 14 and pc["is_ace2"] and not reimu_used:
+                    if random.random() < 0.40:
+                        reimu_used = True
+                        invul = True
+                        if not turn_image: turn_image = EVOL_CONFIG[14]["skill_gif"]
+                        turn_logs.append("🛡️ **[Ace 2] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh**! Miễn sát thương!")
+                if not invul:
+                    pc["current_hp"] -= cirno_power
+                    turn_logs.append(f"🧊 **Cirno Ace 2** phóng bão băng cực mạnh gây **{cirno_power:,} DMG** lên {pc['name']}!")
+
+        if pc["current_hp"] <= 0:
+            pc["current_hp"] = 0
+            trade = pc["power"]
+            cirno_hp = max(0, cirno_hp - trade)
+            turn_logs.append(f"💥 [Đổi Sát Thương] {pc['name']} trước khi gục đã đổi **{trade:,} DMG** vào Cirno!")
+            p_idx += 1
+            if p_idx < len(player_cards):
+                turn_logs.append(f"💀 Đẩy **{player_cards[p_idx]['name']}** lên nghênh chiến!")
+
+        r_embed = discord.Embed(
+            title=f"⚔️ HIỆP {rounds} - QUYẾT ĐẤU CIRNO ACE 2 (STAGE 2)",
+            description=(
+                f"❤️ Máu Cirno: `{get_hp_bar(cirno_hp, cirno_max_hp)}` **{cirno_hp:,}/{cirno_max_hp:,} HP**\n\n"
+                + "\n".join(turn_logs)
+            ),
+            color=0x06B6D4 if cirno_hp > 0 else 0x10B981
+        )
+        if turn_image: r_embed.set_image(url=turn_image)
+        else: r_embed.set_thumbnail(url=CARDS_DATA[22]["image"])
+        try: await msg.edit(embed=r_embed)
+        except Exception: pass
+
+        if cirno_hp <= 0: break
+        await asyncio.sleep(2.0)
+
+    # Kết quả trận đấu Cirno
+    if cirno_hp <= 0:
+        inv = player.setdefault("inventory", {})
+        inv["22"] = inv.get("22", 0) + 30
+        if 22 not in player.get("unlocked_cards", []):
+            player.setdefault("unlocked_cards", []).append(22)
+        player["pull_tickets"] += 5.0
+        st["stage2_completed"] = True
+        st["current_stage"] = 3
+        save_player(player)
+
+        embed_win = discord.Embed(
+            title="🎉 CHIẾN THẮNG STAGE 2: BỀ MẶT HỒ SƯƠNG MÙ!",
+            description=(
+                "🌸 **\"Con nhóc hỗn xược bị Reimu và trợ thủ ném xuống hồ băng\"**\n\n"
+                "⛩️ **Reimu:** *\"Đúng là con bé phiền phức thích làm trò. Đường đến Hồng Ma Quán ở ngay phía trước rồi, mau đi thôi!\"*\n\n"
+                "🎁 **PHẦN THƯỞNG CHIẾN TÍCH STAGE 2:**\n"
+                f"• 🎴 **+30 Thẻ bài [#22] Cirno (Rank B)** cộng thẳng vào túi đồ! (Hiện có: `{inv['22']}` lá)\n"
+                f"• 🎟️ **+5 Lượt Pull Tích Lũy** (Tổng vé hiện có: `{player['pull_tickets']:.2f}` vé)!\n"
+                f"• 🏆 **Hoàn thành Stage 2!**"
+            ),
+            color=0x10B981
+        )
+        embed_win.set_image(url="https://c.tenor.com/gc4ws16CrTYAAAAC/reimu-touhou.gif")
+        embed_win.set_footer(text="Stage 2 Completed • Dùng /collection hoặc /evol để nâng cấp Cirno Ace 2")
+        try: await msg.edit(embed=embed_win)
+        except Exception: pass
+    else:
+        embed_loss = discord.Embed(
+            title="💀 THẤT BẠI TẠI STAGE 2!",
+            description=(
+                f"Đội hình của {user.mention} đã bị đóng băng cứng ngắc bởi Cirno Ace 2!\n"
+                f"Cirno còn lại: **{cirno_hp:,}/{cirno_max_hp:,} HP**\n\n"
+                "💡 *Gợi ý: Dùng /team sắp xếp thẻ có sát thương cao, nâng cấp bài và gõ lại /story để thử lại!*"
+            ),
+            color=0xEF4444
+        )
+        embed_loss.set_thumbnail(url=CARDS_DATA[22]["image"])
+        try: await msg.edit(embed=embed_loss)
+        except Exception: pass
+
 async def handle_story(ctx_or_interaction):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
@@ -7757,21 +8050,132 @@ async def handle_story(ctx_or_interaction):
         return
 
     # --------------------------------------------------------------------------
-    # GIAI ĐOẠN 2: ĐÃ HOÀN THÀNH STAGE 1
+    # GIAI ĐOẠN 2: STAGE 2 - BỀ MẶT HỒ SƯƠNG MÙ (CIRNO ACE 2)
+    # --------------------------------------------------------------------------
+    elif stage == 2:
+        # 1. KIỂM TRA CÂU ĐỐ (QUIZ) CỦA REIMU
+        if not st.get("stage2_quiz_passed", False):
+            embed_quiz = discord.Embed(
+                title="❄️ STAGE 2: BỀ MẶT HỒ SƯƠNG MÙ (LAKE SURFACE)",
+                description=(
+                    "Khi tiến sâu vào lòng hồ để đến hòn đảo trung tâm, không khí trở nên lạnh giá.\n\n"
+                    "Reimu quay sang hỏi trợ thủ:\n"
+                    "⛩️ **Reimu:** *\"Thứ gì vậy?\"*\n\n"
+                    "👉 **Hãy chọn câu trả lời đúng bên dưới để tiếp tục hành trình:**"
+                ),
+                color=0x06B6D4
+            )
+            embed_quiz.set_footer(text="Chọn phương án bên dưới • Nếu sai sẽ xáo trộn vị trí câu trả lời")
+            quiz_view = Stage2QuizView(user, player)
+            if isinstance(ctx_or_interaction, discord.Interaction):
+                await ctx_or_interaction.response.send_message(embed=embed_quiz, view=quiz_view)
+            else:
+                await ctx_or_interaction.send(embed=embed_quiz, view=quiz_view)
+            return
+
+        # 2. KIỂM TRA NHIỆM VỤ YÊU CẦU: 6 BATTLE & LEVEL 20
+        b_done = st.get("stage2_battles_done", 0)
+        u_lvl = player.get("level", 1)
+        req_b_ok = b_done >= 6
+        req_l_ok = u_lvl >= 20
+
+        if not st.get("stage2_quest_claimed", False):
+            if req_b_ok and req_l_ok:
+                st["stage2_quest_claimed"] = True
+                st["cirno_boss_level"] = u_lvl  # Cố định level của Cirno lúc mở quest
+                player["pull_tickets"] += 10.0
+                save_player(player)
+
+                embed_q_win = discord.Embed(
+                    title="🎉 HOÀN THÀNH NHIỆM VỤ TẬP LUYỆN STAGE 2!",
+                    description=(
+                        f"⛩️ **Reimu:** *\"Linh lực của ngươi đã vững vàng hơn rồi đấy trợ thủ! Mau xem kẻ tự xưng là 'mạnh nhất' này có bản lĩnh gì nào!\"*\n\n"
+                        "🎁 **PHẦN THƯỞNG HOÀN THÀNH:**\n"
+                        f"• 🎟️ **+10 Lượt Pull Tích Lũy** (Đã cộng vào tài khoản! Hiện có: `{player['pull_tickets']:.2f}` vé)\n"
+                        f"• ❄️ **Mở khóa đại chiến:** **Cirno Ace 2 ⭐⭐ (Đệ Nhất Băng Tiên)**!\n\n"
+                        "👉 **LƯU Ý:** Hãy gõ lại lệnh `/story` ngay bây giờ để tiến vào trận quyết đấu với Cirno!"
+                    ),
+                    color=0x10B981
+                )
+                embed_q_win.set_thumbnail(url=CARDS_DATA[22]["image"])
+                if isinstance(ctx_or_interaction, discord.Interaction):
+                    await ctx_or_interaction.response.send_message(embed=embed_q_win)
+                else:
+                    await ctx_or_interaction.send(embed=embed_q_win)
+                return
+
+            status_b = "✅ ĐÃ HOÀN THÀNH" if req_b_ok else f"🔴 Chưa đủ ({b_done}/6 trận)"
+            status_l = "✅ ĐÃ ĐẠT" if req_l_ok else f"🔴 Chưa đủ (Cấp hiện tại: Lv.{u_lvl}/20)"
+
+            embed_stage2_quest = discord.Embed(
+                title="🎯 NHIỆM VỤ YÊU CẦU STAGE 2: BỀ MẶT HỒ SƯƠNG MÙ",
+                description=(
+                    "Không khí băng giá bao trùm mặt hồ, bạn cần tập luyện để chịu được giá rét trước khi chạm trán tiên nữ băng!\n\n"
+                    f"• ⚔️ **Đánh `/battle` 6 lần:** **{status_b}**\n"
+                    f"• ⭐ **Level tối thiểu 20:** **{status_l}**\n\n"
+                    "🎁 **Phần thưởng:** **+10 Lượt Pull** 🎟️ & Mở khóa trận chiến với Cirno Ace 2!\n"
+                    "💡 *Sau khi hoàn thành đủ, gõ lại `/story` để nhận thưởng và khai màn đại chiến!*"
+                ),
+                color=0x0284C7
+            )
+            embed_stage2_quest.set_thumbnail(url=CARDS_DATA[22]["image"])
+            if isinstance(ctx_or_interaction, discord.Interaction):
+                await ctx_or_interaction.response.send_message(embed=embed_stage2_quest)
+            else:
+                await ctx_or_interaction.send(embed=embed_stage2_quest)
+            return
+
+        # 3. ĐÃ XONG QUEST -> HIỆN ĐỐI THOẠI CIRNO & NÚT CHIẾN ĐẤU
+        boss_lvl = st.get("cirno_boss_level") or player.get("level", 20)
+        dialogue_text = (
+            "• ❄️ **Cirno:** *\"Mục tiêu bị lạc đường đều là do tiên nữ làm cả đấy.\"*\n"
+            "• ⛩️ **Reimu:** *\"Ồ, vậy à? Thế cô có thể chỉ đường cho tôi? Như là có hòn đảo nào quanh đây không?\"*\n"
+            "• ❄️ **Cirno:** *\"Này, tỏ ra ngạc nhiên hơn chút đi chứ. Cô không thấy tôi là kẻ địch trước mắt sao?\"*\n"
+            "• ⛩️ **Reimu:** *\"Mục tiêu á? Bất ngờ thật đấy.\"*\n"
+            "• ❄️ **Cirno:** *\"Đừng có mà trêu ngươi ta!\"*\n"
+            "• ❄️ **Cirno:** *\"Ta sẽ đóng băng ngươi thành đá với chút thịt bò kiểu Anh luôn!\"*\n\n"
+            "⚠️ **CẢNH BÁO:** Cirno Ace 2 đã giải phóng toàn bộ ma pháp băng tuyết! Bấm nút bên dưới để bắt đầu trận Live Battle!"
+        )
+
+        embed_dialogue = discord.Embed(
+            title="🗺️ STAGE 2: BỀ MẶT HỒ SƯƠNG MÙ (LAKE SURFACE)",
+            description=dialogue_text,
+            color=0x06B6D4
+        )
+        embed_dialogue.set_thumbnail(url=CARDS_DATA[22]["image"])
+        embed_dialogue.add_field(
+            name="👺 Thông Số Boss Cirno Ace 2:",
+            value=f"• Sức mạnh: **1,200 DMG** | Máu: **6,600 HP**\n• Cấp độ Boss: **Lv.{boss_lvl}** (Cố định lúc mở quest)\n• Tuyệt kỹ: **Perfect Freeze** (40% đóng băng)",
+            inline=True
+        )
+        embed_dialogue.add_field(
+            name="🎁 Phần Thưởng Chiến Thắng:",
+            value="• 🎴 **30 Thẻ bài [#22] Cirno** cộng thẳng túi đồ\n• 🎟️ **+5 Lượt Pull** tích lũy",
+            inline=True
+        )
+        view = StoryCirnoBattleView(user, player)
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=embed_dialogue, view=view)
+        else:
+            await ctx_or_interaction.send(embed=embed_dialogue, view=view)
+        return
+
+    # --------------------------------------------------------------------------
+    # GIAI ĐOẠN 3: ĐÃ HOÀN THÀNH STAGE 2
     # --------------------------------------------------------------------------
     else:
         embed_cleared = discord.Embed(
-            title="🏆 BẠN ĐÃ VƯỢT QUA STAGE 1: HỒ SƯƠNG MÙ!",
+            title="🏆 BẠN ĐÃ VƯỢT QUA STAGE 2: BỀ MẶT HỒ SƯƠNG MÙ!",
             description=(
-                "🌸 **\"Rumia bị Reimu cùng trợ thủ cô đánh bay trong khi còn không biết gì về làn sương\"**\n\n"
+                "🌸 **\"Con nhóc hỗn xược bị Reimu và trợ thủ ném xuống hồ băng\"**\n\n"
                 f"👤 Trợ thủ: {user.mention}\n"
-                "✅ Bạn đã đánh bại Rumia, nhận **10 Thẻ bài ID 24 (Rumia)** và **10 Vé Pull**!\n\n"
-                "🌫️ *Phía trước mặt nước Hồ Sương Mù, làn sương đỏ ngày càng nồng nặc và buốt giá...*\n"
-                "🌟 **Stage 2 (Hồ Sương Mù Băng Giá - Cirno) sẽ sớm cập bến trong bản cập nhật kế tiếp!**"
+                "✅ Bạn đã hạ gục Cirno Ace 2, nhận **30 Thẻ bài ID 22 (Cirno)** và **5 Vé Pull**!\n\n"
+                "🏰 *Băng qua hồ nước đóng băng, cánh cổng Hồng Ma Quán sừng sững uy nghiêm đã hiện ra trước mắt...*\n"
+                "🌟 **Stage 3 (Cổng Hồng Ma Quán - Hong Meiling) sẽ sớm cập bến trong bản cập nhật kế tiếp!**"
             ),
             color=0x10B981
         )
-        embed_cleared.set_thumbnail(url=CARDS_DATA[24]["image"])
+        embed_cleared.set_thumbnail(url=CARDS_DATA[22]["image"])
         if isinstance(ctx_or_interaction, discord.Interaction):
             await ctx_or_interaction.response.send_message(embed=embed_cleared)
         else:
@@ -7783,7 +8187,7 @@ async def handle_help(ctx_or_interaction):
 
 **🌸 TÂN THỦ & NHIỆM VỤ:**
 • `/tutorial`: Khóa huấn luyện tân thủ (Thưởng 10 lượt pull, cấp 3 lượt pull 100% không trùng lá, không bao giờ ra thẻ SS, tiến trình 1 chiều).
-• `/story`: Chế độ cốt truyện Touhou Story Mode (Hồng Ma Dị Biến - Đánh 10 trận /battle & Lv.10 để mở khóa Stage 1: Hồ Sương Mù vs Rumia).
+• `/story`: Chế độ cốt truyện Touhou Story Mode (Hồng Ma Dị Biến - Stage 1: Rumia, Stage 2: Bề mặt Hồ Sương Mù vs Cirno Ace 2).
 • `/quest`: Xem 3/3 Nhiệm vụ Hàng Ngày (Nhận vé pull & thưởng lớn +10 lượt pull khi xong cả 3).
 
 **🎮 GACHA, TIẾN HÓA & TRAO ĐỔI:**
