@@ -165,6 +165,34 @@ def get_level_progress(total_xp: int):
     return lvl, xp_in_level, needed, ratio
 
 # ==============================================================================
+# HỆ THỐNG PRESTIGE (CHUYỂN SINH) & XP MULTIPLIER
+# ==============================================================================
+def get_prestige_info(current_p: int):
+    next_p = current_p + 1
+    if next_p == 1:
+        return {"next_p": 1, "req_lvl": 50, "pulls": 50.0, "tokens": 100, "xp_mult": 1.5}
+    elif next_p == 2:
+        return {"next_p": 2, "req_lvl": 100, "pulls": 50.0, "tokens": 150, "xp_mult": 2.0}
+    elif next_p == 3:
+        return {"next_p": 3, "req_lvl": 150, "pulls": 50.0, "tokens": 250, "xp_mult": 2.5}
+    elif next_p == 4:
+        return {"next_p": 4, "req_lvl": 200, "pulls": 50.0, "tokens": 300, "xp_mult": 3.0}
+    elif next_p == 5:
+        return {"next_p": 5, "req_lvl": 500, "pulls": 50.0, "tokens": 1000, "xp_mult": 4.0}
+    else:
+        # P6 trở đi: Cố định hệ số nhân XP ở mức 4.2, không tăng thêm.
+        return {"next_p": next_p, "req_lvl": 100, "pulls": 50.0, "tokens": 120, "xp_mult": 4.2}
+
+def get_prestige_xp_multiplier(prestige_lvl: int) -> float:
+    if prestige_lvl <= 0: return 1.0
+    elif prestige_lvl == 1: return 1.5
+    elif prestige_lvl == 2: return 2.0
+    elif prestige_lvl == 3: return 2.5
+    elif prestige_lvl == 4: return 3.0
+    elif prestige_lvl == 5: return 4.0
+    else: return 4.0 + (prestige_lvl - 5) * 0.2
+
+# ==============================================================================
 # 3. TOUHOU CARDS DATABASE (27 NHÂN VẬT CHUẨN THÔNG SỐ)
 # ==============================================================================
 CARDS_DATA = {
@@ -685,6 +713,8 @@ def get_default_player(user_id, username):
         "xp": 0,
         "level": 1,
         "pull_tickets": 0.0,
+        "tokens": 0,         # KHO ĐỒ TOKEN SHOP
+        "prestige": 0,       # CẤP ĐỘ PRESTIGE (CHUYỂN SINH)
         "free_pulls_date": "",
         "free_pulls_remaining": 5,
         "last_daily_date": "",
@@ -986,6 +1016,10 @@ def get_player(user_id, username="Visitor"):
         data["story"].setdefault("stage2_quest_claimed", False)
         data["story"].setdefault("cirno_boss_level", None)
         data["story"].setdefault("stage2_completed", False)
+    if "tokens" not in data:
+        data["tokens"] = 0
+    if "prestige" not in data:
+        data["prestige"] = 0
     
     # ===== HỆ THỐNG DI TRÚ ID - THÊM [#10] KOISHI (ID cũ 10-26 -> 11-27), CHỈ TỰ ĐỘNG CHẠY 1 LẦN =====
     if data.get("id_schema", 1) < 2:
@@ -4695,12 +4729,22 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
         else: await ctx_or_interaction.send(msg)
         return
 
+    # HIỂN THỊ CẤP ĐỘ PRESTIGE & BONUS XP TRONG /TEAM
+    p_lvl = player.get("prestige", 0)
+    p_tokens = player.get("tokens", 0)
+    p_mult = get_prestige_xp_multiplier(p_lvl)
+    prestige_str = f" 👑 **[Prestige {p_lvl}]** *(x{p_mult:g} XP Bonus)*" if p_lvl > 0 else ""
+
     filled_bars = int(ratio * 10)
     bar_str = "▰" * filled_bars + "▱" * (10 - filled_bars)
     embed = discord.Embed(title=f"🛡️ ĐỘI HÌNH CHIẾN ĐẤU - {user.display_name.upper()}", color=0x3B82F6)
     embed.add_field(
-        name=f"⭐ CẤP ĐỘ: Lv.{cur_lvl}",
-        value=f"• **Tiến trình:** `{bar_str}` **{xp_in_lvl}/{needed_xp} XP** (Cần {needed_xp - xp_in_lvl} XP để lên Lv.{cur_lvl + 1})\n• **Buff Lv.{cur_lvl}:** +{lvl_buff_pwr:,} Power & +{lvl_buff_hp:,} HP",
+        name=f"⭐ CẤP ĐỘ: Lv.{cur_lvl}{prestige_str}",
+        value=(
+            f"• **Tiến trình:** `{bar_str}` **{xp_in_lvl}/{needed_xp} XP** (Cần {needed_xp - xp_in_lvl} XP để lên Lv.{cur_lvl + 1})\n"
+            f"• **Buff Lv.{cur_lvl}:** +{lvl_buff_pwr:,} Power & +{lvl_buff_hp:,} HP\n"
+            f"• 💎 **Số dư Tokens:** **{p_tokens:,}** tokens *(Dùng `/token` để mở Token Shop)*"
+        ),
         inline=False
     )
     if not player["team"]:
@@ -6096,6 +6140,10 @@ async def handle_battle(ctx_or_interaction):
         gained_xp = random.randint(100, 200)
     else:
         gained_xp = random.randint(30, 50)
+
+    # ÁP DỤNG HỆ SỐ PRESTIGE XP BONUS
+    p_mult = get_prestige_xp_multiplier(player.get("prestige", 0))
+    gained_xp = int(gained_xp * p_mult)
 
     old_lvl = player["level"]
     player["last_battle_time"] = now
@@ -8181,6 +8229,288 @@ async def handle_story(ctx_or_interaction):
         else:
             await ctx_or_interaction.send(embed=embed_cleared)
 
+# ==============================================================================
+# LỆNH /PRESTIGE - CHUYỂN SINH RESET CẤP VÀ NHẬN VÉ PULL + TOKENS
+# ==============================================================================
+class PrestigeConfirmView(discord.ui.View):
+    def __init__(self, user, player, p_info):
+        super().__init__(timeout=90)
+        self.user = user
+        self.player = player
+        self.p_info = p_info
+
+    @discord.ui.button(label="👑 Xác Nhận Chuyển Sinh (Prestige)", style=discord.ButtonStyle.danger, emoji="⚡")
+    async def confirm_prestige(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên chuyển sinh của bạn!", ephemeral=True)
+            return
+
+        cur_lvl = self.player.get("level", 1)
+        req_lvl = self.p_info["req_lvl"]
+        if cur_lvl < req_lvl:
+            await interaction.response.send_message(f"❌ Bạn chưa đạt cấp độ yêu cầu! (Cần Lv.{req_lvl}, hiện tại Lv.{cur_lvl})", ephemeral=True)
+            return
+
+        for child in self.children: child.disabled = True
+        
+        old_p = self.player.get("prestige", 0)
+        new_p = self.p_info["next_p"]
+        old_tickets = self.player.get("pull_tickets", 0.0)
+
+        # RESET VỀ LEVEL 0 VÀ RESET TOÀN BỘ PULL TRONG KHO
+        self.player["prestige"] = new_p
+        self.player["xp"] = 0
+        self.player["level"] = 0
+        self.player["pull_tickets"] = float(self.p_info["pulls"])  # Reset pull cũ, nhận vé mới
+        self.player["tokens"] = self.player.get("tokens", 0) + self.p_info["tokens"]
+        save_player(self.player)
+
+        embed_success = discord.Embed(
+            title=f"🎉 CHUYỂN SINH THÀNH CÔNG: CHÀO MỪNG ĐẾN PRESTIGE {new_p}!",
+            description=(
+                f"⛩️ **Chúc mừng {self.user.mention} đã đạt cảnh giới Chuyển Sinh mới!**\n\n"
+                f"📊 **Cấp bậc mới:** `Prestige {new_p}` *(Trước: P{old_p})*\n"
+                f"🔄 **Đặt lại cấp độ:** `Lv.0 (0 XP)`\n"
+                f"🎟️ **Làm mới kho Pull:** Thu hồi {old_tickets:.1f} vé cũ ➔ Cấp mới **+{int(self.p_info['pulls'])} Vé Pull**!\n"
+                f"💎 **Thưởng Tokens:** **+{self.p_info['tokens']} Tokens** (Tổng kho: `{self.player['tokens']:,}` tokens)\n"
+                f"⚡ **Đặc quyền mới:** Nhận **x{self.p_info['xp_mult']:g} XP Bonus** vĩnh viễn trong mọi trận chiến!"
+            ),
+            color=0xF59E0B
+        )
+        embed_success.set_thumbnail(url="https://c.tenor.com/gc4ws16CrTYAAAAC/reimu-touhou.gif")
+        embed_success.set_footer(text="Dùng /token để mở Token Shop • Dùng /team để kiểm tra cấp độ mới")
+        await interaction.response.edit_message(content=None, embed=embed_success, view=self)
+        self.stop()
+
+    @discord.ui.button(label="❌ Hủy Bỏ", style=discord.ButtonStyle.secondary)
+    async def cancel_prestige(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên của bạn!", ephemeral=True)
+            return
+        for child in self.children: child.disabled = True
+        await interaction.response.edit_message(content="🚫 Đã hủy thao tác chuyển sinh.", view=self)
+        self.stop()
+
+async def handle_prestige(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    cur_p = player.get("prestige", 0)
+    cur_lvl = player.get("level", 1)
+    p_info = get_prestige_info(cur_p)
+
+    req_ok = cur_lvl >= p_info["req_lvl"]
+    status_str = "🟢 **ĐỦ ĐIỀU KIỆN CHUYỂN SINH!**" if req_ok else f"🔴 **Chưa đủ cấp độ** (Cần Lv.{p_info['req_lvl']:,} • Hiện tại: Lv.{cur_lvl})"
+
+    embed = discord.Embed(
+        title=f"👑 HỆ THỐNG CHUYỂN SINH - PRESTIGE (HIỆN TẠI: P{cur_p})",
+        description=(
+            f"👤 **Người chơi:** {user.mention} • Cấp hiện tại: **Lv.{cur_lvl}**\n"
+            f"⚡ **Quyền lợi hiện tại:** **x{get_prestige_xp_multiplier(cur_p):g} XP Bonus**\n"
+            f"💎 **Tokens sở hữu:** **{player.get('tokens', 0):,}** tokens\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🌟 **MỤC TIÊU TIẾP THEO: PRESTIGE {p_info['next_p']}**\n"
+            f"• 🎯 **Yêu cầu:** Đạt tối thiểu **Cấp {p_info['req_lvl']}**\n"
+            f"• 🎁 **Phần thưởng chuyển sinh:** **+{int(p_info['pulls'])} Vé Pull** 🎟️ & **+{p_info['tokens']} Tokens** 💎\n"
+            f"• ⚡ **Đặc quyền mở rộng:** Tăng hệ số nhận kinh nghiệm lên **x{p_info['xp_mult']:g} XP**!\n"
+            f"• ⚠️ **Lưu ý cốt lõi:** Khi chuyển sinh, cấp độ sẽ đặt lại về **Lv.0** và **toàn bộ vé pull tích lũy cũ sẽ được làm mới** thành số vé thưởng mới!\n"
+            f"• 📌 **Trạng thái:** {status_str}"
+        ),
+        color=0xF59E0B if req_ok else 0x3B82F6
+    )
+    embed.set_footer(text="Bấm 'Xác Nhận Chuyển Sinh' bên dưới để tiến hành!")
+    view = PrestigeConfirmView(user, player, p_info)
+    if not req_ok:
+        view.children[0].disabled = True
+
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed, view=view)
+    else:
+        await ctx_or_interaction.send(embed=embed, view=view)
+
+# ==============================================================================
+# HỆ THỐNG TOKEN SHOP - ĐỀN HAKUREI HOA ANH ĐÀO
+# ==============================================================================
+TOKEN_SHOP_BG = "https://media.discordapp.net/attachments/1549063334781911070/1554437905815048273/images.png?ex=6abce29c&is=6abb911c&hm=59c42e4441d97ef95d91b78093ac8bedb732a4d05addbc4eb3f78d46dbf31129&=&format=webp&quality=lossless"
+
+class TokenBuyCardModal(discord.ui.Modal):
+    def __init__(self, player, rank_target: str, cost_per_card: int):
+        super().__init__(title=f"Đổi Thẻ Bậc {rank_target} ({cost_per_card} Token/Thẻ)")
+        self.player = player
+        self.rank_target = rank_target
+        self.cost_per_card = cost_per_card
+
+        self.card_input = discord.ui.TextInput(
+            label="ID Thẻ hoặc Tên Nhân Vật:",
+            placeholder="Ví dụ: 1 (Hecatia) hoặc 9 (Flandre)...",
+            required=True,
+            min_length=1,
+            max_length=30
+        )
+        self.qty_input = discord.ui.TextInput(
+            label="Số lượng thẻ muốn mua:",
+            placeholder="Nhập số lượng (Ví dụ: 1, 2...)",
+            default="1",
+            required=True,
+            min_length=1,
+            max_length=3
+        )
+        self.add_item(self.card_input)
+        self.add_item(self.qty_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        raw_cid = self.card_input.value.strip()
+        cid = normalize_card_id(raw_cid)
+        if not cid or cid not in CARDS_DATA:
+            await interaction.response.send_message(f"❌ Không tìm thấy thẻ bài tương ứng với '{raw_cid}'!", ephemeral=True)
+            return
+
+        card = CARDS_DATA[cid]
+        if card["rank"] != self.rank_target:
+            await interaction.response.send_message(f"❌ Thẻ [{card['rank']}] #{card['id']} {card['name']} không thuộc bậc {self.rank_target}!", ephemeral=True)
+            return
+
+        try:
+            qty = int(self.qty_input.value.strip())
+            if qty <= 0: raise ValueError
+        except ValueError:
+            await interaction.response.send_message("❌ Số lượng thẻ phải là số nguyên dương!", ephemeral=True)
+            return
+
+        total_cost = self.cost_per_card * qty
+        cur_tokens = self.player.get("tokens", 0)
+        if cur_tokens < total_cost:
+            await interaction.response.send_message(f"❌ Bạn không đủ tokens! (Cần {total_cost:,} tokens, hiện có {cur_tokens:,} tokens)", ephemeral=True)
+            return
+
+        # Trừ tokens và cộng thẻ
+        self.player["tokens"] = cur_tokens - total_cost
+        cid_str = str(card["id"])
+        inv = self.player.setdefault("inventory", {})
+        inv[cid_str] = inv.get(cid_str, 0) + qty
+        if card["id"] not in self.player.get("unlocked_cards", []):
+            self.player.setdefault("unlocked_cards", []).append(card["id"])
+        save_player(self.player)
+
+        embed = discord.Embed(
+            title="🌸 GIAO DỊCH TOKEN SHOP THÀNH CÔNG!",
+            description=(
+                f"✨ Đã đổi thành công **+{qty}x [{card['rank']}] #{card['id']:02d} {card['name']}**!\n"
+                f"📉 **Chi phí:** -{total_cost:,} Tokens\n"
+                f"💎 **Số dư Tokens còn lại:** **{self.player['tokens']:,}** tokens\n"
+                f"🎒 **Túi đồ hiện có:** `{inv[cid_str]}` lá"
+            ),
+            color=0x10B981
+        )
+        embed.set_thumbnail(url=card["image"])
+        await interaction.response.send_message(embed=embed)
+
+class TokenRandomModal(discord.ui.Modal):
+    def __init__(self, player):
+        super().__init__(title="Quay Random Thẻ SS-C (10 Token/Lượt)")
+        self.player = player
+        self.qty_input = discord.ui.TextInput(
+            label="Số lượt quay random (1 - 50):",
+            placeholder="Nhập số lượt...",
+            default="1",
+            required=True,
+            min_length=1,
+            max_length=2
+        )
+        self.add_item(self.qty_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            qty = int(self.qty_input.value.strip())
+            if qty <= 0 or qty > 50: raise ValueError
+        except ValueError:
+            await interaction.response.send_message("❌ Số lượt quay phải từ 1 đến 50!", ephemeral=True)
+            return
+
+        total_cost = 10 * qty
+        cur_tokens = self.player.get("tokens", 0)
+        if cur_tokens < total_cost:
+            await interaction.response.send_message(f"❌ Bạn không đủ tokens! (Cần {total_cost:,} tokens, hiện có {cur_tokens:,} tokens)", ephemeral=True)
+            return
+
+        self.player["tokens"] = cur_tokens - total_cost
+        results = []
+        last_card = None
+
+        for _ in range(qty):
+            card, is_dup, conv, unlocked_from_lock = execute_single_pull(self.player)
+            last_card = card
+            dup_txt = f" *(Trùng! +{conv:.1f} vé)*" if is_dup else " ✨ **[MỚI]**"
+            results.append(f"• `[#{card['id']:02d}]` **[{card['rank']}] {card['name']}**{dup_txt}")
+
+        save_player(self.player)
+        embed = discord.Embed(
+            title=f"🎲 KẾT QUẢ QUAY RANDOM TỪ TOKEN SHOP ({qty} LƯỢT)",
+            description="\n".join(results[:25]) + ("\n*(Còn nữa...)*" if len(results) > 25 else ""),
+            color=0x8B5CF6
+        )
+        if last_card: embed.set_thumbnail(url=last_card["image"])
+        embed.set_footer(text=f"Tiêu hao: {total_cost} Tokens • Số dư còn lại: {self.player['tokens']:,} Tokens")
+        await interaction.response.send_message(embed=embed)
+
+class TokenShopView(discord.ui.View):
+    def __init__(self, user, player):
+        super().__init__(timeout=180)
+        self.user = user
+        self.player = player
+
+    @discord.ui.button(label="👑 Đổi Thẻ SS (50 Token)", style=discord.ButtonStyle.danger, emoji="💎", row=0)
+    async def btn_buy_ss(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên shop của bạn!", ephemeral=True)
+            return
+        await interaction.response.send_modal(TokenBuyCardModal(self.player, "SS", 50))
+
+    @discord.ui.button(label="⭐ Mua Thẻ S (20 Token)", style=discord.ButtonStyle.primary, emoji="✨", row=0)
+    async def btn_buy_s(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên shop của bạn!", ephemeral=True)
+            return
+        await interaction.response.send_modal(TokenBuyCardModal(self.player, "S", 20))
+
+    @discord.ui.button(label="🎲 Random Thẻ SS-C (10 Token)", style=discord.ButtonStyle.success, emoji="📦", row=0)
+    async def btn_buy_rand(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên shop của bạn!", ephemeral=True)
+            return
+        await interaction.response.send_modal(TokenRandomModal(self.player))
+
+async def handle_token_shop(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    tokens = player.get("tokens", 0)
+    prestige = player.get("prestige", 0)
+
+    embed = discord.Embed(
+        title="🌸 CỬA HÀNG TOKEN ĐỀN HAKUREI (HAKUREI TOKEN SHOP)",
+        description=(
+            f"Chào mừng **{user.display_name}** ghé thăm cửa hàng đền Hakurei mùa hoa anh nở rộ!\n\n"
+            f"💎 **Số dư Tokens hiện có:** **`{tokens:,}` Tokens**\n"
+            f"👑 **Cấp bậc Chuyển Sinh:** `Prestige {prestige}` *(Dùng `/prestige` để cày thêm Tokens)*\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🏷️ **DANH MỤC VẬT PHẨM ĐỔI THƯỞNG:**\n\n"
+            f"👑 **1. Đổi Thẻ Chỉ Định Bậc SS — 50 Tokens / 1 Lá**\n"
+            f"   └ *Chọn 1 trong 4 vị thần: Hecatia (#1), Junko (#2), Okina (#3), Yukari (#4)*\n\n"
+            f"⭐ **2. Mua Thẻ Chỉ Định Bậc S — 20 Tokens / 1 Lá**\n"
+            f"   └ *Chọn Suika (#5), Eirin (#6), Yuuka (#7), Yuyuko (#8), Flandre (#9), Koishi (#10), Kaguya (#11), Remilia (#12), Utsuho (#13)*\n\n"
+            f"🎲 **3. Rương May Mắn Random SS-C — 10 Tokens / 1 Lượt**\n"
+            f"   └ *Quay ngẫu nhiên 1 lá bài bất kỳ từ bậc SS đến C (có cộng dồn vé nếu trùng)*\n"
+        ),
+        color=0xF43F5E
+    )
+    embed.set_image(url=TOKEN_SHOP_BG)
+    embed.set_footer(text="Bấm các nút bên dưới để mở bảng nhập số lượng và ID thẻ muốn đổi!")
+    view = TokenShopView(user, player)
+
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed, view=view)
+    else:
+        await ctx_or_interaction.send(embed=embed, view=view)
+
 async def handle_help(ctx_or_interaction):
     desc = """
 ⛩️ **HAKUREI REIMU DISCORD BOT - BẢN ĐỒ LỆNH**
@@ -8188,6 +8518,8 @@ async def handle_help(ctx_or_interaction):
 **🌸 TÂN THỦ & NHIỆM VỤ:**
 • `/tutorial`: Khóa huấn luyện tân thủ (Thưởng 10 lượt pull, cấp 3 lượt pull 100% không trùng lá, không bao giờ ra thẻ SS, tiến trình 1 chiều).
 • `/story`: Chế độ cốt truyện Touhou Story Mode (Hồng Ma Dị Biến - Stage 1: Rumia, Stage 2: Bề mặt Hồ Sương Mù vs Cirno Ace 2).
+• `/prestige`: Hệ thống chuyển sinh (Reset Lv.0, nhận vé pull, tokens và nhân kinh nghiệm x1.5 - x4.2 XP).
+• `/token`: Mở Token Shop đền Hakurei (Đổi thẻ SS, S hoặc quay ngẫu nhiên bằng tokens).
 • `/quest`: Xem 3/3 Nhiệm vụ Hàng Ngày (Nhận vé pull & thưởng lớn +10 lượt pull khi xong cả 3).
 
 **🎮 GACHA, TIẾN HÓA & TRAO ĐỔI:**
@@ -8257,6 +8589,66 @@ async def slash_story(interaction: discord.Interaction):
 @bot.command(name="story", aliases=["cotruyen"])
 async def prefix_story(ctx):
     await handle_story(ctx)
+
+# ==============================================================================
+# ĐĂNG KÝ SLASH COMMANDS & PREFIX CHO PRESTIGE VÀ TOKEN SHOP
+# ==============================================================================
+@bot.tree.command(name="prestige", description="Hệ thống chuyển sinh: Reset về Lv.0, làm mới Pull, nhận Tokens & x1.5-4x XP")
+async def slash_prestige(interaction: discord.Interaction):
+    await handle_prestige(interaction)
+
+@bot.command(name="prestige", aliases=["cs", "chuyensinh"])
+async def prefix_prestige(ctx):
+    await handle_prestige(ctx)
+
+@bot.tree.command(name="token", description="Kiểm tra số dư Tokens và mở Cửa Hàng Đổi Thẻ SS/S/Random đền Hakurei")
+async def slash_token(interaction: discord.Interaction):
+    await handle_token_shop(interaction)
+
+@bot.command(name="token", aliases=["tokens", "shop"])
+async def prefix_token(ctx):
+    await handle_token_shop(ctx)
+
+@bot.tree.command(name="admin_token_add", description="[CHỦ BOT DUY NHẤT] Cấp Tokens cho người chơi hoặc bản thân")
+@app_commands.describe(so_luong="Số lượng tokens cần cấp", nguoi_dung="Người nhận tokens (để trống nếu tự cấp)")
+async def slash_admin_token_add(interaction: discord.Interaction, so_luong: int, nguoi_dung: Optional[discord.Member] = None):
+    if not is_authorized_admin(interaction.user.id):
+        await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Lệnh chỉ dành cho chủ sở hữu bot.", ephemeral=True)
+        return
+    if so_luong <= 0:
+        await interaction.response.send_message("❌ Số lượng tokens phải lớn hơn 0!", ephemeral=True)
+        return
+
+    target = nguoi_dung or interaction.user
+    target_player = get_player(target.id, target.display_name)
+    target_player["tokens"] = target_player.get("tokens", 0) + so_luong
+    save_player(target_player)
+
+    embed = discord.Embed(
+        title="💎 [ADMIN] ĐÃ CẤP TOKENS THÀNH CÔNG!",
+        description=(
+            f"👑 **Admin:** {interaction.user.mention}\n"
+            f"👤 **Người nhận:** {target.mention}\n"
+            f"➕ **Số lượng cấp:** **+{so_luong:,} Tokens**\n"
+            f"💰 **Tổng số dư mới:** **{target_player['tokens']:,}** tokens"
+        ),
+        color=0x10B981
+    )
+    await interaction.response.send_message(embed=embed)
+
+@bot.command(name="admin_token_add", aliases=["addtoken", "givetoken"])
+async def prefix_admin_token_add(ctx, so_luong: int, member: Optional[discord.Member] = None):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send("⛔ Từ chối quyền truy cập! Lệnh dành riêng cho chủ bot.")
+        return
+    if so_luong <= 0:
+        await ctx.send("❌ Số lượng tokens phải lớn hơn 0!")
+        return
+    target = member or ctx.author
+    target_player = get_player(target.id, target.display_name)
+    target_player["tokens"] = target_player.get("tokens", 0) + so_luong
+    save_player(target_player)
+    await ctx.send(f"💎 Đã cấp **+{so_luong:,} Tokens** cho {target.mention} (Tổng: {target_player['tokens']:,} tokens)!")
 
 @bot.tree.command(name="wiki", description="Tra cứu nhân vật Touhou")
 @app_commands.describe(nhan_vat="Tên nhân vật Touhou")
