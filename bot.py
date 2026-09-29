@@ -125,44 +125,28 @@ def run_web_server():
 threading.Thread(target=run_web_server, daemon=True).start()
 
 # ==============================================================================
-# 2. HỆ THỐNG CẤP ĐỘ & XP MỚI (+50 XP MỖI CẤP, MỞ GIỚI HẠN THEO PRESTIGE)
+# 2. HỆ THỐNG CẤP ĐỘ & XP MỚI (+50 XP MỖI CẤP, CHUẨN XÁC TUYỆT ĐỐI)
 # ==============================================================================
-DEFAULT_MAX_LEVEL = 100
-
-def get_max_level(prestige: int = 0) -> int:
-    """Trả về giới hạn cấp tối đa dựa theo cấp chuyển sinh (Prestige)"""
-    if prestige <= 1:
-        return 100  # P0 và P1 không mở thêm lv (tối đa 100)
-    elif prestige == 2:
-        return 150  # P2 mở giới hạn lên 150 (bằng điều kiện lên P3)
-    elif prestige == 3:
-        return 200  # P3 mở giới hạn lên 200 (bằng điều kiện lên P4)
-    elif prestige == 4:
-        return 500  # P4 mở giới hạn lên 500 (bằng điều kiện lên P5)
-    else:
-        # P5 trở đi giữ tối thiểu 500 hoặc bằng điều kiện của Prestige đó
-        return max(500, get_prestige_info(prestige).get("req_lvl", 500))
+MAX_LEVEL = 100
 
 def get_xp_needed_for_level(level: int) -> int:
     if level < 1:
         level = 1
     return 100 + (level - 1) * 50
 
-def get_total_xp_for_level(level: int, max_lvl: int = None) -> int:
+def get_total_xp_for_level(level: int) -> int:
     if level <= 1:
         return 0
-    if max_lvl is not None and level > max_lvl:
-        level = max_lvl
+    if level > MAX_LEVEL:
+        level = MAX_LEVEL
     n = level - 1
     return 25 * n * (n + 3)
 
-def calculate_level_from_xp(total_xp: int, prestige_or_player: Union[int, dict] = 0) -> int:
+def calculate_level_from_xp(total_xp: int) -> int:
     if total_xp <= 0:
         return 1
-    p_lvl = prestige_or_player.get("prestige", 0) if isinstance(prestige_or_player, dict) else int(prestige_or_player or 0)
-    max_lvl = get_max_level(p_lvl)
     lvl = 1
-    while lvl < max_lvl:
+    while lvl < MAX_LEVEL:
         next_threshold = get_total_xp_for_level(lvl + 1)
         if total_xp >= next_threshold:
             lvl += 1
@@ -170,11 +154,9 @@ def calculate_level_from_xp(total_xp: int, prestige_or_player: Union[int, dict] 
             break
     return lvl
 
-def get_level_progress(total_xp: int, prestige_or_player: Union[int, dict] = 0):
-    p_lvl = prestige_or_player.get("prestige", 0) if isinstance(prestige_or_player, dict) else int(prestige_or_player or 0)
-    max_lvl = get_max_level(p_lvl)
-    lvl = calculate_level_from_xp(total_xp, p_lvl)
-    if lvl >= max_lvl:
+def get_level_progress(total_xp: int):
+    lvl = calculate_level_from_xp(total_xp)
+    if lvl >= MAX_LEVEL:
         return lvl, 0, 0, 1.0
     base_xp = get_total_xp_for_level(lvl)
     xp_in_level = max(0, total_xp - base_xp)
@@ -304,11 +286,11 @@ CARDS_DATA["t2"] = CARDS_DATA["t2"]
 # GIF HOẠT ẢNH TUYỆT KỸ THẺ [T] #t1 SEIKI (dùng chung cho Raid, Battle & PvP)
 # ==============================================================================
 T1_SKILL_CONFIGS = CARDS_DATA["t1"]["skills"]
-T1_SEAL_GIF = T1_SKILL_CONFIGS["fantasy_seal"]["gif"]
-T1_SPARK_GIF = T1_SKILL_CONFIGS["master_spark"]["gif"]
-T1_HEAL_GIF = T1_SKILL_CONFIGS["medicine_sign"]["gif"]
-T2_PASSIVE_GIF = CARDS_DATA["t2"]["passive"]["gif"]
-T2_THOAI_MA_GIF = CARDS_DATA["t2"]["skills"]["thoai_ma_kiem"]["gif"]
+T1_SEAL_GIF = T1_SKILL_CONFIGS["fantasy_seal"]["gif"]    # https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/e7/fe/JOKpsPyd.gif
+T1_SPARK_GIF = T1_SKILL_CONFIGS["master_spark"]["gif"]   # https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/f4/32/3xCGLkOw.gif
+T1_HEAL_GIF = T1_SKILL_CONFIGS["medicine_sign"]["gif"]   # https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/8d/12/mwVdJaFQsefrsAuNS.gif
+T2_PASSIVE_GIF = CARDS_DATA["t2"]["passive"]["gif"]      # https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/12/48/UtccMb4buubM.gif
+T2_THOAI_MA_GIF = CARDS_DATA["t2"]["skills"]["thoai_ma_kiem"]["gif"] # https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/fd/9a/evpBLiollsxMmiF1wK18.gif
 
 CARDS_BY_RANK = {
     "SS": [c for c in CARDS_DATA.values() if c["rank"] == "SS"],
@@ -326,18 +308,18 @@ BOSS_CONFIG = {
     "name": "Reimu Dị Hình - Phase 1",
     "desc": "Đó không phải Reimu, sẵn sàng giao chiến!",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1549077421624401971/content.png?ex=6aa96245&is=6aa810c5&hm=c0248e497ee5afeed898b457736b39fc71368af3be1630f1cd59b5609c99fbeb&=&format=webp&quality=lossless&width=351&height=512",
-    "hp": 30000,
-    "power": 3000,
+    "hp": 30000,      # Phase 1: 30,000 HP
+    "power": 3000,    # Phase 1: 3,000 DMG đánh thường chia đều
     "max_players": 6,
-    "cooldown_seconds": 15 * 60
+    "cooldown_seconds": 15 * 60  # 15 phút (900s)
 }
 
 BOSS_PHASE2_CONFIG = {
     "name": "Reimu Dị Hình - Thức Tỉnh (Phase 2)",
     "desc": "Dị hình đang biến đổi, bùa chú của chúng ta đang rung động dữ dội!",
     "image": "https://media.discordapp.net/attachments/1549063334781911070/1549275653239472148/artwork.png?ex=6aaa1ae3&is=6aa8c963&hm=7187404882d4b8b0fcef91ef64aee3c73711924e971fb7b28b6fb3bf394a47d3&=&format=webp&quality=lossless&width=640&height=336",
-    "hp": 50000,
-    "power": 10000
+    "hp": 50000,      # Phase 2: 50,000 HP
+    "power": 10000    # Phase 2: 10,000 DMG đánh thường chia đều
 }
 
 # ==============================================================================
@@ -349,9 +331,9 @@ SEIKI_BOSS_CONFIG = {
     "desc": "Đó không phải cha ta!",
     "reimu_quote": "Đó không phải cha ta! Dị khí ngập tràn, người này đã bị tà niệm nuốt chửng!",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1550376898641788938/content.png?ex=6aae1c81&is=6aaccb01&hm=d3c3c9d6c077931869c7f11e64fb4de796b79fecc3a9210008008fbc15a25e5f&=&format=webp&quality=lossless&width=643&height=1024",
-    "hp": 30000,
-    "power": 3000,
-    "passive_regen_pct": 0.015,
+    "hp": 30000,      # 30,000 HP
+    "power": 3000,    # 3,000 DMG chia đều tiền tuyến
+    "passive_regen_pct": 0.015,  # Hồi 1.5% HP tối đa mỗi lượt (450 HP)
     "max_players": 6,
     "cooldown_seconds": 15 * 60,
     "skills": {
@@ -390,8 +372,8 @@ SEIKI_BOSS_PHASE2_CONFIG = {
     "desc": "Dị tà ma lực bùng nổ, thân xác dị hình đang thức tỉnh hoàn toàn!",
     "reimu_quote": "Không thể nào... dị khí còn mạnh gấp bội! Mọi người cẩn thận, ngài ấy đã thức tỉnh rồi!",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1550376618160169012/content.png?ex=6ab0bf3e&is=6aaf6dbe&hm=eb9bf84552e0b67e8e03f8ac403af2034904b4b48330bd8cd220f39feb3c11a2&=&format=webp&quality=lossless&width=357&height=512",
-    "hp": 90000,
-    "power": 10000,
+    "hp": 90000,      # Phase 2: 90,000 HP
+    "power": 10000,   # Phase 2: 10,000 DMG đánh thường chia đều tiền tuyến
     "skills": {
         "nuclear_spell": {
             "name": "Nuclear Spell Card",
@@ -419,10 +401,10 @@ MAHORAGA_BOSS_CONFIG = {
     "desc": "Thần tướng thuật thức tối thượng - kẻ thích nghi với mọi hiện tượng. Mọi đòn đánh chỉ khiến nó trở nên cứng cáp hơn!",
     "reimu_quote": "Cái thứ yêu quái nào vậy, cái thằng nhóc đầu nhím kia vừa triệu hồi cái gì vậy?",
     "image": "https://kimi-web-img.kimi.ai/img/gbaike-image.cdn.bcebos.com/84b485484cf2279a8a3412643b2a1c4f99bf0cd2",
-    "hp": 90000,
-    "power": 6000,
-    "passive_regen_pct": 0.03,
-    "passive_adapt_pct": 0.03,
+    "hp": 90000,      # 90,000 HP
+    "power": 6000,    # 6,000 DMG đánh thường chia đều tiền tuyến
+    "passive_regen_pct": 0.03,   # The True Adapt: Hồi 3% HP tối đa mỗi turn (2,700 HP)
+    "passive_adapt_pct": 0.03,   # The True Adapt: Giảm 3% ST phải nhận mỗi turn (cộng dồn, tối đa 90%)
     "max_players": 6,
     "cooldown_seconds": 15 * 60,
     "skills": {
@@ -578,20 +560,20 @@ EVOL_CONFIG["13"] = EVOL_CONFIG[13]
 # ACE 2 MỚI: [#t1] SEIKI ĐỆ NHẤT PHÁP SƯ (BỘ KỸ NĂNG THAY ĐỔI HOÀN TOÀN)
 # ==============================================================================
 T1_ACE2_CONFIG = {
-    "required_ace2": [18, 14, 17],
-    "required_shards": 10,
-    "cleave_pct": 0.02,
+    "required_ace2": [18, 14, 17],   # [#18] Marisa, [#14] Reimu, [#17] Sakuya phải đạt Ace 2
+    "required_shards": 10,           # Chi phí: 10 Mảnh Seiki
+    "cleave_pct": 0.02,              # Clave (thụ động 100%): đánh thường +2% Máu Tối Đa mục tiêu
     "gif_cleave": "https://static2.klipy.com/ii/9ed0121ed465c12e1f3dda331ed33f0e/9b/b3/mOb3k5Ux7HWC.gif",
     "medicine_sign": {
-        "chance": 0.35, "heal_pct": 0.40,
+        "chance": 0.35, "heal_pct": 0.40,  # 35% kích hoạt, hồi 40% Máu tối đa bản thân, 1 lần/trận
         "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/8d/12/mwVdJaFQsefrsAuNS.gif"
     },
     "fantasy_seal": {
-        "chance": 0.50,
+        "chance": 0.50,                # 50% kích hoạt 1 lần/trận: Miễn toàn bộ sát thương (buff lên 50% ở dạng Ace 2)
         "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/e7/fe/JOKpsPyd.gif"
     },
     "bong_khai_niem": {
-        "chance": 0.40, "dmg_pct": 0.15,
+        "chance": 0.40, "dmg_pct": 0.15,  # 40% kích hoạt 1 lần/trận: 15% Máu Tối Đa + xóa kỹ năng đối phương
         "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/38/ec/4v5klqIf3v2WuSLgB.gif"
     }
 }
@@ -669,7 +651,6 @@ BOSS_SKILL_CONFIG = {
     "desc": "Gây 5,000 DMG cho mỗi lá bài đang ở tiền tuyến (Boss không đánh thường)",
     "gif": "https://c.tenor.com/x27qU0sR_vkAAAAC/touhou-danmaku-touhou-yuyuko.gif"
 }
-
 # ==============================================================================
 # 4. DATABASE SETUP: MONGODB ATLAS + SQLITE DỰ PHÒNG
 # ==============================================================================
@@ -861,8 +842,8 @@ def update_daily_quest_progress(player: dict, quest_type: str, amount: int = 1) 
         dq["all_completed_claimed"] = True
         player["pull_tickets"] += 10.0
         notifs.append(
-            "👑 **HOÀN THÀNH TOÀN BỘ 3/3 NHIỆM VỤ NGÀY!**\\n"
-            "⛩️ **Reimu:** *\\\"10 lượt pull đây, lo mà sử dụng cẩn thận\\\"*\\n"
+            "👑 **HOÀN THÀNH TOÀN BỘ 3/3 NHIỆM VỤ NGÀY!**\n"
+            "⛩️ **Reimu:** *\"10 lượt pull đây, lo mà sử dụng cẩn thận\"*\n"
             "🎁 Nhận thêm **+10 Lượt Pull** tích lũy vào tài khoản!"
         )
     return notifs
@@ -1076,13 +1057,13 @@ def get_player(user_id, username="Visitor"):
         data["free_pulls_date"] = now_date
         data["free_pulls_remaining"] = 5
 
-    data["level"] = calculate_level_from_xp(data.get("xp", 0), data.get("prestige", 0))
+    data["level"] = calculate_level_from_xp(data.get("xp", 0))
     return data
 
 def save_player(player_data):
     uid_str = str(player_data["user_id"])
     now_iso = datetime.now().isoformat()
-    player_data["level"] = calculate_level_from_xp(player_data.get("xp", 0), player_data.get("prestige", 0))
+    player_data["level"] = calculate_level_from_xp(player_data.get("xp", 0))
     if use_mongo and players_collection is not None:
         try:
             doc = dict(player_data)
@@ -1228,8 +1209,8 @@ def execute_seiki_ace2(player):
     if missing:
         names = ", ".join(f"[#{c:02d}] {CARDS_DATA[c]['name']}" for c in missing)
         return False, (
-            "❌ **Chưa đủ điều kiện tiến hóa Seiki Ace 2!**\\n"
-            "• Yêu cầu: **[#18] Marisa**, **[#14] Reimu**, **[#17] Sakuya** đều phải đạt **Ace 2 ⭐⭐**.\\n"
+            "❌ **Chưa đủ điều kiện tiến hóa Seiki Ace 2!**\n"
+            "• Yêu cầu: **[#18] Marisa**, **[#14] Reimu**, **[#17] Sakuya** đều phải đạt **Ace 2 ⭐⭐**.\n"
             f"• Còn thiếu Ace 2: **{names}**"
         ), None
 
@@ -1238,7 +1219,7 @@ def execute_seiki_ace2(player):
     need = T1_ACE2_CONFIG["required_shards"]
     if cur < need:
         return False, (
-            f"❌ Chưa đủ **Mảnh Seiki**! (Hiện có: **{cur}/{need}** mảnh).\\n"
+            f"❌ Chưa đủ **Mảnh Seiki**! (Hiện có: **{cur}/{need}** mảnh).\n"
             "💡 *Nguồn rơi: tham gia Boss Raid (tỉ lệ 2.5%/15%).*"
         ), None
 
@@ -1249,12 +1230,12 @@ def execute_seiki_ace2(player):
     embed = discord.Embed(
         title="🌟 TIẾN HÓA THÀNH CÔNG: [#t1] SEIKI ĐỆ NHẤT PHÁP SƯ - ACE 2 ⭐⭐!",
         description=(
-            "⚡ **MA LỰC DỊ TÀ THỨC TỈNH - BỘ KỸ NĂNG ĐỘC QUYỀN ACE 2:**\\n\\n"
-            "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **2% Máu Tối Đa** mục tiêu!\\n"
-            "💚 **Medicine Sign (35%):** Hồi phục **40% Máu Tối Đa** bản thân, 1 lần/trận.\\n"
-            "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận.\\n"
-            "🌑 **Bóng Khái Niệm (40%):** Gây **15% Máu Tối Đa** mục tiêu và **xóa kỹ năng đối phương**, 1 lần/trận.\\n\\n"
-            f"📉 **Chi phí:** Đã tiêu hao **10 Mảnh Seiki** (Còn lại: `{shards['seiki']}` mảnh)\\n"
+            "⚡ **MA LỰC DỊ TÀ THỨC TỈNH - BỘ KỸ NĂNG ĐỘC QUYỀN ACE 2:**\n\n"
+            "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **2% Máu Tối Đa** mục tiêu!\n"
+            "💚 **Medicine Sign (35%):** Hồi phục **40% Máu Tối Đa** bản thân, 1 lần/trận.\n"
+            "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận.\n"
+            "🌑 **Bóng Khái Niệm (40%):** Gây **15% Máu Tối Đa** mục tiêu và **xóa kỹ năng đối phương**, 1 lần/trận.\n\n"
+            f"📉 **Chi phí:** Đã tiêu hao **10 Mảnh Seiki** (Còn lại: `{shards['seiki']}` mảnh)\n"
             "⚖️ *Quy tắc cân bằng: tối đa 1 chiêu mỗi lượt, mỗi chiêu kích hoạt 1 lần trong trận!*"
         ),
         color=0x7C3AED
@@ -1288,8 +1269,10 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
     med_chance = T1_ACE2_CONFIG["medicine_sign"]["chance"]
 
     if not t1_flags.get("seal_used") and not t1_flags.get("seiki_seal_used") and roll < seal_chance:
+        # 🛡️ FANTASY SEAL - 50% (ĐƯỢC BUFF LÊN 50% Ở DẠNG ACE 2, MIỄN TOÀN BỘ SÁT THƯƠNG 1 HIỆP):
         t1_flags["seal_used"] = True
         t1_flags["seiki_seal_used"] = True
+        t1_flags["seal_used"] = True
         t1_flags["used_turn"] = round_no
         out["invul"] = True
         out["gif"] = seal_cfg.get("gif", T1_SEAL_GIF)
@@ -1298,6 +1281,7 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
             f"Vận khởi kết giới phong ấn tuyệt đối — **MIỄN TOÀN BỘ SÁT THƯƠNG** trong hiệp này!"
         )
     elif not t1_flags.get("bong_used") and roll < seal_chance + bong_chance:
+        # 🌑 BÓNG KHÁI NIỆM - 40%: 15% Máu Tối Đa + xóa kỹ năng đối phương
         t1_flags["bong_used"] = True
         t1_flags["used_turn"] = round_no
         out["direct"] = int(target_max_hp * T1_ACE2_CONFIG["bong_khai_niem"]["dmg_pct"])
@@ -1307,7 +1291,9 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
             f"🌑 **[Ace 2] [#t1] Seiki** kích hoạt **BÓNG KHÁI NIỆM** (40%)! "
             f"Gây **{out['direct']:,} DMG** (15% Máu Tối Đa {target_desc}) và **LẬP TỨC XÓA KỸ NĂNG của đối phương**!"
         )
-    elif not t1_flags.get("med_used") and ac.get("current_hp", 1) < ac.get("max_hp", ac.get("hp", 1)) and roll < seal_chance + bong_chance + med_chance:
+    elif not t1_flags.get("med_used") and ac.get("current_hp", 1) < ac.get("max_hp", ac.get("hp", 1)) \
+            and roll < seal_chance + bong_chance + med_chance:
+        # 💚 MEDICINE SIGN - 35%: hồi 40% Máu Tối Đa bản thân (đã buff)
         t1_flags["med_used"] = True
         t1_flags["used_turn"] = round_no
         out["heal"] = int(ac.get("max_hp", ac.get("hp", 1)) * T1_ACE2_CONFIG["medicine_sign"]["heal_pct"])
@@ -1460,7 +1446,7 @@ class OpponentTeamView(discord.ui.View):
             buff_breakdown = f"*(Gốc: {c['base_power']:,} + Buff Lv: {c['power'] - c['base_power'] - ACE_POWER_BUFF:,} + Ace: +{ACE_POWER_BUFF})*"
         embed.add_field(
             name="⚔️ Sức Mạnh (ATK):",
-            value=f"**{c['power']:,} DMG**\\n{buff_breakdown}",
+            value=f"**{c['power']:,} DMG**\n{buff_breakdown}",
             inline=True
         )
 
@@ -1469,32 +1455,32 @@ class OpponentTeamView(discord.ui.View):
             hp_breakdown = f"*(Gốc: {c['base_hp']:,} + Buff Lv: {c['hp'] - c['base_hp'] - ACE_HP_BUFF:,} + Ace: +{ACE_HP_BUFF})*"
         embed.add_field(
             name="❤️ Sinh Mệnh (HP):",
-            value=f"**{c['hp']:,} HP**\\n{hp_breakdown}",
+            value=f"**{c['hp']:,} HP**\n{hp_breakdown}",
             inline=True
         )
 
         skill_text = c.get("skill") or "Tấn công Danmaku cơ bản"
         if is_ace and c["cid"] in [9, 12, 13, 14, 17, 18, 20, 22]:
             if c["cid"] == 14:
-                skill_text += "\\n🛡️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Vô Tưởng Chuyển Sinh* né toàn bộ sát thương."
+                skill_text += "\n🛡️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Vô Tưởng Chuyển Sinh* né toàn bộ sát thương."
             elif c["cid"] == 17:
-                skill_text += "\\n⏳ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Thời Gian Đóng Băng* khiến đối phương mất lượt."
+                skill_text += "\n⏳ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Thời Gian Đóng Băng* khiến đối phương mất lượt."
             elif c["cid"] == 18:
-                skill_text += "\\n🌟 **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Master Spark* bộc phá ×2.0 sát thương."
+                skill_text += "\n🌟 **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Master Spark* bộc phá ×2.0 sát thương."
             elif c["cid"] == 9:
-                skill_text += "\\n🦇 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Ripples of 495 Years* xóa sổ 50% HP đối thủ (30% HP Boss trong Raid, 1 lần/trận)."
+                skill_text += "\n🦇 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Ripples of 495 Years* xóa sổ 50% HP đối thủ (30% HP Boss trong Raid, 1 lần/trận)."
             elif c["cid"] == 12:
-                skill_text += "\\n🩸 **[Ace 2 Hiệu Ứng]** *Thương Đỏ Gungnir* (THỤ ĐỘNG): mọi đòn đánh gây thêm 3% Máu Tối Đa của mục tiêu."
+                skill_text += "\n🩸 **[Ace 2 Hiệu Ứng]** *Thương Đỏ Gungnir* (THỤ ĐỘNG): mọi đòn đánh gây thêm 3% Máu Tối Đa của mục tiêu."
             elif c["cid"] == 20:
-                skill_text += "\\n🔴 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Red Eye Mind Explosion* (1 lần/trận): mục tiêu 20% tự gây sát thương lên bản thân trong 4 turn."
+                skill_text += "\n🔴 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Red Eye Mind Explosion* (1 lần/trận): mục tiêu 20% tự gây sát thương lên bản thân trong 4 turn."
             elif c["cid"] == 22:
-                skill_text += "\\n❄️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Perfect Freeze* (1 lần/trận): đóng băng đối thủ, trong 2 turn tiếp theo có 45% không thể đánh trả."
+                skill_text += "\n❄️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Perfect Freeze* (1 lần/trận): đóng băng đối thủ, trong 2 turn tiếp theo có 45% không thể đánh trả."
             elif c["cid"] == 13:
-                skill_text += "\\n☢️ **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Nuclear Spell Card* bộc phá ×3.0 sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn."
+                skill_text += "\n☢️ **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Nuclear Spell Card* bộc phá ×3.0 sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn."
         if is_ace and str(c["cid"]).lower() == "t1":
-            skill_text += "\\n♾️ **[Ace 2 Hiệu Ứng]** *Cleave* (thụ động, +2% Máu tối đa mỗi đòn) • *Medicine Sign* (35% hồi 40% máu) • *Fantasy Seal* (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • *Bóng Khái Niệm* (40%: 15% máu tối đa + xóa kỹ năng đối phương — mỗi chiêu 1 lần/trận)."
+            skill_text += "\n♾️ **[Ace 2 Hiệu Ứng]** *Cleave* (thụ động, +2% Máu tối đa mỗi đòn) • *Medicine Sign* (35% hồi 40% máu) • *Fantasy Seal* (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • *Bóng Khái Niệm* (40%: 15% máu tối đa + xóa kỹ năng đối phương — mỗi chiêu 1 lần/trận)."
         if str(c["cid"]).lower() == "t2":
-            skill_text += "\\n🔱 **[Thần Tướng Hiệu Ứng]** *The True adapt* (thụ động 100%: mỗi turn hồi 5% Máu tối đa và giảm 5% sát thương phải nhận - cộng dồn) • *Thoái Ma kiếm* (30% kích hoạt gây ×1.5 sát thương)."
+            skill_text += "\n🔱 **[Thần Tướng Hiệu Ứng]** *The True adapt* (thụ động 100%: mỗi turn hồi 5% Máu tối đa và giảm 5% sát thương phải nhận - cộng dồn) • *Thoái Ma kiếm* (30% kích hoạt gây ×1.5 sát thương)."
         embed.add_field(name="✨ Kỹ Năng / Tuyệt Kỹ Danmaku:", value=f"*{skill_text}*", inline=False)
 
         summary_lines = []
@@ -1505,7 +1491,7 @@ class OpponentTeamView(discord.ui.View):
             summary_lines.append(
                 f"{arrow}{ace_star}**{format_card_id(card['cid'])} {card['raw_name']}** `[{card['rank']}]`{ace_label} ⚔️ `{card['power']:,} DMG` | ❤️ `{card['hp']:,} HP`"
             )
-        embed.add_field(name="👥 Danh Sách Đầy Đủ 3 Thẻ Đối Thủ:", value="\\n".join(summary_lines), inline=False)
+        embed.add_field(name="👥 Danh Sách Đầy Đủ 3 Thẻ Đối Thủ:", value="\n".join(summary_lines), inline=False)
         embed.set_footer(text=f"Đang xem thẻ #{self.selected_idx + 1}/{len(self.opp_cards)} • Dùng menu bên dưới để đổi thẻ")
         return embed
 
@@ -1565,9 +1551,9 @@ async def admin_reset_boss(channel_or_interaction, author):
     embed = discord.Embed(
         title="🧹 [ADMIN] ĐÃ RESET BOSS RAID THÀNH CÔNG!",
         description=(
-            f"👑 **Thực hiện bởi:** {author.mention}\\n"
-            f"✅ **Trạng thái:** {'Đã giải phóng Boss Raid bị kẹt trước đó!' if was_stuck else 'Boss Raid đã được dọn sạch hoàn toàn.'}\\n"
-            "⏱️ **Hồi chiêu:** Đã đưa thời gian hồi chiêu về **0 giây**.\\n"
+            f"👑 **Thực hiện bởi:** {author.mention}\n"
+            f"✅ **Trạng thái:** {'Đã giải phóng Boss Raid bị kẹt trước đó!' if was_stuck else 'Boss Raid đã được dọn sạch hoàn toàn.'}\n"
+            "⏱️ **Hồi chiêu:** Đã đưa thời gian hồi chiêu về **0 giây**.\n"
             "⛩️ **Sẵn sàng:** Bạn có thể dùng `boss admin spawn` để gọi ngay tại kênh này, hoặc để boss tự xuất hiện khi chat!"
         ),
         color=0x10B981
@@ -1607,8 +1593,8 @@ async def raid_timer_lifecycle(channel, raid_data, view):
             boss_cooldown_until = time.time() + BOSS_CONFIG["cooldown_seconds"]
             names_str = ", ".join(raid_data.get("names", []))
             await channel.send(
-                f"⏰ **ĐÃ HẾT 2 PHÚT CHUẨN BỊ!**\\n"
-                f"⚔️ **{len(participants)} Dũng Giả** ({names_str}) đồng loạt dàn quân xuất trận!\\n"
+                f"⏰ **ĐÃ HẾT 2 PHÚT CHUẨN BỊ!**\n"
+                f"⚔️ **{len(participants)} Dũng Giả** ({names_str}) đồng loạt dàn quân xuất trận!\n"
                 f"👹 **Reimu Dị Hình** gầm thét kinh thiên động địa — **TRẬN ĐẠI CHIẾN CHÍNH THỨC BẮT ĐẦU!**"
             )
             try:
@@ -1626,7 +1612,7 @@ async def raid_timer_lifecycle(channel, raid_data, view):
             active_raid = None
             boss_cooldown_until = time.time() + 60
             await channel.send(
-                "🌌 **Dị hình đã xé toạc không gian và trốn thoát do không có pháp sư nào dám nghênh chiến!**\\n"
+                "🌌 **Dị hình đã xé toạc không gian và trốn thoát do không có pháp sư nào dám nghênh chiến!**\n"
                 "*(Đền Hakurei tạm thời tĩnh lặng, hãy chuẩn bị lực lượng cho lần dị biến tiếp theo...)*"
             )
     except asyncio.CancelledError:
@@ -1677,45 +1663,45 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
     title = f"🚨 [ADMIN TRIỆU HỒI] CẢNH BÁO KHẨN CẤP: DỊ BIẾN {cfg['name'].upper()}!" if is_admin else f"🚨 CẢNH BÁO KHẨN CẤP: DỊ BIẾN {cfg['name'].upper()}!"
 
     if is_seiki:
-        reimu_line = f"🌸 **Reimu thảng thốt:** *\\\"{cfg['reimu_quote']}\\\"*\\n\\n"
-        desc = (f"👑 **Được triệu hồi bởi Admin:** {author.mention}\\n\\n{reimu_line}👺 **{cfg['name']}**\\n*{cfg['desc']}*" 
-                if is_admin else f"{reimu_line}👺 **{cfg['name']}**\\n*{cfg['desc']}*")
+        reimu_line = f"🌸 **Reimu thảng thốt:** *\"{cfg['reimu_quote']}\"*\n\n"
+        desc = (f"👑 **Được triệu hồi bởi Admin:** {author.mention}\n\n{reimu_line}👺 **{cfg['name']}**\n*{cfg['desc']}*" 
+                if is_admin else f"{reimu_line}👺 **{cfg['name']}**\n*{cfg['desc']}*")
         embed = discord.Embed(title=title, description=desc, color=0x7C3AED)
         embed.set_image(url=cfg["image"])
-        embed.add_field(name="❤️ Máu Boss (HP):", value=f"• Phase 1: **{cfg['hp']:,} HP**\\n• Phase 2 Thức Tỉnh: **{SEIKI_BOSS_PHASE2_CONFIG['hp']:,} HP**", inline=True)
-        embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{cfg['power']:,} DMG** *(chia đều, Spark x1.5: 4,500)*\\n• Phase 2: **{SEIKI_BOSS_PHASE2_CONFIG['power']:,} DMG** *(chia đều, kèm Cleave +20% Máu tối đa mục tiêu)*", inline=True)
+        embed.add_field(name="❤️ Máu Boss (HP):", value=f"• Phase 1: **{cfg['hp']:,} HP**\n• Phase 2 Thức Tỉnh: **{SEIKI_BOSS_PHASE2_CONFIG['hp']:,} HP**", inline=True)
+        embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{cfg['power']:,} DMG** *(chia đều, Spark x1.5: 4,500)*\n• Phase 2: **{SEIKI_BOSS_PHASE2_CONFIG['power']:,} DMG** *(chia đều, kèm Cleave +20% Máu tối đa mục tiêu)*", inline=True)
         embed.add_field(name=f"👥 Người Tham Gia (0/{cfg['max_players']}):", value="Chưa có ai", inline=False)
         embed.add_field(
             name="🔮 Kỹ Năng & Nội Tại (Độc Quyền - Không Trùng Turn):",
             value=(
-                "• 💚 **Nội Tại:** Mỗi hiệp tự hồi phục **1.5% HP tối đa (450 HP)**!\\n"
-                "• 🌟 **Multi Master Spark (15%):** Bộc phát ma lực x1.5 sát thương (4,500 DMG chia đều) duy trì trong **3 lượt**!\\n"
-                "• 🛡️ **Fantasy Seal (20%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 turn!\\n"
-                "• ⚡ **Blitz Attack (20%):** Oanh tạc chớp nhoáng gây **4,000 DMG** diện rộng lên toàn bộ thẻ tiền tuyến!\\n"
-                "*(Lưu ý: Không bao giờ kích hoạt trùng chiêu trong cùng một hiệp)*\\n\\n"
-                "👹 **PHASE 2 - THỨC TỈNH (90K HP / 10K DMG CHIA ĐỀU):**\\n"
-                "• ☢️ **Nuclear Spell Card (10%):** Gây **10,000 DMG** lên **TẤT CẢ** lá bài đang ở tiền tuyến!\\n"
+                "• 💚 **Nội Tại:** Mỗi hiệp tự hồi phục **1.5% HP tối đa (450 HP)**!\n"
+                "• 🌟 **Multi Master Spark (15%):** Bộc phát ma lực x1.5 sát thương (4,500 DMG chia đều) duy trì trong **3 lượt**!\n"
+                "• 🛡️ **Fantasy Seal (20%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 turn!\n"
+                "• ⚡ **Blitz Attack (20%):** Oanh tạc chớp nhoáng gây **4,000 DMG** diện rộng lên toàn bộ thẻ tiền tuyến!\n"
+                "*(Lưu ý: Không bao giờ kích hoạt trùng chiêu trong cùng một hiệp)*\n\n"
+                "👹 **PHASE 2 - THỨC TỈNH (90K HP / 10K DMG CHIA ĐỀU):**\n"
+                "• ☢️ **Nuclear Spell Card (10%):** Gây **10,000 DMG** lên **TẤT CẢ** lá bài đang ở tiền tuyến!\n"
                 "• 🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **20% Máu Tối Đa** của mục tiêu!"
             ),
             inline=False
         )
         embed.add_field(
             name="🎁 Phần Thưởng Thanh Tẩy Boss:",
-            value="• **Phase 1:** 10% nhận **10 Vé**, 40% nhận **5 Vé**, 50% nhận **3 Vé**! (+100 XP)\\n• **Phase 2 (Thức Tỉnh):** 10% nhận **30 Vé**, 40% nhận **20 Vé**, 50% nhận **10 Vé**! 🔮 **15%** rơi **+1 Mảnh Seiki**! (+150 XP)\\n• 🔮 Mỗi Phase đều có **2.5%** rơi **+1 Mảnh Seiki** (10 mảnh = 1 thẻ [T] #t1 Seiki - dùng `/t translate`)!\\n• Nhận thêm điểm danh nhiệm vụ diệt Boss!",
+            value="• **Phase 1:** 10% nhận **10 Vé**, 40% nhận **5 Vé**, 50% nhận **3 Vé**! (+100 XP)\n• **Phase 2 (Thức Tỉnh):** 10% nhận **30 Vé**, 40% nhận **20 Vé**, 50% nhận **10 Vé**! 🔮 **15%** rơi **+1 Mảnh Seiki**! (+150 XP)\n• 🔮 Mỗi Phase đều có **2.5%** rơi **+1 Mảnh Seiki** (10 mảnh = 1 thẻ [T] #t1 Seiki - dùng `/t translate`)!\n• Nhận thêm điểm danh nhiệm vụ diệt Boss!",
         )
         embed.add_field(
             name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
             value=(
-                "• Có đúng **2 phút (120 giây)** để bấm **'Tham Gia'** (Miễn phí)!\\n"
-                "• **Tự động mở raid:** Khi hết 2 phút, nếu có dũng giả tham chiến, trận đại chiến sẽ **TỰ ĐỘNG KHỞI TRANH** ngay lập tức!\\n"
+                "• Có đúng **2 phút (120 giây)** để bấm **'Tham Gia'** (Miễn phí)!\n"
+                "• **Tự động mở raid:** Khi hết 2 phút, nếu có dũng giả tham chiến, trận đại chiến sẽ **TỰ ĐỘNG KHỞI TRANH** ngay lập tức!\n"
                 "• **Tự động đóng:** Nếu sau 2 phút không có ai tham gia, Dị Hình sẽ xé toạc không gian và trốn thoát!"
             ),
             inline=False
         )
     elif boss_type == "mahoraga":
-        reimu_line = f"🌸 **Reimu thảng thốt:** *\\\"{cfg['reimu_quote']}\\\"*\\n\\n"
-        desc = (f"👑 **Được triệu hồi bởi Admin:** {author.mention}\\n\\n{reimu_line}👺 **{cfg['name']}**\\n*{cfg['desc']}*"
-                if is_admin else f"{reimu_line}👺 **{cfg['name']}**\\n*{cfg['desc']}*")
+        reimu_line = f"🌸 **Reimu thảng thốt:** *\"{cfg['reimu_quote']}\"*\n\n"
+        desc = (f"👑 **Được triệu hồi bởi Admin:** {author.mention}\n\n{reimu_line}👺 **{cfg['name']}**\n*{cfg['desc']}*"
+                if is_admin else f"{reimu_line}👺 **{cfg['name']}**\n*{cfg['desc']}*")
         embed = discord.Embed(title=title, description=desc, color=0x1F2937)
         embed.set_image(url=cfg["image"])
         embed.add_field(name="❤️ Máu Boss (HP):", value=f"**{cfg['hp']:,} HP** *(Single Phase - không hồi sinh!)*", inline=True)
@@ -1724,39 +1710,39 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
         embed.add_field(
             name="♾️ Nội Tại & Kỹ Năng (Độc Quyền - The True Adapt):",
             value=(
-                "• ♾️ **The True Adapt (100% - THỤ ĐỘNG):**\\n"
-                "  - Mỗi hiệp tự hồi phục **3% HP tối đa (2,700 HP)**!\\n"
-                "  - Mỗi hiệp **GIẢM 3% sát thương phải nhận** (cộng dồn mỗi hiệp - càng đánh càng cứng)!\\n"
+                "• ♾️ **The True Adapt (100% - THỤ ĐỘNG):**\n"
+                "  - Mỗi hiệp tự hồi phục **3% HP tối đa (2,700 HP)**!\n"
+                "  - Mỗi hiệp **GIẢM 3% sát thương phải nhận** (cộng dồn mỗi hiệp - càng đánh càng cứng)!\n"
                 "• ⚔️ **Thoái Ma Kiếm (25%):** Rút trường kiếm giáng **6,000 DMG sát thương thuần** lên **MỘT mục tiêu** duy nhất (không chia đều)!"
             ),
             inline=False
         )
         embed.add_field(
             name="🎁 Phần Thưởng Thanh Tẩy Boss:",
-            value="• **10%** nhận **20 Vé** | **40%** nhận **15 Vé** | **50%** nhận **10 Vé**! (+100 XP)\\n• 🔱 **5%** rơi **+1 Mảnh Mahoraga** (vật phẩm đặc biệt - Thẻ Mahoraga sắp ra mắt)!\\n• Nhận thêm điểm danh nhiệm vụ diệt Boss!",
+            value="• **10%** nhận **20 Vé** | **40%** nhận **15 Vé** | **50%** nhận **10 Vé**! (+100 XP)\n• 🔱 **5%** rơi **+1 Mảnh Mahoraga** (vật phẩm đặc biệt - Thẻ Mahoraga sắp ra mắt)!\n• Nhận thêm điểm danh nhiệm vụ diệt Boss!",
         )
         embed.add_field(
             name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
             value=(
-                "• Có đúng **2 phút (120 giây)** để bấm **'Tham Gia'** (Miễn phí)!\\n"
-                "• **Tự động mở raid:** Khi hết 2 phút, nếu có dũng giả tham chiến, trận đại chiến sẽ **TỰ ĐỘNG KHỞI TRANH** ngay lập tức!\\n"
+                "• Có đúng **2 phút (120 giây)** để bấm **'Tham Gia'** (Miễn phí)!\n"
+                "• **Tự động mở raid:** Khi hết 2 phút, nếu có dũng giả tham chiến, trận đại chiến sẽ **TỰ ĐỘNG KHỞI TRANH** ngay lập tức!\n"
                 "• **Tự động đóng:** Nếu sau 2 phút không có ai tham gia, Mahoraga sẽ tan biến vào hư không!"
             ),
             inline=False
         )
     else:
-        desc = f"👑 **Được triệu hồi bởi Admin:** {author.mention}\\n\\n**{BOSS_CONFIG['name']}**\\n*{BOSS_CONFIG['desc']}*" if is_admin else f"**{BOSS_CONFIG['name']}**\\n*{BOSS_CONFIG['desc']}*"
+        desc = f"👑 **Được triệu hồi bởi Admin:** {author.mention}\n\n**{BOSS_CONFIG['name']}**\n*{BOSS_CONFIG['desc']}*" if is_admin else f"**{BOSS_CONFIG['name']}**\n*{BOSS_CONFIG['desc']}*"
         embed = discord.Embed(title=title, description=desc, color=0xDC2626)
         embed.set_image(url=BOSS_CONFIG["image"])
         embed.add_field(name="❤️ Máu Boss (HP):", value=f"{BOSS_CONFIG['hp']:,} HP *(Phase 1: 30k HP)*", inline=True)
-        embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{BOSS_CONFIG['power']:,} DMG** *(chia đều)*\\n• Phase 2: **{BOSS_PHASE2_CONFIG['power']:,} DMG** *(chia đều)*", inline=True)
+        embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{BOSS_CONFIG['power']:,} DMG** *(chia đều)*\n• Phase 2: **{BOSS_PHASE2_CONFIG['power']:,} DMG** *(chia đều)*", inline=True)
         embed.add_field(name=f"👥 Người Tham Gia (0/{BOSS_CONFIG['max_players']}):", value="Chưa có ai", inline=False)
         embed.add_field(
             name="🎁 Cơ Chế 2 Phase & Phần Thưởng Đột Phá:",
             value=(
-                "• **Phase 1 (30k HP):** 10% ra **10 Vé**, 40% ra **5 Vé**, 50% ra **3 Vé**!\\n"
-                f"• **Chuyển Phase 2 ({BOSS_PHASE2_CONFIG['hp']:,} HP / {BOSS_PHASE2_CONFIG['power']:,} DMG chia đều):** Hồi sinh & phục hồi **100% HP toàn bộ thẻ bài**!\\n"
-                "• **Phase 2:** 10% ra **20 Vé**, 40% ra **10 Vé**, 50% ra **5 Vé**!\\n"
+                "• **Phase 1 (30k HP):** 10% ra **10 Vé**, 40% ra **5 Vé**, 50% ra **3 Vé**!\n"
+                f"• **Chuyển Phase 2 ({BOSS_PHASE2_CONFIG['hp']:,} HP / {BOSS_PHASE2_CONFIG['power']:,} DMG chia đều):** Hồi sinh & phục hồi **100% HP toàn bộ thẻ bài**!\n"
+                "• **Phase 2:** 10% ra **20 Vé**, 40% ra **10 Vé**, 50% ra **5 Vé**!\n"
                 "• **Trận đấu trực tiếp:** Diễn biến từng hiệp được phát sóng trực tiếp!"
             ),
             inline=False
@@ -1764,8 +1750,8 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
         embed.add_field(
             name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
             value=(
-                "• Có đúng **2 phút (120 giây)** để bấm **'Tham Gia'** (Miễn phí)!\\n"
-                "• **Tự động mở raid:** Khi hết 2 phút, nếu có dũng giả tham chiến, trận đại chiến sẽ **TỰ ĐỘNG KHỞI TRANH** ngay lập tức!\\n"
+                "• Có đúng **2 phút (120 giây)** để bấm **'Tham Gia'** (Miễn phí)!\n"
+                "• **Tự động mở raid:** Khi hết 2 phút, nếu có dũng giả tham chiến, trận đại chiến sẽ **TỰ ĐỘNG KHỞI TRANH** ngay lập tức!\n"
                 "• **Tự động đóng:** Nếu sau 2 phút không có ai tham gia, Dị Hình sẽ xé toạc không gian và trốn thoát!"
             ),
             inline=False
@@ -1847,7 +1833,16 @@ def get_hp_bar(current_hp, max_hp, total_blocks=10):
     filled = int(round(ratio * total_blocks))
     return "▰" * filled + "▱" * (total_blocks - filled)
 
+# ==============================================================================
+# HÀM BẢO HIỂM: GIỚI HẠN 50% SÁT THƯƠNG CHUẨN TRONG RAID BOSS
+# ==============================================================================
 def apply_raid_true_damage(requested_dmg: int, current_accumulated: int, max_cap: int, skill_label: str):
+    """
+    Giới hạn sát thương chuẩn tối đa bằng 50% Max HP của Boss trong trận Raid.
+    - Nếu đã đạt trần (100% của 50% HP): Sát thương chuẩn = 0.
+    - Nếu đòn này làm vượt trần: Chỉ nhận lượng còn thiếu cho đến khi chạm trần, phần dư bị khóa.
+    - Trả về: (sát thương thực tế được cộng, tổng tích lũy mới, thông báo trạng thái trần)
+    """
     if requested_dmg <= 0:
         return 0, current_accumulated, None
 
@@ -1950,7 +1945,7 @@ async def execute_raid(channel, raid_data):
     p1_hp = p1_max_hp
     p1_power = boss_cfg["power"]
     seiki_spark_turns = 0
-    boss_skill_erased = False
+    boss_skill_erased = False   # 🌑 Bóng Khái Niệm đã xóa kỹ năng Boss
 
     if boss_type == "seiki":
         init_embed = discord.Embed(
@@ -1992,6 +1987,7 @@ async def execute_raid(channel, raid_data):
     p1_battle_history = []
     all_raid_turns = []
 
+    # 🛡️ CƠ CHẾ CÂN BẰNG: GIỚI HẠN 50% SÁT THƯƠNG CHUẨN CỦA BOSS PHASE 1
     p1_true_cap = int(p1_max_hp * 0.50)
     p1_true_dmg_accum = 0
 
@@ -2144,6 +2140,7 @@ async def execute_raid(channel, raid_data):
                         turn_image = EVOL_CONFIG[20]["skill_gif"]
                     reisen_notif = f"🔴 **[Ace 2] [#20] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
 
+            # ❄️ CIRNO ACE 2: Perfect freeze (40% - Đóng băng đối phương, trong 2 turn tiếp có 45% không đánh trả)
             if ac["cid"] == 22 and ac["is_ace2"] and not c.get("cirno_freeze_used"):
                 if random.random() < 0.40:
                     c["cirno_freeze_used"] = True
@@ -2152,6 +2149,7 @@ async def execute_raid(channel, raid_data):
                         turn_image = EVOL_CONFIG[22]["skill_gif"]
                     cirno_notif = f"❄️ **[Ace 2] [#22] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
 
+            # ☢️ UTSUHO REIUJI ACE 2: Nuclear spell card (25% - 3.0x sát thương + dung nham đốt 2% Max HP bài địch trong 3 turn)
             if ac["cid"] == 13 and ac["is_ace2"]:
                 if random.random() < 0.25:
                     card_dmg = int(card_dmg * 3.0)
@@ -2160,6 +2158,7 @@ async def execute_raid(channel, raid_data):
                         turn_image = EVOL_CONFIG[13]["skill_gif"]
                     utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
 
+            # ===== THẺ [#t1] SEIKI: Bản thường / Bản Ace 2 ⭐⭐ (Cleave + 3 tuyệt kỹ mới - Fantasy Seal 50% miễn thương) =====
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
                     _t1 = t1_ace2_attack(c, ac, p1_rounds, p1_max_hp, f"Boss {boss_cfg['name']}", is_boss=True)
@@ -2204,6 +2203,7 @@ async def execute_raid(channel, raid_data):
                             turn_image = T1_HEAL_GIF
                         passive_log = (passive_log + "\n" if passive_log else "") + f"💚 **[Nhóm T] [#t1] Seiki** ({c['username']}) thi triển **Medicine Sign** (20%)! Hồi phục **+{heal_val:,} HP** cho bản thân! ({ac['current_hp']:,}/{ac['max_hp']:,} HP)"
 
+        # ===== THẺ [#t2] MAHORAGA: The True adapt (Hồi 5% HP + Giảm 5% ST mỗi turn) + Thoái Ma kiếm (30% x1.5 DMG) =====
             if str(ac["cid"]).lower() == "t2":
                 heal_mahoraga = int(ac["max_hp"] * 0.05)
                 ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_mahoraga)
@@ -2541,6 +2541,22 @@ async def execute_raid(channel, raid_data):
             round_embed.add_field(name="☢️ Nuclear Spell Card (Utsuho):", value=utsuho_notif, inline=False)
         if boss_molten_log:
             round_embed.add_field(name="🌋 Mặt Đất Nung Chảy:", value=boss_molten_log, inline=False)
+        if cirno_notif:
+            round_embed.add_field(name="❄️ Perfect Freeze (Cirno):", value=cirno_notif, inline=False)
+        if cirno_freeze_log:
+            round_embed.add_field(name="🧊 Băng Đóng Tuyệt Đối:", value=cirno_freeze_log, inline=False)
+        if utsuho_notif:
+            round_embed.add_field(name="☢️ Nuclear Spell Card (Utsuho):", value=utsuho_notif, inline=False)
+        if boss_molten_log:
+            round_embed.add_field(name="🌋 Mặt Đất Nung Chảy:", value=boss_molten_log, inline=False)
+        if cirno_notif:
+            round_embed.add_field(name="❄️ Perfect Freeze (Cirno):", value=cirno_notif, inline=False)
+        if cirno_freeze_log:
+            round_embed.add_field(name="🧊 Băng Đóng Tuyệt Đối:", value=cirno_freeze_log, inline=False)
+        if utsuho_notif:
+            round_embed.add_field(name="☢️ Nuclear Spell Card (Utsuho):", value=utsuho_notif, inline=False)
+        if boss_molten_log:
+            round_embed.add_field(name="🌋 Mặt Đất Nung Chảy:", value=boss_molten_log, inline=False)
         if flandre_notif:
             round_embed.add_field(name="🦇 Ripples of 495 Years:", value=flandre_notif, inline=False)
         if t1_notif:
@@ -2575,6 +2591,14 @@ async def execute_raid(channel, raid_data):
                 *([("🩸 Thương Đỏ Gungnir:", remilia_notif, False)] if remilia_notif else []),
                 *([("🔴 Red Eye Mind Explosion:", reisen_notif, False)] if reisen_notif else []),
                 *([("🌀 Ảo Giác Tâm Trí:", reisen_boss_log, False)] if reisen_boss_log else []),
+                *([("❄️ Perfect Freeze (Cirno):", cirno_notif, False)] if cirno_notif else []),
+                *([("🧊 Băng Đóng Tuyệt Đối:", cirno_freeze_log, False)] if cirno_freeze_log else []),
+                *([("☢️ Nuclear Spell Card (Utsuho):", utsuho_notif, False)] if utsuho_notif else []),
+                *([("🌋 Mặt Đất Nung Chảy:", boss_molten_log, False)] if boss_molten_log else []),
+                *([("❄️ Perfect Freeze (Cirno):", cirno_notif, False)] if cirno_notif else []),
+                *([("🧊 Băng Đóng Tuyệt Đối:", cirno_freeze_log, False)] if cirno_freeze_log else []),
+                *([("☢️ Nuclear Spell Card (Utsuho):", utsuho_notif, False)] if utsuho_notif else []),
+                *([("🌋 Mặt Đất Nung Chảy:", boss_molten_log, False)] if boss_molten_log else []),
                 *([("❄️ Perfect Freeze (Cirno):", cirno_notif, False)] if cirno_notif else []),
                 *([("🧊 Băng Đóng Tuyệt Đối:", cirno_freeze_log, False)] if cirno_freeze_log else []),
                 *([("☢️ Nuclear Spell Card (Utsuho):", utsuho_notif, False)] if utsuho_notif else []),
@@ -2655,6 +2679,9 @@ async def execute_raid(channel, raid_data):
         save_player(p)
         p1_rewards_data[uid] = {"total_pulls": t_val, "items": items_won, "username": p["username"]}
 
+    # ========================================================================
+    # BOSS MAHORAGA - KẾT THÚC ĐẠI CHIẾN (SINGLE PHASE, KHÔNG CÓ PHASE 2)
+    # ========================================================================
     if boss_type == "mahoraga":
         total_raid_dmg = sum(c["total_dmg"] for c in combatants)
         final_embed = discord.Embed(
@@ -2682,6 +2709,9 @@ async def execute_raid(channel, raid_data):
         await channel.send(embed=final_embed, view=OpenDetailsView(all_raid_turns))
         return
 
+    # ========================================================================
+    # PHASE 2: SEIKI DỊ HÌNH - THỨC TỈNH (90K HP / 10K DMG / NUCLEAR + CLEAVE)
+    # ========================================================================
     if boss_type == "seiki":
         p2_cfg = SEIKI_BOSS_PHASE2_CONFIG
         p2_alert_embed = discord.Embed(
@@ -2729,6 +2759,7 @@ async def execute_raid(channel, raid_data):
         boss_freeze_debuff_turns = 0
         boss_molten_ground_turns = 0
 
+        # 🛡️ CƠ CHẾ CÂN BẰNG: GIỚI HẠN 50% SÁT THƯƠNG CHUẨN CỦA BOSS PHASE 2
         p2_true_cap = int(p2_max_hp * 0.50)
         p2_true_dmg_accum = 0
 
@@ -2839,6 +2870,7 @@ async def execute_raid(channel, raid_data):
                             turn_image = EVOL_CONFIG[20]["skill_gif"]
                         reisen_notif = f"🔴 **[Ace 2] [#20] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss Phase 2 bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
 
+                # ❄️ CIRNO ACE 2
                 if ac["cid"] == 22 and ac["is_ace2"] and not c.get("cirno_freeze_used"):
                     if random.random() < 0.40:
                         c["cirno_freeze_used"] = True
@@ -2847,6 +2879,7 @@ async def execute_raid(channel, raid_data):
                             turn_image = EVOL_CONFIG[22]["skill_gif"]
                         cirno_notif = f"❄️ **[Ace 2] [#22] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss Phase 2: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
 
+                # ☢️ UTSUHO REIUJI ACE 2
                 if ac["cid"] == 13 and ac["is_ace2"]:
                     if random.random() < 0.25:
                         card_dmg = int(card_dmg * 3.0)
@@ -2855,6 +2888,7 @@ async def execute_raid(channel, raid_data):
                             turn_image = EVOL_CONFIG[13]["skill_gif"]
                         utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho Boss Phase 2 trong 3 turn)!"
 
+                # ===== THẺ [#t1] SEIKI PHASE 2: Fantasy Seal 50% miễn thương =====
                 if str(ac["cid"]).lower() == "t1":
                     if ac.get("is_ace2"):
                         _t1 = t1_ace2_attack(c, ac, p2_rounds, p2_max_hp, f"Boss Seiki Phase 2", is_boss=True)
@@ -2898,6 +2932,7 @@ async def execute_raid(channel, raid_data):
                             if not turn_image:
                                 turn_image = T1_HEAL_GIF
 
+                # ===== THẺ [#t2] MAHORAGA: The True adapt + Thoái Ma kiếm =====
                 if str(ac["cid"]).lower() == "t2":
                     heal_mahoraga = int(ac["max_hp"] * 0.05)
                     ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_mahoraga)
@@ -3075,7 +3110,7 @@ async def execute_raid(channel, raid_data):
                     *([("🌀 Ảo Giác Tâm Trí:", reisen_boss_log, False)] if reisen_boss_log else []),
                     *([("🦇 Ripples of 495 Years:", flandre_notif, False)] if flandre_notif else []),
                     *([("🔮 Tuyệt Kỹ [Ace 2] [#t1] Seiki:", t1_notif, False)] if t1_notif else []),
-                    *([("🔱 Thần Tướng [Nhóm T] [#t2] Mahoraga:", t2_notif, False)] if t2_notif else []),
+                *([("🔱 Thần Tướng [Nhóm T] [#t2] Mahoraga:", t2_notif, False)] if t2_notif else []),
                     ("👹 Boss Phase 2 Ra Đòn:", boss_action_log, False),
                     *([("🔄 Thay Đổi Tiền Tuyến & Đổi Sát Thương:", "\n".join(push_logs), False)] if push_logs else []),
                     ("🛡️ Tình Trạng Tiền Tuyến Hiện Tại:", "\n".join(round_card_status), False)
@@ -3159,7 +3194,9 @@ async def execute_raid(channel, raid_data):
         await channel.send(embed=final_embed, view=OpenDetailsView(all_raid_turns))
         return
 
-    # REIMU DỊ HÌNH PHASE 2
+    # ========================================================================
+    # PHASE 2: REIMU DỊ HÌNH - THỨC TỈNH (50K HP / 10K DMG)
+    # ========================================================================
     p2_alert_embed = discord.Embed(
         title="🚨 DỊ BIẾN BIẾN ĐỔI - BÙA CHÚ RUNG ĐỘNG DỮ DỘI! (PHASE 2)",
         description=(
@@ -3204,6 +3241,7 @@ async def execute_raid(channel, raid_data):
     boss_freeze_debuff_turns = 0
     boss_molten_ground_turns = 0
 
+    # 🛡️ CƠ CHẾ CÂN BẰNG: GIỚI HẠN 50% SÁT THƯƠNG CHUẨN CỦA BOSS PHASE 2
     p2_true_cap = int(p2_max_hp * 0.50)
     p2_true_dmg_accum = 0
 
@@ -3303,8 +3341,8 @@ async def execute_raid(channel, raid_data):
                     remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{actual_gungnir:,} DMG** (3% Máu tối đa Boss Phase 2)!"
                 else:
                     remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir**: Sát thương chuẩn đã chạm trần (0 DMG)!"
-                    if cap_gungnir_msg:
-                        remilia_notif += f"\n{cap_gungnir_msg}"
+                if cap_gungnir_msg:
+                    remilia_notif += f"\n{cap_gungnir_msg}"
 
             if ac["cid"] == 20 and ac["is_ace2"] and not c.get("reisen_used"):
                 if random.random() < 0.25:
@@ -3314,6 +3352,7 @@ async def execute_raid(channel, raid_data):
                         turn_image = EVOL_CONFIG[20]["skill_gif"]
                     reisen_notif = f"🔴 **[Ace 2] [#20] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss Phase 2 bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
 
+            # ❄️ CIRNO ACE 2: Perfect freeze (40%)
             if ac["cid"] == 22 and ac["is_ace2"] and not c.get("cirno_freeze_used"):
                 if random.random() < 0.40:
                     c["cirno_freeze_used"] = True
@@ -3322,6 +3361,7 @@ async def execute_raid(channel, raid_data):
                         turn_image = EVOL_CONFIG[22]["skill_gif"]
                     cirno_notif = f"❄️ **[Ace 2] [#22] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss Phase 2: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
 
+            # ☢️ UTSUHO REIUJI ACE 2: Nuclear spell card (25%)
             if ac["cid"] == 13 and ac["is_ace2"]:
                 if random.random() < 0.25:
                     card_dmg = int(card_dmg * 3.0)
@@ -3330,6 +3370,7 @@ async def execute_raid(channel, raid_data):
                         turn_image = EVOL_CONFIG[13]["skill_gif"]
                     utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho Boss Phase 2 trong 3 turn)!"
 
+            # ===== THẺ [#t1] SEIKI REIMU PHASE 2: Fantasy Seal 50% miễn thương =====
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
                     _t1 = t1_ace2_attack(c, ac, p2_rounds, p2_max_hp, f"Boss Reimu Phase 2", is_boss=True)
@@ -3373,6 +3414,7 @@ async def execute_raid(channel, raid_data):
                         if not turn_image:
                             turn_image = T1_HEAL_GIF
 
+            # ===== THẺ [#t2] MAHORAGA: The True adapt + Thoái Ma kiếm =====
             if str(ac["cid"]).lower() == "t2":
                 heal_mahoraga = int(ac["max_hp"] * 0.05)
                 ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_mahoraga)
@@ -3769,11 +3811,10 @@ async def slash_admin_set_level(interaction: discord.Interaction, nguoi_dung: di
     if not is_authorized_admin(interaction.user.id):
         await interaction.response.send_message(f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}>) mới có quyền.", ephemeral=True)
         return
+    cap_do = max(1, min(MAX_LEVEL, cap_do))
     target = get_player(nguoi_dung.id, nguoi_dung.display_name)
-    max_lvl = get_max_level(target.get("prestige", 0))
-    cap_do = max(1, min(max_lvl, cap_do))
     old_lvl, old_xp = target["level"], target["xp"]
-    new_xp = get_total_xp_for_level(cap_do, max_lvl)
+    new_xp = get_total_xp_for_level(cap_do)
     target["xp"] = new_xp
     target["level"] = cap_do
     save_player(target)
@@ -3789,10 +3830,9 @@ async def prefix_admin_set_level(ctx, member: discord.Member, level: int):
     if not is_authorized_admin(ctx.author.id):
         await ctx.send("⛔ Từ chối quyền truy cập! Lệnh dành riêng cho chủ bot.")
         return
+    level = max(1, min(MAX_LEVEL, level))
     target = get_player(member.id, member.display_name)
-    max_lvl = get_max_level(target.get("prestige", 0))
-    level = max(1, min(max_lvl, level))
-    target["xp"] = get_total_xp_for_level(level, max_lvl)
+    target["xp"] = get_total_xp_for_level(level)
     target["level"] = level
     save_player(target)
     await ctx.send(f"✅ Đã set level cho {member.mention} thành **Lv.{level}** (Đồng bộ: {target['xp']:,} XP).")
@@ -4614,7 +4654,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
         await send_tutorial_intro(ctx_or_interaction, player)
         return
 
-    cur_lvl, xp_in_lvl, needed_xp, ratio = get_level_progress(player.get("xp", 0), player.get("prestige", 0))
+    cur_lvl, xp_in_lvl, needed_xp, ratio = get_level_progress(player.get("xp", 0))
     lvl_buff_pwr = get_level_atk_buff(cur_lvl)
     lvl_buff_hp = get_level_hp_buff(cur_lvl)
     act = action.lower().strip() if action else "view"
@@ -4689,6 +4729,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
         else: await ctx_or_interaction.send(msg)
         return
 
+    # HIỂN THỊ CẤP ĐỘ PRESTIGE & BONUS XP TRONG /TEAM
     p_lvl = player.get("prestige", 0)
     p_tokens = player.get("tokens", 0)
     p_mult = get_prestige_xp_multiplier(p_lvl)
@@ -5648,8 +5689,7 @@ async def handle_battle(ctx_or_interaction):
 
     npc = random.choice(GENSOKYO_NPCS)
     opp_name = f"{npc['badge']} {npc['name']}"
-    p_max_lvl = get_max_level(player.get("prestige", 0))
-    opp_level = max(1, min(p_max_lvl, player["level"] + random.choice([-1, 0, 1, 2])))
+    opp_level = max(1, min(MAX_LEVEL, player["level"] + random.choice([-1, 0, 1, 2])))
     opp_team_ids = npc.get("preferred", [17, 18, 20])
 
     p_buff_pwr = get_level_atk_buff(player["level"])
@@ -5755,6 +5795,7 @@ async def handle_battle(ctx_or_interaction):
                 _mc_dmg = pc["power"]
                 pc["current_hp"] = max(0, pc["current_hp"] - _mc_dmg)
 
+        # Kiểm tra bỏng dung nham từ Nuclear Spell Card:
         if o_molten_ground_turns > 0:
             o_molten_ground_turns -= 1
             burn_dmg = int(oc["hp"] * 0.02)
@@ -5771,6 +5812,7 @@ async def handle_battle(ctx_or_interaction):
             battle_logs.append(msg_b)
             turn_actions.append(msg_b)
 
+        # Kiểm tra đóng băng từ Perfect Freeze:
         if o_freeze_debuff_turns > 0 and not stunned_oc:
             o_freeze_debuff_turns -= 1
             if random.random() < 0.45:
@@ -5786,6 +5828,9 @@ async def handle_battle(ctx_or_interaction):
                 msg_fz = f"❄️ **[Perfect Freeze]** **{pc['name']}** bị đóng băng cứng đờ (45%), không thể tấn công trong hiệp này! (Còn {p_freeze_debuff_turns} turn duy trì)"
                 battle_logs.append(msg_fz)
                 turn_actions.append(msg_fz)
+                msg_mc = f"🌀 **[Red Eye Mind Explosion]** **{pc['name']}** mất kiểm soát và **tự gây {_mc_dmg:,} DMG** lên bản thân! (Còn {p_mind_turns} lượt ảo giác)"
+                battle_logs.append(msg_mc)
+                turn_actions.append(msg_mc)
 
         if pc["cid"] == 17 and pc["is_ace2"] and not p_sakuya:
             if random.random() < 0.40:
@@ -5834,6 +5879,7 @@ async def handle_battle(ctx_or_interaction):
                 battle_logs.append(msg_r)
                 turn_actions.append(msg_r)
 
+        # ❄️ CIRNO ACE 2: Perfect freeze (40% - Đóng băng đối phương, trong 2 turn tiếp có 45% không đánh trả)
         if pc["cid"] == 22 and pc["is_ace2"] and not p_cirno_freeze_used:
             if random.random() < 0.40:
                 p_cirno_freeze_used = True
@@ -5844,6 +5890,7 @@ async def handle_battle(ctx_or_interaction):
                 battle_logs.append(msg_c)
                 turn_actions.append(msg_c)
 
+        # ☢️ UTSUHO REIUJI ACE 2: Nuclear spell card (25% - 3.0x sát thương + dung nham đốt 2% Max HP bài địch trong 3 turn)
         if pc["cid"] == 13 and pc["is_ace2"]:
             if random.random() < 0.25:
                 curr_pc_power = int(curr_pc_power * 3.0)
@@ -5865,6 +5912,7 @@ async def handle_battle(ctx_or_interaction):
                 battle_logs.append(msg_r)
                 turn_actions.append(msg_r)
 
+        # ===== THẺ [#t1] SEIKI: Bản thường / Bản Ace 2 ⭐⭐ =====
         if str(pc["cid"]).lower() == "t1":
             if pc.get("is_ace2"):
                 _t1 = t1_ace2_attack(p_t1, pc, r_cnt, oc["hp"], f"**{oc['name']}**", is_boss=False)
@@ -5912,6 +5960,7 @@ async def handle_battle(ctx_or_interaction):
                     battle_logs.append(msg_h)
                     turn_actions.append(msg_h)
 
+        # ===== THẺ [#t2] MAHORAGA: The True adapt + Thoái Ma kiếm =====
         if str(pc["cid"]).lower() == "t2":
             p_mahoraga_turns += 1
             heal_val = int(pc["hp"] * 0.05)
@@ -6092,6 +6141,7 @@ async def handle_battle(ctx_or_interaction):
     else:
         gained_xp = random.randint(30, 50)
 
+    # ÁP DỤNG HỆ SỐ PRESTIGE XP BONUS
     p_mult = get_prestige_xp_multiplier(player.get("prestige", 0))
     gained_xp = int(gained_xp * p_mult)
 
@@ -6101,6 +6151,7 @@ async def handle_battle(ctx_or_interaction):
     player["battles_total"] = player.get("battles_total", 0) + 1
     if win: player["battles_won"] = player.get("battles_won", 0) + 1
 
+    # TỰ ĐỘNG ĐẾM TIẾN TRÌNH CHO NHIỆM VỤ CỐT TRUYỆN (/STORY)
     st = player.setdefault("story", {})
     if st.get("current_stage", 0) == 0:
         st["battles_done"] = st.get("battles_done", 0) + 1
@@ -6137,7 +6188,7 @@ async def handle_battle(ctx_or_interaction):
     embed.add_field(name=f"🔵 Toàn Bộ Đội Hình Đối Thủ: {opp_name} (Lv.{opp_level}):", value="\n".join(opp_team_lines) if opp_team_lines else "Trống", inline=False)
 
     if battle_logs: embed.add_field(name="📜 Diễn Biến Nổi Bật:", value="\n".join(battle_logs[:5]), inline=False)
-    cur_lvl, xp_in_lvl, needed_xp, _ = get_level_progress(player["xp"], player.get("prestige", 0))
+    cur_lvl, xp_in_lvl, needed_xp, _ = get_level_progress(player["xp"])
     embed.add_field(
         name="Kết Quả:",
         value=f"{'🏆 **CHIẾN THẮNG!**' if win else '💀 **THẤT BẠI!**'}\nNhận: **+{gained_xp} XP** ({'Thắng +100-200 XP' if win else 'Thua +30-50 XP'} | Tổng: {player['xp']:,} XP | Cấp: Lv.{cur_lvl}: {xp_in_lvl}/{needed_xp} XP){lvl_up_str}",
@@ -6300,6 +6351,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_mc)
                 turn_actions.append(msg_mc)
 
+        # Kiểm tra bỏng dung nham từ Nuclear Spell Card (PvP):
         if t_molten_ground_turns > 0:
             t_molten_ground_turns -= 1
             burn_dmg = int(tc["max_hp"] * 0.02)
@@ -6316,10 +6368,8 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
             pvp_logs.append(msg_b)
             turn_actions.append(msg_b)
 
-        c_stunned = False
-        t_stunned = False
-
-        if t_freeze_debuff_turns > 0:
+        # Kiểm tra đóng băng từ Perfect Freeze (PvP):
+        if t_freeze_debuff_turns > 0 and not t_stunned:
             t_freeze_debuff_turns -= 1
             if random.random() < 0.45:
                 t_stunned = True
@@ -6327,13 +6377,16 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_fz)
                 turn_actions.append(msg_fz)
 
-        if c_freeze_debuff_turns > 0:
+        if c_freeze_debuff_turns > 0 and not c_stunned:
             c_freeze_debuff_turns -= 1
             if random.random() < 0.45:
                 c_stunned = True
                 msg_fz = f"❄️ **[Perfect Freeze]** **{cc['name']}** ({challenger.display_name}) bị đóng băng cứng đờ (45%), không thể ra đòn trong hiệp này! (Còn {c_freeze_debuff_turns} turn duy trì)"
                 pvp_logs.append(msg_fz)
                 turn_actions.append(msg_fz)
+
+        c_stunned = False
+        t_stunned = False
 
         if cc["cid"] == 17 and cc["is_ace2"] and not c_sakuya:
             if random.random() < 0.40:
@@ -6433,6 +6486,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_r)
                 turn_actions.append(msg_r)
 
+        # ❄️ CIRNO ACE 2 (Challenger)
         if cc["cid"] == 22 and cc["is_ace2"] and not c_cirno_freeze_used:
             if random.random() < 0.40:
                 c_cirno_freeze_used = True
@@ -6443,6 +6497,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_c)
                 turn_actions.append(msg_c)
 
+        # ☢️ UTSUHO REIUJI ACE 2 (Challenger)
         if cc["cid"] == 13 and cc["is_ace2"]:
             if random.random() < 0.25:
                 c_curr_power = int(c_curr_power * 3.0)
@@ -6464,6 +6519,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_r)
                 turn_actions.append(msg_r)
 
+        # ===== THẺ [#t1] SEIKI (Challenger): Bản thường / Bản Ace 2 ⭐⭐ =====
         if str(cc["cid"]).lower() == "t1":
             if cc.get("is_ace2"):
                 _t1 = t1_ace2_attack(c_t1, cc, r_cnt, tc["max_hp"], f"**{tc['name']}** ({target.display_name})", is_boss=False)
@@ -6512,6 +6568,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                     pvp_logs.append(msg_h)
                     turn_actions.append(msg_h)
 
+        # ===== THẺ [#t2] MAHORAGA (Challenger): The True adapt + Thoái Ma kiếm =====
         if str(cc["cid"]).lower() == "t2":
             c_mahoraga_turns += 1
             heal_val = int(cc["max_hp"] * 0.05)
@@ -6563,6 +6620,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_r)
                 turn_actions.append(msg_r)
 
+        # ❄️ CIRNO ACE 2 (Target)
         if tc["cid"] == 22 and tc["is_ace2"] and not t_cirno_freeze_used:
             if random.random() < 0.40:
                 t_cirno_freeze_used = True
@@ -6573,6 +6631,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_c)
                 turn_actions.append(msg_c)
 
+        # ☢️ UTSUHO REIUJI ACE 2 (Target)
         if tc["cid"] == 13 and tc["is_ace2"]:
             if random.random() < 0.25:
                 t_curr_power = int(t_curr_power * 3.0)
@@ -6594,6 +6653,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_r)
                 turn_actions.append(msg_r)
 
+        # ===== THẺ [#t1] SEIKI (Target): Bản thường / Bản Ace 2 ⭐⭐ =====
         if str(tc["cid"]).lower() == "t1":
             if tc.get("is_ace2"):
                 _t1 = t1_ace2_attack(t_t1, tc, r_cnt, cc["max_hp"], f"**{cc['name']}** ({challenger.display_name})", is_boss=False)
@@ -6642,6 +6702,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                     pvp_logs.append(msg_h)
                     turn_actions.append(msg_h)
 
+        # ===== THẺ [#t2] MAHORAGA (Target): The True adapt + Thoái Ma kiếm =====
         if str(tc["cid"]).lower() == "t2":
             t_mahoraga_turns += 1
             heal_val = int(tc["max_hp"] * 0.05)
@@ -7330,7 +7391,7 @@ async def slash_boss_status(interaction: discord.Interaction):
     check_and_clean_expired_raid()
     now = time.time()
     embed = discord.Embed(title="👹 TRẠNG THÁI BOSS RAID: REIMU DỊ HÌNH (2 PHASE)", color=0xDC2626)
-    embed.add_field(name="👺 Bát Ách Kiếm Thần Tướng Mahoraga (Single Phase):", value="• 90,000 HP | 6,000 DMG (chia đều)\n• Nội tại The True Adapt (100%): tự hồi 3% HP tối đa (2,700 HP) và GIẢM 3% sát thương phải nhận mỗi lượt (cộng dồn)!\n• Kỹ năng Thoái Ma Kiếm (25%): 6,000 DMG sát thương thuần lên 1 mục tiêu duy nhất!\n• Phần thưởng: 10% 20 vé, 40% 15 vé, 50% 10 vé, 5% Mảnh Mahoraga!", inline=False)
+    embed.add_field(name="👺 Bát Ách Kiếm Thần Tướng Mahoraga (Single Phase):", value=f"• 90,000 HP | 6,000 DMG (chia đều)\n• Nội tại The True Adapt (100%): tự hồi 3% HP tối đa (2,700 HP) và GIẢM 3% sát thương phải nhận mỗi lượt (cộng dồn)!\n• Kỹ năng Thoái Ma Kiếm (25%): 6,000 DMG sát thương thuần lên 1 mục tiêu duy nhất!\n• Phần thưởng: 10% 20 vé, 40% 15 vé, 50% 10 vé, 5% Mảnh Mahoraga!", inline=False)
     embed.add_field(name="👹 Seiki Dị Hình (2 Phase):", value=f"• Phase 1: HP {SEIKI_BOSS_CONFIG['hp']:,} | {SEIKI_BOSS_CONFIG['power']:,} DMG (chia đều) + nội tại hồi 1.5% HP\n• Phase 2 Thức Tỉnh: HP {SEIKI_BOSS_PHASE2_CONFIG['hp']:,} | {SEIKI_BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều) + Cleave +20% Máu tối đa mục tiêu + Nuclear Spell Card (10%) 10K DMG toàn tiền tuyến!", inline=False)
     embed.set_thumbnail(url=BOSS_CONFIG["image"])
     embed.add_field(name="❤️ Chỉ Số 2 Phase:", value=f"• Phase 1: HP {BOSS_CONFIG['hp']:,} | Đánh thường {BOSS_CONFIG['power']:,} DMG (chia đều)\n• Phase 2: HP {BOSS_PHASE2_CONFIG['hp']:,} | Đánh thường {BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều)", inline=True)
@@ -7441,12 +7502,14 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
     st = player.setdefault("story", {})
     boss_lvl = st.get("rumia_boss_level") or player.get("level", 1)
     
+    # Chỉ số Rumia: Power 440, HP 4400 + Buff theo boss_lvl cố định lúc mở quest
     boss_atk_buff = get_level_atk_buff(boss_lvl)
     boss_hp_buff = get_level_hp_buff(boss_lvl)
     rumia_max_hp = 4400 + boss_hp_buff
     rumia_hp = rumia_max_hp
     rumia_power = 440 + boss_atk_buff
 
+    # Chuẩn bị đội hình player
     team_cids = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
     if len(team_cids) < 3:
         owned = get_owned_card_ids(player)
@@ -7511,6 +7574,7 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
         turn_logs = []
         card_dmg = pc["power"]
 
+        # Kỹ năng Ace 2
         if pc["cid"] == 17 and pc["is_ace2"] and not sakuya_used:
             if random.random() < 0.40:
                 sakuya_used = True
@@ -7569,7 +7633,9 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
         if rumia_hp <= 0: break
         await asyncio.sleep(2.0)
 
+    # Kết quả trận đấu
     if rumia_hp <= 0:
+        # CHIẾN THẮNG: Thưởng 10 thẻ ID 24 (Rumia) cộng thẳng túi đồ + 10 Pull
         inv = player.setdefault("inventory", {})
         inv["24"] = inv.get("24", 0) + 10
         if 24 not in player.get("unlocked_cards", []):
@@ -7628,6 +7694,9 @@ class StoryBattleView(discord.ui.View):
         self.stop()
         await run_story_rumia_battle(interaction, self.user, self.player)
 
+# ==============================================================================
+# GIAO DIỆN CÂU ĐỐ STAGE 2: BỀ MẶT HỒ SƯƠNG MÙ (TỰ ĐỘNG XÁO TRỘN KHI SAI)
+# ==============================================================================
 class Stage2QuizView(discord.ui.View):
     def __init__(self, user, player):
         super().__init__(timeout=180)
@@ -7643,7 +7712,7 @@ class Stage2QuizView(discord.ui.View):
 
     def build_buttons(self):
         self.clear_items()
-        random.shuffle(self.options)
+        random.shuffle(self.options)  # Xáo trộn thứ tự nút bấm
         for opt in self.options:
             btn = discord.ui.Button(
                 label=opt["label"],
@@ -7660,6 +7729,7 @@ class Stage2QuizView(discord.ui.View):
                 return
 
             if opt["correct"]:
+                # TRẢ LỜI ĐÚNG -> Reimu: "Phải rồi, xem nào." -> Lưu cờ và chuyển tiếp!
                 st = self.player.setdefault("story", {})
                 st["stage2_quiz_passed"] = True
                 save_player(self.player)
@@ -7677,6 +7747,7 @@ class Stage2QuizView(discord.ui.View):
                 await interaction.response.edit_message(embed=embed_correct, view=None)
                 await handle_story(interaction)
             else:
+                # TRẢ LỜI SAI -> Reimu mắng tương ứng & TỰ ĐỘNG XÁO TRỘN CÂU TRẢ LỜI!
                 self.build_buttons()
                 embed_wrong = discord.Embed(
                     title="❄️ BỀ MẶT HỒ SƯƠNG MÙ (LAKE SURFACE)",
@@ -7692,6 +7763,9 @@ class Stage2QuizView(discord.ui.View):
                 await interaction.response.edit_message(embed=embed_wrong, view=self)
         return button_callback
 
+# ==============================================================================
+# LIVE BATTLE STORY MODE - STAGE 2: CIRNO ACE 2 (BỀ MẶT HỒ SƯƠNG MÙ)
+# ==============================================================================
 class StoryCirnoBattleView(discord.ui.View):
     def __init__(self, user, player):
         super().__init__(timeout=180)
@@ -7712,6 +7786,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
     st = player.setdefault("story", {})
     boss_lvl = st.get("cirno_boss_level") or player.get("level", 20)
 
+    # Cirno Ace 2: Power 1200, HP 6600 + Buff theo boss_lvl cố định lúc mở quest
     boss_atk_buff = get_level_atk_buff(boss_lvl)
     boss_hp_buff = get_level_hp_buff(boss_lvl)
     cirno_max_hp = 6600 + boss_hp_buff
@@ -7786,12 +7861,14 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
         card_dmg = pc["power"]
         player_stunned = False
 
+        # Kiểm tra debuff đóng băng của Cirno lên người chơi
         if cirno_freeze_turns > 0:
             cirno_freeze_turns -= 1
             if random.random() < 0.45:
                 player_stunned = True
                 turn_logs.append(f"🧊 **[Perfect Freeze]** {pc['name']} bị đóng băng cứng đờ (45%), không thể ra đòn!")
 
+        # Kỹ năng Ace 2 của player
         if not player_stunned:
             if pc["cid"] == 17 and pc["is_ace2"] and not sakuya_used:
                 if random.random() < 0.40:
@@ -7815,6 +7892,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
             if sakuya_used and rounds == 1:
                 turn_logs.append("❄️ Cirno bị đóng băng thời gian nên không thể phản công!")
             else:
+                # Cirno Ace 2 dùng Perfect Freeze
                 if not cirno_skill_used and random.random() < 0.40:
                     cirno_skill_used = True
                     cirno_freeze_turns = 2
@@ -7857,6 +7935,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
         if cirno_hp <= 0: break
         await asyncio.sleep(2.0)
 
+    # Kết quả trận đấu Cirno
     if cirno_hp <= 0:
         inv = player.setdefault("inventory", {})
         inv["22"] = inv.get("22", 0) + 30
@@ -7906,16 +7985,20 @@ async def handle_story(ctx_or_interaction):
     
     stage = st.get("current_stage", 0)
 
+    # --------------------------------------------------------------------------
+    # GIAI ĐOẠN 0: PROLOGUE - LÀN SƯƠNG ĐỎ BÙNG PHÁT & NHIỆM VỤ TẬP HUẤN
+    # --------------------------------------------------------------------------
     if stage == 0:
         battles_cnt = st.get("battles_done", 0)
         user_lvl = player.get("level", 1)
         req_battle_ok = battles_cnt >= 10
         req_lvl_ok = user_lvl >= 10
 
+        # Nếu đã đủ cả 2 điều kiện -> Trao thưởng 10 Pull & Mở khóa Stage 1
         if req_battle_ok and req_lvl_ok:
             st["quest_claimed"] = True
             st["current_stage"] = 1
-            st["rumia_boss_level"] = user_lvl
+            st["rumia_boss_level"] = user_lvl  # Cố định cấp độ của Boss Rumia ngay lúc này
             player["pull_tickets"] += 10.0
             save_player(player)
 
@@ -7937,6 +8020,7 @@ async def handle_story(ctx_or_interaction):
                 await ctx_or_interaction.send(embed=embed_unlock)
             return
 
+        # Nếu chưa đủ điều kiện -> Hiển thị cốt truyện mở đầu & tiến độ
         status_battle = "✅ ĐÃ HOÀN THÀNH" if req_battle_ok else f"🔴 Chưa đủ ({battles_cnt}/10 trận)"
         status_lvl = "✅ ĐÃ ĐẠT" if req_lvl_ok else f"🔴 Chưa đủ (Cấp hiện tại: Lv.{user_lvl}/10)"
 
@@ -7968,6 +8052,9 @@ async def handle_story(ctx_or_interaction):
             await ctx_or_interaction.send(embed=embed_prologue)
         return
 
+    # --------------------------------------------------------------------------
+    # GIAI ĐOẠN 1: STAGE 1 - HỒ SƯƠNG MÙ & HỘI THOẠI RUMIA
+    # --------------------------------------------------------------------------
     elif stage == 1:
         boss_lvl = st.get("rumia_boss_level") or player.get("level", 1)
         dialogue_text = (
@@ -8010,7 +8097,11 @@ async def handle_story(ctx_or_interaction):
             await ctx_or_interaction.send(embed=embed_stage1, view=view)
         return
 
+    # --------------------------------------------------------------------------
+    # GIAI ĐOẠN 2: STAGE 2 - BỀ MẶT HỒ SƯƠNG MÙ (CIRNO ACE 2)
+    # --------------------------------------------------------------------------
     elif stage == 2:
+        # 1. KIỂM TRA CÂU ĐỐ (QUIZ) CỦA REIMU
         if not st.get("stage2_quiz_passed", False):
             embed_quiz = discord.Embed(
                 title="❄️ STAGE 2: BỀ MẶT HỒ SƯƠNG MÙ (LAKE SURFACE)",
@@ -8030,6 +8121,7 @@ async def handle_story(ctx_or_interaction):
                 await ctx_or_interaction.send(embed=embed_quiz, view=quiz_view)
             return
 
+        # 2. KIỂM TRA NHIỆM VỤ YÊU CẦU: 6 BATTLE & LEVEL 20
         b_done = st.get("stage2_battles_done", 0)
         u_lvl = player.get("level", 1)
         req_b_ok = b_done >= 6
@@ -8038,7 +8130,7 @@ async def handle_story(ctx_or_interaction):
         if not st.get("stage2_quest_claimed", False):
             if req_b_ok and req_l_ok:
                 st["stage2_quest_claimed"] = True
-                st["cirno_boss_level"] = u_lvl
+                st["cirno_boss_level"] = u_lvl  # Cố định level của Cirno lúc mở quest
                 player["pull_tickets"] += 10.0
                 save_player(player)
 
@@ -8081,6 +8173,7 @@ async def handle_story(ctx_or_interaction):
                 await ctx_or_interaction.send(embed=embed_stage2_quest)
             return
 
+        # 3. ĐÃ XONG QUEST -> HIỆN ĐỐI THOẠI CIRNO & NÚT CHIẾN ĐẤU
         boss_lvl = st.get("cirno_boss_level") or player.get("level", 20)
         dialogue_text = (
             "• ❄️ **Cirno:** *\"Mục tiêu bị lạc đường đều là do tiên nữ làm cả đấy.\"*\n"
@@ -8115,6 +8208,9 @@ async def handle_story(ctx_or_interaction):
             await ctx_or_interaction.send(embed=embed_dialogue, view=view)
         return
 
+    # --------------------------------------------------------------------------
+    # GIAI ĐOẠN 3: ĐÃ HOÀN THÀNH STAGE 2
+    # --------------------------------------------------------------------------
     else:
         embed_cleared = discord.Embed(
             title="🏆 BẠN ĐÃ VƯỢT QUA STAGE 2: BỀ MẶT HỒ SƯƠNG MÙ!",
@@ -8161,10 +8257,11 @@ class PrestigeConfirmView(discord.ui.View):
         new_p = self.p_info["next_p"]
         old_tickets = self.player.get("pull_tickets", 0.0)
 
+        # RESET VỀ LEVEL 0 VÀ RESET TOÀN BỘ PULL TRONG KHO
         self.player["prestige"] = new_p
         self.player["xp"] = 0
         self.player["level"] = 0
-        self.player["pull_tickets"] = float(self.p_info["pulls"])
+        self.player["pull_tickets"] = float(self.p_info["pulls"])  # Reset pull cũ, nhận vé mới
         self.player["tokens"] = self.player.get("tokens", 0) + self.p_info["tokens"]
         save_player(self.player)
 
@@ -8174,7 +8271,6 @@ class PrestigeConfirmView(discord.ui.View):
                 f"⛩️ **Chúc mừng {self.user.mention} đã đạt cảnh giới Chuyển Sinh mới!**\n\n"
                 f"📊 **Cấp bậc mới:** `Prestige {new_p}` *(Trước: P{old_p})*\n"
                 f"🔄 **Đặt lại cấp độ:** `Lv.0 (0 XP)`\n"
-                f"🔓 **Mở giới hạn cấp tối đa:** Lên tới `Lv.{get_max_level(new_p)}`!\n"
                 f"🎟️ **Làm mới kho Pull:** Thu hồi {old_tickets:.1f} vé cũ ➔ Cấp mới **+{int(self.p_info['pulls'])} Vé Pull**!\n"
                 f"💎 **Thưởng Tokens:** **+{self.p_info['tokens']} Tokens** (Tổng kho: `{self.player['tokens']:,}` tokens)\n"
                 f"⚡ **Đặc quyền mới:** Nhận **x{self.p_info['xp_mult']:g} XP Bonus** vĩnh viễn trong mọi trận chiến!"
@@ -8215,7 +8311,6 @@ async def handle_prestige(ctx_or_interaction):
             f"🌟 **MỤC TIÊU TIẾP THEO: PRESTIGE {p_info['next_p']}**\n"
             f"• 🎯 **Yêu cầu:** Đạt tối thiểu **Cấp {p_info['req_lvl']}**\n"
             f"• 🎁 **Phần thưởng chuyển sinh:** **+{int(p_info['pulls'])} Vé Pull** 🎟️ & **+{p_info['tokens']} Tokens** 💎\n"
-            f"• 🔓 **Phần thưởng mở giới hạn cấp:** Mở giới hạn lên **Lv.{get_max_level(p_info['next_p'])}**!\n"
             f"• ⚡ **Đặc quyền mở rộng:** Tăng hệ số nhận kinh nghiệm lên **x{p_info['xp_mult']:g} XP**!\n"
             f"• ⚠️ **Lưu ý cốt lõi:** Khi chuyển sinh, cấp độ sẽ đặt lại về **Lv.0** và **toàn bộ vé pull tích lũy cũ sẽ được làm mới** thành số vé thưởng mới!\n"
             f"• 📌 **Trạng thái:** {status_str}"
@@ -8287,6 +8382,7 @@ class TokenBuyCardModal(discord.ui.Modal):
             await interaction.response.send_message(f"❌ Bạn không đủ tokens! (Cần {total_cost:,} tokens, hiện có {cur_tokens:,} tokens)", ephemeral=True)
             return
 
+        # Trừ tokens và cộng thẻ
         self.player["tokens"] = cur_tokens - total_cost
         cid_str = str(card["id"])
         inv = self.player.setdefault("inventory", {})
@@ -8422,7 +8518,7 @@ async def handle_help(ctx_or_interaction):
 **🌸 TÂN THỦ & NHIỆM VỤ:**
 • `/tutorial`: Khóa huấn luyện tân thủ (Thưởng 10 lượt pull, cấp 3 lượt pull 100% không trùng lá, không bao giờ ra thẻ SS, tiến trình 1 chiều).
 • `/story`: Chế độ cốt truyện Touhou Story Mode (Hồng Ma Dị Biến - Stage 1: Rumia, Stage 2: Bề mặt Hồ Sương Mù vs Cirno Ace 2).
-• `/prestige`: Hệ thống chuyển sinh (Reset Lv.0, nhận vé pull, tokens và nhân kinh nghiệm x1.5 - x4.2 XP, mở giới hạn cấp tối đa lên tới Lv.150, Lv.200, Lv.500+).
+• `/prestige`: Hệ thống chuyển sinh (Reset Lv.0, nhận vé pull, tokens và nhân kinh nghiệm x1.5 - x4.2 XP).
 • `/token`: Mở Token Shop đền Hakurei (Đổi thẻ SS, S hoặc quay ngẫu nhiên bằng tokens).
 • `/quest`: Xem 3/3 Nhiệm vụ Hàng Ngày (Nhận vé pull & thưởng lớn +10 lượt pull khi xong cả 3).
 
@@ -8469,7 +8565,7 @@ async def handle_help(ctx_or_interaction):
 **👑 LỆNH ADMIN (OWNER EXCLUSIVE - ID: 1502579398560317441):**
 • `/admin_lock <user> <id_the>`: Niêm phong thẻ bài của người chơi (chỉ mở khi pull ra lại).
 • `/admin_reset_quest [user]`: Làm mới thủ công 3/3 Nhiệm Vụ Ngày (hệ thống vốn tự động reset lúc 00:00 GMT+7).
-• `/admin_set_level <user> <level>`: Đặt cấp độ và đồng bộ XP (+50 XP/cấp chuẩn xác, mở giới hạn theo Prestige).
+• `/admin_set_level <user> <level>`: Đặt cấp độ và đồng bộ XP (+50 XP/cấp chuẩn xác).
 • `/admin_confiscate <user> [id_the] [so_luong]`: Tước đoạt bài trừng phạt cheat (0 = tất cả).
 • `/admin_add_card <id_the> [so_luong] [user]`: Cấp thẻ cho người chơi / tự lấy thẻ.
 • `/sync`: Đồng bộ lại cây lệnh Slash Commands.
@@ -8494,6 +8590,9 @@ async def slash_story(interaction: discord.Interaction):
 async def prefix_story(ctx):
     await handle_story(ctx)
 
+# ==============================================================================
+# ĐĂNG KÝ SLASH COMMANDS & PREFIX CHO PRESTIGE VÀ TOKEN SHOP
+# ==============================================================================
 @bot.tree.command(name="prestige", description="Hệ thống chuyển sinh: Reset về Lv.0, làm mới Pull, nhận Tokens & x1.5-4x XP")
 async def slash_prestige(interaction: discord.Interaction):
     await handle_prestige(interaction)
