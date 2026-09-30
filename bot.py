@@ -27,7 +27,7 @@
 # UPDATE 2026-09-22: THEM [#10] KOISHI KOMEIJI (Rank S - 600 ATK / 6,060 HP) - ID CU 10-26 DAY LEN 11-27, TU DONG DI TRU DU LIEU NGUOI CHOI
 # UPDATE 2026-09-24: THEM ACE 2 MOI - [#12] REMILIA (25 THE, THUONG DO GUNGNIR THU DONG +3% MAX HP MUC TIEU) & [#20] REISEN (40 THE, RED EYE MIND EXPLOSION 25% - MUC TIEU 20% TU SAT TRONG 4 TURN)
 # UPDATE 2026-09-27: THEM BOSS MOI [BAT ACH KIEM THAN TUONG MAHORAGA] (90K HP / 6K DMG CHIA DEU) - THE TRUE ADAPT (HOI 3% HP + GIAM 3% ST MOI TURN) + THOAI MA KIEM (DON MUC TIEU), TI LE SPAWN 3 BOSS DEU 1/3, THEM MAHORAGA SHARD (5% DROP)
-# UPDATE 2026-09-27: CAP NHAT ACE 2 MOI - [#22] CIRNO (60 THE, PERFECT FREEZE 40% - 2 TURN TIEP 45% DONG BANG KHONG DANH TRA) & [#13] UTSUHO REIUJI (30 THE, NUCLEAR SPELL CARD 25% - 3.0x DMG & DUNG NHAM BONG 2% MAX HP TRONG 3 TURN)
+# UPDATE 2026-09-27: CAP NHAT ACE 2 MOI - [#22] CIRNO (60 THE, PERFECT FREEZE 40% - 2 TURN TIEP 45% DONG BANG KHONG DANH TRA) & [#13] UTSUHO REIUJI (30 THE, NUCLEAR SPELL CARD 30% - 3.0x DMG & DUNG NHAM BONG 2% MAX HP TRONG 3 TURN)
 import os
 import re
 import time
@@ -557,7 +557,7 @@ EVOL_CONFIG = {
         "required_pulls": 30,
         "evol_gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/06/9b/o5Pa7BgCiYHgJEb.gif",
         "skill_name": "Nuclear Spell Card (Hạch Tâm Bộc Phá)",
-        "skill_desc": "25% kích hoạt: Gây ra 3.0x sát thương và khiến mặt đất nung chảy gây bỏng 2% Máu Tối Đa cho những lá bài địch ra sân sau đó trong 3 turn thì mặt đất sẽ bình thường trở lại, kèm GIF chiêu thức trực tiếp!",
+        "skill_desc": "30% kích hoạt: Gây ra 3.0x sát thương và khiến mặt đất nung chảy gây bỏng 2% Máu Tối Đa cho những lá bài địch ra sân sau đó trong 3 turn thì mặt đất sẽ bình thường trở lại, kèm GIF chiêu thức trực tiếp!",
         "skill_gif": "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/5a/61/6mcQnspY.gif",
         "bonus_power": 300,
         "bonus_hp": 300
@@ -631,7 +631,7 @@ CHARACTER_DETAILS = {
     10: {"title": "Tiểu Thư Tâm Trí Khép Kín", "skill_name": "Tâm Linh Cảm Ứng (Subconscious)", "skill_desc": "Em gái của Satori Komeiji, tự khép kín trái tim để thoát khỏi sự dị nghị của thế gian. Lướt đi vô thức khắp Gensokyo và tung những đòn đánh lén từ tiềm thức mà không một ai kịp lường trước (600 ATK / 6,060 HP)."},
     11: {"title": "Công Chúa Ánh Trăng", "skill_name": "Vĩnh Cửu & Tức Thời", "skill_desc": "Công chúa Nguyệt Cung lưu đày tại Eientei, điều khiển dòng chảy thời gian vĩnh cửu và tức thời cùng thần bảo quý giá (590 ATK / 6,400 HP)."},
     12: {"title": "Chúa Tể Hồng Ma Quán", "skill_name": "Thương Đỏ Gungnir (Vận Mệnh)", "skill_desc": "Ma cà rồng kiêu hãnh bẻ cong số mệnh kẻ thù, phóng ra ngọn giáo ánh sáng đỏ Gungnir xuyên thủng phòng ngự (560 ATK / 5,600 HP). [Ace 2 ⭐⭐]: Thương Đỏ Gungnir — kỹ năng THỤ ĐỘNG không cần kích hoạt: mọi đòn đánh gây thêm sát thương bằng 3% Máu Tối Đa (Max HP) của mục tiêu!"},
-    13: {"title": "Mặt Trời Địa Ngục", "skill_name": "Hạch Tâm Phản Ứng (Nuclear)", "skill_desc": "Mang sức mạnh thần mặt trời Yatagarasu, thi triển hạch tâm nhiệt hạch thiêu đốt toàn bộ chiến trường (550 ATK / 5,300 HP). [Ace 2 ⭐⭐]: Nuclear Spell Card (25%) — Gây 3.0x sát thương và khiến mặt đất nung chảy gây bỏng 2% Máu Tối Đa cho những lá bài địch ra sân sau đó trong 3 turn!"},
+    13: {"title": "Mặt Trời Địa Ngục", "skill_name": "Hạch Tâm Phản Ứng (Nuclear)", "skill_desc": "Mang sức mạnh thần mặt trời Yatagarasu, thi triển hạch tâm nhiệt hạch thiêu đốt toàn bộ chiến trường (550 ATK / 5,300 HP). [Ace 2 ⭐⭐]: Nuclear Spell Card (30%) — Gây 3.0x sát thương và khiến mặt đất nung chảy gây bỏng 2% Máu Tối Đa cho những lá bài địch ra sân sau đó trong 3 turn!"},
     14: {"title": "Vu Nữ Đền Hakurei", "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh", "skill_desc": "Bay lượn khỏi thực tại và trừ tà ma thuật. [Ace 2 ⭐⭐]: Miễn toàn bộ sát thương 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
     15: {"title": "Phượng Hoàng Bất Tử", "skill_name": "Phượng Hoàng Bất Diệt", "skill_desc": "Cơ thể bất tử do uống tiên dược Hourai, triệu hồi ngọn lửa phượng hoàng thiêu đốt kẻ địch mà không hề sợ chết (490 ATK / 5,200 HP)."},
     16: {"title": "Tiên Nhân Một Tay", "skill_name": "Thần Thú Giáng Lâm", "skill_desc": "Một trong Tứ Thiên Vương ẩn mình dưới thân phận tiên nhân dạy dỗ yêu quái và điều khiển muôn loài linh thú (480 ATK / 4,900 HP)."},
@@ -1483,7 +1483,7 @@ class OpponentTeamView(discord.ui.View):
             elif c["cid"] == 22:
                 skill_text += "\n❄️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Perfect Freeze* (1 lần/trận): đóng băng đối thủ, trong 2 turn tiếp theo có 45% không thể đánh trả."
             elif c["cid"] == 13:
-                skill_text += "\n☢️ **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Nuclear Spell Card* bộc phá ×3.0 sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn."
+                skill_text += "\n☢️ **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Nuclear Spell Card* bộc phá ×3.0 sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn."
         if is_ace and str(c["cid"]).lower() == "t1":
             skill_text += "\n♾️ **[Ace 2 Hiệu Ứng]** *Cleave* (thụ động, +2% Máu tối đa mỗi đòn) • *Medicine Sign* (35% hồi 40% máu) • *Fantasy Seal* (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • *Bóng Khái Niệm* (40%: 15% máu tối đa + xóa kỹ năng đối phương — mỗi chiêu 1 lần/trận)."
         if str(c["cid"]).lower() == "t2":
@@ -1693,7 +1693,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
         )
         embed.add_field(
             name="🎁 Phần Thưởng Thanh Tẩy Boss:",
-            value="• **Phase 1:** 10% nhận **10 Vé**, 40% nhận **5 Vé**, 50% nhận **3 Vé**! (+100 XP)\n• **Phase 2 (Thức Tỉnh):** 10% nhận **30 Vé**, 40% nhận **20 Vé**, 50% nhận **10 Vé**! 🔮 **15%** rơi **+1 Mảnh Seiki**! (+150 XP)\n• 🔮 Mỗi Phase đều có **2.5%** rơi **+1 Mảnh Seiki** (10 mảnh = 1 thẻ [T] #t1 Seiki - dùng `/t translate`)!\n• Nhận thêm điểm danh nhiệm vụ diệt Boss!",
+            value="• **Phase 1:** 10% nhận **10 Vé**, 40% nhận **5 Vé**, 50% nhận **3 Vé**! (+100 XP)\n• **Phase 2 (Thức Tỉnh):** 10% nhận **30 Vé**, 40% nhận **20 Vé**, 50% nhận **10 Vé**! 🔮 **5%** rơi **+1 Mảnh Seiki**! (+150 XP)\n• 🔮 Mỗi Phase đều có **2.5%** rơi **+1 Mảnh Seiki** (10 mảnh = 1 thẻ [T] #t1 Seiki - dùng `/t translate`)!\n• Nhận thêm điểm danh nhiệm vụ diệt Boss!",
         )
         embed.add_field(
             name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
@@ -2147,12 +2147,12 @@ async def execute_raid(channel, raid_data):
                     cirno_notif = f"❄️ **[Ace 2] [#22] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
 
             if ac["cid"] == 13 and ac["is_ace2"]:
-                if random.random() < 0.25:
+                if random.random() < 0.30:
                     card_dmg = int(card_dmg * 3.0)
                     boss_molten_ground_turns = 3
                     if not turn_image:
                         turn_image = EVOL_CONFIG[13]["skill_gif"]
-                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
+                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
 
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
@@ -2844,12 +2844,12 @@ async def execute_raid(channel, raid_data):
                         cirno_notif = f"❄️ **[Ace 2] [#22] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss Phase 2: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
 
                 if ac["cid"] == 13 and ac["is_ace2"]:
-                    if random.random() < 0.25:
+                    if random.random() < 0.30:
                         card_dmg = int(card_dmg * 3.0)
                         boss_molten_ground_turns = 3
                         if not turn_image:
                             turn_image = EVOL_CONFIG[13]["skill_gif"]
-                        utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho Boss Phase 2 trong 3 turn)!"
+                        utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho Boss Phase 2 trong 3 turn)!"
 
                 if str(ac["cid"]).lower() == "t1":
                     if ac.get("is_ace2"):
@@ -3106,11 +3106,11 @@ async def execute_raid(channel, raid_data):
                     d_str = "💎 **+10 Vé** (50%)"
 
                 items_won = [d_str]
-                if random.random() < 0.15:
+                if random.random() < 0.05:
                     p_shards = p.setdefault("shards", {})
                     p_shards["seiki"] = p_shards.get("seiki", 0) + 1
                     cur_shards = p_shards["seiki"]
-                    shard_notice = f"🔮 **+1 Mảnh Seiki** (15% Siêu Hiếm! Kho: {cur_shards}/10)"
+                    shard_notice = f"🔮 **+1 Mảnh Seiki** (5% Siêu Hiếm! Kho: {cur_shards}/10)"
                     if cur_shards >= 10:
                         shard_notice += " ✨ *(Đã đủ 10 mảnh! Dùng `/t translate`)*"
                     items_won.append(shard_notice)
@@ -3148,7 +3148,7 @@ async def execute_raid(channel, raid_data):
                 lvl_up = f" 🌟 **LÊN CẤP {r['new_level']}!**" if r['new_level'] > r['old_level'] else ""
                 shard_line = f"\n   └ {r['items'][1]}" if len(r['items']) > 1 else ""
                 p2_summary.append(f"🏆 **{r['username']}**: Nhận **+{r['total_pulls']:.0f} Vé Pull** ({r['items'][0]}) + 150 XP!{lvl_up}{shard_line}\n   └ *Tổng vé hiện có: {r['total_tickets']:.2f} vé*")
-            final_embed.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (10% 30 vé, 40% 20 vé, 50% 10 vé, 15% Mảnh Seiki):", value="\n".join(p2_summary), inline=False)
+            final_embed.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (10% 30 vé, 40% 20 vé, 50% 10 vé, 5% Mảnh Seiki):", value="\n".join(p2_summary), inline=False)
         else:
             final_embed.add_field(name="⚠️ Kết Quả Phase 2:", value=f"Boss Phase 2 còn {p2_hp:,} HP! Toàn bộ quà Phase 1 vẫn được bảo lưu trọn vẹn.", inline=False)
 
@@ -3322,12 +3322,12 @@ async def execute_raid(channel, raid_data):
                     cirno_notif = f"❄️ **[Ace 2] [#22] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss Phase 2: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
 
             if ac["cid"] == 13 and ac["is_ace2"]:
-                if random.random() < 0.25:
+                if random.random() < 0.30:
                     card_dmg = int(card_dmg * 3.0)
                     boss_molten_ground_turns = 3
                     if not turn_image:
                         turn_image = EVOL_CONFIG[13]["skill_gif"]
-                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho Boss Phase 2 trong 3 turn)!"
+                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho Boss Phase 2 trong 3 turn)!"
 
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
@@ -4414,7 +4414,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             f"• Trạng thái: **{utsuho_status}**\n"
             f"• Trong túi đồ: **{utsuho_cnt}/30** lá *(tiến hóa xong trừ 30 lá)*\n"
             f"• Buff Ace: **+300 ATK** & **+300 HP**\n"
-            f"• Kỹ năng: **{utsuho_cfg['skill_name']}** (25% gây 3.0x sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch ra sân sau đó trong 3 turn)"
+            f"• Kỹ năng: **{utsuho_cfg['skill_name']}** (30% gây 3.0x sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch ra sân sau đó trong 3 turn)"
         ),
         inline=False
     )
@@ -5843,12 +5843,12 @@ async def handle_battle(ctx_or_interaction):
                 turn_actions.append(msg_c)
 
         if pc["cid"] == 13 and pc["is_ace2"]:
-            if random.random() < 0.25:
+            if random.random() < 0.30:
                 curr_pc_power = int(curr_pc_power * 3.0)
                 o_molten_ground_turns = 3
                 if not turn_image:
                     turn_image = EVOL_CONFIG[13]["skill_gif"]
-                msg_u = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({user.display_name}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{curr_pc_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
+                msg_u = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({user.display_name}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.0 giáng **{curr_pc_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
                 battle_logs.append(msg_u)
                 turn_actions.append(msg_u)
 
@@ -5973,12 +5973,12 @@ async def handle_battle(ctx_or_interaction):
                 turn_actions.append(msg_c)
 
         if oc["cid"] == 13 and oc.get("is_ace2"):
-            if random.random() < 0.25:
+            if random.random() < 0.30:
                 curr_oc_power = int(curr_oc_power * 3.0)
                 p_molten_ground_turns = 3
                 if not turn_image:
                     turn_image = EVOL_CONFIG[13]["skill_gif"]
-                msg_u = f"☢️ **Đối thủ [Ace 2] [#13] Utsuho Reiuji** bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{curr_oc_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa trong 3 turn)!"
+                msg_u = f"☢️ **Đối thủ [Ace 2] [#13] Utsuho Reiuji** bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.0 giáng **{curr_oc_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa trong 3 turn)!"
                 battle_logs.append(msg_u)
                 turn_actions.append(msg_u)
 
@@ -6441,12 +6441,12 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_actions.append(msg_c)
 
         if cc["cid"] == 13 and cc["is_ace2"]:
-            if random.random() < 0.25:
+            if random.random() < 0.30:
                 c_curr_power = int(c_curr_power * 3.0)
                 t_molten_ground_turns = 3
                 if not turn_image:
                     turn_image = EVOL_CONFIG[13]["skill_gif"]
-                msg_u = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({challenger.display_name}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{c_curr_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
+                msg_u = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({challenger.display_name}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.0 giáng **{c_curr_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
                 pvp_logs.append(msg_u)
                 turn_actions.append(msg_u)
 
@@ -6571,12 +6571,12 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_actions.append(msg_c)
 
         if tc["cid"] == 13 and tc["is_ace2"]:
-            if random.random() < 0.25:
+            if random.random() < 0.30:
                 t_curr_power = int(t_curr_power * 3.0)
                 c_molten_ground_turns = 3
                 if not turn_image:
                     turn_image = EVOL_CONFIG[13]["skill_gif"]
-                msg_u = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({target.display_name}) bộc phát **Nuclear Spell Card** (25%)! Sát thương nhiệt hạch ×3.0 giáng **{t_curr_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
+                msg_u = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({target.display_name}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.0 giáng **{t_curr_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
                 pvp_logs.append(msg_u)
                 turn_actions.append(msg_u)
 
@@ -8439,7 +8439,7 @@ async def handle_help(ctx_or_interaction):
   - [#12] Remilia (25 thẻ): Thương Đỏ Gungnir — THỤ ĐỘNG không cần kích hoạt: mọi đòn đánh +3% Máu Tối Đa (Max HP) mục tiêu, kèm GIF chiêu.
   - [#20] Reisen (40 thẻ): Red Eye Mind Explosion (25% kích hoạt 1 lần/trận): mục tiêu có 20% tự gây sát thương lên bản thân trong 4 turn (không dùng lên chính mình).
   - [#22] Cirno (60 thẻ): Perfect Freeze (40% kích hoạt 1 lần/trận): đóng băng khiến đối phương trong 2 turn tiếp có 45% không thể đánh trả, kèm GIF chiêu trực tiếp.
-  - [#13] Utsuho Reiuji (30 thẻ): Nuclear Spell Card (25% kích hoạt): gây 3.0x sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch ra sân sau đó trong 3 turn, kèm GIF chiêu trực tiếp.
+  - [#13] Utsuho Reiuji (30 thẻ): Nuclear Spell Card (30% kích hoạt): gây 3.0x sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch ra sân sau đó trong 3 turn, kèm GIF chiêu trực tiếp.
   - [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Điều kiện đặc biệt: Marisa, Reimu, Sakuya đều Ace 2 & 10 Mảnh Seiki):
     * Cleave: Thụ động 100% mọi đòn đánh thường +2% Máu Tối Đa mục tiêu!
     * Medicine Sign: 35% hồi 40% Máu Tối Đa bản thân, 1 lần/trận.
@@ -8461,7 +8461,7 @@ async def handle_help(ctx_or_interaction):
 • **Phase 2 Thức Tỉnh (50k HP / 22k DMG):** Tự động hồi sinh & hồi 100% HP mọi thẻ bài! Quà siêu cấp: 10% 20 vé, 40% 10 vé, 50% 5 vé!
 **👹 DỊ BIẾN SEIKI DỊ HÌNH - DỊ TÀ ĐỆ NHẤT PHÁP SƯ (LIVE COMBAT 2 PHASE):**
 • **Phase 1 (30k HP / 3k DMG chia đều):** Nội tại hồi 1.5% HP, Multi Master Spark (15%), Fantasy Seal (20%), Blitz Attack (20%). Quà: 10% 10 vé, 40% 5 vé, 50% 3 vé!
-• **Phase 2 Thức Tỉnh (90k HP / 10k DMG chia đều):** Hồi sinh & hồi 100% HP mọi thẻ bài! Nội tại **Cleave (100%)**: +20% Máu tối đa mục tiêu! **Nuclear Spell Card (10%)**: 10K DMG toàn tiền tuyến! Quà: 10% 30 vé, 40% 20 vé, 50% 10 vé, 15% +1 Mảnh Seiki!
+• **Phase 2 Thức Tỉnh (90k HP / 10k DMG chia đều):** Hồi sinh & hồi 100% HP mọi thẻ bài! Nội tại **Cleave (100%)**: +20% Máu tối đa mục tiêu! **Nuclear Spell Card (10%)**: 10K DMG toàn tiền tuyến! Quà: 10% 30 vé, 40% 20 vé, 50% 10 vé, 5% +1 Mảnh Seiki!
 **👺 DỊ BIẾN BÁT ÁCH KIẾM THẦN TƯỚNG MAHORAGA (SINGLE PHASE - 90K HP):**
 • **90,000 HP / 6,000 DMG (chia đều tiền tuyến):**
   - **The True Adapt (100% Thụ Động):** Mỗi hiệp tự hồi 3% HP tối đa (2,700 HP) & giảm 3% sát thương phải nhận (cộng dồn mỗi hiệp, tối đa 90%)!
