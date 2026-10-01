@@ -4114,21 +4114,21 @@ class EvolSelectView(discord.ui.View):
         self.player = player
         self.user_id = user_id
 
-    @discord.ui.button(label="⛩️ [#14] Tiến Hóa Reimu Ace 2 (20 Thẻ)", style=discord.ButtonStyle.danger, emoji="🌸")
+    @discord.ui.button(label="⛩️ [#15] Tiến Hóa Reimu Ace 2 (20 Thẻ)", style=discord.ButtonStyle.danger, emoji="🌸")
     async def button_evol_reimu(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
         await do_evolve_interaction(interaction, self.player, 15)
 
-    @discord.ui.button(label="🕰️ [#17] Tiến Hóa Sakuya Ace 2 (30 Thẻ)", style=discord.ButtonStyle.primary, emoji="⏳")
+    @discord.ui.button(label="🕰️ [#18] Tiến Hóa Sakuya Ace 2 (30 Thẻ)", style=discord.ButtonStyle.primary, emoji="⏳")
     async def button_evol_sakuya(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
-        await do_evolve_interaction(interaction, self.player, 19)
+        await do_evolve_interaction(interaction, self.player, 18)
 
-    @discord.ui.button(label="🌟 [#18] Tiến Hóa Marisa Ace 2 (25 Thẻ)", style=discord.ButtonStyle.success, emoji="✨")
+    @discord.ui.button(label="🌟 [#19] Tiến Hóa Marisa Ace 2 (25 Thẻ)", style=discord.ButtonStyle.success, emoji="✨")
     async def button_evol_marisa(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
@@ -4149,14 +4149,14 @@ class EvolSelectView(discord.ui.View):
             return
         await do_evolve_interaction(interaction, self.player, 12)
 
-    @discord.ui.button(label="🐰 [#20] Tiến Hóa Reisen Ace 2 (40 Thẻ)", style=discord.ButtonStyle.success, emoji="🔴", row=1)
+    @discord.ui.button(label="🐰 [#21] Tiến Hóa Reisen Ace 2 (40 Thẻ)", style=discord.ButtonStyle.success, emoji="🔴", row=1)
     async def button_evol_reisen(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
         await do_evolve_interaction(interaction, self.player, 21)
 
-    @discord.ui.button(label="❄️ [#22] Tiến Hóa Cirno Ace 2 (60 Thẻ)", style=discord.ButtonStyle.primary, emoji="🧊", row=2)
+    @discord.ui.button(label="❄️ [#23] Tiến Hóa Cirno Ace 2 (60 Thẻ)", style=discord.ButtonStyle.primary, emoji="🧊", row=2)
     async def button_evol_cirno(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
@@ -4446,16 +4446,16 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     else:
         await ctx_or_interaction.send(embed=embed, view=view)
 
-@bot.tree.command(name="evol", description="Tiến hóa nhân vật lên Ace 2 (9, 12, 13, 14, 17, 18, 20, 22 hoặc t1)")
+@bot.tree.command(name="evol", description="Tiến hóa nhân vật lên Ace 2 (9, 12, 13, 15, 18, 19, 21, 23 hoặc t1)")
 @app_commands.describe(id_hoac_ten="Nhập số ID thẻ hoặc chọn nhân vật")
 @app_commands.choices(id_hoac_ten=[
-    app_commands.Choice(name="[#15] Reimu Hakurei (Ace 2 - Cần 20 thẻ, trừ 20 khi Ace)", value="14"),
-    app_commands.Choice(name="[#18] Sakuya Izayoi (Ace 2 - Cần 30 thẻ, trừ 30 khi Ace)", value="17"),
-    app_commands.Choice(name="[#19] Marisa Kirisame (Ace 2 - Cần 25 thẻ, Master Spark x2.0)", value="18"),
+    app_commands.Choice(name="[#15] Reimu Hakurei (Ace 2 - Cần 20 thẻ, trừ 20 khi Ace)", value="15"),
+    app_commands.Choice(name="[#18] Sakuya Izayoi (Ace 2 - Cần 30 thẻ, trừ 30 khi Ace)", value="18"),
+    app_commands.Choice(name="[#19] Marisa Kirisame (Ace 2 - Cần 25 thẻ, Master Spark x2.0)", value="19"),
     app_commands.Choice(name="[#09] Flandre Scarlet (Ace 2 - Cần 30 thẻ, Ripples of 495 Years)", value="9"),
     app_commands.Choice(name="[#12] Remilia Scarlet (Ace 2 - Cần 25 thẻ, Gungnir thụ động +3% Max HP)", value="12"),
-    app_commands.Choice(name="[#21] Reisen Udongein Inaba (Ace 2 - Cần 40 thẻ, Red Eye Mind Explosion)", value="20"),
-    app_commands.Choice(name="[#23] Cirno (Ace 2 - Cần 60 thẻ, Perfect Freeze)", value="22"),
+    app_commands.Choice(name="[#21] Reisen Udongein Inaba (Ace 2 - Cần 40 thẻ, Red Eye Mind Explosion)", value="21"),
+    app_commands.Choice(name="[#23] Cirno (Ace 2 - Cần 60 thẻ, Perfect Freeze)", value="23"),
     app_commands.Choice(name="[#13] Utsuho Reiuji (Ace 2 - Cần 30 thẻ, Nuclear Spell Card)", value="13"),
     app_commands.Choice(name="[#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Cần Ace2 Marisa + Reimu + Sakuya & 10 Mảnh Seiki)", value="t1")
 ])
@@ -4756,7 +4756,7 @@ async def handle_collection(ctx_or_interaction):
     player = get_player(user.id, user.display_name)
     owned = 0
     lines = []
-    for cid in range(1, 28):
+    for cid in range(1, 29):
         if cid not in CARDS_DATA:
             continue
         card = CARDS_DATA[cid]
@@ -4804,7 +4804,7 @@ async def handle_collection(ctx_or_interaction):
     if t_lines:
         desc_text += "\n\n🔮 **THẺ ĐẶC BIỆT (NHÓM T - ĐỔI TỪ MẢNH SHARDS):**\n" + "\n".join(t_lines)
 
-    embed = discord.Embed(title=f"📖 BỘ SƯU TẬP THẺ TOUHOU ({owned}/27)", description=desc_text, color=0x8B5CF6)
+    embed = discord.Embed(title=f"📖 BỘ SƯU TẬP THẺ TOUHOU ({owned}/28)", description=desc_text, color=0x8B5CF6)
 
     tut = player.get("tutorial", {})
     if tut.get("active") and tut.get("step") == "collection":
@@ -7515,13 +7515,13 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
         turn_logs = []
         card_dmg = pc["power"]
 
-        if pc["cid"] == 17 and pc["is_ace2"] and not sakuya_used:
+        if pc["cid"] == 18 and pc["is_ace2"] and not sakuya_used:
             if random.random() < 0.40:
                 sakuya_used = True
-                turn_image = EVOL_CONFIG[19]["skill_gif"]
+                turn_image = EVOL_CONFIG[18]["skill_gif"]
                 turn_logs.append("⏳ **[Ace 2] Sakuya** kích hoạt **Thời Gian Đóng Băng**! Rumia bị STUN mất lượt!")
 
-        if pc["cid"] == 18 and pc["is_ace2"] and not marisa_used:
+        if pc["cid"] == 19 and pc["is_ace2"] and not marisa_used:
             if random.random() < 0.30:
                 marisa_used = True
                 card_dmg = int(card_dmg * 2.0)
@@ -7538,7 +7538,7 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
                 turn_logs.append("❄️ Rumia bị đóng băng không thể phản công!")
             else:
                 invul = False
-                if pc["cid"] == 14 and pc["is_ace2"] and not reimu_used:
+                if pc["cid"] == 15 and pc["is_ace2"] and not reimu_used:
                     if random.random() < 0.40:
                         reimu_used = True
                         invul = True
@@ -7803,13 +7803,13 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                 turn_logs.append(f"🧊 **[Perfect Freeze]** {pc['name']} bị đóng băng cứng đờ (45%), không thể ra đòn!")
 
         if not player_stunned:
-            if pc["cid"] == 17 and pc["is_ace2"] and not sakuya_used:
+            if pc["cid"] == 18 and pc["is_ace2"] and not sakuya_used:
                 if random.random() < 0.40:
                     sakuya_used = True
-                    turn_image = EVOL_CONFIG[19]["skill_gif"]
+                    turn_image = EVOL_CONFIG[18]["skill_gif"]
                     turn_logs.append("⏳ **[Ace 2] Sakuya** kích hoạt **Thời Gian Đóng Băng**! Cirno bị STUN mất lượt!")
 
-            if pc["cid"] == 18 and pc["is_ace2"] and not marisa_used:
+            if pc["cid"] == 19 and pc["is_ace2"] and not marisa_used:
                 if random.random() < 0.30:
                     marisa_used = True
                     card_dmg = int(card_dmg * 2.0)
@@ -7832,7 +7832,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     turn_logs.append("❄️ **[Ace 2] Cirno** tung tuyệt kỹ **PERFECT FREEZE** (40%)! Đóng băng người chơi: trong 2 turn tiếp có 45% không thể đánh trả!")
 
                 invul = False
-                if pc["cid"] == 14 and pc["is_ace2"] and not reimu_used:
+                if pc["cid"] == 15 and pc["is_ace2"] and not reimu_used:
                     if random.random() < 0.40:
                         reimu_used = True
                         invul = True
@@ -7883,7 +7883,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                 "🌸 **\"Con nhóc hỗn xược bị Reimu và trợ thủ ném xuống hồ băng\"**\n\n"
                 "⛩️ **Reimu:** *\"Đúng là con bé phiền phức thích làm trò. Đường đến Hồng Ma Quán ở ngay phía trước rồi, mau đi thôi!\"*\n\n"
                 "🎁 **PHẦN THƯỞNG CHIẾN TÍCH STAGE 2:**\n"
-                f"• 🎴 **+30 Thẻ bài [#23] Cirno (Rank B)** cộng thẳng vào túi đồ! (Hiện có: `{inv['22']}` lá)\n"
+                f"• 🎴 **+30 Thẻ bài [#23] Cirno (Rank B)** cộng thẳng vào túi đồ! (Hiện có: `{inv['23']}` lá)\n"
                 f"• 🎟️ **+5 Lượt Pull Tích Lũy** (Tổng vé hiện có: `{player['pull_tickets']:.2f}` vé)!\n"
                 f"• 🏆 **Hoàn thành Stage 2!**"
             ),
