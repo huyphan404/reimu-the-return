@@ -294,11 +294,46 @@ CARDS_DATA = {
                 "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/fd/9a/evpBLiollsxMmiF1wK18.gif"
             }
         }
+    },
+    "t3": {
+        "id": "t3",
+        "name": "Kizuna the emperor of vampire",
+        "rank": "T",
+        "power": 780,
+        "hp": 7700,
+        "image": "https://media.discordapp.net/attachments/1543072032034521228/1555151435237294090/image.png?backend=b2&ex=6abf7b23&is=6abe29a3&hm=046b321ed799b1a5c6266bb195b80de0a345c35fdeb75211aef98176ab00e12a&=&format=webp&quality=lossless",
+        "passive": {
+            "name": "True vampire",
+            "chance": 1.0,
+            "heal_pct": 0.05,
+            "desc": "Hồi 5% máu tối đa mỗi lượt",
+            "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/2f/38/H1AP9mdI3CzGLVUrFBF.gif"
+        },
+        "skills": {
+            "blood_chain": {
+                "name": "Blood chain",
+                "chance": 0.30,
+                "multiplier": 1.5,
+                "max_uses": 1,
+                "desc": "30% gây ra 1.5x sát thương (1 lần trong trận)",
+                "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/2f/38/H1AP9mdI3CzGLVUrFBF.gif"
+            },
+            "dark_chain": {
+                "name": "Dark chain",
+                "chance": 0.20,
+                "multiplier": 1.0,
+                "target_max_hp_pct": 0.15,
+                "max_uses": 3,
+                "desc": "20% gây 1x sát thương kèm 15% máu tối đa đối phương (tối đa 3 lần trong trận)",
+                "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/56/40/iq0ztIh38KLjZwtzI.gif"
+            }
+        }
     }
 }
 CARDS_DATA["T1"] = CARDS_DATA["t1"]
 CARDS_DATA["T2"] = CARDS_DATA["t2"]
 CARDS_DATA["t2"] = CARDS_DATA["t2"]
+CARDS_DATA["T3"] = CARDS_DATA["t3"]
 
 # ==============================================================================
 # GIF HOẠT ẢNH TUYỆT KỸ THẺ [T] #t1 SEIKI (dùng chung cho Raid, Battle & PvP)
@@ -436,6 +471,105 @@ MAHORAGA_BOSS_CONFIG = {
             "chance": 0.25,
             "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/fd/9a/evpBLiollsxMmiF1wK18.gif",
             "desc": "25% kích hoạt: Gây 1x sát thương (6,000 DMG) lên MỘT mục tiêu duy nhất - sát thương thuần, KHÔNG chia đều!"
+        }
+    }
+}
+ITEM_DEFINITIONS = {
+    "thanh_loi": {
+        "id": "thanh_loi",
+        "name": "Thánh Lõi",
+        "tag": "[E]",
+        "is_usable": True,
+        "emoji": "🔮",
+        "desc": "Vật phẩm thần thánh chứa đựng lõi năng lượng cổ đại. Dùng làm nguyên liệu tiến hóa bắt buộc để nâng cấp [#t3] Kizuna the emperor of vampire lên Ace 2 ⭐⭐!"
+    },
+    "candy": {
+        "id": "candy",
+        "name": "Kẹo Halloween",
+        "tag": "[E]",
+        "is_usable": True,
+        "emoji": "🍬",
+        "desc": "Những mảnh kẹo ngọt ma quái rơi ra từ Event Halloween 2026. Dùng trong `/event shop` để đổi vật phẩm, hoặc dùng trực tiếp (ăn 10 kẹo = 1 Vé Pull)!"
+    },
+    "halloween_giftbox": {
+        "id": "halloween_giftbox",
+        "name": "Hộp Quà Ma Quái",
+        "tag": "[E]",
+        "is_usable": True,
+        "emoji": "🎁",
+        "desc": "Hộp quà bí ẩn Halloween. Sử dụng [E] để mở ra ngẫu nhiên 5-20 Vé Pull, 50-100 Kẹo, hoặc 1-2 Mảnh Kizuna/Leon!"
+    }
+}
+
+EVENT_CONFIG = {
+    "id": "halloween_2026",
+    "name": "Halloween Event 2026",
+    "active": True,
+    "start_date": "2026-10-02",
+    "end_date": "2026-10-30",
+    "banner_image": "https://media.discordapp.net/attachments/1527157582115111077/1555132294170419230/images.png?backend=b2&ex=6abf694f&is=6abe17cf&hm=0da7e8bf9d0062f5711ce6391b3216939b3b641e8743b8a6c707250d849e0bec&=&format=webp&quality=lossless&width=362&height=512",
+    "marisa_quote": "Thu thập những mảnh kẹo và đổi lấy phần thưởng nào!",
+    "quest_targets": {
+        "battle": 100,
+        "pvp": 100,
+        "raid_normal": 30,
+        "raid_event": 30
+    },
+    "reward": {
+        "items": {"thanh_loi": 1},
+        "tokens": 250
+    }
+}
+
+EVENT_BOSS_CONFIG = {
+    "id": "kizuna_event",
+    "name": "Kizuna - Huyết Ma Đế (Event Boss Phase 1)",
+    "desc": "Chúa tể ma cà rồng cổ đại thức tỉnh trong đêm hội ma quái Halloween 2026!",
+    "reimu_quote": "Mùi máu tanh nồng nặc này... Kẻ đứng đầu gia tộc ma cà rồng đã xuất hiện!",
+    "image": "https://media.discordapp.net/attachments/1543072032034521228/1555151435237294090/image.png?backend=b2&ex=6abf7b23&is=6abe29a3&hm=046b321ed799b1a5c6266bb195b80de0a345c35fdeb75211aef98176ab00e12a&=&format=webp&quality=lossless",
+    "hp": 50000,
+    "power": 6000,
+    "passive_regen_pct": 0.03,
+    "max_players": 6,
+    "player_cooldown": 3600,
+    "skills": {
+        "blood_chain": {
+            "name": "Blood Chain", "chance": 0.20, "multiplier": 1.5,
+            "desc": "20% kích hoạt: Gây 1.5x sát thương (9,000 DMG) chia đều toàn đội!",
+            "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/2f/38/H1AP9mdI3CzGLVUrFBF.gif"
+        },
+        "dark_chain": {
+            "name": "Dark Chain", "chance": 0.40, "target_hp_pct": 0.15,
+            "desc": "40% kích hoạt: Gây 1x sát thương chia đều kèm 15% Máu tối đa chia đều cho tất cả mục tiêu!",
+            "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/56/40/iq0ztIh38KLjZwtzI.gif"
+        }
+    }
+}
+
+EVENT_BOSS_PHASE2_CONFIG = {
+    "id": "kizuna_event_phase2",
+    "name": "Kizuna - Huyết Ma Đế (Phase 2 Thức Tỉnh)",
+    "desc": "Huyết nguyệt vạn trượng! Huyết Ma Đế giải phóng Wonder Guard bất khả xâm phạm!",
+    "reimu_quote": "Không xong rồi! Kết giới Wonder Guard của hắn đang phản kích lại bùa chú của chúng ta!",
+    "image": "https://media.discordapp.net/attachments/1543072032034521228/1555151435237294090/image.png?backend=b2&ex=6abf7b23&is=6abe29a3&hm=046b321ed799b1a5c6266bb195b80de0a345c35fdeb75211aef98176ab00e12a&=&format=webp&quality=lossless",
+    "hp": 100000,
+    "power": 10000,
+    "passive_regen_pct": 0.03,
+    "skills": {
+        "blood_chain": {
+            "name": "Blood Chain", "chance": 0.20, "multiplier": 1.5,
+            "desc": "20% kích hoạt: Gây 1.5x sát thương (15,000 DMG) chia đều!",
+            "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/2f/38/H1AP9mdI3CzGLVUrFBF.gif"
+        },
+        "dark_chain": {
+            "name": "Dark Chain", "chance": 0.40, "target_hp_pct": 0.15,
+            "desc": "40% kích hoạt: Gây 1x sát thương chia đều kèm 15% Máu tối đa chia đều cho tất cả!",
+            "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/56/40/iq0ztIh38KLjZwtzI.gif"
+        },
+        "wonder_guard": {
+            "name": "Wonder Guard", "chance": 0.20, "duration": 3, "reflect_pct": 0.60,
+            "desc": "20% kích hoạt (1 lần duy nhất): Miễn thương & phản lại 60% sát thương lẫn hiệu ứng chiêu địch trong 3 turn!",
+            "gif": "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/e5/ab/GDt4bKoq.gif"
         }
     }
 }
@@ -615,6 +749,48 @@ EVOL_CONFIG["t1"] = {
     "bonus_power": 300,
     "bonus_hp": 300
 }
+T3_ACE2_CONFIG = {
+    "required_item": "thanh_loi",
+    "blood_chain": {
+        "chance": 0.30,
+        "multiplier": 2.0,
+        "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/2f/38/H1AP9mdI3CzGLVUrFBF.gif"
+    },
+    "dark_chain": {
+        "chance": 0.30,
+        "multiplier": 1.5,
+        "target_max_hp_pct": 0.15,
+        "max_uses": 3,
+        "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/56/40/iq0ztIh38KLjZwtzI.gif"
+    },
+    "wonder_guard": {
+        "chance": 0.20,
+        "duration": 3,
+        "reflect_pct": 0.60,
+        "gif": "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/e5/ab/GDt4bKoq.gif"
+    }
+}
+
+EVOL_CONFIG["t3"] = {
+    "id": "t3",
+    "key": "kizuna",
+    "name": "Kizuna the emperor of vampire",
+    "title": "[#t3] Kizuna - Ace 2 ⭐⭐",
+    "ace_level": "Ace 2 ⭐⭐",
+    "required_cards": 0,
+    "required_pulls": 0,
+    "required_item": "thanh_loi",
+    "evol_gif": "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/e5/ab/GDt4bKoq.gif",
+    "skill_name": "Wonder Guard & Huyết Ngục Bộc Phát (Blood Chain ×2.0 • Dark Chain ×1.5 + 15% HP • Wonder Guard)",
+    "skill_desc": (
+        "🩸 True Vampire (hồi 5% HP). "
+        "⛓️ Blood Chain (30%: x2.0 ST, 1 lần/trận). "
+        "🌑 Dark Chain (30%: x1.5 ST + 15% Max HP đối phương, tối đa 3 lần/trận). "
+        "🛡️ Wonder Guard (20%: miễn toàn bộ ST & phản 60% ST lẫn hiệu ứng chiêu địch trong 3 turn, 1 lần duy nhất)!"
+    ),
+    "bonus_power": 300,
+    "bonus_hp": 300
+}
 
 # ==============================================================================
 # 3.1 CHI TIẾT NĂNG LỰC & KỸ NĂNG 27 NHÂN VẬT TOUHOU (CHO TÍNH NĂNG CHECK NHÂN VẬT)
@@ -744,7 +920,9 @@ def get_default_player(user_id, username):
         "team": [],
         "shards": {
             "seiki": 0,
-            "mahoraga": 0
+            "mahoraga": 0,
+            "kizuna": 0,
+            "leon": 0
         },
         "language": "vi",
         "id_schema": 3,
@@ -775,8 +953,21 @@ def get_default_player(user_id, username):
             "stage2_quest_claimed": False,
             "cirno_boss_level": None,
             "stage2_completed": False
-        }
-    }
+        },
+            "items": {
+            "thanh_loi": 0,
+            "candy": 0,
+            "halloween_giftbox": 0
+        },
+            "event_data": {
+            "event_id": "halloween_2026",
+            "battle_count": 0,
+            "pvp_count": 0,
+            "raid_normal_count": 0,
+            "raid_event_count": 0,
+            "claimed": False,
+            "last_event_raid_time": 0.0
+        },
 
 # ==============================================================================
 # HỆ THỐNG DAILY QUEST (3/3 NHIỆM VỤ MỖI NGÀY)
@@ -1035,6 +1226,26 @@ def get_player(user_id, username="Visitor"):
         data["tokens"] = 0
     if "prestige" not in data:
         data["prestige"] = 0
+      data.setdefault("items", {"thanh_loi": 0, "candy": 0, "halloween_giftbox": 0})
+data.setdefault("event_data", {
+    "event_id": "halloween_2026", "battle_count": 0, "pvp_count": 0,
+    "raid_normal_count": 0, "raid_event_count": 0, "claimed": False, "last_event_raid_time": 0.0
+})
+shards = data.setdefault("shards", {})
+shards.setdefault("kizuna", 0)
+shards.setdefault("leon", 0)
+def update_event_progress(player: dict, event_task_type: str, amount: int = 1):
+    if not EVENT_CONFIG.get("active", True): return None
+    ev = player.setdefault("event_data", {})
+    key_map = {"battle": "battle_count", "pvp": "pvp_count", "raid_normal": "raid_normal_count", "raid_event": "raid_event_count"}
+    field = key_map.get(event_task_type)
+    if field:
+        target = EVENT_CONFIG["quest_targets"].get(event_task_type, 100)
+        old_val = ev.get(field, 0)
+        ev[field] = old_val + amount
+        if old_val < target and ev[field] >= target:
+            return f"🎃 **SỰ KIỆN HALLOWEEN 2026:** Đã hoàn thành mục tiêu {event_task_type} ({target}/{target})!"
+    return None
     
     # ===== HỆ THỐNG DI TRÚ ID SCHEMA 3: THÊM [#14] IBARAKI-DOUJI'S ARM (ĐẨY 14-27 LÊN 15-28) =====
     if data.get("id_schema", 1) < 3:
@@ -1318,6 +1529,44 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
             f"Hồi phục **+{out['heal']:,} HP** (40% Máu Tối Đa bản thân)!"
         )
     return out
+    def execute_kizuna_ace2(player):
+    cid_str = "t3"
+    if is_card_ace2(player, cid_str):
+        return False, "⚠️ **[#t3] Kizuna the emperor of vampire** đã thức tỉnh **Ace 2 ⭐⭐** từ trước rồi!", None
+
+    inv = player.setdefault("inventory", {})
+    if inv.get(cid_str, 0) < 1 and cid_str not in player.get("unlocked_cards", []):
+        return False, "❌ Bạn chưa sở hữu thẻ **[#t3] Kizuna the emperor of vampire**! Hãy thu thập đủ **15 Mảnh Kizuna** để quy đổi thẻ trước (/t translate loai_shard:kizuna).", None
+
+    items = player.setdefault("items", {})
+    if items.get("thanh_loi", 0) < 1:
+        return False, (
+            "❌ **Thiếu vật phẩm Thánh Lõi!**\n"
+            "• Tiến hóa Kizuna Ace 2 yêu cầu **1x Thánh Lõi** [E] và đã sở hữu Kizuna.\n"
+            "• Nguồn nhận Thánh Lõi: Hoàn thành 4 nhiệm vụ sự kiện trong `/event` hoặc mua trong `/event shop`!"
+        ), None
+
+    items["thanh_loi"] -= 1
+    player.setdefault("evolutions", {})[cid_str] = 2
+    save_player(player)
+
+    cfg = EVOL_CONFIG["t3"]
+    embed = discord.Embed(
+        title="🌟 TIẾN HÓA THÀNH CÔNG: [#t3] KIZUNA THE EMPEROR OF VAMPIRE - ACE 2 ⭐⭐!",
+        description=(
+            "🩸 **HUYẾT NGUYỆT THỨC TỈNH - BỘ KỸ NĂNG VÔ ĐỊCH ACE 2:**\n\n"
+            "🧛 **True Vampire (100%):** Hồi phục **5% Máu tối đa** mỗi lượt!\n"
+            "⛓️ **Blood Chain (30%):** Sát thương bộc phá **×2.0 lần** (1 lần/trận)!\n"
+            "🌑 **Dark Chain (30%):** Sát thương **×1.5 lần** kèm **15% Máu tối đa đối phương** (tối đa 3 lần/trận)!\n"
+            "🛡️ **Wonder Guard (20%):** **MIỄN TOÀN BỘ SÁT THƯƠNG & PHẢN LẠI 60% SÁT THƯƠNG LẪN HIỆU ỨNG CHIÊU ĐỊCH** trong **3 turn** (1 lần duy nhất)!\n\n"
+            f"📉 **Khấu trừ:** Đã tiêu hao **1x Thánh Lõi** [E] (Còn lại: `{items['thanh_loi']}` lõi)\n"
+            "💪 **Buff chỉ số:** Cộng vĩnh viễn **+300 ATK** và **+300 HP**!"
+        ),
+        color=0x991B1B
+    )
+    embed.set_image(url=cfg["evol_gif"])
+    embed.set_footer(text="Touhou Evolution System • Kizuna Ace 2 Activated • Card ID #t3")
+    return True, "", embed
 
 # ==============================================================================
 # HỆ THỐNG XEM CHI TIẾT TRẬN CHIẾN & HOẠT ẢNH GIF KỸ NĂNG (IN-DISCORD)
@@ -8615,7 +8864,15 @@ async def slash_dbcheck(interaction: discord.Interaction):
     else:
         embed = discord.Embed(title="🚨 CHƯA KẾT NỐI MONGODB ATLAS", description=f"⚠️ Đang dùng SQLite tạm thời.\n{mongo_error_detail}", color=0xEF4444)
     await interaction.followup.send(embed=embed)
-
+@bot.tree.command(name="event")
+@bot.tree.command(name="event_shop")
+@bot.tree.command(name="event_raid")
+@bot.tree.command(name="admin_event_boss_spawn")
+@bot.tree.command(name="event_admin")
+@bot.tree.command(name="item")
+@bot.tree.command(name="item_use")
+@bot.tree.command(name="item_trade")
+@bot.tree.command(name="admin_add_item")
 if __name__ == "__main__":
     if not DISCORD_TOKEN:
         print("❌ LỖI: Chưa cấu hình DISCORD_TOKEN trong .env!", flush=True)
