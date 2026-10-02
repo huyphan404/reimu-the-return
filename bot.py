@@ -4035,7 +4035,182 @@ async def execute_raid(channel, raid_data):
 # ==============================================================================
 # 6B. CHIẾN ĐẤU EVENT BOSS KIZUNA (PHASE 1 & PHASE 2 WONDER GUARD)
 # ==============================================================================
+
+# ==============================================================================
+# HỆ THỐNG PHÒNG CHỜ (LOBBY 2 PHÚT) & LIVE COMBAT CHO EVENT BOSS KIZUNA
+# ==============================================================================
+active_event_raid = None
+
+class EventRaidJoinView(discord.ui.View):
+    def __init__(self, raid_data):
+        super().__init__(timeout=None)
+        self.raid_data = raid_data
+
+    @discord.ui.button(label="⚔️ Tham Gia Diệt Huyết Ma Đế (Miễn Phí)", style=discord.ButtonStyle.danger, emoji="🩸")
+    async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.raid_data.get("started") or self.raid_data.get("closed"):
+            await interaction.response.send_message("Trận chiến đã bắt đầu hoặc thời gian chuẩn bị đã kết thúc!", ephemeral=True)
+            return
+
+        user_id = interaction.user.id
+        if user_id in self.raid_data["participants"]:
+            await interaction.response.send_message("Bạn đã có tên trong danh sách xuất trận rồi!", ephemeral=True)
+            return
+
+        if len(self.raid_data["participants"]) >= 6:
+            await interaction.response.send_message("Đội hình đã đủ 6 dũng giả!", ephemeral=True)
+            return
+
+        player = get_player(user_id, interaction.user.display_name)
+        has_any_card = len(player.get("team", [])) > 0 or any(cnt > 0 for cnt in player.get("inventory", {}).values())
+        if not has_any_card:
+            await interaction.response.send_message("⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` trước nhé!", ephemeral=True)
+            return
+
+        current_team = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
+        if len(current_team) < 3:
+            owned_ids = get_owned_card_ids(player)
+            owned_ids.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
+            for cid in owned_ids:
+                if cid not in current_team: current_team.append(cid)
+                if len(current_team) >= 3: break
+            player["team"] = current_team
+            save_player(player)
+
+        self.raid_data["participants"].append(user_id)
+        self.raid_data["names"].append(interaction.user.display_name)
+        count = len(self.raid_data["participants"])
+
+        await interaction.response.send_message(f"🔥 {interaction.user.mention} đã tham chiến diệt Event Boss Kizuna! ({count}/6 dũng giả)", ephemeral=False)
+
+        try:
+            embed = interaction.message.embeds[0]
+            embed.set_field_at(
+                2,
+                name=f"👥 Người Tham Gia ({count}/6):",
+                value=", ".join(self.raid_data["names"]),
+                inline=False
+            )
+            await interaction.message.edit(embed=embed, view=self)
+        except Exception:
+            pass
+
+        if count >= 6:
+            self.raid_data["start_event"].set()
+
+async def event_raid_timer_lifecycle(channel, raid_data, view):
+    global active_event_raid
+    try:
+        try:
+            await asyncio.wait_for(raid_data["start_event"].wait(), timeout=120.0)
+        except asyncio.TimeoutError:
+            pass
+
+        for child in view.children:
+            child.disabled = True
+        if raid_data.get("msg"):
+            try: await raid_data["msg"].edit(view=view)
+            except Exception: pass
+
+        if raid_data.get("started") or raid_data.get("closed"):
+            return
+
+        participants = raid_data.get("participants", [])
+        if participants:
+            raid_data["started"] = True
+            names_str = ", ".join(raid_data.get("names", []))
+            await channel.send(
+                f"⏰ **HẾT 2 PHÚT CHUẨN BỊ EVENT RAID!**\n"
+                f"⚔️ **{len(participants)} Dũng Giả** ({names_str}) đồng loạt tiến vào lâu đài huyết tộc!\n"
+                f"🩸 **Kizuna - Huyết Ma Đế** thức tỉnh sát khí ngập trời — **TRẬN CHIẾN BẮT ĐẦU!**"
+            )
+            try:
+                await execute_event_raid(channel, raid_data)
+            except Exception as e:
+                print(f"Lỗi khi thực thi Event Raid: {e}", flush=True)
+                try: await channel.send(f"⚠️ Sự cố kỹ thuật: `{e}`")
+                except Exception: pass
+            finally:
+                active_event_raid = None
+        else:
+            raid_data["closed"] = True
+            active_event_raid = None
+            await channel.send("🌌 Huyết Ma Đế Kizuna đã ẩn mình vào bóng tối vì không có ai dám nghênh chiến...")
+    except asyncio.CancelledError:
+        return
+    except Exception as ex:
+        print(f"Lỗi trong event_raid_timer_lifecycle: {ex}", flush=True)
+        active_event_raid = None
+
+async def spawn_event_boss_raid(channel, author, is_admin=False):
+    global active_event_raid
+    if active_event_raid is not None:
+        if active_event_raid.get("task") and not active_event_raid["task"].done():
+            active_event_raid["task"].cancel()
+        active_event_raid = None
+
+    start_event = asyncio.Event()
+    raid_data = {
+        "channel_id": channel.id,
+        "boss_config": EVENT_BOSS_CONFIG,
+        "participants": [author.id],
+        "names": [author.display_name],
+        "created_timestamp": time.time(),
+        "start_event": start_event,
+        "started": False,
+        "closed": False,
+        "msg": None,
+        "view": None,
+        "task": None
+    }
+    active_event_raid = raid_data
+
+    title = "🚨 [ADMIN EVENT] TRIỆU HỒI EVENT BOSS: KIZUNA - HUYẾT MA ĐẾ!" if is_admin else "🚨 CẢNH BÁO EVENT BOSS: KIZUNA - HUYẾT MA ĐẾ GIÁNG LÂM!"
+    desc = (
+        f"👑 **Khởi xướng bởi:** {author.mention}\n\n"
+        "🏰 *Hoàng đế ma cà rồng cổ đại Kizuna đã thức tỉnh tại lâu đài huyết sắc!*\n"
+        "Mọi người hãy cùng liên minh tham gia đánh boss để nhận Kẹo Halloween 🍬, Vé Pull 🎟️ và Mảnh Kizuna 🩸!"
+    )
+    embed = discord.Embed(title=title, description=desc, color=0x991B1B)
+    embed.set_image(url=EVENT_BOSS_CONFIG["image"])
+    embed.add_field(name="❤️ Máu Boss (HP):", value="• Phase 1: **50,000 HP**\n• Phase 2 Thức Tỉnh: **100,000 HP**", inline=True)
+    embed.add_field(name="⚔️ Sức Mạnh:", value="• Phase 1: **6,000 DMG** (chia đều)\n• Phase 2: **10,000 DMG** (chia đều)", inline=True)
+    embed.add_field(name=f"👥 Người Tham Gia (1/6):", value=author.display_name, inline=False)
+    embed.add_field(
+        name="🔮 Kỹ Năng & Nội Tại Huyết Ma Đế:",
+        value=(
+            "• 🩸 **True vampire (100%):** Mỗi hiệp tự hồi **3% HP tối đa**!\n"
+            "• 💥 **Blood chain (20%):** Gây **1.5x sát thương chia đều** cho toàn bộ thẻ tiền tuyến!\n"
+            "• 🌑 **Dark chain (40%):** 1x sát thương chia đều kèm **15% Máu Tối Đa** của từng lá bài!\n"
+            "• 🛡️ **Wonder guard (Phase 2 - 20%):** Miễn thương và **phản 60% sát thương + hiệu ứng** trong 3 lượt!"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="🎁 Phần Thưởng Rơi (Drop):",
+        value=(
+            "• **Phase 1:** 10% 20 vé, 40% 15 vé, 50% 10 vé | 30% 50 kẹo, 10% 100 kẹo | 2.5% Mảnh Kizuna\n"
+            "• **Phase 2:** 10% 20 vé, 40% 15 vé, 50% 10 vé | 50% 120 kẹo, 30% 70 kẹo | 7% Mảnh Kizuna"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
+        value="Có **2 phút (120 giây)** để bấm nút **\'Tham Gia\'** bên dưới! Đủ 6 người hoặc hết giờ sẽ tự động khai màn trận chiến!",
+        inline=False
+    )
+    embed.set_footer(text="Phòng chờ Event Raid • Tối đa 6 dũng giả tham chiến")
+
+    view = EventRaidJoinView(raid_data)
+    raid_data["view"] = view
+    msg = await channel.send(embed=embed, view=view)
+    raid_data["msg"] = msg
+    task = asyncio.create_task(event_raid_timer_lifecycle(channel, raid_data, view))
+    raid_data["task"] = task
+
 async def execute_event_raid(channel, raid_data):
+    global active_event_raid
+    active_event_raid = None
     participants = raid_data["participants"]
     if not participants:
         await channel.send("⛩️ Kizuna - Huyết Ma Đế đã rời đi vì không có dũng giả nào nghênh chiến...")
@@ -4081,82 +4256,120 @@ async def execute_event_raid(channel, raid_data):
             "total_dmg": 0
         })
 
-    # PHASE 1
+    all_event_raid_turns = []
+
+    # ========================================================================
+    # PHASE 1: KIZUNA - HUYẾT MA ĐẾ (50,000 HP / 6,000 DMG)
+    # ========================================================================
     p1_cfg = EVENT_BOSS_CONFIG
     p1_max_hp = p1_cfg["hp"]
     p1_hp = p1_max_hp
     p1_power = p1_cfg["power"]
-    rounds = 0
+    p1_rounds = 0
 
     init_embed = discord.Embed(
-        title="🎃 EVENT RAID: KIZUNA - HUYẾT MA ĐẾ (PHASE 1)",
+        title="🎃 ĐẠI CHIẾN BẮT ĐẦU: KIZUNA - HUYẾT MA ĐẾ (PHASE 1)",
         description=f"🔥 **{len(combatants)} Dũng Giả** cùng toàn bộ thẻ bài xuất kích nghênh chiến!",
         color=0x991B1B
     )
     init_embed.set_thumbnail(url=p1_cfg["image"])
-    init_embed.add_field(name="❤️ Sinh Mực Boss:", value=f"`{get_hp_bar(p1_hp, p1_max_hp)}` **{p1_hp:,}/{p1_max_hp:,} HP**", inline=False)
+    init_embed.add_field(name="❤️ Sinh Lực Boss:", value=f"`{get_hp_bar(p1_hp, p1_max_hp)}` **{p1_hp:,}/{p1_max_hp:,} HP**", inline=False)
     msg = await channel.send(embed=init_embed)
     await asyncio.sleep(2.0)
 
-    all_turns = []
-
-    while p1_hp > 0 and rounds < 30:
+    while p1_hp > 0 and p1_rounds < 30:
         active = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
         if not active: break
-        rounds += 1
+        p1_rounds += 1
         frontline = [c["team_cards"][c["current_card_index"]] for c in active]
 
-        # Passive regen 3%
         heal_amt = int(p1_max_hp * 0.03)
         p1_hp = min(p1_max_hp, p1_hp + heal_amt)
+        passive_log = f"🩸 **[Nội Tại - True Vampire]** Huyết Ma Đế hấp thụ ma khí hồi **+{heal_amt:,} HP** (3% HP tối đa)!"
 
-        # Players Attack
         round_p_dmg = sum(ac["power"] for ac in frontline)
         p1_hp = max(0, p1_hp - round_p_dmg)
+        player_atk_str = f"Toàn quân dồn đòn đánh gây **{round_p_dmg:,} DMG** lên Kizuna!"
 
-        # Boss Attack (Roll skill)
-        boss_action = ""
+        boss_action_log = ""
         roll = random.random()
         turn_img = None
         if roll < 0.20:
             turn_img = p1_cfg["skills"]["blood_chain"]["gif"]
             dmg_total = int(p1_power * 1.5)
-            dmg_each = dmg_total // len(frontline)
-            boss_action = f"🩸 **Kizuna** tung **Blood chain (20%)**! Gây {dmg_total:,} DMG (chia đều {dmg_each:,} DMG mỗi thẻ)!"
+            dmg_each = max(100, dmg_total // len(frontline))
+            boss_action_log = f"🩸 **[KỸ NĂNG] Kizuna** thi triển **Blood chain (20%)**! Bộc phát {dmg_total:,} DMG (chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ)!"
             for ac in frontline: ac["current_hp"] -= dmg_each
         elif roll < 0.60:
             turn_img = p1_cfg["skills"]["dark_chain"]["gif"]
-            dmg_base_each = p1_power // len(frontline)
-            boss_action = f"🌑 **Kizuna** tung **Dark chain (40%)**! Gây {dmg_base_each:,} DMG cơ bản kèm **15% Máu Tối Đa** từng thẻ!"
+            dmg_base_each = max(100, p1_power // len(frontline))
+            boss_action_log = f"🌑 **[KỸ NĂNG] Kizuna** tung **Dark chain (40%)**! Gây {dmg_base_each:,} DMG cơ bản kèm **15% Máu Tối Đa** từng thẻ bài tiền tuyến!"
             for ac in frontline:
                 extra_hp = int(ac["max_hp"] * 0.15)
                 ac["current_hp"] -= (dmg_base_each + extra_hp)
         else:
-            dmg_each = p1_power // len(frontline)
-            boss_action = f"⚔️ Kizuna đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ tiền tuyến!"
+            dmg_each = max(100, p1_power // len(frontline))
+            boss_action_log = f"⚔️ Kizuna đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ tiền tuyến!"
             for ac in frontline: ac["current_hp"] -= dmg_each
 
+        push_logs = []
         for c in active:
             ac = c["team_cards"][c["current_card_index"]]
             if ac["current_hp"] <= 0:
+                dead_name = ac["name"]
                 c["current_card_index"] += 1
-                if c["current_card_index"] >= len(c["team_cards"]):
+                if c["current_card_index"] < len(c["team_cards"]):
+                    push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục ngã! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
+                else:
                     c["is_alive"] = False
+                    push_logs.append(f"☠️ **{c['username']}** đã hết thẻ bài!")
+
+        round_status = [f"• **{c['username']}**: {c['team_cards'][c['current_card_index']]['name']} (❤️{max(0, c['team_cards'][c['current_card_index']]['current_hp']):,} HP)" if c['is_alive'] else f"• **{c['username']}**: ☠️ Tử trận" for c in combatants]
 
         r_emb = discord.Embed(
-            title=f"🎃 HIỆP {rounds} - KIZUNA PHASE 1",
-            description=f"❤️ **Máu Boss:** `{get_hp_bar(p1_hp, p1_max_hp)}` **{p1_hp:,}/{p1_max_hp:,} HP**\n\n🗡️ Toàn quân gây: **{round_p_dmg:,} DMG**\n👺 **Boss:** {boss_action}",
+            title=f"🎃 HIỆP {p1_rounds} - KIZUNA HUYẾT MA ĐẾ (PHASE 1)",
+            description=f"❤️ **Máu Boss:** `{get_hp_bar(p1_hp, p1_max_hp)}` **{p1_hp:,}/{p1_max_hp:,} HP**",
             color=0x991B1B
         )
+        r_emb.add_field(name="🩸 Nội Tại Hồi Phục:", value=passive_log, inline=False)
+        r_emb.add_field(name="💥 Tiền Tuyến Tấn Công:", value=player_atk_str, inline=False)
+        r_emb.add_field(name="👺 Phản Kích Của Boss:", value=boss_action_log, inline=False)
+        if push_logs: r_emb.add_field(name="🔄 Thay Đổi Tiền Tuyến:", value="\n".join(push_logs), inline=False)
+        r_emb.add_field(name="🛡️ Tình Trạng Đội Hình:", value="\n".join(round_status), inline=False)
+
         if turn_img: r_emb.set_image(url=turn_img)
         else: r_emb.set_thumbnail(url=p1_cfg["image"])
+
+        all_event_raid_turns.append({
+            "round": p1_rounds,
+            "phase": 1,
+            "title": f"Phase 1 - Hiệp {p1_rounds}: Huyết Ma Đế",
+            "short_label": f"P1 - H{p1_rounds}",
+            "short_desc": f"Boss còn {p1_hp:,} HP",
+            "desc": f"🩸 **Kizuna - Huyết Ma Đế (Phase 1)**\n❤️ Máu Boss: `{get_hp_bar(p1_hp, p1_max_hp)}` **{p1_hp:,}/{p1_max_hp:,} HP**",
+            "color": 0x991B1B,
+            "image": turn_img,
+            "fields": [
+                ("🩸 Nội Tại Hồi Phục:", passive_log, False),
+                ("💥 Tiền Tuyến Tấn Công:", player_atk_str, False),
+                ("👺 Phản Kích Của Boss:", boss_action_log, False),
+                ("🛡️ Tình Trạng Đội Hình:", "\n".join(round_status), False)
+            ]
+        })
+
         try: await msg.edit(embed=r_emb)
         except Exception: pass
         if p1_hp <= 0: break
         await asyncio.sleep(1.8)
 
     if p1_hp > 0:
-        await channel.send("❌ Quân đoàn đã thất thủ trước Kizuna Phase 1!")
+        fail_emb = discord.Embed(
+            title="❌ QUÂN ĐOÀN THẤT THỦ TRƯỚC KIZUNA PHASE 1!",
+            description=f"Toàn bộ dũng giả đã bị tiêu diệt! Kizuna còn **{p1_hp:,} HP**.",
+            color=0xEF4444
+        )
+        fail_emb.set_thumbnail(url=p1_cfg["image"])
+        await channel.send(embed=fail_emb, view=OpenDetailsView(all_event_raid_turns))
         return
 
     # PHASE 1 DROP REWARDS
@@ -4165,19 +4378,15 @@ async def execute_event_raid(channel, raid_data):
         p = get_player(uid)
         p_items = p.setdefault("items", {})
         p_shards = p.setdefault("shards", {})
-        
-        # Tickets
+
         t_roll = random.random()
         tickets = 20.0 if t_roll < 0.10 else (15.0 if t_roll < 0.50 else 10.0)
         p["pull_tickets"] += tickets
 
-        # Candies
         c_roll = random.random()
         candies = 100 if c_roll < 0.10 else (50 if c_roll < 0.40 else 0)
-        if candies > 0:
-            p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + candies
+        if candies > 0: p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + candies
 
-        # Shard
         shard_got = False
         if random.random() < 0.025:
             p_shards["kizuna"] = p_shards.get("kizuna", 0) + 1
@@ -4189,7 +4398,9 @@ async def execute_event_raid(channel, raid_data):
         if shard_got: txt += ", 🩸 **+1 Mảnh Kizuna**!"
         p1_rewards.append(txt)
 
-    # PHASE 2: THỨC TỈNH (100K HP / WONDER GUARD)
+    # ========================================================================
+    # PHASE 2: KIZUNA THỨC TỈNH (100,000 HP / WONDER GUARD PHẢN 60% ST)
+    # ========================================================================
     p2_cfg = EVENT_BOSS_PHASE2_CONFIG
     p2_max_hp = p2_cfg["hp"]
     p2_hp = p2_max_hp
@@ -4197,7 +4408,6 @@ async def execute_event_raid(channel, raid_data):
     p2_rounds = 0
     wonder_guard_turns = 0
 
-    # Hồi sinh và 100% HP toàn đội hình
     for c in combatants:
         c["current_card_index"] = 0
         c["is_alive"] = True
@@ -4205,11 +4415,15 @@ async def execute_event_raid(channel, raid_data):
 
     p2_emb_init = discord.Embed(
         title="🩸 KIZUNA THỨC TỈNH - HUYẾT MA ĐẾ TỐI THƯỢNG (PHASE 2)",
-        description=f"⚡ Hồi sinh 100% toàn bộ thẻ bài dũng giả!\n❤️ **Máu:** `100,000 HP` | ⚔️ **Sức mạnh:** `10,000 DMG` (chia đều)\n🛡️ Khai mở **Wonder Guard (20%)**: Phản 60% sát thương!",
+        description=(
+            f"⚡ **Huyết Nguyệt Giáng Lâm:** Toàn bộ thẻ bài dũng giả được hồi sinh và hồi phục 100% HP!\n"
+            f"❤️ **Máu:** `100,000 HP` | ⚔️ **Sức mạnh:** `10,000 DMG` (chia đều)\n"
+            f"🛡️ **Wonder Guard (20%):** Miễn thương & **phản lại 60% sát thương lẫn hiệu ứng** trong 3 lượt!"
+        ),
         color=0x450A0A
     )
     p2_emb_init.set_image(url=p2_cfg["image"])
-    await channel.send(embed=p2_emb_init)
+    msg = await channel.send(embed=p2_emb_init)
     await asyncio.sleep(2.5)
 
     while p2_hp > 0 and p2_rounds < 35:
@@ -4218,61 +4432,91 @@ async def execute_event_raid(channel, raid_data):
         p2_rounds += 1
         frontline = [c["team_cards"][c["current_card_index"]] for c in active]
 
-        # Regen 3%
-        p2_hp = min(p2_max_hp, p2_hp + int(p2_max_hp * 0.03))
+        heal_amt = int(p2_max_hp * 0.03)
+        p2_hp = min(p2_max_hp, p2_hp + heal_amt)
+        passive_log = f"🩸 **[True Vampire]** Tự hồi **+{heal_amt:,} HP** (3% HP tối đa)!"
 
-        # Check Wonder guard effect on player attacks
         round_p_dmg = sum(ac["power"] for ac in frontline)
         reflected_dmg_log = ""
         if wonder_guard_turns > 0:
             wonder_guard_turns -= 1
             ref_dmg = int(round_p_dmg * 0.60)
-            ref_each = ref_dmg // len(frontline)
+            ref_each = max(50, ref_dmg // len(frontline))
             for ac in frontline: ac["current_hp"] -= ref_each
-            reflected_dmg_log = f"\n🛡️ **[Wonder Guard Đang Bật]** Miễn thương toàn bộ & phản lại **{ref_dmg:,} DMG** ({ref_each:,} DMG/thẻ)!"
+            reflected_dmg_log = f"\n🛡️ **[Wonder Guard Hiệu Lực]** Boss MIỄN TOÀN BỘ SÁT THƯƠNG và **phản lại {ref_dmg:,} DMG** ({ref_each:,} DMG/thẻ)! (Còn {wonder_guard_turns} lượt)"
         else:
             p2_hp = max(0, p2_hp - round_p_dmg)
 
-        # Boss action
-        boss_action = ""
+        boss_action_log = ""
         turn_img = None
         roll = random.random()
         if wonder_guard_turns == 0 and roll < 0.20:
             wonder_guard_turns = 3
             turn_img = p2_cfg["skills"]["wonder_guard"]["gif"]
-            boss_action = "🛡️ **[Wonder guard (20%)]** Dựng huyết thuẫn ma thuật: **MIỄN THƯƠNG & PHẢN 60% SÁT THƯƠNG** trong 3 lượt!"
+            boss_action_log = "🛡️ **[Wonder guard (20%)]** Kích hoạt huyết thuẫn: **MIỄN THƯƠNG & PHẢN 60% SÁT THƯƠNG** trong 3 lượt!"
         elif roll < 0.40:
             turn_img = p2_cfg["skills"]["blood_chain"]["gif"]
             dmg_total = int(p2_power * 1.5)
-            dmg_each = dmg_total // len(frontline)
-            boss_action = f"🩸 **Blood chain (20%)**! Giáng {dmg_total:,} DMG (chia đều {dmg_each:,} DMG mỗi thẻ)!"
+            dmg_each = max(100, dmg_total // len(frontline))
+            boss_action_log = f"🩸 **Blood chain (20%)**! Giáng {dmg_total:,} DMG (chia đều **{dmg_each:,} DMG** mỗi thẻ)!"
             for ac in frontline: ac["current_hp"] -= dmg_each
         elif roll < 0.80:
             turn_img = p2_cfg["skills"]["dark_chain"]["gif"]
-            dmg_base_each = p2_power // len(frontline)
-            boss_action = f"🌑 **Dark chain (40%)**! {dmg_base_each:,} DMG cơ bản kèm **15% Máu Tối Đa** từng thẻ!"
+            dmg_base_each = max(100, p2_power // len(frontline))
+            boss_action_log = f"🌑 **Dark chain (40%)**! Gây {dmg_base_each:,} DMG chia đều kèm **15% Máu Tối Đa** từng thẻ!"
             for ac in frontline:
                 extra_hp = int(ac["max_hp"] * 0.15)
                 ac["current_hp"] -= (dmg_base_each + extra_hp)
         else:
-            dmg_each = p2_power // len(frontline)
-            boss_action = f"⚔️ Đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ tiền tuyến!"
+            dmg_each = max(100, p2_power // len(frontline))
+            boss_action_log = f"⚔️ Đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ tiền tuyến!"
             for ac in frontline: ac["current_hp"] -= dmg_each
 
+        push_logs = []
         for c in active:
             ac = c["team_cards"][c["current_card_index"]]
             if ac["current_hp"] <= 0:
+                dead_name = ac["name"]
                 c["current_card_index"] += 1
-                if c["current_card_index"] >= len(c["team_cards"]):
+                if c["current_card_index"] < len(c["team_cards"]):
+                    push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục ngã! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
+                else:
                     c["is_alive"] = False
+                    push_logs.append(f"☠️ **{c['username']}** đã hết thẻ bài!")
+
+        round_status = [f"• **{c['username']}**: {c['team_cards'][c['current_card_index']]['name']} (❤️{max(0, c['team_cards'][c['current_card_index']]['current_hp']):,} HP)" if c['is_alive'] else f"• **{c['username']}**: ☠️ Tử trận" for c in combatants]
 
         r_emb = discord.Embed(
-            title=f"🎃 HIỆP {p2_rounds} - KIZUNA PHASE 2 THỨC TỈNH",
-            description=f"❤️ **Máu Boss:** `{get_hp_bar(p2_hp, p2_max_hp)}` **{p2_hp:,}/{p2_max_hp:,} HP**\n\n🗡️ Toàn quân dồn: **{round_p_dmg:,} DMG**{reflected_dmg_log}\n👺 **Boss:** {boss_action}",
+            title=f"🎃 HIỆP {p2_rounds} - KIZUNA THỨC TỈNH (PHASE 2)",
+            description=f"❤️ **Máu Boss:** `{get_hp_bar(p2_hp, p2_max_hp)}` **{p2_hp:,}/{p2_max_hp:,} HP**",
             color=0x450A0A
         )
+        r_emb.add_field(name="🩸 Nội Tại Hồi Phục:", value=passive_log, inline=False)
+        r_emb.add_field(name="💥 Tiền Tuyến Tấn Công:", value=f"Toàn quân gây: **{round_p_dmg:,} DMG**{reflected_dmg_log}", inline=False)
+        r_emb.add_field(name="👺 Phản Kích Của Boss:", value=boss_action_log, inline=False)
+        if push_logs: r_emb.add_field(name="🔄 Thay Đổi Tiền Tuyến:", value="\n".join(push_logs), inline=False)
+        r_emb.add_field(name="🛡️ Tình Trạng Đội Hình:", value="\n".join(round_status), inline=False)
+
         if turn_img: r_emb.set_image(url=turn_img)
         else: r_emb.set_thumbnail(url=p2_cfg["image"])
+
+        all_event_raid_turns.append({
+            "round": p2_rounds,
+            "phase": 2,
+            "title": f"Phase 2 - Hiệp {p2_rounds}: Thức Tỉnh",
+            "short_label": f"P2 - H{p2_rounds}",
+            "short_desc": f"Boss còn {p2_hp:,} HP",
+            "desc": f"🩸 **Kizuna - Huyết Ma Đế Thức Tỉnh (Phase 2)**\n❤️ Máu Boss: `{get_hp_bar(p2_hp, p2_max_hp)}` **{p2_hp:,}/{p2_max_hp:,} HP**",
+            "color": 0x450A0A,
+            "image": turn_img,
+            "fields": [
+                ("🩸 Nội Tại Hồi Phục:", passive_log, False),
+                ("💥 Tiền Tuyến Tấn Công:", f"Toàn quân gây: **{round_p_dmg:,} DMG**{reflected_dmg_log}", False),
+                ("👺 Phản Kích Của Boss:", boss_action_log, False),
+                ("🛡️ Tình Trạng Đội Hình:", "\n".join(round_status), False)
+            ]
+        })
+
         try: await msg.edit(embed=r_emb)
         except Exception: pass
         if p2_hp <= 0: break
@@ -4280,11 +4524,12 @@ async def execute_event_raid(channel, raid_data):
 
     p2_won = (p2_hp <= 0)
     final_emb = discord.Embed(
-        title="🏆 HOÀN TẤT EVENT RAID BOSS KIZUNA!",
-        description=f"Kết quả Phase 2: {'🎉 **CHIẾN THẮNG HUY HOÀNG!**' if p2_won else '💀 **THẤT THỦ TẠI PHASE 2!**'}",
-        color=0x10B981 if p2_won else 0xEF4444
+        title="🏆 HOÀN TẤT EVENT RAID BOSS: KIZUNA - HUYẾT MA ĐẾ!",
+        description=f"Kết quả Phase 2: {'🎉 **CHIẾN THẮNG HUY HOÀNG (Boss 0 HP)!**' if p2_won else f'💀 **THẤT THỦ TẠI PHASE 2 (Boss còn {p2_hp:,} HP)!**'}",
+        color=0x10B981 if p2_won else 0xF59E0B
     )
-    final_emb.add_field(name="📦 Phần Thưởng Phase 1:", value="\n".join(p1_rewards), inline=False)
+    final_emb.set_thumbnail(url=p2_cfg["image"] if p2_won else p1_cfg["image"])
+    final_emb.add_field(name="📦 Phần Thưởng Phase 1 (Đã trao):", value="\n".join(p1_rewards), inline=False)
 
     if p2_won:
         p2_rewards = []
@@ -4293,18 +4538,14 @@ async def execute_event_raid(channel, raid_data):
             p_items = p.setdefault("items", {})
             p_shards = p.setdefault("shards", {})
 
-            # Tickets
             t_roll = random.random()
             tickets = 20.0 if t_roll < 0.10 else (15.0 if t_roll < 0.50 else 10.0)
             p["pull_tickets"] += tickets
 
-            # Candies
             c_roll = random.random()
             candies = 120 if c_roll < 0.50 else (70 if c_roll < 0.80 else 0)
-            if candies > 0:
-                p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + candies
+            if candies > 0: p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + candies
 
-            # Shard (7%)
             shard_got = False
             if random.random() < 0.07:
                 p_shards["kizuna"] = p_shards.get("kizuna", 0) + 1
@@ -4316,109 +4557,11 @@ async def execute_event_raid(channel, raid_data):
             if candies > 0: txt += f", +{candies} Kẹo 🍬"
             if shard_got: txt += ", 🩸 **+1 Mảnh Kizuna**!"
             p2_rewards.append(txt)
-        final_emb.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2:", value="\n".join(p2_rewards), inline=False)
+        final_emb.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (7% Mảnh Kizuna, 50% 120 Kẹo):", value="\n".join(p2_rewards), inline=False)
 
-    await channel.send(embed=final_emb)
+    await channel.send(embed=final_emb, view=OpenDetailsView(all_event_raid_turns))
 
 
-@bot.event
-async def on_ready():
-    print(f"Bot Hakurei Reimu đã khởi động thành công: {bot.user.name}", flush=True)
-    try:
-        synced = await bot.tree.sync()
-        print(f"Đã đồng bộ {len(synced)} Slash Commands!", flush=True)
-    except Exception as e:
-        print(f"Lỗi đồng bộ slash command: {e}", flush=True)
-
-    await bot.change_presence(
-        activity=discord.Activity(
-            type=discord.ActivityType.watching,
-            name="Đền Hakurei | /help | /pull | /battle | Boss 30k HP"
-        )
-    )
-
-@bot.event
-async def on_message(message: discord.Message):
-    if message.author.bot or message.author == bot.user:
-        return
-
-    content_lower = message.content.lower()
-    clean_stripped = message.content.strip().lower()
-
-    if clean_stripped in ["boss admin spawn", "!boss admin spawn", "!boss_admin spawn"] or clean_stripped.startswith("boss admin spawn"):
-        if not is_authorized_admin(message.author):
-            await message.channel.send(f"⛔ {message.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được phép điều động Boss Raid!")
-            return
-        b_type = None
-        if "seiki" in clean_stripped:
-            b_type = "seiki"
-        elif "mahoraga" in clean_stripped:
-            b_type = "mahoraga"
-        elif "reimu" in clean_stripped:
-            b_type = "reimu"
-        await admin_spawn_boss(message.channel, message.author, boss_type=b_type)
-        return
-
-    if clean_stripped in ["boss admin reset", "!boss admin reset", "!boss_admin reset"] or clean_stripped.startswith("boss admin reset"):
-        if not is_authorized_admin(message.author):
-            await message.channel.send(f"⛔ {message.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được phép reset Boss Raid!")
-            return
-        await admin_reset_boss(message.channel, message.author)
-        return
-
-    global active_raid, boss_cooldown_until
-    check_and_clean_expired_raid()
-    now_ts = time.time()
-    
-    if active_raid is None and now_ts >= boss_cooldown_until and not content_lower.startswith("!") and not content_lower.startswith("/"):
-        spawn_roll = random.random()
-        if spawn_roll < (1.0 / 3.0):
-            await spawn_boss_raid(message.channel, None, boss_type="seiki")
-        elif spawn_roll < (2.0 / 3.0):
-            await spawn_boss_raid(message.channel, None, boss_type="reimu")
-        else:
-            await spawn_boss_raid(message.channel, None, boss_type="mahoraga")
-
-    is_reply_to_reimu = False
-    if message.reference and message.reference.resolved:
-        resolved = message.reference.resolved
-        if isinstance(resolved, discord.Message) and resolved.author == bot.user:
-            is_reply_to_reimu = True
-
-    is_mentioned = bot.user in message.mentions if bot.user else False
-    has_reimu_name = "reimu" in content_lower
-
-    if is_mentioned or has_reimu_name or is_reply_to_reimu:
-        clean_text = message.content
-        if bot.user:
-            clean_text = clean_text.replace(f"<@{bot.user.id}>", "").replace(f"<@!{bot.user.id}>", "").strip()
-        if not clean_text:
-            clean_text = "Chào Reimu!"
-
-        author_name = message.author.display_name
-        is_father = "han seiki" in author_name.lower() or "seiki" in author_name.lower()
-        role_instruction = "\n[Người nói là HAN SEIKI - BỐ NUÔI của bạn. Xưng con gọi ba, cực kỳ ngoan ngoãn, dịu dàng, hiếu thảo và lễ phép!]" if is_father else f"\n[Người nói là khách viếng đền: {author_name}. Hãy xưng ta gọi ngươi, đanh đá và nhớ đòi cúng tiền công đức!]"
-
-        saved_history = get_conversation_history(message.channel.id, message.author.id)
-        history_context = "\n[LỊCH SỬ GẦN ĐÂY]:\n" + "\n".join(saved_history[-6:]) + "\n" if saved_history else ""
-
-        async with message.channel.typing():
-            try:
-                reply_text = await ask_gemini(f"{history_context}[{author_name}]: {clean_text}", REIMU_SYSTEM_PROMPT + role_instruction, 0.85)
-                if not reply_text: reply_text = "Hừ... Nhà ngươi lải nhải cái gì thế hả?"
-                if len(reply_text) > 1950: reply_text = reply_text[:1950] + "..."
-                saved_history.append(f"{author_name}: {clean_text}")
-                saved_history.append(f"Reimu: {reply_text}")
-                save_conversation_history(message.channel.id, message.author.id, saved_history)
-                await message.reply(reply_text, mention_author=False)
-            except Exception as e:
-                err_str = str(e)
-                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
-                    await message.reply("⛩️ Hừ, linh lực Gemini của đền Hakurei tạm thời bị quá tải! Hãy đợi khoảng 15-30 giây nhé!", mention_author=False)
-                else:
-                    await message.reply("⛩️ Hừ, bùa chú đền Hakurei tạm thời bị nhiễu loạn! Đợi vài giây rồi gọi lại ta!", mention_author=False)
-
-    await bot.process_commands(message)
 
 # ==============================================================================
 # 8. CƠ CHẾ GACHA PULL TOUHOU & TỰ ĐỘNG MỞ KHÓA THẺ KHI PULL LẠI
@@ -6388,6 +6531,16 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
     target_idx = 0
     if nhan_vat:
         nv_clean = nhan_vat.strip().lower()
+        if nv_clean in ("t3", "kizuna", "vampire", "emperor", "huyetma", "huyetmade"):
+            view_t3 = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=False, show_t2=False)
+            view_t3.show_t3 = True
+            view_t3.rebuild_items()
+            embed_t3 = view_t3.get_t3_embed()
+            if isinstance(ctx_or_interaction, discord.Interaction):
+                await ctx_or_interaction.response.send_message(embed=embed_t3, view=view_t3)
+            else:
+                await ctx_or_interaction.send(embed=embed_t3, view=view_t3)
+            return
         if nv_clean in ("t1", "seiki", "dephap", "toannang"):
             view_t1 = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=True, show_t2=False)
             embed_t1 = view_t1.get_current_embed()
@@ -6412,19 +6565,25 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
             found = False
             for cid, c in CARDS_DATA.items():
                 if nv_clean in c["name"].lower():
-                    target_idx = cid - 1
-                    found = True
-                    break
-            if not found:
-                for cid, det in CHARACTER_DETAILS.items():
-                    if nv_clean in det.get("title", "").lower() or nv_clean in det.get("skill_name", "").lower():
+                    if str(cid).lower() == "t3":
+                        view_t3 = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=False, show_t2=False)
+                        view_t3.show_t3 = True
+                        view_t3.rebuild_items()
+                        embed_t3 = view_t3.get_t3_embed()
+                        if isinstance(ctx_or_interaction, discord.Interaction):
+                            await ctx_or_interaction.response.send_message(embed=embed_t3, view=view_t3)
+                        else:
+                            await ctx_or_interaction.send(embed=embed_t3, view=view_t3)
+                        return
+                    if isinstance(cid, int) and 1 <= cid <= 28:
                         target_idx = cid - 1
+                        found = True
                         break
     else:
         player = get_player(user.id, user.display_name)
         if player and player.get("team"):
             lead_id = player["team"][0]
-            if 1 <= lead_id <= 28:
+            if isinstance(lead_id, int) and 1 <= lead_id <= 28:
                 target_idx = lead_id - 1
 
     view = CharacterCheckView(current_index=target_idx, user_id=user.id, show_ace=False)
@@ -6434,6 +6593,7 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
         await ctx_or_interaction.response.send_message(embed=embed, view=view)
     else:
         await ctx_or_interaction.send(embed=embed, view=view)
+
 
 @bot.tree.command(name="check", description="Kiểm tra thông số sức mạnh, máu và kỹ năng của 28 nhân vật Touhou (kèm Ace 2)")
 @app_commands.describe(nhan_vat="Nhập số ID (1-28) hoặc tên nhân vật muốn xem ngay (để trống để duyệt từ đầu)")
@@ -9487,7 +9647,7 @@ async def slash_dbcheck(interaction: discord.Interaction):
 
 
 # ==============================================================================
-# HỆ THỐNG SLASH COMMANDS: /EVENT, /ITEM, /EVENT_ADMIN
+# HỆ THỐNG TOÀN DIỆN CHO PLAYER & ADMIN: /EVENT & /ITEM
 # ==============================================================================
 
 # --- VIEW NÚT MUA EVENT SHOP ---
@@ -9537,140 +9697,275 @@ class EventShopButtonsView(discord.ui.View):
         save_player(self.player)
         await interaction.response.send_message(f"✅ Đã mua **+1 Mảnh Kizuna**! (Kho: {p_shards['kizuna']}/15 mảnh)")
 
-# --- 1. LỆNH /EVENT & /EVENT SHOP & /EVENT RAID ---
+# --- HÀM XỬ LÝ /EVENT INFO (XEM NHIỆM VỤ & THÔNG TIN EVENT) ---
+async def handle_event_info(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    ep = player.setdefault("event_progress", {"battle": 0, "pvp": 0, "raid": 0, "event_raid": 0, "claimed": False})
+    candies = player.get("items", {}).get("keo_halloween", 0)
+
+    status_battle = "✅ ĐÃ HOÀN THÀNH" if ep.get("battle", 0) >= 100 else f"🔴 Đang làm ({ep.get('battle', 0)}/100)"
+    status_pvp = "✅ ĐÃ HOÀN THÀNH" if ep.get("pvp", 0) >= 100 else f"🔴 Đang làm ({ep.get('pvp', 0)}/100)"
+    status_raid = "✅ ĐÃ HOÀN THÀNH" if ep.get("raid", 0) >= 30 else f"🔴 Đang làm ({ep.get('raid', 0)}/30)"
+    status_event_raid = "✅ ĐÃ HOÀN THÀNH" if ep.get("event_raid", 0) >= 30 else f"🔴 Đang làm ({ep.get('event_raid', 0)}/30)"
+
+    embed = discord.Embed(
+        title="🎃 HALLOWEEN EVENT 2026 - LỄ HỘI KẸO MA QUÁI",
+        description=(
+            f"🧙‍♀️ **{EVENT_CONFIG['quote']}**\n\n"
+            f"📅 **Thời gian diễn ra:** `02/10/2026` ➔ `30/10/2026`\n"
+            f"🍬 **Số Kẹo của bạn:** **`{candies:,}` Kẹo**\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🎯 **TIẾN TRÌNH NHIỆM VỤ SỰ KIỆN (EVENT QUESTS):**\n"
+            f"• ⚔️ **{EVENT_CONFIG['quests']['battle']['name']}:** {status_battle}\n"
+            f"• 🥊 **{EVENT_CONFIG['quests']['pvp']['name']}:** {status_pvp}\n"
+            f"• 👺 **{EVENT_CONFIG['quests']['raid']['name']}:** {status_raid}\n"
+            f"• 🩸 **{EVENT_CONFIG['quests']['event_raid']['name']}:** {status_event_raid}\n\n"
+            f"🎁 **PHẦN THƯỞNG HOÀN THÀNH 4/4 NHIỆM VỤ:**\n"
+            f"• 🌟 **+1 Vật phẩm Thánh Lõi** (Dùng tiến hóa Kizuna lên Ace 2 ⭐⭐)\n"
+            f"• 💎 **+250 Tokens**\n"
+            f"• Trạng thái nhận quà: **{'✅ ĐÃ HOÀN THÀNH & NHẬN THƯỞNG!' if ep.get('claimed') else '⏳ Đang thực hiện'}**"
+        ),
+        color=0xF97316
+    )
+    embed.set_image(url=EVENT_CONFIG["banner"])
+    embed.set_footer(text="Dùng /event shop để đổi Kẹo lấy quà • Dùng /event raid để mở phòng săn Boss!")
+    
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed)
+    else:
+        await ctx_or_interaction.send(embed=embed)
+
+# --- HÀM XỬ LÝ /EVENT SHOP (ĐỔI KẸO LẤY VÉ, RƯƠNG [E], SHARD) ---
+async def handle_event_shop(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    candies = player.get("items", {}).get("keo_halloween", 0)
+
+    embed = discord.Embed(
+        title="🍬 CỬA HÀNG KẸO HALLOWEEN (EVENT SHOP)",
+        description=(
+            f"Chào mừng **{user.display_name}** ghé thăm cửa hàng bí ngô ma quái của Marisa!\n\n"
+            f"🍬 **Số Kẹo hiện có:** **`{candies:,}` Kẹo**\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🏷️ **DANH MỤC ĐỔI THƯỞNG:**\n"
+            f"1️⃣ **50 Kẹo:** Đổi **+5 Vé Pull** 🎟️\n"
+            f"2️⃣ **120 Kẹo:** Đổi **+1 Rương Halloween Ma Quái [E]** 📦\n"
+            f"3️⃣ **200 Kẹo:** Đổi **+1 Mảnh Kizuna** 🩸 (15 mảnh = 1 Thẻ [T] #t3 Kizuna)\n"
+        ),
+        color=0xF97316
+    )
+    embed.set_image(url=EVENT_CONFIG["banner"])
+    embed.set_footer(text="Bấm các nút bên dưới để đổi vật phẩm trực tiếp!")
+    view = EventShopButtonsView(player, user.id)
+
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed, view=view)
+    else:
+        await ctx_or_interaction.send(embed=embed, view=view)
+
+# --- HÀM XỬ LÝ /EVENT RAID (MỞ PHÒNG CHỜ 2 PHÚT CHO TẤT CẢ PLAYER) ---
+async def handle_event_raid_open(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    now = time.time()
+    last_t = player.get("last_event_raid_time", 0.0)
+
+    is_adm = is_authorized_admin(user.id)
+    if not is_adm and (now - last_t < 3600):
+        rem = int(3600 - (now - last_t))
+        msg = f"⏳ Bạn vừa triệu hồi Event Boss gần đây, vui lòng nghỉ ngơi thêm **{rem // 60} phút {rem % 60} giây** nữa!"
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else:
+            await ctx_or_interaction.send(msg)
+        return
+
+    player["last_event_raid_time"] = now
+    save_player(player)
+
+    channel = ctx_or_interaction.channel
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(f"🎃 **{user.display_name}** đã kích hoạt nghi lễ mở phòng đại chiến **Event Boss Kizuna - Huyết Ma Đế**!", ephemeral=False)
+    else:
+        await ctx_or_interaction.send(f"🎃 **{user.display_name}** đã kích hoạt nghi lễ mở phòng đại chiến **Event Boss Kizuna - Huyết Ma Đế**!")
+
+    await spawn_event_boss_raid(channel, user, is_admin=is_adm)
+
+# --- HÀM XỬ LÝ /ITEM CHECK (XEM KHO VẬT PHẨM) ---
+async def handle_item_check(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    p_items = player.get("items", {})
+
+    lines = []
+    for ik, iv in ITEMS_DATABASE.items():
+        cnt = p_items.get(ik, 0)
+        tag = " `[E - Có thể Dùng]`" if iv["usable"] else ""
+        lines.append(f"• **{iv['name']}**{tag}: `{cnt}` cái\n  └ *{iv['desc']}*")
+
+    embed = discord.Embed(
+        title=f"🎒 KHO VẬT PHẨM (ITEMS) - {user.display_name.upper()}",
+        description="\n\n".join(lines),
+        color=0x3B82F6
+    )
+    embed.set_footer(text="Dùng /item use ruong_halloween_e để mở các vật phẩm có mác [E]")
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed)
+    else:
+        await ctx_or_interaction.send(embed=embed)
+
+# --- HÀM XỬ LÝ /ITEM USE (DÙNG ITEM [E]) ---
+async def handle_item_use(ctx_or_interaction, item_id: str):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    p_items = player.setdefault("items", {})
+    
+    clean_id = item_id.strip().lower()
+    if clean_id in ["ruong", "ruong_halloween", "ruong_halloween_e", "chest"]:
+        clean_id = "ruong_halloween_e"
+
+    cnt = p_items.get(clean_id, 0)
+    if cnt <= 0:
+        msg = f"❌ Bạn không có vật phẩm `{clean_id}` trong kho đồ!"
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else:
+            await ctx_or_interaction.send(msg)
+        return
+
+    if clean_id == "ruong_halloween_e":
+        p_items[clean_id] -= 1
+        roll = random.random()
+        if roll < 0.50:
+            t = random.randint(5, 15)
+            player["pull_tickets"] += float(t)
+            reward_txt = f"🎟️ **+{t} Vé Pull Tích Lũy**!"
+        elif roll < 0.85:
+            k = random.randint(50, 100)
+            p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + k
+            reward_txt = f"🍬 **+{k} Kẹo Halloween**!"
+        else:
+            p_shards = player.setdefault("shards", {})
+            p_shards["kizuna"] = p_shards.get("kizuna", 0) + 1
+            reward_txt = f"🩸 **+1 Mảnh Kizuna** (Siêu Hiếm)!"
+
+        save_player(player)
+        embed = discord.Embed(
+            title="🎁 MỞ RƯƠNG HALLOWEEN MA QUÁI [E] THÀNH CÔNG!",
+            description=f"✨ **Phần thưởng mở ra:**\n{reward_txt}\n\n🎒 *Số rương còn lại: {p_items[clean_id]} cái.*",
+            color=0x10B981
+        )
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=embed)
+        else:
+            await ctx_or_interaction.send(embed=embed)
+    else:
+        msg = f"⚠️ Vật phẩm `{clean_id}` không có tính năng sử dụng trực tiếp!"
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else:
+            await ctx_or_interaction.send(msg)
+
+# --- HÀM XỬ LÝ /ITEM TRADE (TRAO ĐỔI ITEM GIỮA 2 PLAYER) ---
+async def handle_item_trade(ctx_or_interaction, user: discord.Member, vat_pham: str, so_luong: int = 1):
+    author = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    if user.id == author.id or user.bot:
+        msg = "❌ Người nhận không hợp lệ! Không thể chuyển item cho bản thân hoặc Bot."
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    if so_luong <= 0:
+        msg = "❌ Số lượng chuyển giao phải lớn hơn 0!"
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    p_a = get_player(author.id, author.display_name)
+    p_b = get_player(user.id, user.display_name)
+    inv_a = p_a.setdefault("items", {})
+    inv_b = p_b.setdefault("items", {})
+
+    clean_vp = vat_pham.strip().lower()
+    if clean_vp in ["thanhloi", "thanh_loi", "core"]: clean_vp = "thanh_loi"
+    elif clean_vp in ["keo", "candy", "keo_halloween"]: clean_vp = "keo_halloween"
+    elif clean_vp in ["ruong", "ruong_halloween", "ruong_halloween_e"]: clean_vp = "ruong_halloween_e"
+
+    if clean_vp not in ITEMS_DATABASE:
+        msg = f"❌ Mã vật phẩm `{vat_pham}` không tồn tại! (Hợp lệ: `thanh_loi`, `keo_halloween`, `ruong_halloween_e`)."
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    if inv_a.get(clean_vp, 0) < so_luong:
+        item_name = ITEMS_DATABASE[clean_vp]["name"]
+        msg = f"❌ Bạn không đủ số lượng để chuyển! (Cần {so_luong}x {item_name}, hiện chỉ có: {inv_a.get(clean_vp, 0)} cái)."
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    inv_a[clean_vp] -= so_luong
+    inv_b[clean_vp] = inv_b.get(clean_vp, 0) + so_luong
+    save_player(p_a)
+    save_player(p_b)
+
+    item_name = ITEMS_DATABASE[clean_vp]["name"]
+    embed = discord.Embed(
+        title="📦 GIAO DỊCH VẬT PHẨM (ITEM TRADE) THÀNH CÔNG!",
+        description=(
+            f"🤝 **{author.mention}** đã chuyển thành công **{so_luong}x {item_name}** cho **{user.mention}**!\n\n"
+            f"• Kho của {author.display_name} còn lại: `{inv_a[clean_vp]}` cái\n"
+            f"• Kho của {user.display_name} hiện có: `{inv_b[clean_vp]}` cái"
+        ),
+        color=0x10B981
+    )
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed)
+    else:
+        await ctx_or_interaction.send(embed=embed)
+
+# ==============================================================================
+# ĐĂNG KÝ SLASH COMMANDS VÀ PREFIX (CHO CẢ PLAYER & ADMIN)
+# ==============================================================================
+
+# 1. LỆNH TOP-LEVEL /EVENT & NHÓM /EVENT
+@bot.tree.command(name="event", description="Xem nội dung và tiến trình nhiệm vụ Halloween Event 2026")
+async def slash_standalone_event(interaction: discord.Interaction):
+    await handle_event_info(interaction)
+
 class EventGroup(app_commands.Group, name="event", description="Sự kiện Halloween Event 2026"):
     @app_commands.command(name="info", description="Xem nội dung và nhiệm vụ sự kiện Halloween 2026")
-    async def slash_event_info(self, interaction: discord.Interaction):
-        player = get_player(interaction.user.id, interaction.user.display_name)
-        ep = player.setdefault("event_progress", {"battle": 0, "pvp": 0, "raid": 0, "event_raid": 0, "claimed": False})
-        
-        embed = discord.Embed(
-            title="🎃 HALLOWEEN EVENT 2026 (02/10 - 30/10)",
-            description=(
-                f"🧙‍♀️ **{EVENT_CONFIG['quote']}**\n\n"
-                f"📅 **Thời gian diễn ra:** `02/10/2026` ➔ `30/10/2026`\n"
-                f"🍬 **Số Kẹo của bạn:** **`{player.get('items', {}).get('keo_halloween', 0):,}` Kẹo**\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"🎯 **TIẾN TRÌNH NHIỆM VỤ SỰ KIỆN:**\n"
-                f"• ⚔️ **{EVENT_CONFIG['quests']['battle']['name']}:** `{ep.get('battle', 0)}/100` {'✅' if ep.get('battle', 0) >= 100 else ''}\n"
-                f"• 🥊 **{EVENT_CONFIG['quests']['pvp']['name']}:** `{ep.get('pvp', 0)}/100` {'✅' if ep.get('pvp', 0) >= 100 else ''}\n"
-                f"• 👺 **{EVENT_CONFIG['quests']['raid']['name']}:** `{ep.get('raid', 0)}/30` {'✅' if ep.get('raid', 0) >= 30 else ''}\n"
-                f"• 🩸 **{EVENT_CONFIG['quests']['event_raid']['name']}:** `{ep.get('event_raid', 0)}/30` {'✅' if ep.get('event_raid', 0) >= 30 else ''}\n\n"
-                f"🎁 **PHẦN THƯỞNG KHI HOÀN THÀNH 4/4:**\n"
-                f"• 🌟 **+1 Vật phẩm Thánh Lõi** (Tiến hóa Kizuna Ace 2)\n"
-                f"• 💎 **+250 Tokens**\n"
-                f"• Trạng thái: **{'✅ ĐÃ NHẬN THƯỞNG!' if ep.get('claimed') else '⏳ Đang thực hiện'}**"
-            ),
-            color=0xF97316
-        )
-        embed.set_image(url=EVENT_CONFIG["banner"])
-        embed.set_footer(text="Dùng /event shop để đổi kẹo lấy quà • Dùng /event raid để gọi Boss!")
-        await interaction.response.send_message(embed=embed)
+    async def slash_event_info_cmd(self, interaction: discord.Interaction):
+        await handle_event_info(interaction)
 
     @app_commands.command(name="shop", description="Cửa hàng sự kiện Halloween đổi quà bằng Kẹo 🍬")
-    async def slash_event_shop(self, interaction: discord.Interaction):
-        player = get_player(interaction.user.id, interaction.user.display_name)
-        candies = player.get("items", {}).get("keo_halloween", 0)
-        embed = discord.Embed(
-            title="🍬 CỬA HÀNG KẸO HALLOWEEN (EVENT SHOP)",
-            description=(
-                f"Chào mừng bạn đến shop bí ngô ma quái của Marisa!\n"
-                f"🍬 **Số Kẹo hiện có:** **`{candies:,}` Kẹo**\n\n"
-                f"🏷️ **DANH MỤC ĐỔI THƯỞNG:**\n"
-                f"1️⃣ **50 Kẹo:** Đổi **+5 Vé Pull** 🎟️\n"
-                f"2️⃣ **120 Kẹo:** Đổi **+1 Rương Halloween Ma Quái [E]** 📦\n"
-                f"3️⃣ **200 Kẹo:** Đổi **+1 Mảnh Kizuna** 🩸 (15 mảnh = 1 Thẻ [T] #t3 Kizuna)\n"
-            ),
-            color=0xF97316
-        )
-        embed.set_image(url=EVENT_CONFIG["banner"])
-        await interaction.response.send_message(embed=embed, view=EventShopButtonsView(player, interaction.user.id))
+    async def slash_event_shop_cmd(self, interaction: discord.Interaction):
+        await handle_event_shop(interaction)
 
-    @app_commands.command(name="raid", description="Chủ động triệu hồi Event Boss Kizuna (Hồi chiêu 1 tiếng)")
-    async def slash_event_raid_player(self, interaction: discord.Interaction):
-        player = get_player(interaction.user.id, interaction.user.display_name)
-        now = time.time()
-        last_t = player.get("last_event_raid_time", 0.0)
-        if now - last_t < 3600:
-            rem = int(3600 - (now - last_t))
-            await interaction.response.send_message(f"⏳ Bạn cần đợi thêm **{rem // 60} phút {rem % 60} giây** nữa mới có thể gọi lại Event Boss!", ephemeral=True)
-            return
-
-        player["last_event_raid_time"] = now
-        save_player(player)
-
-        await interaction.response.send_message(f"🎃 {interaction.user.mention} đã kích hoạt bí thuật triệu hồi **Event Boss Kizuna - Huyết Ma Đế**!")
-        
-        start_event = asyncio.Event()
-        raid_data = {
-            "channel_id": interaction.channel.id,
-            "boss_config": EVENT_BOSS_CONFIG,
-            "participants": [interaction.user.id],
-            "names": [interaction.user.display_name],
-            "start_event": start_event
-        }
-        await execute_event_raid(interaction.channel, raid_data)
+    @app_commands.command(name="raid", description="Mở phòng chờ triệu hồi Event Boss Kizuna cho tất cả mọi người (Hồi chiêu 1 tiếng)")
+    async def slash_event_raid_cmd(self, interaction: discord.Interaction):
+        await handle_event_raid_open(interaction)
 
 bot.tree.add_command(EventGroup())
 
-# --- 2. HỆ THỐNG LỆNH /ITEM (CHECK, USE, TRADE) ---
+# 2. LỆNH TOP-LEVEL /ITEM & NHÓM /ITEM
+@bot.tree.command(name="item", description="Kiểm tra kho vật phẩm của bạn")
+async def slash_standalone_item(interaction: discord.Interaction):
+    await handle_item_check(interaction)
+
 class ItemGroup(app_commands.Group, name="item", description="Quản lý kho vật phẩm, sử dụng [E] và trao đổi"):
     @app_commands.command(name="check", description="Kiểm tra kho đồ vật phẩm của bạn")
-    async def slash_item_check(self, interaction: discord.Interaction):
-        player = get_player(interaction.user.id, interaction.user.display_name)
-        p_items = player.get("items", {})
-        
-        lines = []
-        for ik, iv in ITEMS_DATABASE.items():
-            cnt = p_items.get(ik, 0)
-            tag = " `[E - Có thể Dùng]`" if iv["usable"] else ""
-            lines.append(f"• **{iv['name']}**{tag}: `{cnt}` cái\n  └ *{iv['desc']}*")
-
-        embed = discord.Embed(
-            title=f"🎒 KHO VẬT PHẨM (ITEMS) - {interaction.user.display_name.upper()}",
-            description="\n\n".join(lines),
-            color=0x3B82F6
-        )
-        embed.set_footer(text="Dùng /item use <item_id> cho các vật phẩm gắn mác [E]")
-        await interaction.response.send_message(embed=embed)
+    async def slash_item_check_cmd(self, interaction: discord.Interaction):
+        await handle_item_check(interaction)
 
     @app_commands.command(name="use", description="Sử dụng vật phẩm có mác [E] trong kho đồ")
     @app_commands.describe(item_id="Mã vật phẩm muốn dùng")
     @app_commands.choices(item_id=[
         app_commands.Choice(name="Rương Halloween Ma Quái [E] (ruong_halloween_e)", value="ruong_halloween_e")
     ])
-    async def slash_item_use(self, interaction: discord.Interaction, item_id: str):
-        player = get_player(interaction.user.id, interaction.user.display_name)
-        p_items = player.setdefault("items", {})
-        cnt = p_items.get(item_id, 0)
-        if cnt <= 0:
-            await interaction.response.send_message(f"❌ Bạn không có vật phẩm `{item_id}` trong kho!", ephemeral=True)
-            return
-
-        if item_id == "ruong_halloween_e":
-            p_items[item_id] -= 1
-            # Random reward
-            roll = random.random()
-            if roll < 0.50:
-                t = random.randint(5, 15)
-                player["pull_tickets"] += float(t)
-                reward_txt = f"🎟️ **+{t} Vé Pull Tích Lũy**!"
-            elif roll < 0.85:
-                k = random.randint(50, 100)
-                p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + k
-                reward_txt = f"🍬 **+{k} Kẹo Halloween**!"
-            else:
-                p_shards = player.setdefault("shards", {})
-                p_shards["kizuna"] = p_shards.get("kizuna", 0) + 1
-                reward_txt = f"🩸 **+1 Mảnh Kizuna** (Siêu Hiếm)!"
-
-            save_player(player)
-            embed = discord.Embed(
-                title="🎁 MỞ RƯƠNG HALLOWEEN MA QUÁI [E] THÀNH CÔNG!",
-                description=f"✨ **Phần thưởng nhận được:**\n{reward_txt}\n\n🎒 *Còn lại trong kho: {p_items[item_id]} rương.*",
-                color=0x10B981
-            )
-            await interaction.response.send_message(embed=embed)
+    async def slash_item_use_cmd(self, interaction: discord.Interaction, item_id: str):
+        await handle_item_use(interaction, item_id)
 
     @app_commands.command(name="trade", description="Trao đổi vật phẩm (Items) với người chơi khác")
     @app_commands.describe(user="Người chơi nhận", vat_pham="Mã vật phẩm", so_luong="Số lượng")
@@ -9679,39 +9974,12 @@ class ItemGroup(app_commands.Group, name="item", description="Quản lý kho v�
         app_commands.Choice(name="Kẹo Halloween", value="keo_halloween"),
         app_commands.Choice(name="Rương Halloween [E]", value="ruong_halloween_e")
     ])
-    async def slash_item_trade(self, interaction: discord.Interaction, user: discord.Member, vat_pham: str, so_luong: int = 1):
-        if user.id == interaction.user.id or user.bot:
-            await interaction.response.send_message("❌ Người nhận không hợp lệ!", ephemeral=True)
-            return
-        if so_luong <= 0:
-            await interaction.response.send_message("❌ Số lượng phải lớn hơn 0!", ephemeral=True)
-            return
-
-        p_a = get_player(interaction.user.id, interaction.user.display_name)
-        p_b = get_player(user.id, user.display_name)
-        inv_a = p_a.setdefault("items", {})
-        inv_b = p_b.setdefault("items", {})
-
-        if inv_a.get(vat_pham, 0) < so_luong:
-            await interaction.response.send_message(f"❌ Bạn không đủ {so_luong}x `{vat_pham}` để chuyển!", ephemeral=True)
-            return
-
-        inv_a[vat_pham] -= so_luong
-        inv_b[vat_pham] = inv_b.get(vat_pham, 0) + so_luong
-        save_player(p_a)
-        save_player(p_b)
-
-        item_name = ITEMS_DATABASE.get(vat_pham, {}).get("name", vat_pham)
-        embed = discord.Embed(
-            title="📦 GIAO DỊCH VẬT PHẨM THÀNH CÔNG!",
-            description=f"🤝 **{interaction.user.mention}** đã chuyển **{so_luong}x {item_name}** cho **{user.mention}**!",
-            color=0x10B981
-        )
-        await interaction.response.send_message(embed=embed)
+    async def slash_item_trade_cmd(self, interaction: discord.Interaction, user: discord.Member, vat_pham: str, so_luong: int = 1):
+        await handle_item_trade(interaction, user, vat_pham, so_luong)
 
 bot.tree.add_command(ItemGroup())
 
-# --- 3. LỆNH ADMIN QUẢN TRỊ SỰ KIỆN (/EVENT_ADMIN & /ADMIN_EVENT_BOSS_SPAWN) ---
+# 3. LỆNH ADMIN (OWNER EXCLUSIVE)
 class EventAdminGroup(app_commands.Group, name="event_admin", description="[Admin] Quản trị sự kiện Halloween Event"):
     @app_commands.command(name="start", description="[Admin] Bật sự kiện Halloween Event 2026")
     async def slash_admin_event_start(self, interaction: discord.Interaction):
@@ -9731,21 +9999,41 @@ class EventAdminGroup(app_commands.Group, name="event_admin", description="[Admi
 
 bot.tree.add_command(EventAdminGroup())
 
-@bot.tree.command(name="admin_event_boss_spawn", description="[Admin] Cưỡng chế triệu hồi Event Boss Kizuna")
+@bot.tree.command(name="admin_event_boss_spawn", description="[Admin] Cưỡng chế mở phòng triệu hồi Event Boss Kizuna ngay lập tức")
 async def slash_admin_event_boss_spawn(interaction: discord.Interaction):
     if not is_authorized_admin(interaction.user.id):
         await interaction.response.send_message("⛔ Không có quyền!", ephemeral=True)
         return
-    await interaction.response.send_message("⚡ Đang triệu hồi Event Boss Kizuna - Huyết Ma Đế...")
-    start_event = asyncio.Event()
-    raid_data = {
-        "channel_id": interaction.channel.id,
-        "boss_config": EVENT_BOSS_CONFIG,
-        "participants": [interaction.user.id],
-        "names": [interaction.user.display_name],
-        "start_event": start_event
-    }
-    await execute_event_raid(interaction.channel, raid_data)
+    await interaction.response.send_message("⚡ Đang cưỡng chế mở phòng triệu hồi Event Boss Kizuna...", ephemeral=True)
+    await spawn_event_boss_raid(interaction.channel, interaction.user, is_admin=True)
+
+# 4. HỖ TRỢ LỆNH PREFIX (!EVENT & !ITEM) CHO TẤT CẢ USER
+@bot.group(name="event", invoke_without_command=True)
+async def prefix_event_group(ctx):
+    await handle_event_info(ctx)
+
+@prefix_event_group.command(name="shop")
+async def prefix_event_shop(ctx):
+    await handle_event_shop(ctx)
+
+@prefix_event_group.command(name="raid")
+async def prefix_event_raid(ctx):
+    await handle_event_raid_open(ctx)
+
+@bot.group(name="item", invoke_without_command=True)
+async def prefix_item_group(ctx):
+    await handle_item_check(ctx)
+
+@prefix_item_group.command(name="use")
+async def prefix_item_use(ctx, item_id: str = "ruong_halloween_e"):
+    await handle_item_use(ctx, item_id)
+
+@prefix_item_group.command(name="trade")
+async def prefix_item_trade(ctx, user: discord.Member = None, vat_pham: str = "keo_halloween", so_luong: int = 1):
+    if not user:
+        await ctx.send("❌ Vui lòng gắn thẻ người nhận! Ví dụ: `!item trade @User keo_halloween 50`")
+        return
+    await handle_item_trade(ctx, user, vat_pham, so_luong)
 
 
 if __name__ == "__main__":
