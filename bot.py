@@ -188,27 +188,27 @@ def get_level_progress(total_xp: int, prestige_or_player: Union[int, dict] = 0):
 def get_prestige_info(current_p: int):
     next_p = current_p + 1
     if next_p == 1:
-        return {"next_p": 1, "req_lvl": 50, "pulls": 50.0, "tokens": 100, "xp_mult": 1.5}
+        return {"next_p": 1, "req_lvl": 50, "pulls": 50.0, "tokens": 100, "xp_mult": 2.0}
     elif next_p == 2:
-        return {"next_p": 2, "req_lvl": 100, "pulls": 50.0, "tokens": 150, "xp_mult": 2.0}
+        return {"next_p": 2, "req_lvl": 100, "pulls": 50.0, "tokens": 150, "xp_mult": 3.5}
     elif next_p == 3:
-        return {"next_p": 3, "req_lvl": 150, "pulls": 50.0, "tokens": 250, "xp_mult": 2.5}
+        return {"next_p": 3, "req_lvl": 150, "pulls": 50.0, "tokens": 250, "xp_mult": 5.0}
     elif next_p == 4:
-        return {"next_p": 4, "req_lvl": 200, "pulls": 50.0, "tokens": 300, "xp_mult": 3.0}
+        return {"next_p": 4, "req_lvl": 200, "pulls": 50.0, "tokens": 300, "xp_mult": 7.5}
     elif next_p == 5:
-        return {"next_p": 5, "req_lvl": 500, "pulls": 50.0, "tokens": 1000, "xp_mult": 4.0}
+        return {"next_p": 5, "req_lvl": 500, "pulls": 50.0, "tokens": 1000, "xp_mult": 10.0}
     else:
-        # P6 trở đi: Cố định hệ số nhân XP ở mức 4.2, không tăng thêm.
-        return {"next_p": next_p, "req_lvl": 100, "pulls": 50.0, "tokens": 120, "xp_mult": 4.2}
+        # P6 trở đi: Cố định hệ số nhân XP ở mức 10.0x
+        return {"next_p": next_p, "req_lvl": 100, "pulls": 50.0, "tokens": 120, "xp_mult": 10.0}
 
 def get_prestige_xp_multiplier(prestige_lvl: int) -> float:
     if prestige_lvl <= 0: return 1.0
-    elif prestige_lvl == 1: return 1.5
-    elif prestige_lvl == 2: return 2.0
-    elif prestige_lvl == 3: return 2.5
-    elif prestige_lvl == 4: return 3.0
-    elif prestige_lvl == 5: return 4.0
-    else: return 4.0 + (prestige_lvl - 5) * 0.2
+    elif prestige_lvl == 1: return 2.0
+    elif prestige_lvl == 2: return 3.5
+    elif prestige_lvl == 3: return 5.0
+    elif prestige_lvl == 4: return 7.5
+    elif prestige_lvl == 5: return 10.0
+    else: return 10.0 + (prestige_lvl - 5) * 0.5
 # ==============================================================================
 # 3. TOUHOU CARDS DATABASE (27 NHÂN VẬT CHUẨN THÔNG SỐ)
 # ==============================================================================
@@ -9616,7 +9616,7 @@ async def handle_help(ctx_or_interaction):
 **🌸 TÂN THỦ & NHIỆM VỤ:**
 • `/tutorial`: Khóa huấn luyện tân thủ (Thưởng 10 lượt pull, cấp 3 lượt pull 100% không trùng lá, không bao giờ ra thẻ SS, tiến trình 1 chiều).
 • `/story`: Chế độ cốt truyện Touhou Story Mode (Hồng Ma Dị Biến - Stage 1: Rumia, Stage 2: Bề mặt Hồ Sương Mù vs Cirno Ace 2).
-• `/prestige`: Hệ thống chuyển sinh (Reset Lv.0, nhận vé pull, tokens và nhân kinh nghiệm x1.5 - x4.2 XP, mở giới hạn cấp lên Lv.150, Lv.200, Lv.500+).
+• `/prestige`: Hệ thống chuyển sinh (Reset Lv.0, nhận vé pull, tokens và nhân kinh nghiệm x2.0 - x10.0 XP, mở giới hạn cấp lên Lv.150, Lv.200, Lv.500+).
 • `/token`: Mở Token Shop đền Hakurei (Đổi thẻ SS, S hoặc quay ngẫu nhiên bằng tokens).
 • `/quest`: Xem 3/3 Nhiệm vụ Hàng Ngày (Nhận vé pull & thưởng lớn +10 lượt pull khi xong cả 3).
 
@@ -9691,7 +9691,7 @@ async def prefix_story(ctx):
 # ==============================================================================
 # ĐĂNG KÝ SLASH COMMANDS & PREFIX CHO PRESTIGE VÀ TOKEN SHOP
 # ==============================================================================
-@bot.tree.command(name="prestige", description="Hệ thống chuyển sinh: Reset về Lv.0, làm mới Pull, nhận Tokens & x1.5-4x XP")
+@bot.tree.command(name="prestige", description="Hệ thống chuyển sinh: Reset về Lv.0, làm mới Pull, nhận Tokens & x2-10x XP")
 async def slash_prestige(interaction: discord.Interaction):
     await handle_prestige(interaction)
 
