@@ -522,7 +522,7 @@ EVENT_BOSS_PHASE2_CONFIG = {
     "id": "kizuna_event_phase2",
     "name": "Kizuna - Huyết Ma Đế Thức Tỉnh (Phase 2)",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1555151435237294090/image.png?backend=b2&ex=6abf7b23&is=6abe29a3&hm=046b321ed799b1a5c6266bb195b80de0a345c35fdeb75211aef98176ab00e12a&=&format=webp&quality=lossless",
-    "hp": 100000,
+    "hp": 75000,
     "power": 6000,
     "passive_regen_pct": 0.015,
     "skills": {
@@ -543,7 +543,7 @@ EVENT_BOSS_PHASE2_CONFIG = {
         },
         "wonder_guard": {
             "name": "Wonder guard",
-            "chance": 0.15,
+            "chance": 0.10,
             "turns": 2,
             "reflect_pct": 0.40,
             "desc": "215% kích hoạt: Miễn toàn bộ sát thương và phản lại 40% sát thương + hiệu ứng của địch trong 2 lượt (không kích hoạt lặp lại khi đang hiệu lực)",
@@ -4248,7 +4248,7 @@ async def spawn_event_boss_raid(channel, author, is_admin=False):
     )
     embed = discord.Embed(title=title, description=desc, color=0x991B1B)
     embed.set_image(url=EVENT_BOSS_CONFIG["image"])
-    embed.add_field(name="❤️ Máu Boss (HP):", value="• Phase 1: **50,000 HP**\n• Phase 2 Thức Tỉnh: **100,000 HP**", inline=True)
+    embed.add_field(name="❤️ Máu Boss (HP):", value="• Phase 1: **50,000 HP**\n• Phase 2 Thức Tỉnh: **75,000 HP**", inline=True)
     embed.add_field(name="⚔️ Sức Mạnh:", value="• Phase 1: **3,000 DMG** (chia đều)\n• Phase 2: **6,000 DMG** (chia đều)", inline=True)
     embed.add_field(name=f"👥 Người Tham Gia (1/6):", value=author.display_name, inline=False)
     embed.add_field(
@@ -4256,8 +4256,8 @@ async def spawn_event_boss_raid(channel, author, is_admin=False):
         value=(
             "• 🩸 **True vampire (100%):** Mỗi hiệp tự hồi **1,5% HP tối đa**!\n"
             "• 💥 **Blood chain (20%):** Gây **1.5x sát thương chia đều** cho toàn bộ thẻ tiền tuyến!\n"
-            "• 🌑 **Dark chain (40%):** 1x sát thương chia đều kèm **15% Máu Tối Đa** của từng lá bài!\n"
-            "• 🛡️ **Wonder guard (Phase 2 - 20%):** Miễn thương và **phản 60% sát thương + hiệu ứng** trong 3 lượt!"
+            "• 🌑 **Dark chain (20%):** 1x sát thương chia đều kèm **15% Máu Tối Đa** của từng lá bài!\n"
+            "• 🛡️ **Wonder guard (Phase 2 - 10%):** Miễn thương và **phản 60% sát thương + hiệu ứng** trong 3 lượt!"
         ),
         inline=False
     )
@@ -4492,8 +4492,8 @@ async def execute_event_raid(channel, raid_data):
         title="🩸 KIZUNA THỨC TỈNH - HUYẾT MA ĐẾ TỐI THƯỢNG (PHASE 2)",
         description=(
             f"⚡ **Huyết Nguyệt Giáng Lâm:** Toàn bộ thẻ bài dũng giả được hồi sinh và hồi phục 100% HP!\n"
-            f"❤️ **Máu:** `100,000 HP` | ⚔️ **Sức mạnh:** `6,000 DMG` (chia đều)\n"
-            f"🛡️ **Wonder Guard (20%):** Miễn thương & **phản lại 60% sát thương lẫn hiệu ứng** trong 3 lượt!"
+            f"❤️ **Máu:** `75,000 HP` | ⚔️ **Sức mạnh:** `6,000 DMG` (chia đều)\n"
+            f"🛡️ **Wonder Guard (10%):** Miễn thương & **phản lại 40% sát thương lẫn hiệu ứng** trong 2 lượt!"
         ),
         color=0x450A0A
     )
@@ -4533,7 +4533,7 @@ async def execute_event_raid(channel, raid_data):
         else:
             # Rơ-le chiêu cân bằng mới
             roll = random.random()
-            if roll < 0.20: # 20% kích hoạt Wonder Guard mới
+            if roll < 0.10: # 20% kích hoạt Wonder Guard mới
                 wonder_guard_turns = 2
                 turn_img = p2_cfg["skills"]["wonder_guard"]["gif"]
                 boss_action_log = "🛡️ **[Wonder guard (20%)]** Kích hoạt huyết thuẫn: **MIỄN THƯƠNG & PHẢN 40% SÁT THƯƠNG + HIỆU ỨNG** trong 2 lượt (trong thời gian này Boss chỉ đánh thường và không kích hoạt chiêu khác)!"
@@ -4542,20 +4542,20 @@ async def execute_event_raid(channel, raid_data):
                 dmg_each = max(100, p2_power // len(frontline))
                 boss_action_log += f"\n⚔️ Kizuna đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ tiền tuyến!"
                 for ac in frontline: ac["current_hp"] -= dmg_each
-            elif roll < 0.40: # 20% kích hoạt Blood Chain (từ 0.20 đến 0.40)
+            elif roll < 0.30: # 20% kích hoạt Blood Chain (từ 0.20 đến 0.40)
                 turn_img = p2_cfg["skills"]["blood_chain"]["gif"]
                 dmg_total = int(p2_power * 1.5)
                 dmg_each = max(100, dmg_total // len(frontline))
                 boss_action_log = f"🩸 **Blood chain (20%)**! Giáng {dmg_total:,} DMG (chia đều **{dmg_each:,} DMG** mỗi thẻ)!"
                 for ac in frontline: ac["current_hp"] -= dmg_each
-            elif roll < 0.60: # 20% kích hoạt Dark Chain (từ 0.40 đến 0.60)
+            elif roll < 0.50: # 20% kích hoạt Dark Chain (từ 0.40 đến 0.60)
                 turn_img = p2_cfg["skills"]["dark_chain"]["gif"]
                 dmg_base_each = max(100, p2_power // len(frontline))
                 boss_action_log = f"🌑 **Dark chain (20%)**! Gây {dmg_base_each:,} DMG chia đều kèm **15% Máu Tối Đa** từng thẻ tiền tuyến!"
                 for ac in frontline:
                     extra_hp = int(ac["max_hp"] * 0.15)
                     ac["current_hp"] -= (dmg_base_each + extra_hp)
-            else: # 40% còn lại là đánh thường
+            else: # 50% còn lại là đánh thường
                 dmg_each = max(100, p2_power // len(frontline))
                 boss_action_log = f"⚔️ Kizuna đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ tiền tuyến!"
                 for ac in frontline: ac["current_hp"] -= dmg_each
