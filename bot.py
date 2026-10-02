@@ -497,14 +497,14 @@ EVENT_BOSS_CONFIG = {
     "name": "Kizuna - Huyết Ma Đế (Phase 1)",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1555151435237294090/image.png?backend=b2&ex=6abf7b23&is=6abe29a3&hm=046b321ed799b1a5c6266bb195b80de0a345c35fdeb75211aef98176ab00e12a&=&format=webp&quality=lossless",
     "hp": 50000,
-    "power": 6000,
-    "passive_regen_pct": 0.03, # Hồi 3% máu mỗi lượt
+    "power": 3000,
+    "passive_regen_pct": 0.015, # Hồi 1,5% máu mỗi lượt
     "skills": {
         "blood_chain": {
             "name": "Blood chain",
             "chance": 0.20,
             "multiplier": 1.5,
-            "desc": "20% gây 1.5x sát thương (9,000 DMG chia đều cho tiền tuyến)",
+            "desc": "20% gây 1.5x sát thương (4,500 DMG chia đều cho tiền tuyến)",
             "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/2f/38/H1AP9mdI3CzGLVUrFBF.gif"
         },
         "dark_chain": {
@@ -523,14 +523,14 @@ EVENT_BOSS_PHASE2_CONFIG = {
     "name": "Kizuna - Huyết Ma Đế Thức Tỉnh (Phase 2)",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1555151435237294090/image.png?backend=b2&ex=6abf7b23&is=6abe29a3&hm=046b321ed799b1a5c6266bb195b80de0a345c35fdeb75211aef98176ab00e12a&=&format=webp&quality=lossless",
     "hp": 100000,
-    "power": 10000,
-    "passive_regen_pct": 0.03,
+    "power": 6000,
+    "passive_regen_pct": 0.015,
     "skills": {
         "blood_chain": {
             "name": "Blood chain",
             "chance": 0.20,
             "multiplier": 1.5,
-            "desc": "20% gây 1.5x sát thương (15,000 DMG chia đều cho tiền tuyến)",
+            "desc": "20% gây 1.5x sát thương (9,000 DMG chia đều cho tiền tuyến)",
             "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/2f/38/H1AP9mdI3CzGLVUrFBF.gif"
         },
         "dark_chain": {
@@ -4241,12 +4241,12 @@ async def spawn_event_boss_raid(channel, author, is_admin=False):
     embed = discord.Embed(title=title, description=desc, color=0x991B1B)
     embed.set_image(url=EVENT_BOSS_CONFIG["image"])
     embed.add_field(name="❤️ Máu Boss (HP):", value="• Phase 1: **50,000 HP**\n• Phase 2 Thức Tỉnh: **100,000 HP**", inline=True)
-    embed.add_field(name="⚔️ Sức Mạnh:", value="• Phase 1: **6,000 DMG** (chia đều)\n• Phase 2: **10,000 DMG** (chia đều)", inline=True)
+    embed.add_field(name="⚔️ Sức Mạnh:", value="• Phase 1: **3,000 DMG** (chia đều)\n• Phase 2: **6,000 DMG** (chia đều)", inline=True)
     embed.add_field(name=f"👥 Người Tham Gia (1/6):", value=author.display_name, inline=False)
     embed.add_field(
         name="🔮 Kỹ Năng & Nội Tại Huyết Ma Đế:",
         value=(
-            "• 🩸 **True vampire (100%):** Mỗi hiệp tự hồi **3% HP tối đa**!\n"
+            "• 🩸 **True vampire (100%):** Mỗi hiệp tự hồi **1,5% HP tối đa**!\n"
             "• 💥 **Blood chain (20%):** Gây **1.5x sát thương chia đều** cho toàn bộ thẻ tiền tuyến!\n"
             "• 🌑 **Dark chain (40%):** 1x sát thương chia đều kèm **15% Máu Tối Đa** của từng lá bài!\n"
             "• 🛡️ **Wonder guard (Phase 2 - 20%):** Miễn thương và **phản 60% sát thương + hiệu ứng** trong 3 lượt!"
@@ -4350,9 +4350,9 @@ async def execute_event_raid(channel, raid_data):
         p1_rounds += 1
         frontline = [c["team_cards"][c["current_card_index"]] for c in active]
 
-        heal_amt = int(p1_max_hp * 0.03)
+        heal_amt = int(p1_max_hp * 0.015)
         p1_hp = min(p1_max_hp, p1_hp + heal_amt)
-        passive_log = f"🩸 **[Nội Tại - True Vampire]** Huyết Ma Đế hấp thụ ma khí hồi **+{heal_amt:,} HP** (3% HP tối đa)!"
+        passive_log = f"🩸 **[Nội Tại - True Vampire]** Huyết Ma Đế hấp thụ ma khí hồi **+{heal_amt:,} HP** (1,5% HP tối đa)!"
 
         round_p_dmg = sum(ac["power"] for ac in frontline)
         p1_hp = max(0, p1_hp - round_p_dmg)
@@ -4484,7 +4484,7 @@ async def execute_event_raid(channel, raid_data):
         title="🩸 KIZUNA THỨC TỈNH - HUYẾT MA ĐẾ TỐI THƯỢNG (PHASE 2)",
         description=(
             f"⚡ **Huyết Nguyệt Giáng Lâm:** Toàn bộ thẻ bài dũng giả được hồi sinh và hồi phục 100% HP!\n"
-            f"❤️ **Máu:** `100,000 HP` | ⚔️ **Sức mạnh:** `10,000 DMG` (chia đều)\n"
+            f"❤️ **Máu:** `100,000 HP` | ⚔️ **Sức mạnh:** `6,000 DMG` (chia đều)\n"
             f"🛡️ **Wonder Guard (20%):** Miễn thương & **phản lại 60% sát thương lẫn hiệu ứng** trong 3 lượt!"
         ),
         color=0x450A0A
@@ -4499,7 +4499,7 @@ async def execute_event_raid(channel, raid_data):
         p2_rounds += 1
         frontline = [c["team_cards"][c["current_card_index"]] for c in active]
 
-        heal_amt = int(p2_max_hp * 0.03)
+        heal_amt = int(p2_max_hp * 0.015)
         p2_hp = min(p2_max_hp, p2_hp + heal_amt)
         passive_log = f"🩸 **[True Vampire]** Tự hồi **+{heal_amt:,} HP** (3% HP tối đa)!"
 
