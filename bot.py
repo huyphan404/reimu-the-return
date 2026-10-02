@@ -1489,6 +1489,113 @@ def execute_kizuna_ace2(player):
     embed.set_footer(text="Touhou Evolution System • Kizuna Ace 2 Activated • Card ID #t3")
     return True, "", embed
 
+
+# ==============================================================================
+# BỘ KỸ NĂNG ACE 2 CHO THẺ [T] #t1 SEIKI (CLEAVE, MEDICINE SIGN, FANTASY SEAL, BÓNG KHÁI NIỆM)
+# ==============================================================================
+def execute_seiki_ace2(player):
+    """Tiến hóa Ace 2 [#t1] Seiki: yêu cầu Ace 2 của Marisa [#19], Reimu [#15], Sakuya [#18] + 10 Mảnh Seiki."""
+    if is_card_ace2(player, "t1"):
+        return False, "⚠️ **[#t1] Seiki Đệ Pháp Toàn Năng** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
+
+    missing = [cid for cid in T1_ACE2_CONFIG["required_ace2"] if not is_card_ace2(player, cid)]
+    if missing:
+        names = ", ".join(f"[#{c:02d}] {CARDS_DATA[c]['name']}" for c in missing)
+        return False, (
+            "❌ **Chưa đủ điều kiện tiến hóa Seiki Ace 2!**\n"
+            "• Yêu cầu: **[#19] Marisa**, **[#15] Reimu**, **[#18] Sakuya** đều phải đạt **Ace 2 ⭐⭐**.\n"
+            f"• Còn thiếu Ace 2: **{names}**"
+        ), None
+
+    shards = player.setdefault("shards", {})
+    cur = shards.get("seiki", 0)
+    need = T1_ACE2_CONFIG["required_shards"]
+    if cur < need:
+        return False, (
+            f"❌ Chưa đủ **Mảnh Seiki**! (Hiện có: **{cur}/{need}** mảnh).\n"
+            "💡 *Nguồn rơi: tham gia Boss Raid (tỉ lệ 2.5%/5%).*"
+        ), None
+
+    shards["seiki"] = cur - need
+    player.setdefault("evolutions", {})["t1"] = 2
+    save_player(player)
+
+    embed = discord.Embed(
+        title="🌟 TIẾN HÓA THÀNH CÔNG: [#t1] SEIKI ĐỆ NHẤT PHÁP SƯ - ACE 2 ⭐⭐!",
+        description=(
+            "⚡ **MA LỰC DỊ TÀ THỨC TỈNH - BỘ KỸ NĂNG ĐỘC QUYỀN ACE 2:**\n\n"
+            "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **2% Máu Tối Đa** mục tiêu!\n"
+            "💚 **Medicine Sign (35%):** Hồi phục **40% Máu Tối Đa** bản thân, 1 lần/trận.\n"
+            "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận.\n"
+            "🌑 **Bóng Khái Niệm (40%):** Gây **15% Máu Tối Đa** mục tiêu và **xóa kỹ năng đối phương**, 1 lần/trận.\n\n"
+            f"📉 **Chi phí:** Đã tiêu hao **10 Mảnh Seiki** (Còn lại: `{shards['seiki']}` mảnh)\n"
+            "💪 **Buff Ace 2:** +500 ATK & +500 HP vĩnh viễn!"
+        ),
+        color=0x7C3AED
+    )
+    embed.set_image(url=T1_ACE2_CONFIG.get("gif_cleave", "https://static2.klipy.com/ii/6c12d2b51268b8b0e7c53d1000676b7e/90/13/216KZeX0.gif"))
+    embed.set_footer(text="Touhou Evolution System • Seiki Ace 2 Activated • Card ID #t1")
+    return True, "", embed
+
+
+def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=False):
+    """Kỹ năng Ace 2 ⭐⭐ [#t1] Seiki - dùng chung Raid / Battle / PvP.
+    t1_flags: dict lưu cờ (seal_used / bong_used / med_used / used_turn).
+    Quy tắc: Cleave thụ động 100% mọi đòn đánh; tối đa 1 chiêu/lượt; mỗi chiêu 1 lần/trận.
+    ĐẶC BIỆT: Chiêu Fantasy Seal được buff tỷ lệ kích hoạt lên 50% ở dạng Ace 2 (Miễn toàn bộ sát thương 1 hiệp)!"""
+    out = {"bonus": 0, "direct": 0, "heal": 0, "invul": False, "instant_kill": False, "boss_half_hp": False,
+           "disable": False, "logs": [], "gif": None}
+
+    # 🪓 CLEAVE - Nội tại thụ động 100%: đánh thường +2% Máu Tối Đa mục tiêu
+    out["bonus"] = int(target_max_hp * T1_ACE2_CONFIG["cleave_pct"])
+    out["logs"].append(
+        f"🪓 **[Ace 2] [#t1] Seiki Đệ Nhất Pháp Sư** - **Cleave (Nội Tại - 100%)**: "
+        f"Mọi đòn đánh +**{out['bonus']:,} DMG** (2% Máu Tối Đa {target_desc})!"
+    )
+
+    if t1_flags.get("used_turn") == round_no:
+        return out
+
+    roll = random.random()
+    seal_cfg = T1_ACE2_CONFIG.get("fantasy_seal", {"chance": 0.50, "gif": T1_SEAL_GIF})
+    seal_chance = seal_cfg["chance"]
+    bong_chance = T1_ACE2_CONFIG["bong_khai_niem"]["chance"]
+    med_chance = T1_ACE2_CONFIG["medicine_sign"]["chance"]
+
+    if not t1_flags.get("seal_used") and not t1_flags.get("seiki_seal_used") and roll < seal_chance:
+        t1_flags["seal_used"] = True
+        t1_flags["seiki_seal_used"] = True
+        t1_flags["used_turn"] = round_no
+        out["invul"] = True
+        out["gif"] = seal_cfg.get("gif", T1_SEAL_GIF)
+        out["logs"].append(
+            f"🛡️ **[Ace 2] [#t1] Seiki** kích hoạt **FANTASY SEAL** (50%)! "
+            f"Vận khởi kết giới phong ấn tuyệt đối — **MIỄN TOÀN BỘ SÁT THƯƠNG** trong hiệp này!"
+        )
+    elif not t1_flags.get("bong_used") and roll < seal_chance + bong_chance:
+        t1_flags["bong_used"] = True
+        t1_flags["used_turn"] = round_no
+        out["direct"] = int(target_max_hp * T1_ACE2_CONFIG["bong_khai_niem"]["dmg_pct"])
+        out["disable"] = True
+        out["gif"] = T1_ACE2_CONFIG["bong_khai_niem"]["gif"]
+        out["logs"].append(
+            f"🌑 **[Ace 2] [#t1] Seiki** kích hoạt **BÓNG KHÁI NIỆM** (40%)! "
+            f"Gây **{out['direct']:,} DMG** (15% Máu Tối Đa {target_desc}) và **LẬP TỨC XÓA KỸ NĂNG của đối phương**!"
+        )
+    elif not t1_flags.get("med_used") and ac.get("current_hp", 1) < ac.get("max_hp", ac.get("hp", 1))             and roll < seal_chance + bong_chance + med_chance:
+        t1_flags["med_used"] = True
+        t1_flags["used_turn"] = round_no
+        out["heal"] = int(ac.get("max_hp", ac.get("hp", 1)) * T1_ACE2_CONFIG["medicine_sign"]["heal_pct"])
+        out["gif"] = T1_ACE2_CONFIG["medicine_sign"]["gif"]
+        out["logs"].append(
+            f"💚 **[Ace 2] [#t1] Seiki** kích hoạt **MEDICINE SIGN** (35%)! "
+            f"Hồi phục **+{out['heal']:,} HP** (40% Máu Tối Đa bản thân)!"
+        )
+
+    return out
+
+
+
 # ==============================================================================
 # HỆ THỐNG XEM CHI TIẾT TRẬN CHIẾN & HOẠT ẢNH GIF KỸ NĂNG (IN-DISCORD)
 # ==============================================================================
