@@ -523,7 +523,7 @@ EVENT_BOSS_PHASE2_CONFIG = {
     "name": "Kizuna - Huyết Ma Đế Thức Tỉnh (Phase 2)",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1555151435237294090/image.png?backend=b2&ex=6abf7b23&is=6abe29a3&hm=046b321ed799b1a5c6266bb195b80de0a345c35fdeb75211aef98176ab00e12a&=&format=webp&quality=lossless",
     "hp": 75000,
-    "power": 6000,
+    "power": 7000,
     "passive_regen_pct": 0.015,
     "skills": {
         "blood_chain": {
@@ -543,10 +543,10 @@ EVENT_BOSS_PHASE2_CONFIG = {
         },
         "wonder_guard": {
             "name": "Wonder guard",
-            "chance": 0.10,
+            "chance": 0.15,
             "turns": 2,
-            "reflect_pct": 0.40,
-            "desc": "215% kích hoạt: Miễn toàn bộ sát thương và phản lại 40% sát thương + hiệu ứng của địch trong 2 lượt (không kích hoạt lặp lại khi đang hiệu lực)",
+            "reflect_pct": 0.90,
+            "desc": "15% kích hoạt: Miễn toàn bộ sát thương và phản lại 90% sát thương + hiệu ứng của địch trong 2 lượt (không kích hoạt lặp lại khi đang hiệu lực)",
             "gif": "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/e5/ab/GDt4bKoq.gif"
         }
     }
@@ -4314,7 +4314,7 @@ async def spawn_event_boss_raid(channel, author, is_admin=False):
     embed = discord.Embed(title=title, description=desc, color=0x991B1B)
     embed.set_image(url=EVENT_BOSS_CONFIG["image"])
     embed.add_field(name="❤️ Máu Boss (HP):", value="• Phase 1: **50,000 HP**\n• Phase 2 Thức Tỉnh: **75,000 HP**", inline=True)
-    embed.add_field(name="⚔️ Sức Mạnh:", value="• Phase 1: **3,000 DMG** (chia đều)\n• Phase 2: **6,000 DMG** (chia đều)", inline=True)
+    embed.add_field(name="⚔️ Sức Mạnh:", value="• Phase 1: **3,000 DMG** (chia đều)\n• Phase 2: **7,000 DMG** (chia đều)", inline=True)
     embed.add_field(name=f"👥 Người Tham Gia (1/6):", value=author.display_name, inline=False)
     embed.add_field(
         name="🔮 Kỹ Năng & Nội Tại Huyết Ma Đế:",
@@ -4322,7 +4322,7 @@ async def spawn_event_boss_raid(channel, author, is_admin=False):
             "• 🩸 **True vampire (100%):** Mỗi hiệp tự hồi **1,5% HP tối đa**!\n"
             "• 💥 **Blood chain (20%):** Gây **1.5x sát thương chia đều** cho toàn bộ thẻ tiền tuyến!\n"
             "• 🌑 **Dark chain (20%):** 1x sát thương chia đều kèm **15% Máu Tối Đa** của từng lá bài!\n"
-            "• 🛡️ **Wonder guard (Phase 2 - 10%):** Miễn thương và **phản 60% sát thương + hiệu ứng** trong 3 lượt!"
+            "• 🛡️ **Wonder guard (Phase 2 - 15%):** Miễn thương và **phản 90% sát thương + hiệu ứng** trong 2 lượt!"
         ),
         inline=False
     )
@@ -4557,8 +4557,8 @@ async def execute_event_raid(channel, raid_data):
         title="🩸 KIZUNA THỨC TỈNH - HUYẾT MA ĐẾ TỐI THƯỢNG (PHASE 2)",
         description=(
             f"⚡ **Huyết Nguyệt Giáng Lâm:** Toàn bộ thẻ bài dũng giả được hồi sinh và hồi phục 100% HP!\n"
-            f"❤️ **Máu:** `75,000 HP` | ⚔️ **Sức mạnh:** `6,000 DMG` (chia đều)\n"
-            f"🛡️ **Wonder Guard (10%):** Miễn thương & **phản lại 40% sát thương lẫn hiệu ứng** trong 2 lượt!"
+            f"❤️ **Máu:** `75,000 HP` | ⚔️ **Sức mạnh:** `7,000 DMG` (chia đều)\n"
+            f"🛡️ **Wonder Guard (15%):** Miễn thương & **phản lại 90% sát thương lẫn hiệu ứng** trong 2 lượt!"
         ),
         color=0x450A0A
     )
@@ -4580,7 +4580,7 @@ async def execute_event_raid(channel, raid_data):
         reflected_dmg_log = ""
         if wonder_guard_turns > 0:
             wonder_guard_turns -= 1
-            ref_dmg = int(round_p_dmg * 0.40) # Sửa thành phản lại 40% sát thương
+            ref_dmg = int(round_p_dmg * 0.90) # Sửa thành phản lại 90% sát thương
             ref_each = max(50, ref_dmg // len(frontline))
             for ac in frontline: ac["current_hp"] -= ref_each
             reflected_dmg_log = f"\n🛡️ **[Wonder Guard Hiệu Lực]** Boss MIỄN TOÀN BỘ SÁT THƯƠNG và **phản lại {ref_dmg:,} DMG** ({ref_each:,} DMG/thẻ)! (Còn {wonder_guard_turns} lượt)"
@@ -4598,10 +4598,10 @@ async def execute_event_raid(channel, raid_data):
         else:
             # Rơ-le chiêu cân bằng mới
             roll = random.random()
-            if roll < 0.10: # 20% kích hoạt Wonder Guard mới
+            if roll < 0.15: # 15% kích hoạt Wonder Guard mới
                 wonder_guard_turns = 2
                 turn_img = p2_cfg["skills"]["wonder_guard"]["gif"]
-                boss_action_log = "🛡️ **[Wonder guard (20%)]** Kích hoạt huyết thuẫn: **MIỄN THƯƠNG & PHẢN 40% SÁT THƯƠNG + HIỆU ỨNG** trong 2 lượt (trong thời gian này Boss chỉ đánh thường và không kích hoạt chiêu khác)!"
+                boss_action_log = "🛡️ **[Wonder guard (20%)]** Kích hoạt huyết thuẫn: **MIỄN THƯƠNG & PHẢN 90% SÁT THƯƠNG + HIỆU ỨNG** trong 2 lượt (trong thời gian này Boss chỉ đánh thường và không kích hoạt chiêu khác)!"
                 
                 # Turn kích hoạt này Boss cũng chỉ đánh thường
                 dmg_each = max(100, p2_power // len(frontline))
