@@ -4384,7 +4384,7 @@ async def execute_event_raid(channel, raid_data):
         p["pull_tickets"] += tickets
 
         c_roll = random.random()
-        candies = 20 if c_roll < 0.10 else (50 if c_roll < 0.40 else 0)
+        candies = 20 if c_roll < 0.10 else (10 if c_roll < 0.40 else 0)
         if candies > 0: p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + candies
 
         shard_got = False
