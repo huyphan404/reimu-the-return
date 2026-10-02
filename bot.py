@@ -793,7 +793,7 @@ EVOL_CONFIG["t3"] = {
     "required_cards": 0,
     "required_pulls": 0,
     "required_item": "thanh_loi",
-    "evol_gif": "https://media.discordapp.net/attachments/1543072032034521228/1555151435237294090/image.png?backend=b2&ex=6abf7b23&is=6abe29a3&hm=046b321ed799b1a5c6266bb195b80de0a345c35fdeb75211aef98176ab00e12a&=&format=webp&quality=lossless",
+    "evol_gif": "https://static2.klipy.com/ii/d6b0ce929193df3c242ac34b5654d2ce/a2/4a/5wVVGJlo.gif",
     "skill_name": "True Vampire Thức Tỉnh (Wonder Guard • Blood Chain 2x • Dark Chain 1.5x)",
     "skill_desc": (
         "🩸 **True vampire (Nội tại):** Hồi 5% máu mỗi lượt.\n"
@@ -1453,15 +1453,22 @@ def execute_kizuna_ace2(player):
     if not is_card_unlocked(player, "t3") and player.get("inventory", {}).get("t3", 0) <= 0:
         return False, "❌ Bạn phải sở hữu thẻ bài **[#t3] Kizuna the emperor of vampire (Ace 1)** trước khi tiến hóa!", None
 
+    items = player.setdefault("items", {})
     shards = player.setdefault("shards", {})
-    cur_core = shards.get("thanh_loi", 0)
+    
+    # Kiểm tra thánh lõi trong items hoặc shards
+    cur_core = items.get("thanh_loi", 0) or shards.get("thanh_loi", 0)
     if cur_core < 1:
         return False, (
             "❌ Bạn chưa sở hữu vật phẩm **Thánh Lõi** để tiến hóa Kizuna lên Ace 2!\n"
-            "💡 *Vật phẩm Thánh Lõi có thể nhận qua sự kiện đặc biệt hoặc lệnh cấp của Admin.*"
+            "💡 *Vật phẩm Thánh Lõi có thể nhận qua hoàn thành /event info hoặc nhận từ Admin.*"
         ), None
 
-    shards["thanh_loi"] = cur_core - 1
+    if items.get("thanh_loi", 0) > 0:
+        items["thanh_loi"] -= 1
+    if shards.get("thanh_loi", 0) > 0:
+        shards["thanh_loi"] -= 1
+
     player.setdefault("evolutions", {})["t3"] = 2
     save_player(player)
 
@@ -1473,208 +1480,14 @@ def execute_kizuna_ace2(player):
             "🛡️ **Wonder guard (20%):** Miễn thương & **phản lại 60% sát thương lẫn hiệu ứng** của địch trong **3 lượt** (1 lần/trận)!\n"
             "💥 **Blood chain (30%):** Gây **2.0x sát thương** (1 lần/trận)!\n"
             "🌑 **Dark chain (30%):** Gây **1.5x sát thương** kèm **15% Máu Tối Đa mục tiêu** (tối đa 3 lần/trận)!\n\n"
-            f"📉 **Chi phí:** Đã tiêu hao **1 Thánh Lõi** (Còn lại: `{shards['thanh_loi']}` lõi)\n"
+            f"📉 **Chi phí:** Đã tiêu hao **1 Thánh Lõi** (Còn lại: `{items.get('thanh_loi', 0)}` lõi)\n"
             "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn!"
         ),
         color=0x991B1B
     )
-    embed.set_image(url=T3_WONDER_GUARD_GIF)
+    embed.set_image(url="https://static2.klipy.com/ii/d6b0ce929193df3c242ac34b5654d2ce/a2/4a/5wVVGJlo.gif")
     embed.set_footer(text="Touhou Evolution System • Kizuna Ace 2 Activated • Card ID #t3")
     return True, "", embed
-
-def t3_combat_turn(t3_state, card, round_no, target_max_hp, target_desc="", is_ace2=False):
-    """Xử lý trọn bộ kỹ năng của [#t3] Kizuna:
-    - True vampire (Hồi 5% HP mỗi lượt)
-    - Wonder guard (Ace 2: 20% miễn thương & phản 60% ST trong 3 lượt)
-    - Blood chain (30%: 1.5x thường / 2.0x Ace 2, 1 lần)
-    - Dark chain (20% thường / 30% Ace 2: 1.0x thường / 1.5x Ace 2 + 15% Max HP mục tiêu, tối đa 3 lần)
-    """
-    out = {
-        "multiplier": 1.0,
-        "bonus_hp_dmg": 0,
-        "heal": 0,
-        "wonder_active": False,
-        "wonder_started": False,
-        "logs": [],
-        "gif": None
-    }
-
-    # 1. Hồi máu nội tại True vampire (5% Max HP mỗi lượt)
-    heal_amt = int(card.get("max_hp", card.get("hp", 7700)) * 0.05)
-    card["current_hp"] = min(card.get("max_hp", card.get("hp", 7700)), card["current_hp"] + heal_amt)
-    out["heal"] = heal_amt
-
-    # 2. Xử lý duy trì Wonder guard nếu đang kích hoạt
-    if t3_state.get("wonder_turns", 0) > 0:
-        t3_state["wonder_turns"] -= 1
-        out["wonder_active"] = True
-
-    # 3. Kích hoạt Wonder guard mới (Ace 2 duy nhất 1 lần/trận)
-    if is_ace2 and not t3_state.get("wonder_used") and t3_state.get("wonder_turns", 0) == 0:
-        if random.random() < 0.20:
-            t3_state["wonder_used"] = True
-            t3_state["wonder_turns"] = 3
-            out["wonder_active"] = True
-            out["wonder_started"] = True
-            out["gif"] = T3_WONDER_GUARD_GIF
-            out["logs"].append(
-                f"🛡️ **[Ace 2] [#t3] Kizuna** kích hoạt **WONDER GUARD** (20%)! "
-                f"Miễn toàn bộ sát thương và **phản lại 60% sát thương + hiệu ứng** trong **3 lượt**!"
-            )
-
-    # 4. Tấn công kỹ năng: Blood chain hoặc Dark chain
-    blood_chance = 0.30
-    dark_chance = 0.30 if is_ace2 else 0.20
-    dark_uses = t3_state.get("dark_chain_uses", 0)
-
-    roll_skill = random.random()
-    if not t3_state.get("blood_used") and roll_skill < blood_chance:
-        t3_state["blood_used"] = True
-        mult = 2.0 if is_ace2 else 1.5
-        out["multiplier"] = mult
-        out["gif"] = out["gif"] or T3_BLOOD_GIF
-        out["logs"].append(
-            f"🩸 **[#t3] Kizuna** tung tuyệt kỹ **BLOOD CHAIN** (30%)! "
-            f"Bộc phát sát thương ×{mult:.1f}!"
-        )
-    elif dark_uses < 3 and roll_skill < (blood_chance + dark_chance):
-        t3_state["dark_chain_uses"] = dark_uses + 1
-        mult = 1.5 if is_ace2 else 1.0
-        out["multiplier"] = mult
-        out["bonus_hp_dmg"] = int(target_max_hp * 0.15)
-        out["gif"] = out["gif"] or T3_DARK_GIF
-        out["logs"].append(
-            f"🌑 **[#t3] Kizuna** thi triển **DARK CHAIN** ({'30%' if is_ace2 else '20%'}) "
-            f"*(Lần {t3_state['dark_chain_uses']}/3)*: Sát thương ×{mult:.1f} kèm **+{out['bonus_hp_dmg']:,} DMG** (15% Máu Tối Đa {target_desc})!"
-        )
-
-    return out
-
-
-def update_event_quest_progress(player: dict, quest_key: str, amount: int = 1) -> list:
-    if not EVENT_CONFIG.get("active"):
-        return []
-    ep = player.setdefault("event_progress", {"battle": 0, "pvp": 0, "raid": 0, "event_raid": 0, "claimed": False})
-    if ep.get("claimed", False):
-        return []
-    
-    notifs = []
-    if quest_key in ep:
-        target = EVENT_CONFIG["quests"][quest_key]["target"]
-        ep[quest_key] = min(target, ep[quest_key] + amount)
-        if ep[quest_key] == target:
-            notifs.append(f"🎃 **Hoàn thành Nhiệm Vụ Sự Kiện:** *{EVENT_CONFIG['quests'][quest_key]['name']}* ({target}/{target})!")
-
-    all_done = all(ep.get(k, 0) >= v["target"] for k, v in EVENT_CONFIG["quests"].items())
-    if all_done and not ep.get("claimed", False):
-        ep["claimed"] = True
-        player.setdefault("items", {})["thanh_loi"] = player.get("items", {}).get("thanh_loi", 0) + EVENT_CONFIG["reward"]["thanh_loi"]
-        player["tokens"] = player.get("tokens", 0) + EVENT_CONFIG["reward"]["tokens"]
-        notifs.append(
-            "👑 **HOÀN THÀNH TOÀN BỘ 4/4 NHIỆM VỤ HALLOWEEN EVENT 2026!**\n"
-            "🎁 **Nhận ngay:** **+1 Thánh Lõi** (tiến hóa Kizuna Ace 2) & **+250 Tokens**! 💎"
-        )
-    return notifs
-
-def execute_seiki_ace2(player):
-    """Tiến hóa Ace 2 [#t1] Seiki: yêu cầu Ace 2 của Marisa [#19], Reimu [#15], Sakuya [#18] + 10 Mảnh Seiki."""
-    if is_card_ace2(player, "t1"):
-        return False, "⚠️ **[#t1] Seiki Đệ Pháp Toàn Năng** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
-
-    missing = [cid for cid in T1_ACE2_CONFIG["required_ace2"] if not is_card_ace2(player, cid)]
-    if missing:
-        names = ", ".join(f"[#{c:02d}] {CARDS_DATA[c]['name']}" for c in missing)
-        return False, (
-            "❌ **Chưa đủ điều kiện tiến hóa Seiki Ace 2!**\n"
-            "• Yêu cầu: **[#19] Marisa**, **[#15] Reimu**, **[#18] Sakuya** đều phải đạt **Ace 2 ⭐⭐**.\n"
-            f"• Còn thiếu Ace 2: **{names}**"
-        ), None
-
-    shards = player.setdefault("shards", {})
-    cur = shards.get("seiki", 0)
-    need = T1_ACE2_CONFIG["required_shards"]
-    if cur < need:
-        return False, (
-            f"❌ Chưa đủ **Mảnh Seiki**! (Hiện có: **{cur}/{need}** mảnh).\n"
-            "💡 *Nguồn rơi: tham gia Boss Raid (tỉ lệ 2.5%/5%).*"
-        ), None
-
-    shards["seiki"] = cur - need
-    player.setdefault("evolutions", {})["t1"] = 2
-    save_player(player)
-
-    embed = discord.Embed(
-        title="🌟 TIẾN HÓA THÀNH CÔNG: [#t1] SEIKI ĐỆ NHẤT PHÁP SƯ - ACE 2 ⭐⭐!",
-        description=(
-            "⚡ **MA LỰC DỊ TÀ THỨC TỈNH - BỘ KỸ NĂNG ĐỘC QUYỀN ACE 2:**\n\n"
-            "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **2% Máu Tối Đa** mục tiêu!\n"
-            "💚 **Medicine Sign (35%):** Hồi phục **40% Máu Tối Đa** bản thân, 1 lần/trận.\n"
-            "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận.\n"
-            "🌑 **Bóng Khái Niệm (40%):** Gây **15% Máu Tối Đa** mục tiêu và **xóa kỹ năng đối phương**, 1 lần/trận.\n\n"
-            f"📉 **Chi phí:** Đã tiêu hao **10 Mảnh Seiki** (Còn lại: `{shards['seiki']}` mảnh)\n"
-            "⚖️ *Quy tắc cân bằng: tối đa 1 chiêu mỗi lượt, mỗi chiêu kích hoạt 1 lần trong trận!*"
-        ),
-        color=0x7C3AED
-    )
-    embed.set_image(url=T1_ACE2_CONFIG["gif_cleave"])
-    embed.set_footer(text="Touhou Evolution System • Seiki Ace 2 Activated • Card ID #t1")
-    return True, "", embed
-
-def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=False):
-    """Kỹ năng Ace 2 ⭐⭐ [#t1] Seiki - dùng chung Raid / Battle / PvP.
-    t1_flags: dict lưu cờ (seal_used / bong_used / med_used / used_turn).
-    Quy tắc: Cleave thụ động 100% mọi đòn đánh; tối đa 1 chiêu/lượt; mỗi chiêu 1 lần/trận.
-    ĐẶC BIỆT: Chiêu Fantasy Seal được buff tỷ lệ kích hoạt lên 50% ở dạng Ace 2 (Miễn toàn bộ sát thương 1 hiệp)!"""
-    out = {"bonus": 0, "direct": 0, "heal": 0, "invul": False, "instant_kill": False, "boss_half_hp": False,
-           "disable": False, "logs": [], "gif": None}
-
-    # 🪓 CLEAVE - Nội tại thụ động 100%: đánh thường +2% Máu Tối Đa mục tiêu
-    out["bonus"] = int(target_max_hp * T1_ACE2_CONFIG["cleave_pct"])
-    out["logs"].append(
-        f"🪓 **[Ace 2] [#t1] Seiki Đệ Nhất Pháp Sư** - **Cleave (Nội Tại - 100%)**: "
-        f"Mọi đòn đánh +**{out['bonus']:,} DMG** (2% Máu Tối Đa {target_desc})!"
-    )
-
-    if t1_flags.get("used_turn") == round_no:
-        return out
-
-    roll = random.random()
-    seal_cfg = T1_ACE2_CONFIG.get("fantasy_seal", {"chance": 0.50, "gif": T1_SEAL_GIF})
-    seal_chance = seal_cfg["chance"]
-    bong_chance = T1_ACE2_CONFIG["bong_khai_niem"]["chance"]
-    med_chance = T1_ACE2_CONFIG["medicine_sign"]["chance"]
-
-    if not t1_flags.get("seal_used") and not t1_flags.get("seiki_seal_used") and roll < seal_chance:
-        t1_flags["seal_used"] = True
-        t1_flags["seiki_seal_used"] = True
-        t1_flags["used_turn"] = round_no
-        out["invul"] = True
-        out["gif"] = seal_cfg.get("gif", T1_SEAL_GIF)
-        out["logs"].append(
-            f"🛡️ **[Ace 2] [#t1] Seiki** kích hoạt **FANTASY SEAL** (50%)! "
-            f"Vận khởi kết giới phong ấn tuyệt đối — **MIỄN TOÀN BỘ SÁT THƯƠNG** trong hiệp này!"
-        )
-    elif not t1_flags.get("bong_used") and roll < seal_chance + bong_chance:
-        t1_flags["bong_used"] = True
-        t1_flags["used_turn"] = round_no
-        out["direct"] = int(target_max_hp * T1_ACE2_CONFIG["bong_khai_niem"]["dmg_pct"])
-        out["disable"] = True
-        out["gif"] = T1_ACE2_CONFIG["bong_khai_niem"]["gif"]
-        out["logs"].append(
-            f"🌑 **[Ace 2] [#t1] Seiki** kích hoạt **BÓNG KHÁI NIỆM** (40%)! "
-            f"Gây **{out['direct']:,} DMG** (15% Máu Tối Đa {target_desc}) và **LẬP TỨC XÓA KỸ NĂNG của đối phương**!"
-        )
-    elif not t1_flags.get("med_used") and ac.get("current_hp", 1) < ac.get("max_hp", ac.get("hp", 1)) \
-            and roll < seal_chance + bong_chance + med_chance:
-        t1_flags["med_used"] = True
-        t1_flags["used_turn"] = round_no
-        out["heal"] = int(ac.get("max_hp", ac.get("hp", 1)) * T1_ACE2_CONFIG["medicine_sign"]["heal_pct"])
-        out["gif"] = T1_ACE2_CONFIG["medicine_sign"]["gif"]
-        out["logs"].append(
-            f"💚 **[Ace 2] [#t1] Seiki** kích hoạt **MEDICINE SIGN** (35%)! "
-            f"Hồi phục **+{out['heal']:,} HP** (40% Máu Tối Đa bản thân)!"
-        )
-    return out
 
 # ==============================================================================
 # HỆ THỐNG XEM CHI TIẾT TRẬN CHIẾN & HOẠT ẢNH GIF KỸ NĂNG (IN-DISCORD)
@@ -4189,8 +4002,8 @@ async def spawn_event_boss_raid(channel, author, is_admin=False):
     embed.add_field(
         name="🎁 Phần Thưởng Rơi (Drop):",
         value=(
-            "• **Phase 1:** 10% 20 vé, 40% 15 vé, 50% 10 vé | 30% 10 kẹo, 10% 20 kẹo | 2.5% Mảnh Kizuna\n"
-            "• **Phase 2:** 10% 20 vé, 40% 15 vé, 50% 10 vé | 50% 20 kẹo, 30% 35 kẹo | 7% Mảnh Kizuna"
+            "• **Phase 1:** 10% 20 vé, 40% 15 vé, 50% 10 vé | 30% 50 kẹo, 10% 100 kẹo | 2.5% Mảnh Kizuna\n"
+            "• **Phase 2:** 10% 20 vé, 40% 15 vé, 50% 10 vé | 50% 120 kẹo, 30% 70 kẹo | 7% Mảnh Kizuna"
         ),
         inline=False
     )
@@ -4384,7 +4197,7 @@ async def execute_event_raid(channel, raid_data):
         p["pull_tickets"] += tickets
 
         c_roll = random.random()
-        candies = 20 if c_roll < 0.10 else (10 if c_roll < 0.40 else 0)
+        candies = 100 if c_roll < 0.10 else (50 if c_roll < 0.40 else 0)
         if candies > 0: p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + candies
 
         shard_got = False
@@ -4543,7 +4356,7 @@ async def execute_event_raid(channel, raid_data):
             p["pull_tickets"] += tickets
 
             c_roll = random.random()
-            candies = 20 if c_roll < 0.50 else (35 if c_roll < 0.80 else 0)
+            candies = 120 if c_roll < 0.50 else (70 if c_roll < 0.80 else 0)
             if candies > 0: p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + candies
 
             shard_got = False
@@ -4557,7 +4370,7 @@ async def execute_event_raid(channel, raid_data):
             if candies > 0: txt += f", +{candies} Kẹo 🍬"
             if shard_got: txt += ", 🩸 **+1 Mảnh Kizuna**!"
             p2_rewards.append(txt)
-        final_emb.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (7% Mảnh Kizuna, 50% 20 Kẹo, 30% 35 Kẹo):", value="\n".join(p2_rewards), inline=False)
+        final_emb.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (7% Mảnh Kizuna, 50% 120 Kẹo):", value="\n".join(p2_rewards), inline=False)
 
     await channel.send(embed=final_emb, view=OpenDetailsView(all_event_raid_turns))
 
@@ -10089,6 +9902,98 @@ async def prefix_item_trade(ctx, user: discord.Member = None, vat_pham: str = "k
         await ctx.send("❌ Vui lòng gắn thẻ người nhận! Ví dụ: `!item trade @User keo_halloween 50`")
         return
     await handle_item_trade(ctx, user, vat_pham, so_luong)
+
+# ==============================================================================
+# LỆNH ADMIN: /ADMIN_GIVE ITEM & PREFIX !ADMIN_GIVE ITEM / !GIVEITEM
+# ==============================================================================
+class AdminGiveGroup(app_commands.Group, name="admin_give", description="[CHỦ BOT DUY NHẤT] Cấp thẻ, mảnh hoặc vật phẩm Item"):
+    @app_commands.command(name="item", description="[CHỦ BOT DUY NHẤT] Cấp vật phẩm thuộc nhóm Item cho người chơi")
+    @app_commands.describe(
+        vat_pham="Chọn vật phẩm cần cấp",
+        so_luong="Số lượng cần cấp (mặc định: 1)",
+        nguoi_dung="Người nhận (để trống nếu tự cấp cho bản thân)"
+    )
+    @app_commands.choices(vat_pham=[
+        app_commands.Choice(name="Thánh Lõi (thanh_loi)", value="thanh_loi"),
+        app_commands.Choice(name="Kẹo Halloween 🍬 (keo_halloween)", value="keo_halloween"),
+        app_commands.Choice(name="Rương Halloween Ma Quái [E] (ruong_halloween_e)", value="ruong_halloween_e")
+    ])
+    async def slash_admin_give_item(self, interaction: discord.Interaction, vat_pham: str, so_luong: int = 1, nguoi_dung: Optional[discord.Member] = None):
+        if not is_authorized_admin(interaction.user.id):
+            await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Lệnh chỉ dành riêng cho Admin.", ephemeral=True)
+            return
+        
+        if so_luong <= 0:
+            await interaction.response.send_message("❌ Số lượng cấp phải lớn hơn 0!", ephemeral=True)
+            return
+
+        target = nguoi_dung or interaction.user
+        target_player = get_player(target.id, target.display_name)
+        p_items = target_player.setdefault("items", {})
+        p_shards = target_player.setdefault("shards", {})
+
+        p_items[vat_pham] = p_items.get(vat_pham, 0) + so_luong
+        if vat_pham == "thanh_loi":
+            p_shards["thanh_loi"] = p_items["thanh_loi"]
+
+        save_player(target_player)
+
+        item_name = ITEMS_DATABASE.get(vat_pham, {}).get("name", vat_pham)
+        embed = discord.Embed(
+            title="🎁 [ADMIN] ĐÃ CẤP VẬT PHẨM (ITEM) THÀNH CÔNG!",
+            description=(
+                f"👑 **Admin thực hiện:** {interaction.user.mention}\n"
+                f"👤 **Người nhận:** {target.mention}\n"
+                f"📦 **Vật phẩm:** **{item_name}** (`{vat_pham}`)\n"
+                f"➕ **Số lượng cấp:** **+{so_luong:,}** cái\n"
+                f"🎒 **Tổng số lượng trong kho:** **`{p_items[vat_pham]:,}`** cái"
+            ),
+            color=0x10B981
+        )
+        await interaction.response.send_message(embed=embed)
+
+bot.tree.add_command(AdminGiveGroup())
+
+# Lệnh Prefix thay thế cho Admin: !admin_give item hoặc !giveitem
+@bot.group(name="admin_give", invoke_without_command=True)
+async def prefix_admin_give_group(ctx):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send("⛔ Từ chối quyền truy cập! Lệnh dành riêng cho chủ bot.")
+        return
+    await ctx.send("💡 Cú pháp: `!admin_give item <thanh_loi|keo_halloween|ruong_halloween_e> [số_lượng] [@User]`")
+
+@prefix_admin_give_group.command(name="item")
+async def prefix_admin_give_item(ctx, vat_pham: str = "thanh_loi", so_luong: int = 1, member: Optional[discord.Member] = None):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send("⛔ Từ chối quyền truy cập! Lệnh dành riêng cho chủ bot.")
+        return
+
+    if so_luong <= 0:
+        await ctx.send("❌ Số lượng phải lớn hơn 0!")
+        return
+
+    clean_vp = vat_pham.strip().lower()
+    if clean_vp in ["thanhloi", "thanh_loi", "core", "loi"]: clean_vp = "thanh_loi"
+    elif clean_vp in ["keo", "candy", "keo_halloween"]: clean_vp = "keo_halloween"
+    elif clean_vp in ["ruong", "ruong_halloween", "ruong_halloween_e"]: clean_vp = "ruong_halloween_e"
+
+    if clean_vp not in ITEMS_DATABASE:
+        await ctx.send(f"❌ Mã vật phẩm `{vat_pham}` không tồn tại! (Hợp lệ: `thanh_loi`, `keo_halloween`, `ruong_halloween_e`)")
+        return
+
+    target = member or ctx.author
+    target_player = get_player(target.id, target.display_name)
+    p_items = target_player.setdefault("items", {})
+    p_shards = target_player.setdefault("shards", {})
+
+    p_items[clean_vp] = p_items.get(clean_vp, 0) + so_luong
+    if clean_vp == "thanh_loi":
+        p_shards["thanh_loi"] = p_items["thanh_loi"]
+
+    save_player(target_player)
+    item_name = ITEMS_DATABASE[clean_vp]["name"]
+    await ctx.send(f"🎁 Đã cấp **+{so_luong:,}x {item_name}** cho {target.mention}! (Tổng kho: `{p_items[clean_vp]:,}` cái)")
+
 
 if __name__ == "__main__":
     if not DISCORD_TOKEN:
