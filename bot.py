@@ -1564,9 +1564,17 @@ async def on_message(message: discord.Message):
         f"Nội dung: {clean_content}"
     )
     
-    contents = []
+   contents = []
     for h in history:
-        contents.append({"role": h.get("role", "user"), "parts": [{"text": h.get("text", "")}]})
+        if isinstance(h, dict):
+            r = h.get("role", "user")
+            t = h.get("text", "")
+            if t:
+                contents.append({"role": r, "parts": [{"text": t}]})
+        elif isinstance(h, str) and h.strip():
+            # Tự động tương thích với dữ liệu chuỗi cũ trong Database
+            contents.append({"role": "user", "parts": [{"text": h.strip()}]})
+
     contents.append({"role": "user", "parts": [{"text": prompt_with_context}]})
 
     async with message.channel.typing():
