@@ -1562,9 +1562,13 @@ async def on_message(message: discord.Message):
         f"[Thông tin người nói: Tên '{message.author.display_name}', "
         f"{'ĐÂY LÀ BỐ HAN SEIKI CỦA BẠN - HÃY NGOAN NGOÃN VÀ HIẾU THẢO!' if is_father else 'Đây là khách viếng đền bình thường'}]\n"
         f"Nội dung: {clean_content}"
+prompt_with_context = (
+        f"[Thông tin người nói: Tên '{message.author.display_name}', "
+        f"{'ĐÂY LÀ BỐ HAN SEIKI CỦA BẠN - HÃY NGOAN NGOÃN VÀ HIẾU THẢO!' if is_father else 'Đây là khách viếng đền bình thường'}]\n"
+        f"Nội dung: {clean_content}"
     )
-    
-   contents = []
+
+    contents = []
     for h in history:
         if isinstance(h, dict):
             r = h.get("role", "user")
