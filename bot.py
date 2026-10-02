@@ -294,21 +294,55 @@ CARDS_DATA = {
                 "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/fd/9a/evpBLiollsxMmiF1wK18.gif"
             }
         }
+    },
+    "t3": {
+        "id": "t3",
+        "name": "Kizuna the emperor of vampire",
+        "rank": "T",
+        "power": 780,
+        "hp": 7700,
+        "image": "https://media.discordapp.net/attachments/1543072032034521228/1555151435237294090/image.png?backend=b2&ex=6abf7b23&is=6abe29a3&hm=046b321ed799b1a5c6266bb195b80de0a345c35fdeb75211aef98176ab00e12a&=&format=webp&quality=lossless",
+        "passive": {
+            "name": "True vampire",
+            "chance": 1.0,
+            "heal_pct": 0.05,
+            "desc": "True vampire — Hồi 5% máu mỗi lượt"
+        },
+        "skills": {
+            "blood_chain": {
+                "name": "Blood chain",
+                "chance": 0.30,
+                "multiplier": 1.5,
+                "desc": "30% gây ra 1.5x sát thương (1 lần/trận)",
+                "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/2f/38/H1AP9mdI3CzGLVUrFBF.gif"
+            },
+            "dark_chain": {
+                "name": "Dark chain",
+                "chance": 0.20,
+                "multiplier": 1.0,
+                "max_hp_pct": 0.15,
+                "max_uses": 3,
+                "desc": "20% gây 1.0x sát thương kèm 15% máu tối đa đối phương (tối đa 3 lần/trận)",
+                "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/56/40/iq0ztIh38KLjZwtzI.gif"
+            }
+        }
     }
 }
 CARDS_DATA["T1"] = CARDS_DATA["t1"]
 CARDS_DATA["T2"] = CARDS_DATA["t2"]
 CARDS_DATA["t2"] = CARDS_DATA["t2"]
+CARDS_DATA["T3"] = CARDS_DATA["t3"]
+CARDS_DATA["t3"] = CARDS_DATA["t3"]
 
-# ==============================================================================
-# GIF HOẠT ẢNH TUYỆT KỸ THẺ [T] #t1 SEIKI (dùng chung cho Raid, Battle & PvP)
-# ==============================================================================
 T1_SKILL_CONFIGS = CARDS_DATA["t1"]["skills"]
 T1_SEAL_GIF = T1_SKILL_CONFIGS["fantasy_seal"]["gif"]
 T1_SPARK_GIF = T1_SKILL_CONFIGS["master_spark"]["gif"]
 T1_HEAL_GIF = T1_SKILL_CONFIGS["medicine_sign"]["gif"]
 T2_PASSIVE_GIF = CARDS_DATA["t2"]["passive"]["gif"]
 T2_THOAI_MA_GIF = CARDS_DATA["t2"]["skills"]["thoai_ma_kiem"]["gif"]
+T3_BLOOD_GIF = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/2f/38/H1AP9mdI3CzGLVUrFBF.gif"
+T3_DARK_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/56/40/iq0ztIh38KLjZwtzI.gif"
+T3_WONDER_GUARD_GIF = "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/e5/ab/GDt4bKoq.gif"
 
 CARDS_BY_RANK = {
     "SS": [c for c in CARDS_DATA.values() if c["rank"] == "SS"],
@@ -616,6 +650,52 @@ EVOL_CONFIG["t1"] = {
     "bonus_hp": 300
 }
 
+T3_ACE2_CONFIG = {
+    "required_item": "thanh_loi",     # Yêu cầu vật phẩm Thánh Lõi
+    "wonder_guard": {
+        "chance": 0.20,
+        "turns": 3,
+        "reflect_pct": 0.60,
+        "gif": T3_WONDER_GUARD_GIF,
+        "desc": "20% kích hoạt: Miễn thương và phản lại 60% sát thương lẫn hiệu ứng trong 3 turn (1 lần/trận)"
+    },
+    "blood_chain": {
+        "chance": 0.30,
+        "multiplier": 2.0,
+        "gif": T3_BLOOD_GIF,
+        "desc": "30% gây 2.0x sát thương (1 lần/trận)"
+    },
+    "dark_chain": {
+        "chance": 0.30,
+        "multiplier": 1.5,
+        "max_hp_pct": 0.15,
+        "max_uses": 3,
+        "gif": T3_DARK_GIF,
+        "desc": "30% gây 1.5x sát thương kèm 15% máu tối đa đối phương (tối đa 3 lần/trận)"
+    }
+}
+
+EVOL_CONFIG["t3"] = {
+    "id": "t3",
+    "key": "kizuna",
+    "name": "Kizuna the emperor of vampire",
+    "title": "[#t3] Kizuna the emperor of vampire - Ace 2 ⭐⭐",
+    "ace_level": "Ace 2 ⭐⭐",
+    "required_cards": 0,
+    "required_pulls": 0,
+    "required_item": "thanh_loi",
+    "evol_gif": "https://media.discordapp.net/attachments/1543072032034521228/1555151435237294090/image.png?backend=b2&ex=6abf7b23&is=6abe29a3&hm=046b321ed799b1a5c6266bb195b80de0a345c35fdeb75211aef98176ab00e12a&=&format=webp&quality=lossless",
+    "skill_name": "True Vampire Thức Tỉnh (Wonder Guard • Blood Chain 2x • Dark Chain 1.5x)",
+    "skill_desc": (
+        "🩸 **True vampire (Nội tại):** Hồi 5% máu mỗi lượt.\n"
+        "🛡️ **Wonder guard (20%):** Miễn thương & phản 60% sát thương + hiệu ứng địch trong 3 turn (1 lần/trận).\n"
+        "💥 **Blood chain (30%):** Gây **2.0x sát thương** (1 lần/trận).\n"
+        "🌑 **Dark chain (30%):** Gây **1.5x sát thương** + **15% Máu Tối Đa** mục tiêu (tối đa 3 lần/trận)."
+    ),
+    "bonus_power": 300,
+    "bonus_hp": 300
+}
+
 # ==============================================================================
 # 3.1 CHI TIẾT NĂNG LỰC & KỸ NĂNG 27 NHÂN VẬT TOUHOU (CHO TÍNH NĂNG CHECK NHÂN VẬT)
 # ==============================================================================
@@ -657,10 +737,17 @@ CHARACTER_DETAILS = {
         "title": "Bát Ách Kiếm Thần Tướng (Nhóm T-Đặc Biệt)",
         "skill_name": "The True adapt • Thoái Ma Kiếm",
         "skill_desc": "Thần tướng thuật thức tối thượng Mahoraga nhóm T. Nội tại The True adapt (100% kích hoạt): Mỗi turn hồi 5% Máu tối đa và giảm 5% sát thương phải nhận (cộng dồn mỗi lượt). Tuyệt kỹ Thoái Ma kiếm (30% kích hoạt): Gây 1.5x sát thương cho mục tiêu (550 ATK / 7,000 HP)."
+    },
+    "t3": {
+        "title": "Hoàng Đế Ma Cà Rồng (Nhóm T-Đặc Biệt)",
+        "skill_name": "True vampire • Blood chain • Dark chain • Wonder guard",
+        "skill_desc": "Thẻ bài T3 Kizuna the emperor of vampire (780 ATK / 7,700 HP). Nội tại True vampire (hồi 5% HP mỗi lượt). Blood chain (30%: 1.5x sát thương, 1 lần), Dark chain (20%: 1.0x sát thương + 15% Max HP mục tiêu, tối đa 3 lần). [Ace 2 ⭐⭐ - Cần vật phẩm Thánh Lõi]: Blood chain tăng lên 2.0x, Dark chain tăng lên 1.5x + 15% Max HP, mở khóa Wonder guard (20%: miễn thương & phản 60% sát thương + hiệu ứng trong 3 turn, 1 lần/trận)!"
     }
 }
 CHARACTER_DETAILS["T1"] = CHARACTER_DETAILS["t1"]
 CHARACTER_DETAILS["T2"] = CHARACTER_DETAILS["t2"]
+CHARACTER_DETAILS["T3"] = CHARACTER_DETAILS["t3"]
+CHARACTER_DETAILS["t3"] = CHARACTER_DETAILS["t3"]
 
 BOSS_SKILL_CONFIG = {
     "name": "Dị Hình Bùa Chú",
@@ -744,7 +831,9 @@ def get_default_player(user_id, username):
         "team": [],
         "shards": {
             "seiki": 0,
-            "mahoraga": 0
+            "mahoraga": 0,
+            "kizuna": 0,
+            "thanh_loi": 0
         },
         "language": "vi",
         "id_schema": 3,
@@ -903,7 +992,8 @@ CARD_ALIASES = {
     "tewi": 28,
     "koishi": 10, "komeiji": 10,
     "seiki": "t1", "t1": "t1", "dephap": "t1", "toannang": "t1",
-    "mahoraga": "t2", "t2": "t2", "batach": "t2"
+    "mahoraga": "t2", "t2": "t2", "batach": "t2",
+    "kizuna": "t3", "t3": "t3", "vampire": "t3", "emperor": "t3"
 }
 
 def normalize_card_id(raw_id):
@@ -1003,10 +1093,12 @@ def get_player(user_id, username="Visitor"):
     if "evolutions" not in data: data["evolutions"] = {}
     if "team" not in data: data["team"] = []
     if "shards" not in data or not isinstance(data.get("shards"), dict):
-        data["shards"] = {"seiki": 0, "mahoraga": 0}
+        data["shards"] = {"seiki": 0, "mahoraga": 0, "kizuna": 0, "thanh_loi": 0}
     else:
         data["shards"].setdefault("seiki", 0)
         data["shards"].setdefault("mahoraga", 0)
+        data["shards"].setdefault("kizuna", 0)
+        data["shards"].setdefault("thanh_loi", 0)
     if "xp" not in data: data["xp"] = 0
     if "pull_tickets" not in data: data["pull_tickets"] = 0.0
     if "language" not in data: data["language"] = "vi"
@@ -1219,6 +1311,111 @@ active_raid = None
 # ==============================================================================
 # HÀM TIẾN HÓA SEIKI ACE 2 & HÀM XỬ LÝ KỸ NĂNG DÙNG CHUNG (RAID / BATTLE / PVP)
 # ==============================================================================
+def execute_kizuna_ace2(player):
+    """Tiến hóa Ace 2 [#t3] Kizuna: yêu cầu sở hữu thẻ Kizuna (Ace 1) + 1 vật phẩm Thánh Lõi."""
+    if is_card_ace2(player, "t3"):
+        return False, "⚠️ **[#t3] Kizuna the emperor of vampire** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
+
+    if not is_card_unlocked(player, "t3") and player.get("inventory", {}).get("t3", 0) <= 0:
+        return False, "❌ Bạn phải sở hữu thẻ bài **[#t3] Kizuna the emperor of vampire (Ace 1)** trước khi tiến hóa!", None
+
+    shards = player.setdefault("shards", {})
+    cur_core = shards.get("thanh_loi", 0)
+    if cur_core < 1:
+        return False, (
+            "❌ Bạn chưa sở hữu vật phẩm **Thánh Lõi** để tiến hóa Kizuna lên Ace 2!\n"
+            "💡 *Vật phẩm Thánh Lõi có thể nhận qua sự kiện đặc biệt hoặc lệnh cấp của Admin.*"
+        ), None
+
+    shards["thanh_loi"] = cur_core - 1
+    player.setdefault("evolutions", {})["t3"] = 2
+    save_player(player)
+
+    embed = discord.Embed(
+        title="🌟 TIẾN HÓA THÀNH CÔNG: [#t3] KIZUNA THE EMPEROR OF VAMPIRE - ACE 2 ⭐⭐!",
+        description=(
+            "🩸 **HOÀNG ĐẾ MA CÀ RỒNG THỨC TỈNH - BỘ KỸ NĂNG TỐI THƯỢNG ACE 2:**\n\n"
+            "❤️ **True vampire (Nội tại - 100%):** Hồi phục **5% Máu Tối Đa** mỗi lượt!\n"
+            "🛡️ **Wonder guard (20%):** Miễn thương & **phản lại 60% sát thương lẫn hiệu ứng** của địch trong **3 lượt** (1 lần/trận)!\n"
+            "💥 **Blood chain (30%):** Gây **2.0x sát thương** (1 lần/trận)!\n"
+            "🌑 **Dark chain (30%):** Gây **1.5x sát thương** kèm **15% Máu Tối Đa mục tiêu** (tối đa 3 lần/trận)!\n\n"
+            f"📉 **Chi phí:** Đã tiêu hao **1 Thánh Lõi** (Còn lại: `{shards['thanh_loi']}` lõi)\n"
+            "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn!"
+        ),
+        color=0x991B1B
+    )
+    embed.set_image(url=T3_WONDER_GUARD_GIF)
+    embed.set_footer(text="Touhou Evolution System • Kizuna Ace 2 Activated • Card ID #t3")
+    return True, "", embed
+
+def t3_combat_turn(t3_state, card, round_no, target_max_hp, target_desc="", is_ace2=False):
+    """Xử lý trọn bộ kỹ năng của [#t3] Kizuna:
+    - True vampire (Hồi 5% HP mỗi lượt)
+    - Wonder guard (Ace 2: 20% miễn thương & phản 60% ST trong 3 lượt)
+    - Blood chain (30%: 1.5x thường / 2.0x Ace 2, 1 lần)
+    - Dark chain (20% thường / 30% Ace 2: 1.0x thường / 1.5x Ace 2 + 15% Max HP mục tiêu, tối đa 3 lần)
+    """
+    out = {
+        "multiplier": 1.0,
+        "bonus_hp_dmg": 0,
+        "heal": 0,
+        "wonder_active": False,
+        "wonder_started": False,
+        "logs": [],
+        "gif": None
+    }
+
+    # 1. Hồi máu nội tại True vampire (5% Max HP mỗi lượt)
+    heal_amt = int(card.get("max_hp", card.get("hp", 7700)) * 0.05)
+    card["current_hp"] = min(card.get("max_hp", card.get("hp", 7700)), card["current_hp"] + heal_amt)
+    out["heal"] = heal_amt
+
+    # 2. Xử lý duy trì Wonder guard nếu đang kích hoạt
+    if t3_state.get("wonder_turns", 0) > 0:
+        t3_state["wonder_turns"] -= 1
+        out["wonder_active"] = True
+
+    # 3. Kích hoạt Wonder guard mới (Ace 2 duy nhất 1 lần/trận)
+    if is_ace2 and not t3_state.get("wonder_used") and t3_state.get("wonder_turns", 0) == 0:
+        if random.random() < 0.20:
+            t3_state["wonder_used"] = True
+            t3_state["wonder_turns"] = 3
+            out["wonder_active"] = True
+            out["wonder_started"] = True
+            out["gif"] = T3_WONDER_GUARD_GIF
+            out["logs"].append(
+                f"🛡️ **[Ace 2] [#t3] Kizuna** kích hoạt **WONDER GUARD** (20%)! "
+                f"Miễn toàn bộ sát thương và **phản lại 60% sát thương + hiệu ứng** trong **3 lượt**!"
+            )
+
+    # 4. Tấn công kỹ năng: Blood chain hoặc Dark chain
+    blood_chance = 0.30
+    dark_chance = 0.30 if is_ace2 else 0.20
+    dark_uses = t3_state.get("dark_chain_uses", 0)
+
+    roll_skill = random.random()
+    if not t3_state.get("blood_used") and roll_skill < blood_chance:
+        t3_state["blood_used"] = True
+        mult = 2.0 if is_ace2 else 1.5
+        out["multiplier"] = mult
+        out["gif"] = out["gif"] or T3_BLOOD_GIF
+        out["logs"].append(
+            f"🩸 **[#t3] Kizuna** tung tuyệt kỹ **BLOOD CHAIN** (30%)! "
+            f"Bộc phát sát thương ×{mult:.1f}!"
+        )
+    elif dark_uses < 3 and roll_skill < (blood_chance + dark_chance):
+        t3_state["dark_chain_uses"] = dark_uses + 1
+        mult = 1.5 if is_ace2 else 1.0
+        out["multiplier"] = mult
+        out["bonus_hp_dmg"] = int(target_max_hp * 0.15)
+        out["gif"] = out["gif"] or T3_DARK_GIF
+        out["logs"].append(
+            f"🌑 **[#t3] Kizuna** thi triển **DARK CHAIN** ({'30%' if is_ace2 else '20%'}) "
+            f"*(Lần {t3_state['dark_chain_uses']}/3)*: Sát thương ×{mult:.1f} kèm **+{out['bonus_hp_dmg']:,} DMG** (15% Máu Tối Đa {target_desc})!"
+        )
+
+    return out
+
 def execute_seiki_ace2(player):
     """Tiến hóa Ace 2 [#t1] Seiki: yêu cầu Ace 2 của Marisa [#19], Reimu [#15], Sakuya [#18] + 10 Mảnh Seiki."""
     if is_card_ace2(player, "t1"):
@@ -1333,7 +1530,7 @@ class BattleDetailsView(discord.ui.View):
             for i, t in enumerate(self.turns_data):
                 has_skill = "✨ " if t.get("image") else ""
                 lbl = f"{has_skill}{t.get('short_label', f'Hiệp {i+1}')}"[:100]
-                desc = t.get("short_desc", f"Chi tiết diễn biến hiệp {i+1}")[:100]
+                desc = f"Chi tiết diễn biến hiệp {i+1}"[:100]
                 options.append(discord.SelectOption(label=lbl, value=str(i), description=desc))
             select_menu = discord.ui.Select(
                 placeholder="🔽 Chọn hiệp muốn xem trực tiếp...",
@@ -2056,6 +2253,7 @@ async def execute_raid(channel, raid_data):
         cirno_freeze_log = None
         t1_notif = None
         t2_notif = None
+        t3_notif = None
         turn_image = None
 
         for c in active_combatants:
@@ -2228,6 +2426,19 @@ async def execute_raid(channel, raid_data):
                         f"Hồi phục **+{heal_mahoraga:,} HP** ({ac['current_hp']:,}/{ac['max_hp']:,} HP) và tăng kháng sát thương lên **{int(adapt_pct*100)}%**!"
                     )
                 t2_notif = (t2_notif + "\n" if t2_notif else "") + t2_notif_str
+            if str(ac["cid"]).lower() == "t3":
+                t3_st = c.setdefault("t3_state", {})
+                _t3 = t3_combat_turn(t3_st, ac, p1_rounds, p1_max_hp, f"Boss {boss_cfg['name']}", is_ace2=ac.get("is_ace2"))
+                card_dmg = int(card_dmg * _t3["multiplier"])
+                if _t3["bonus_hp_dmg"] > 0:
+                    actual_hp_dmg, p1_true_dmg_accum, cap_hp_msg = apply_raid_true_damage(_t3["bonus_hp_dmg"], p1_true_dmg_accum, p1_true_cap, "Dark Chain (Kizuna)")
+                    card_dmg += actual_hp_dmg
+                    if cap_hp_msg:
+                        _t3["logs"].append(cap_hp_msg)
+                if _t3["gif"] and not turn_image:
+                    turn_image = _t3["gif"]
+                t3_notif_str = "\n".join(_t3["logs"])
+                t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
 
             round_player_dmg += card_dmg
             c["total_dmg"] += card_dmg
@@ -2549,6 +2760,8 @@ async def execute_raid(channel, raid_data):
             round_embed.add_field(name="🔮 Tuyệt Kỹ [Ace 2] [#t1] Seiki:", value=t1_notif, inline=False)
         if t2_notif:
             round_embed.add_field(name="🔱 Thần Tướng [Nhóm T] [#t2] Mahoraga:", value=t2_notif, inline=False)
+        if t3_notif:
+            round_embed.add_field(name="🩸 Hoàng Đế [Nhóm T] [#t3] Kizuna:", value=t3_notif, inline=False)
         round_embed.add_field(name="👺 Phản Kích Của Boss:", value=boss_action_log, inline=False)
         if push_logs:
             round_embed.add_field(name="🔄 Thay Đổi Tiền Tuyến:", value="\n".join(push_logs), inline=False)
@@ -2584,6 +2797,7 @@ async def execute_raid(channel, raid_data):
                 *([("🦇 Ripples of 495 Years:", flandre_notif, False)] if flandre_notif else []),
                 *([("🔮 Tuyệt Kỹ [Ace 2] [#t1] Seiki:", t1_notif, False)] if t1_notif else []),
                 *([("🔱 Thần Tướng [Nhóm T] [#t2] Mahoraga:", t2_notif, False)] if t2_notif else []),
+                *([("🩸 Hoàng Đế [Nhóm T] [#t3] Kizuna:", t3_notif, False)] if t3_notif else []),
                 ("👺 Phản Kích Của Boss:", boss_action_log, False),
                 *([("🔄 Thay Đổi Tiền Tuyến & Đổi Sát Thương:", "\n".join(push_logs), False)] if push_logs else []),
                 ("🛡️ Tình Trạng Tiền Tuyến Hiện Tại:", "\n".join(round_card_status), False)
@@ -2924,6 +3138,19 @@ async def execute_raid(channel, raid_data):
                             f"Hồi phục **+{heal_mahoraga:,} HP** ({ac['current_hp']:,}/{ac['max_hp']:,} HP) và tăng kháng sát thương lên **{int(adapt_pct*100)}%**!"
                         )
                     t2_notif = (t2_notif + "\n" if t2_notif else "") + t2_notif_str
+            if str(ac["cid"]).lower() == "t3":
+                t3_st = c.setdefault("t3_state", {})
+                _t3 = t3_combat_turn(t3_st, ac, p1_rounds, p1_max_hp, f"Boss {boss_cfg['name']}", is_ace2=ac.get("is_ace2"))
+                card_dmg = int(card_dmg * _t3["multiplier"])
+                if _t3["bonus_hp_dmg"] > 0:
+                    actual_hp_dmg, p1_true_dmg_accum, cap_hp_msg = apply_raid_true_damage(_t3["bonus_hp_dmg"], p1_true_dmg_accum, p1_true_cap, "Dark Chain (Kizuna)")
+                    card_dmg += actual_hp_dmg
+                    if cap_hp_msg:
+                        _t3["logs"].append(cap_hp_msg)
+                if _t3["gif"] and not turn_image:
+                    turn_image = _t3["gif"]
+                t3_notif_str = "\n".join(_t3["logs"])
+                t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
 
                 round_player_dmg += card_dmg
                 c["total_dmg"] += card_dmg
@@ -3080,6 +3307,7 @@ async def execute_raid(channel, raid_data):
                     *([("🦇 Ripples of 495 Years:", flandre_notif, False)] if flandre_notif else []),
                     *([("🔮 Tuyệt Kỹ [Ace 2] [#t1] Seiki:", t1_notif, False)] if t1_notif else []),
                     *([("🔱 Thần Tướng [Nhóm T] [#t2] Mahoraga:", t2_notif, False)] if t2_notif else []),
+                *([("🩸 Hoàng Đế [Nhóm T] [#t3] Kizuna:", t3_notif, False)] if t3_notif else []),
                     ("👹 Boss Phase 2 Ra Đòn:", boss_action_log, False),
                     *([("🔄 Thay Đổi Tiền Tuyến & Đổi Sát Thương:", "\n".join(push_logs), False)] if push_logs else []),
                     ("🛡️ Tình Trạng Tiền Tuyến Hiện Tại:", "\n".join(round_card_status), False)
@@ -3254,6 +3482,7 @@ async def execute_raid(channel, raid_data):
         cirno_freeze_log = None
         t1_notif = None
         t2_notif = None
+        t3_notif = None
         turn_image = None
 
         for c in active_combatants:
@@ -3402,6 +3631,19 @@ async def execute_raid(channel, raid_data):
                         f"Hồi phục **+{heal_mahoraga:,} HP** ({ac['current_hp']:,}/{ac['max_hp']:,} HP) và tăng kháng sát thương lên **{int(adapt_pct*100)}%**!"
                     )
                 t2_notif = (t2_notif + "\n" if t2_notif else "") + t2_notif_str
+            if str(ac["cid"]).lower() == "t3":
+                t3_st = c.setdefault("t3_state", {})
+                _t3 = t3_combat_turn(t3_st, ac, p1_rounds, p1_max_hp, f"Boss {boss_cfg['name']}", is_ace2=ac.get("is_ace2"))
+                card_dmg = int(card_dmg * _t3["multiplier"])
+                if _t3["bonus_hp_dmg"] > 0:
+                    actual_hp_dmg, p1_true_dmg_accum, cap_hp_msg = apply_raid_true_damage(_t3["bonus_hp_dmg"], p1_true_dmg_accum, p1_true_cap, "Dark Chain (Kizuna)")
+                    card_dmg += actual_hp_dmg
+                    if cap_hp_msg:
+                        _t3["logs"].append(cap_hp_msg)
+                if _t3["gif"] and not turn_image:
+                    turn_image = _t3["gif"]
+                t3_notif_str = "\n".join(_t3["logs"])
+                t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
 
             round_player_dmg += card_dmg
             c["total_dmg"] += card_dmg
@@ -3511,6 +3753,8 @@ async def execute_raid(channel, raid_data):
             round_embed.add_field(name="🔮 Tuyệt Kỹ [Ace 2] [#t1] Seiki:", value=t1_notif, inline=False)
         if t2_notif:
             round_embed.add_field(name="🔱 Thần Tướng [Nhóm T] [#t2] Mahoraga:", value=t2_notif, inline=False)
+        if t3_notif:
+            round_embed.add_field(name="🩸 Hoàng Đế [Nhóm T] [#t3] Kizuna:", value=t3_notif, inline=False)
         round_embed.add_field(name="👹 Boss Phase 2 Ra Đòn:", value=boss_action_log, inline=False)
         if push_logs:
             round_embed.add_field(name="🔄 Thay Đổi Tiền Tuyến:", value="\n".join(push_logs), inline=False)
@@ -3541,6 +3785,7 @@ async def execute_raid(channel, raid_data):
                 *([("🦇 Ripples of 495 Years:", flandre_notif, False)] if flandre_notif else []),
                 *([("🔮 Tuyệt Kỹ [Ace 2] [#t1] Seiki:", t1_notif, False)] if t1_notif else []),
                 *([("🔱 Thần Tướng [Nhóm T] [#t2] Mahoraga:", t2_notif, False)] if t2_notif else []),
+                *([("🩸 Hoàng Đế [Nhóm T] [#t3] Kizuna:", t3_notif, False)] if t3_notif else []),
                 ("👹 Boss Phase 2 Ra Đòn:", boss_action_log, False),
                 *([("🔄 Thay Đổi Tiền Tuyến & Đổi Sát Thương:", "\n".join(push_logs), False)] if push_logs else []),
                 ("🛡️ Tình Trạng Tiền Tuyến Hiện Tại:", "\n".join(round_card_status), False)
@@ -3953,6 +4198,12 @@ async def slash_admin_add_shard(interaction: discord.Interaction, loai_shard: st
     s_key = loai_shard.lower().strip()
     if s_key in ["seiki", "t1", "dephap", "toannang"]:
         s_key = "seiki"
+    elif s_key in ["mahoraga", "t2", "batach"]:
+        s_key = "mahoraga"
+    elif s_key in ["kizuna", "t3", "vampire"]:
+        s_key = "kizuna"
+    elif s_key in ["thanh_loi", "thanhloi", "core", "loi"]:
+        s_key = "thanh_loi"
     shards = target_player.setdefault("shards", {})
     shards[s_key] = shards.get(s_key, 0) + so_luong
     save_player(target_player)
@@ -3980,6 +4231,12 @@ async def prefix_admin_add_shard(ctx, loai_shard: str = "seiki", quantity: int =
     s_key = loai_shard.lower().strip()
     if s_key in ["seiki", "t1", "dephap", "toannang"]:
         s_key = "seiki"
+    elif s_key in ["mahoraga", "t2", "batach"]:
+        s_key = "mahoraga"
+    elif s_key in ["kizuna", "t3", "vampire"]:
+        s_key = "kizuna"
+    elif s_key in ["thanh_loi", "thanhloi", "core", "loi"]:
+        s_key = "thanh_loi"
     shards = target_player.setdefault("shards", {})
     shards[s_key] = shards.get(s_key, 0) + quantity
     save_player(target_player)
@@ -4105,6 +4362,7 @@ async def prefix_admin_reset_quest(ctx, member: Optional[discord.Member] = None)
     ensure_daily_quests(target, force_reset=True)
     save_player(target)
     await ctx.send(f"✅ Đã làm mới thủ công toàn bộ 3/3 Nhiệm Vụ Ngày cho **{target_user.display_name}** thành công!")
+
 # ==============================================================================
 # 10. CƠ CHẾ TIẾN HÓA /evol (ACE 2 - KHẤU TRỪ CHI PHÍ, BUFF +300/+300, MARISA & SEIKI ACE 2)
 # ==============================================================================
@@ -4170,6 +4428,13 @@ class EvolSelectView(discord.ui.View):
             return
         await do_evolve_interaction(interaction, self.player, 13)
 
+    @discord.ui.button(label="🩸 [#t3] Tiến Hóa Kizuna Ace 2 (1 Thánh Lõi)", style=discord.ButtonStyle.danger, emoji="👑", row=3)
+    async def button_evol_kizuna(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
+            return
+        await do_evolve_interaction(interaction, self.player, "t3")
+
     @discord.ui.button(label="🔮 [#t1] Tiến Hóa Seiki Ace 2 (10 Mảnh + Ace2 Marisa/Reimu/Sakuya)", style=discord.ButtonStyle.secondary, emoji="♾️", row=3)
     async def button_evol_seiki(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
@@ -4178,6 +4443,8 @@ class EvolSelectView(discord.ui.View):
         await do_evolve_interaction(interaction, self.player, "t1")
 
 def execute_card_evolution(player, cid: Union[int, str]):
+    if str(cid).strip().lower() in ("t3", "kizuna", "vampire", "emperor"):
+        return execute_kizuna_ace2(player)
     if str(cid).strip().lower() in ("t1", "seiki", "dephap", "toannang"):
         return execute_seiki_ace2(player)
 
@@ -4260,6 +4527,8 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             cid_target = 23
         elif nv_clean in ("13", "#13") or "utsuho" in nv_clean or "okuu" in nv_clean or "reiuji" in nv_clean:
             cid_target = 13
+        elif nv_clean in ("t3", "#t3", "kizuna", "vampire", "emperor"):
+            cid_target = "t3"
         elif nv_clean in ("t1", "#t1", "seiki", "dephap", "toannang"):
             cid_target = "t1"
 
@@ -4457,7 +4726,8 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     app_commands.Choice(name="[#21] Reisen Udongein Inaba (Ace 2 - Cần 40 thẻ, Red Eye Mind Explosion)", value="21"),
     app_commands.Choice(name="[#23] Cirno (Ace 2 - Cần 60 thẻ, Perfect Freeze)", value="23"),
     app_commands.Choice(name="[#13] Utsuho Reiuji (Ace 2 - Cần 30 thẻ, Nuclear Spell Card)", value="13"),
-    app_commands.Choice(name="[#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Cần Ace2 Marisa + Reimu + Sakuya & 10 Mảnh Seiki)", value="t1")
+    app_commands.Choice(name="[#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Cần Ace2 Marisa + Reimu + Sakuya & 10 Mảnh Seiki)", value="t1"),
+    app_commands.Choice(name="[#t3] Kizuna the emperor of vampire (Ace 2 - Cần 1 Thánh Lõi)", value="t3")
 ])
 async def slash_evol(interaction: discord.Interaction, id_hoac_ten: str = None):
     await handle_evol(interaction, id_hoac_ten)
@@ -4465,7 +4735,6 @@ async def slash_evol(interaction: discord.Interaction, id_hoac_ten: str = None):
 @bot.command(name="evol", aliases=["tienhoa", "ace2"])
 async def prefix_evol(ctx, id_hoac_ten: str = None):
     await handle_evol(ctx, id_hoac_ten)
-
 # ==============================================================================
 # 11. CÁC LỆNH GAME: PULL, DAILY, TEAM, COLLECTION, TUTORIAL, QUEST
 # ==============================================================================
@@ -4751,6 +5020,7 @@ async def slash_team(interaction: discord.Interaction, hanh_dong: app_commands.C
 @bot.command(name="team")
 async def prefix_team(ctx, action: str = "view", card_id: str = None):
     await handle_team(ctx, action, card_id)
+
 async def handle_collection(ctx_or_interaction):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
@@ -4779,7 +5049,7 @@ async def handle_collection(ctx_or_interaction):
 
     t_lines = []
     shards_cnt = player.get("shards", {}).get("seiki", 0)
-    for t_cid in ["t1", "t2"]:
+    for t_cid in ["t1", "t2", "t3"]:
         if t_cid in CARDS_DATA:
             t_card = CARDS_DATA[t_cid]
             t_cnt = player["inventory"].get(t_cid, 0)
@@ -4793,11 +5063,17 @@ async def handle_collection(ctx_or_interaction):
                 t_shard_info = f"   └ 💎 **Mảnh Seiki:** `{shards_cnt}/10` mảnh"
                 if shards_cnt >= 10:
                     t_shard_info += " ✨ *(Đủ 10 mảnh! Dùng `/t translate` để đổi ngay!)*"
-            else:
+            elif t_cid == "t2":
                 mahoraga_shards = player.get("shards", {}).get("mahoraga", 0)
                 t_shard_info = f"   └ 🔱 **Mảnh Mahoraga:** `{mahoraga_shards}/10` mảnh"
                 if mahoraga_shards >= 10:
                     t_shard_info += " ✨ *(Đủ 10 mảnh! Dùng `/t translate loai_shard:mahoraga` để đổi ngay!)*"
+            elif t_cid == "t3":
+                kizuna_shards = player.get("shards", {}).get("kizuna", 0)
+                thanh_loi_shards = player.get("shards", {}).get("thanh_loi", 0)
+                t_shard_info = f"   └ 🩸 **Mảnh Kizuna:** `{kizuna_shards}/15` | 👑 **Thánh Lõi:** `{thanh_loi_shards}/1`"
+                if kizuna_shards >= 15:
+                    t_shard_info += " ✨ *(Đủ 15 mảnh! Dùng `/t translate loai_shard:kizuna` để đổi ngay!)*"
             t_lines.append(f"{t_status}\n{t_shard_info}")
 
     desc_text = "\n".join(lines)
@@ -4845,8 +5121,12 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
         shard_key = "mahoraga"
         target_card_id = "t2"
         needed_shards = 10
+    elif shard_key in ["kizuna", "t3", "vampire", "emperor", "kizuna_shard"]:
+        shard_key = "kizuna"
+        target_card_id = "t3"
+        needed_shards = 15
     else:
-        msg = f"❌ Loại mảnh `{loai_shard}` không tồn tại! Hiện tại có: `seiki` (đổi Thẻ T1 Seiki) và `mahoraga` (đổi Thẻ T2 Mahoraga)."
+        msg = f"❌ Loại mảnh `{loai_shard}` không tồn tại! Hiện tại có: `seiki` (đổi Thẻ T1 Seiki), `mahoraga` (đổi Thẻ T2 Mahoraga) và `kizuna` (đổi Thẻ T3 Kizuna)."
         if isinstance(ctx_or_interaction, discord.Interaction):
             await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else:
@@ -4877,7 +5157,24 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
     player["inventory"][target_card_id] = player["inventory"].get(target_card_id, 0) + 1
     save_player(player)
 
-    if target_card_id == "t2":
+    if target_card_id == "t3":
+        embed = discord.Embed(
+            title="🩸 QUY ĐỔI THÀNH CÔNG: HOÀNG ĐẾ MA CÀ RỒNG KIZUNA!",
+            description=(
+                f"✨ **Chúc mừng {user.mention}!** Bạn đã dung hợp thành công **15 Mảnh Kizuna**!\n\n"
+                f"🎴 **THẺ BÀI NHẬN ĐƯỢC:** **[T] #t3 Kizuna the emperor of vampire**\n"
+                f"• **Chỉ số:** ⚔️ Power: **{card_info['power']:,}** | ❤️ HP: **{card_info['hp']:,}**\n"
+                f"• **Kỹ năng:**\n"
+                f"  - 🩸 **True vampire:** Hồi 5% máu mỗi lượt\n"
+                f"  - 💥 **Blood chain (30%):** Gây 1.5x sát thương (1 lần/trận)\n"
+                f"  - 🌑 **Dark chain (20%):** Gây 1.0x sát thương + 15% Máu Tối Đa mục tiêu (tối đa 3 lần/trận)\n\n"
+                f"📦 **Kho mảnh còn lại:** `{shards_dict[shard_key]} Mảnh Kizuna`"
+            ),
+            color=0x991B1B
+        )
+        embed.set_image(url=card_info["image"])
+        embed.set_footer(text="Dùng /team add id_the:t3 để đưa Kizuna vào đội hình chiến đấu!")
+    elif target_card_id == "t2":
         embed = discord.Embed(
             title="🔱 QUY ĐỔI MẢNH THÀNH CÔNG: TRIỆU HỒI MAHORAGA BÁT ÁCH KIẾM THẦN TƯỚNG!",
             description=(
@@ -4927,6 +5224,9 @@ async def handle_view_shards(ctx_or_interaction):
     shards_dict = player.get("shards", {})
     seiki_shards = shards_dict.get("seiki", 0)
     mahoraga_shards = shards_dict.get("mahoraga", 0)
+    kizuna_shards = shards_dict.get("kizuna", 0)
+    thanh_loi_cnt = shards_dict.get("thanh_loi", 0)
+    has_kizuna = player["inventory"].get("t3", 0)
     card_info = CARDS_DATA["t1"]
     has_card = player["inventory"].get("t1", 0)
 
@@ -4951,6 +5251,16 @@ async def handle_view_shards(ctx_or_interaction):
             f"• Thẻ quy đổi: **[T] #t2 Mahoraga Bát ách kiếm thần tướng** (Kho: {has_mahoraga} lá)\n"
             f"• Thao tác: Gõ `/t translate loai_shard:mahoraga` khi đủ 10 mảnh để quy đổi ngay!\n"
             f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Mahoraga** (90K HP)."
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="🩸 Mảnh Kizuna & Thánh Lõi (Hoàng Đế Ma Cà Rồng):",
+        value=(
+            f"• Mảnh Kizuna: **`{kizuna_shards}/15` mảnh** (Kho thẻ: {has_kizuna} lá)\n"
+            f"• 👑 **Thánh Lõi (Vật phẩm tiến hóa Ace 2):** **`{thanh_loi_cnt}/1` lõi**\n"
+            f"• Thao tác: Gõ `/t translate loai_shard:kizuna` khi đủ 15 mảnh để nhận thẻ [T] #t3 Kizuna!\n"
+            f"• Tiến hóa Ace 2: Dùng `/evol id_hoac_ten:t3` khi đã có thẻ Kizuna và 1 Thánh Lõi."
         ),
         inline=False
     )
@@ -5130,7 +5440,6 @@ async def slash_quest(interaction: discord.Interaction):
 @bot.command(name="quest", aliases=["quests", "dailyquest"])
 async def prefix_quest(ctx):
     await handle_quest(ctx)
-
 # ==============================================================================
 # TÍNH NĂNG CHECK NHÂN VẬT & SOI KỸ NĂNG (TOÀN BỘ 27 NHÂN VẬT + ACE 2)
 # ==============================================================================
@@ -5197,6 +5506,15 @@ class CharacterCheckView(discord.ui.View):
         t2_btn.callback = self.show_t2_card
         self.add_item(t2_btn)
 
+        t3_btn = discord.ui.Button(
+            label="🩸 [T] #t3 Kizuna",
+            style=discord.ButtonStyle.success if getattr(self, 'show_t3', False) else discord.ButtonStyle.secondary,
+            emoji="🩸",
+            row=1
+        )
+        t3_btn.callback = self.show_t3_card
+        self.add_item(t3_btn)
+
         opt_part1 = []
         for i in range(1, 15):
             c = CARDS_DATA[i]
@@ -5234,6 +5552,8 @@ class CharacterCheckView(discord.ui.View):
         self.add_item(select2)
 
     def get_current_embed(self) -> discord.Embed:
+        if getattr(self, 'show_t3', False):
+            return self.get_t3_embed()
         if self.show_t1:
             return self.get_t1_embed()
         if self.show_t2:
@@ -5347,6 +5667,75 @@ class CharacterCheckView(discord.ui.View):
         self.show_ace = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def show_t3_card(self, interaction: discord.Interaction):
+        self.show_t3 = True
+        self.show_t1 = False
+        self.show_t2 = False
+        self.show_ace = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    def get_t3_embed(self) -> discord.Embed:
+        card = CARDS_DATA["t3"]
+        details = CHARACTER_DETAILS.get("t3", {})
+        player = get_player(self.user_id) if self.user_id else None
+        user_level = player.get("level", 1) if player else 1
+        lvl_atk_buff = (user_level - 1) * 20
+        lvl_hp_buff = (user_level - 1) * 25
+        owned_cnt = player.get("inventory", {}).get("t3", 0) if player else 0
+        shards_cnt = player.get("shards", {}).get("kizuna", 0) if player else 0
+        thanh_loi_cnt = player.get("shards", {}).get("thanh_loi", 0) if player else 0
+        is_locked = is_card_locked(player, "t3") if player else False
+        is_kizuna_ace = is_card_ace2(player, "t3") if player else False
+
+        embed = discord.Embed(
+            title="🩸 [THẺ ĐẶC BIỆT NHÓM T] #t3 KIZUNA THE EMPEROR OF VAMPIRE" + (" - ACE 2 ⭐⭐" if is_kizuna_ace else ""),
+            description=(
+                f"*{details.get('title', 'Hoàng Đế Ma Cà Rồng')}*\n"
+                "✨ Thẻ bài thần thoại nhóm T có thể nhận bằng cách thu thập **15 Mảnh Kizuna** "
+                "rồi dùng lệnh `/t translate loai_shard:kizuna`. Tiến hóa Ace 2 yêu cầu **1 Thánh Lõi**."
+            ),
+            color=0x991B1B
+        )
+        embed.set_image(url=card["image"])
+
+        power_val = card["power"] + (300 if is_kizuna_ace else 0)
+        hp_val = card["hp"] + (300 if is_kizuna_ace else 0)
+        stats_text = (
+            f"• ⚔️ **Sức Mạnh (Power / ATK):** `{power_val:,}`" + (" *(+300 Ace 2)*" if is_kizuna_ace else "") + "\n"
+            f"• ❤️ **Máu (HP):** `{hp_val:,}`" + (" *(+300 Ace 2)*" if is_kizuna_ace else "") + "\n"
+            f"• 🛡️ **Trong Đội Hình (Cấp {user_level}):** `{power_val + lvl_atk_buff:,}` ATK | `{hp_val + lvl_hp_buff:,}` HP\n"
+            f"*(Mỗi cấp người chơi tăng +20 ATK và +25 HP)*"
+        )
+        embed.add_field(name="⚔️ SỨC MẠNH & CHỈ SỐ:", value=stats_text, inline=False)
+
+        skills_text = (
+            "🩸 **True vampire (Nội tại 100%):** Hồi 5% máu tối đa mỗi lượt.\n"
+            "💥 **Blood chain (30%):** Gây " + ("**2.0x sát thương** (Ace 2)" if is_kizuna_ace else "**1.5x sát thương**") + " (1 lần/trận).\n"
+            "🌑 **Dark chain (" + ("30%" if is_kizuna_ace else "20%") + "):** Gây " + ("**1.5x sát thương**" if is_kizuna_ace else "**1.0x sát thương**") + " + **15% Máu Tối Đa mục tiêu** (tối đa 3 lần/trận)."
+        )
+        if is_kizuna_ace:
+            skills_text += "\n🛡️ **Wonder guard (20% - Kỹ năng Ace 2):** Miễn toàn bộ sát thương & **phản 60% sát thương lẫn hiệu ứng** trong **3 lượt** (1 lần/trận)!"
+
+        embed.add_field(name="🩸 BỘ KỸ NĂNG HOÀNG ĐẾ MA CÀ RỒNG:", value=skills_text, inline=False)
+
+        if player:
+            lock_str = "\n🔒 **CẢNH BÁO: Thẻ này hiện đang bị ADMIN KHÓA!**" if is_locked else ""
+            shard_str = "\n✨ *Đã đủ 15 mảnh! Dùng `/t translate loai_shard:kizuna` để đổi thẻ ngay!*" if shards_cnt >= 15 else ""
+            ace_str = "🌟 ĐÃ ĐẠT ACE 2 ⭐⭐" if is_kizuna_ace else (f"🟢 ĐỦ ĐIỀU KIỆN TIẾN HÓA (Có {thanh_loi_cnt} Thánh Lõi)!" if thanh_loi_cnt >= 1 and owned_cnt > 0 else f"🔴 Cần 1 Thánh Lõi (Hiện có: {thanh_loi_cnt}/1)")
+            embed.add_field(
+                name="🎒 TÚI ĐỒ CỦA BẠN:",
+                value=f"• Sở hữu: **{owned_cnt}** lá{lock_str}\n• 🩸 Mảnh Kizuna: **{shards_cnt}/15**{shard_str}\n• 👑 Thánh Lõi: **{thanh_loi_cnt}/1**\n• Trạng thái Ace 2: **{ace_str}**",
+                inline=True
+            )
+        embed.add_field(
+            name="📊 HẠNG THẺ:",
+            value="• Phẩm cấp: **Rank [T] — Đặc Biệt**\n• Nguồn: Đổi từ **15 Mảnh Kizuna**\n• Tiến hóa Ace 2: Tiêu hao **1 Thánh Lõi**",
+            inline=True
+        )
+        embed.set_footer(text="Thẻ nhóm T đặc biệt • Bấm ◀ / ▶ hoặc menu để xem 28 nhân vật chuẩn!")
+        return embed
 
     async def show_t2_card(self, interaction: discord.Interaction):
         self.show_t2 = True
@@ -5608,6 +5997,7 @@ async def slash_card_info(interaction: discord.Interaction, nhan_vat: str = None
 @bot.command(name="check", aliases=["char", "character", "card", "cardinfo"])
 async def prefix_check(ctx, *, nhan_vat: str = None):
     await handle_check_character(ctx, nhan_vat)
+
 # ==============================================================================
 # HỆ THỐNG PVE BATTLE (ĐẤU THEO LƯỢT NPC GENSOKYO)
 # ==============================================================================
@@ -5723,6 +6113,8 @@ async def handle_battle(ctx_or_interaction):
     p_t1 = {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
     p_seiki_seal, p_seiki_spark, p_seiki_heal = False, False, False
     p_mahoraga_turns = 0
+    p_t3_state = {}
+    o_t3_state = {}
     p_seiki_used_turn = -1
     p_cirno_freeze_used = False
     o_cirno_freeze_used = False
@@ -5941,6 +6333,13 @@ async def handle_battle(ctx_or_interaction):
                 )
             battle_logs.append(msg_t2)
             turn_actions.append(msg_t2)
+        if str(pc["cid"]).lower() == "t3":
+            _t3 = t3_combat_turn(p_t3_state, pc, r_cnt, oc["hp"], f"**{oc['name']}**", is_ace2=pc.get("is_ace2"))
+            curr_pc_power = int(curr_pc_power * _t3["multiplier"]) + _t3["bonus_hp_dmg"]
+            if _t3["gif"] and not turn_image:
+                turn_image = _t3["gif"]
+            turn_actions.extend(_t3["logs"])
+
 
         curr_oc_power = oc["power"]
         if oc["cid"] == 19 and oc.get("is_ace2") and not o_marisa:
@@ -6266,6 +6665,8 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
     t_t1 = {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
     c_mahoraga_turns = 0
     t_mahoraga_turns = 0
+    c_t3_state = {}
+    t_t3_state = {}
     c_cirno_freeze_used = False
     t_cirno_freeze_used = False
     c_freeze_debuff_turns = 0
@@ -6541,6 +6942,14 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
             pvp_logs.append(msg_t2)
             turn_actions.append(msg_t2)
 
+        
+        if str(cc["cid"]).lower() == "t3":
+            _t3 = t3_combat_turn(c_t3_state, cc, r_cnt, tc["max_hp"], f"**{tc['name']}** ({target.display_name})", is_ace2=cc.get("is_ace2"))
+            c_curr_power = int(c_curr_power * _t3["multiplier"]) + _t3["bonus_hp_dmg"]
+            if _t3["gif"] and not turn_image:
+                turn_image = _t3["gif"]
+            turn_actions.extend(_t3["logs"])
+
         if tc["cid"] == 19 and tc["is_ace2"] and not t_marisa:
             if random.random() < 0.30:
                 t_marisa = True
@@ -6670,6 +7079,14 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 )
             pvp_logs.append(msg_t2)
             turn_actions.append(msg_t2)
+
+        
+        if str(tc["cid"]).lower() == "t3":
+            _t3 = t3_combat_turn(t_t3_state, tc, r_cnt, cc["max_hp"], f"**{cc['name']}** ({challenger.display_name})", is_ace2=tc.get("is_ace2"))
+            t_curr_power = int(t_curr_power * _t3["multiplier"]) + _t3["bonus_hp_dmg"]
+            if _t3["gif"] and not turn_image:
+                turn_image = _t3["gif"]
+            turn_actions.extend(_t3["logs"])
 
         if not c_stunned and not t_invul:
             if str(tc["cid"]).lower() == "t2":
