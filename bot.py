@@ -6530,8 +6530,10 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
     
     target_idx = 0
     if nhan_vat:
-        nv_clean = nhan_vat.strip().lower()
-        if nv_clean in ("t3", "kizuna", "vampire", "emperor", "huyetma", "huyetmade"):
+        nv_clean = str(nhan_vat).strip().lower()
+        
+        # 1. Nhận diện Thẻ T3 Kizuna
+        if nv_clean in ("t3", "#t3", "kizuna", "vampire", "emperor", "huyetma", "huyetmade") or "kizuna" in nv_clean:
             view_t3 = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=False, show_t2=False)
             view_t3.show_t3 = True
             view_t3.rebuild_items()
@@ -6541,7 +6543,9 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
             else:
                 await ctx_or_interaction.send(embed=embed_t3, view=view_t3)
             return
-        if nv_clean in ("t1", "seiki", "dephap", "toannang"):
+
+        # 2. Nhận diện Thẻ T1 Seiki
+        if nv_clean in ("t1", "#t1", "seiki", "dephap", "toannang") or "seiki" in nv_clean:
             view_t1 = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=True, show_t2=False)
             embed_t1 = view_t1.get_current_embed()
             if isinstance(ctx_or_interaction, discord.Interaction):
@@ -6549,7 +6553,9 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
             else:
                 await ctx_or_interaction.send(embed=embed_t1, view=view_t1)
             return
-        if nv_clean in ("t2", "mahoraga", "batach", "thantuong", "kiemthantuong"):
+
+        # 3. Nhận diện Thẻ T2 Mahoraga
+        if nv_clean in ("t2", "#t2", "mahoraga", "batach", "thantuong", "kiemthantuong") or "mahoraga" in nv_clean:
             view_t2 = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=False, show_t2=True)
             embed_t2 = view_t2.get_current_embed()
             if isinstance(ctx_or_interaction, discord.Interaction):
@@ -6557,33 +6563,82 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
             else:
                 await ctx_or_interaction.send(embed=embed_t2, view=view_t2)
             return
-        if nv_clean.isdigit():
-            val = int(nv_clean)
+
+        # 4. Nhận diện thẻ số từ 1 đến 28
+        clean_num = nv_clean.replace("#", "").strip()
+        if clean_num.isdigit():
+            val = int(clean_num)
             if 1 <= val <= 28:
                 target_idx = val - 1
         else:
+            # Tìm kiếm an toàn trong CARDS_DATA
             found = False
             for cid, c in CARDS_DATA.items():
                 if nv_clean in c["name"].lower():
-                    if str(cid).lower() == "t3":
-                        view_t3 = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=False, show_t2=False)
-                        view_t3.show_t3 = True
-                        view_t3.rebuild_items()
-                        embed_t3 = view_t3.get_t3_embed()
-                        if isinstance(ctx_or_interaction, discord.Interaction):
-                            await ctx_or_interaction.response.send_message(embed=embed_t3, view=view_t3)
-                        else:
-                            await ctx_or_interaction.send(embed=embed_t3, view=view_t3)
-                        return
-                    if isinstance(cid, int) and 1 <= cid <= 28:
+                    cid_s = str(cid).lower()
+                    if cid_s == "t1":
+                        view = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=True, show_t2=False)
+                        embed = view.get_current_embed()
+                    elif cid_s == "t2":
+                        view = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=False, show_t2=True)
+                        embed = view.get_current_embed()
+                    elif cid_s == "t3":
+                        view = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=False, show_t2=False)
+                        view.show_t3 = True
+                        view.rebuild_items()
+                        embed = view.get_t3_embed()
+                    elif isinstance(cid, int) and 1 <= cid <= 28:
                         target_idx = cid - 1
                         found = True
                         break
+                    else:
+                        continue
+
+                    if isinstance(ctx_or_interaction, discord.Interaction):
+                        await ctx_or_interaction.response.send_message(embed=embed, view=view)
+                    else:
+                        await ctx_or_interaction.send(embed=embed, view=view)
+                    return
+
+            if not found:
+                for cid, det in CHARACTER_DETAILS.items():
+                    if nv_clean in det.get("title", "").lower() or nv_clean in det.get("skill_name", "").lower():
+                        if isinstance(cid, int) and 1 <= cid <= 28:
+                            target_idx = cid - 1
+                            found = True
+                            break
     else:
         player = get_player(user.id, user.display_name)
         if player and player.get("team"):
             lead_id = player["team"][0]
-            if isinstance(lead_id, int) and 1 <= lead_id <= 28:
+            lead_s = str(lead_id).lower()
+            if lead_s == "t1":
+                view = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=True, show_t2=False)
+                embed = view.get_current_embed()
+                if isinstance(ctx_or_interaction, discord.Interaction):
+                    await ctx_or_interaction.response.send_message(embed=embed, view=view)
+                else:
+                    await ctx_or_interaction.send(embed=embed, view=view)
+                return
+            elif lead_s == "t2":
+                view = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=False, show_t2=True)
+                embed = view.get_current_embed()
+                if isinstance(ctx_or_interaction, discord.Interaction):
+                    await ctx_or_interaction.response.send_message(embed=embed, view=view)
+                else:
+                    await ctx_or_interaction.send(embed=embed, view=view)
+                return
+            elif lead_s == "t3":
+                view = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=False, show_t2=False)
+                view.show_t3 = True
+                view.rebuild_items()
+                embed = view.get_t3_embed()
+                if isinstance(ctx_or_interaction, discord.Interaction):
+                    await ctx_or_interaction.response.send_message(embed=embed, view=view)
+                else:
+                    await ctx_or_interaction.send(embed=embed, view=view)
+                return
+            elif isinstance(lead_id, int) and 1 <= lead_id <= 28:
                 target_idx = lead_id - 1
 
     view = CharacterCheckView(current_index=target_idx, user_id=user.id, show_ace=False)
@@ -9929,11 +9984,7 @@ async def handle_item_trade(ctx_or_interaction, user: discord.Member, vat_pham: 
 # ĐĂNG KÝ SLASH COMMANDS VÀ PREFIX (CHO CẢ PLAYER & ADMIN)
 # ==============================================================================
 
-# 1. LỆNH TOP-LEVEL /EVENT & NHÓM /EVENT
-@bot.tree.command(name="event", description="Xem nội dung và tiến trình nhiệm vụ Halloween Event 2026")
-async def slash_standalone_event(interaction: discord.Interaction):
-    await handle_event_info(interaction)
-
+# 1. NHÓM LỆNH /EVENT (Gồm: /event info, /event shop, /event raid)
 class EventGroup(app_commands.Group, name="event", description="Sự kiện Halloween Event 2026"):
     @app_commands.command(name="info", description="Xem nội dung và nhiệm vụ sự kiện Halloween 2026")
     async def slash_event_info_cmd(self, interaction: discord.Interaction):
@@ -9949,11 +10000,7 @@ class EventGroup(app_commands.Group, name="event", description="Sự kiện Hall
 
 bot.tree.add_command(EventGroup())
 
-# 2. LỆNH TOP-LEVEL /ITEM & NHÓM /ITEM
-@bot.tree.command(name="item", description="Kiểm tra kho vật phẩm của bạn")
-async def slash_standalone_item(interaction: discord.Interaction):
-    await handle_item_check(interaction)
-
+# 2. NHÓM LỆNH /ITEM (Gồm: /item check, /item use, /item trade)
 class ItemGroup(app_commands.Group, name="item", description="Quản lý kho vật phẩm, sử dụng [E] và trao đổi"):
     @app_commands.command(name="check", description="Kiểm tra kho đồ vật phẩm của bạn")
     async def slash_item_check_cmd(self, interaction: discord.Interaction):
@@ -10007,7 +10054,7 @@ async def slash_admin_event_boss_spawn(interaction: discord.Interaction):
     await interaction.response.send_message("⚡ Đang cưỡng chế mở phòng triệu hồi Event Boss Kizuna...", ephemeral=True)
     await spawn_event_boss_raid(interaction.channel, interaction.user, is_admin=True)
 
-# 4. HỖ TRỢ LỆNH PREFIX (!EVENT & !ITEM) CHO TẤT CẢ USER
+# 4. HỖ TRỢ LỆNH PREFIX (!EVENT & !ITEM)
 @bot.group(name="event", invoke_without_command=True)
 async def prefix_event_group(ctx):
     await handle_event_info(ctx)
@@ -10020,8 +10067,16 @@ async def prefix_event_shop(ctx):
 async def prefix_event_raid(ctx):
     await handle_event_raid_open(ctx)
 
+@prefix_event_group.command(name="info")
+async def prefix_event_info(ctx):
+    await handle_event_info(ctx)
+
 @bot.group(name="item", invoke_without_command=True)
 async def prefix_item_group(ctx):
+    await handle_item_check(ctx)
+
+@prefix_item_group.command(name="check")
+async def prefix_item_check(ctx):
     await handle_item_check(ctx)
 
 @prefix_item_group.command(name="use")
@@ -10034,7 +10089,6 @@ async def prefix_item_trade(ctx, user: discord.Member = None, vat_pham: str = "k
         await ctx.send("❌ Vui lòng gắn thẻ người nhận! Ví dụ: `!item trade @User keo_halloween 50`")
         return
     await handle_item_trade(ctx, user, vat_pham, so_luong)
-
 
 if __name__ == "__main__":
     if not DISCORD_TOKEN:
