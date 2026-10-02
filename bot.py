@@ -1051,6 +1051,64 @@ def ensure_daily_quests(player: dict, force_reset: bool = False) -> dict:
         }
     return player["daily_quests"]
 
+def update_event_quest_progress(player: dict, quest_type: str, amount: int = 1) -> list:
+    """Cập nhật tiến trình nhiệm vụ sự kiện Halloween 2026.
+    Trả về danh sách các thông báo (str) nếu có nhiệm vụ hoặc toàn bộ sự kiện hoàn thành."""
+    if not EVENT_CONFIG.get("active", True):
+        return []
+        
+    ep = player.setdefault("event_progress", {
+        "battle": 0,
+        "pvp": 0,
+        "raid": 0,
+        "event_raid": 0,
+        "claimed": False
+    })
+    
+    if ep.get("claimed", False):
+        return []
+        
+    notifs = []
+    quests = EVENT_CONFIG.get("quests", {})
+    if quest_type not in quests:
+        return []
+        
+    target = quests[quest_type]["target"]
+    name = quests[quest_type]["name"]
+    
+    old_val = ep.get(quest_type, 0)
+    if old_val < target:
+        new_val = min(target, old_val + amount)
+        ep[quest_type] = new_val
+        if new_val >= target:
+            notifs.append(f"🎃 **Hoàn thành Nhiệm vụ Sự kiện:** *{name}* ({target}/{target})! 🎉")
+            
+        # Kiểm tra xem toàn bộ 4 nhiệm vụ đã hoàn thành chưa
+        all_done = True
+        for qkey, qcfg in quests.items():
+            if ep.get(qkey, 0) < qcfg["target"]:
+                all_done = False
+                break
+                
+        if all_done and not ep.get("claimed", False):
+            ep["claimed"] = True
+            
+            # Phát quà: 1 Thánh Lõi + 250 Tokens
+            p_items = player.setdefault("items", {})
+            p_items["thanh_loi"] = p_items.get("thanh_loi", 0) + 1
+            player["tokens"] = player.get("tokens", 0) + 250
+            
+            # Đồng bộ sang shards
+            p_shards = player.setdefault("shards", {})
+            p_shards["thanh_loi"] = p_items["thanh_loi"]
+            
+            notifs.append(
+                "👑 **HOÀN THÀNH TOÀN BỘ 4/4 NHIỆM VỤ SỰ KIỆN HALLOWEEN 2026!**\n"
+                "🎁 Nhận ngay phần thưởng tối thượng: **+1 Thánh Lõi** 🌟 và **+250 Tokens** 💎!"
+            )
+            
+    return notifs
+
 def update_daily_quest_progress(player: dict, quest_type: str, amount: int = 1) -> list:
     dq = ensure_daily_quests(player)
     notifs = []
@@ -2947,8 +3005,11 @@ async def execute_raid(channel, raid_data):
 
         p["pull_tickets"] += t_val
         p["xp"] += 100
-        update_daily_quest_progress(p, "raid", 1)
-        update_event_quest_progress(p, "raid", 1)
+        dq_notifs = update_daily_quest_progress(p, "raid", 1)
+        ev_notifs = update_event_quest_progress(p, "raid", 1)
+        all_n = dq_notifs + ev_notifs
+        for n in all_n:
+            items_won.append(n)
         save_player(p)
         p1_rewards_data[uid] = {"total_pulls": t_val, "items": items_won, "username": p["username"]}
 
@@ -4471,9 +4532,11 @@ async def execute_event_raid(channel, raid_data):
                 p_shards["kizuna"] = p_shards.get("kizuna", 0) + 1
                 shard_got = True
 
-            update_event_quest_progress(p, "event_raid", 1)
+            ev_notifs = update_event_quest_progress(p, "event_raid", 1)
             save_player(p)
             txt = f"• **{p['username']}**: +{tickets:.0f} Vé"
+            if ev_notifs:
+                txt += "\n   " + "\n   ".join(ev_notifs)
             if candies > 0: txt += f", +{candies} Kẹo 🍬"
             if shard_got: txt += ", 🩸 **+1 Mảnh Kizuna**!"
             p2_rewards.append(txt)
@@ -5340,6 +5403,8 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
         embed.add_field(name="🔓 GIẢI PHÓNG THẺ BÀI BỊ KHÓA:", value="\n".join(unlocked_notifs), inline=False)
     if dq_notifs:
         embed.add_field(name="📜 Tiến Trình Nhiệm Vụ Ngày:", value="\n\n".join(dq_notifs), inline=False)
+    if 'ev_notifs' in locals() and ev_notifs:
+        embed.add_field(name="🎃 Tiến Trình Sự Kiện Halloween:", value="\n\n".join(ev_notifs), inline=False)
     embed.set_footer(text=f"Vé pull còn lại: {player['pull_tickets']:.2f} | Free hôm nay: {player['free_pulls_remaining']}/5")
     if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
     else: await ctx_or_interaction.send(embed=embed)
@@ -7779,7 +7844,8 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
 
     dq_c = update_daily_quest_progress(c_player, "pvp", 1)
     dq_t = update_daily_quest_progress(t_player, "pvp", 1)
-
+    ev_c = update_event_quest_progress(c_player, "pvp", 1)
+    ev_t = update_event_quest_progress(t_player, "pvp", 1)
     save_player(c_player)
     save_player(t_player)
 
@@ -7788,6 +7854,13 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
         description=result_desc,
         color=0xF59E0B if winner_name == "Hòa" else 0x10B981
     )
+    all_notifs = []
+    if dq_c: all_notifs.extend([f"**[{challenger.display_name}]** {n}" for n in dq_c])
+    if dq_t: all_notifs.extend([f"**[{target.display_name}]** {n}" for n in dq_t])
+    if 'ev_c' in locals() and ev_c: all_notifs.extend([f"**[{challenger.display_name}]** {n}" for n in ev_c])
+    if 'ev_t' in locals() and ev_t: all_notifs.extend([f"**[{target.display_name}]** {n}" for n in ev_t])
+    if all_notifs:
+        embed.add_field(name="📜 Tiến Trình Nhiệm Vụ & Sự Kiện:", value="\n".join(all_notifs), inline=False)
     if pvp_logs:
         embed.add_field(name="📜 Điểm Nhấn Trận Đấu:", value="\n".join(pvp_logs[:5]), inline=False)
 
