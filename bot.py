@@ -1558,10 +1558,6 @@ async def on_message(message: discord.Message):
     is_father = (message.author.id == AUTHORIZED_ADMIN_ID or "seiki" in message.author.display_name.lower())
     history = get_conversation_history(message.channel.id, message.author.id)
     
-    prompt_with_context = (
-        f"[Thông tin người nói: Tên '{message.author.display_name}', "
-        f"{'ĐÂY LÀ BỐ HAN SEIKI CỦA BẠN - HÃY NGOAN NGOÃN VÀ HIẾU THẢO!' if is_father else 'Đây là khách viếng đền bình thường'}]\n"
-        f"Nội dung: {clean_content}"
 prompt_with_context = (
         f"[Thông tin người nói: Tên '{message.author.display_name}', "
         f"{'ĐÂY LÀ BỐ HAN SEIKI CỦA BẠN - HÃY NGOAN NGOÃN VÀ HIẾU THẢO!' if is_father else 'Đây là khách viếng đền bình thường'}]\n"
