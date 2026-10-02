@@ -4351,6 +4351,9 @@ async def spawn_event_boss_raid(channel, author, is_admin=False):
 # ==============================================================================
 # HÀM CHIẾN ĐẤU EVENT BOSS KIZUNA (ĐẦY ĐỦ KỸ NĂNG & GIF THẺ T VÀ THẺ ACE 2)
 # ==============================================================================
+# ==============================================================================
+# HÀM CHIẾN ĐẤU EVENT BOSS KIZUNA (CHUẨN 100% INDENT - ĐẦY ĐỦ SKILL THẺ T & ACE 2)
+# ==============================================================================
 async def execute_event_raid(channel, raid_data):
     global active_event_raid
     active_event_raid = None
@@ -4452,14 +4455,14 @@ async def execute_event_raid(channel, raid_data):
         p1_hp = min(p1_max_hp, p1_hp + heal_amt)
         passive_log = f"🩸 **[True Vampire]** Huyết Ma Đế hấp thụ ma khí hồi **+{heal_amt:,} HP** (1,5% HP tối đa)!"
 
-        # Xử lý hiệu ứng debuff kéo dài lên Boss
+        # Debuffs lên Boss
         reisen_boss_log = None
         if boss_mind_turns > 0:
             boss_mind_turns -= 1
             if random.random() < 0.20:
                 _mind_dmg = p1_power
                 p1_hp = max(0, p1_hp - _mind_dmg)
-                reisen_boss_log = f"🌀 **[Red Eye Mind]** Boss mất kiểm soát tự gây **{_mind_dmg:,} DMG** lên mình! (Còn {boss_mind_turns} lượt)"
+                reisen_boss_log = f"🌀 **[Red Eye Mind]** Boss tự gây **{_mind_dmg:,} DMG** lên mình! (Còn {boss_mind_turns} lượt)"
 
         boss_molten_log = None
         if boss_molten_ground_turns > 0:
@@ -4468,7 +4471,7 @@ async def execute_event_raid(channel, raid_data):
             actual_burn, p1_true_dmg_accum, _ = apply_raid_true_damage(raw_burn, p1_true_dmg_accum, p1_true_cap, "Bỏng Mặt Đất")
             if actual_burn > 0:
                 p1_hp = max(0, p1_hp - actual_burn)
-                boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Boss gây **{actual_burn:,} DMG**! (Còn {boss_molten_ground_turns} lượt)"
+                boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Boss gây **{actual_burn:,} DMG**!"
 
         boss_stunned = False
         sakuya_stun_notif = None
@@ -4478,7 +4481,6 @@ async def execute_event_raid(channel, raid_data):
         reisen_notif = None
         cirno_notif = None
         utsuho_notif = None
-        cirno_freeze_log = None
         t1_notif = None
         t2_notif = None
         t3_notif = None
@@ -4499,7 +4501,6 @@ async def execute_event_raid(channel, raid_data):
             boss_freeze_debuff_turns -= 1
             if random.random() < 0.45:
                 boss_stunned = True
-                cirno_freeze_log = f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%), mất lượt trong hiệp này!"
 
         # 2. Toàn quân tung kỹ năng tấn công
         round_player_dmg = 0
@@ -4529,7 +4530,7 @@ async def execute_event_raid(channel, raid_data):
                 actual_gungnir, p1_true_dmg_accum, _ = apply_raid_true_damage(raw_gungnir, p1_true_dmg_accum, p1_true_cap, "Gungnir")
                 card_dmg += actual_gungnir
                 if not turn_image: turn_image = EVOL_CONFIG[12]["skill_gif"]
-                remilia_notif = f"🩸 **[Ace 2] [#12] Remilia** ({c['username']}) - **Thương Đỏ Gungnir**: +**{actual_gungnir:,} DMG** (3% Max HP)!"
+                remilia_notif = f"🩸 **[Ace 2] [#12] Remilia** ({c['username']}) - **Thương Đỏ Gungnir**: +**{actual_gungnir:,} DMG**!"
 
             if ac["cid"] == 21 and ac["is_ace2"] and not c.get("reisen_used"):
                 if random.random() < 0.25:
@@ -4543,14 +4544,14 @@ async def execute_event_raid(channel, raid_data):
                     c["cirno_freeze_used"] = True
                     boss_freeze_debuff_turns = 2
                     if not turn_image: turn_image = EVOL_CONFIG[23]["skill_gif"]
-                    cirno_notif = f"❄️ **[Ace 2] [#23] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss trong 2 lượt!"
+                    cirno_notif = f"❄️ **[Ace 2] [#23] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss!"
 
             if ac["cid"] == 13 and ac["is_ace2"]:
                 if random.random() < 0.30:
                     card_dmg = int(card_dmg * 3.0)
                     boss_molten_ground_turns = 3
                     if not turn_image: turn_image = EVOL_CONFIG[13]["skill_gif"]
-                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho** ({c['username']}) tung **Nuclear Spell Card (×3.0)**! Giáng **{card_dmg:,} DMG** & nung chảy đất 3 lượt!"
+                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho** ({c['username']}) tung **Nuclear Spell Card (×3.0)**! Giáng **{card_dmg:,} DMG** & nung đất 3 lượt!"
 
             # KỸ NĂNG THẺ T1 SEIKI
             if str(ac["cid"]).lower() == "t1":
@@ -5155,211 +5156,6 @@ async def execute_event_raid(channel, raid_data):
             "fields": [
                 ("🩸 Nội Tại Hồi Phục:", passive_log, False),
                 ("💥 Tiền Tuyến Tấn Công:", f"{player_atk_str}{reflected_dmg_log}", False),
-                ("👺 Phản Kích Của Boss:", boss_action_log, False),
-                ("🛡️ Tình Trạng Đội Hình:", "\n".join(round_status), False)
-            ]
-        })
-
-        try: await msg.edit(embed=r_emb)
-        except Exception: pass
-        if p2_hp <= 0: break
-        await asyncio.sleep(1.8)
-
-    p2_won = (p2_hp <= 0)
-    final_emb = discord.Embed(
-        title="🏆 HOÀN TẤT EVENT RAID BOSS: KIZUNA - HUYẾT MA ĐẾ!",
-        description=f"Kết quả Phase 2: {'🎉 **CHIẾN THẮNG HUY HOÀNG (Boss 0 HP)!**' if p2_won else f'💀 **THẤT THỦ TẠI PHASE 2 (Boss còn {p2_hp:,} HP)!**'}",
-        color=0x10B981 if p2_won else 0xF59E0B
-    )
-    final_emb.set_thumbnail(url=p2_cfg["image"] if p2_won else p1_cfg["image"])
-    final_emb.add_field(name="📦 Phần Thưởng Phase 1 (Đã trao):", value="\n".join(p1_rewards), inline=False)
-
-    if p2_won:
-        p2_rewards = []
-        for uid in participants:
-            p = get_player(uid)
-            p_items = p.setdefault("items", {})
-            p_shards = p.setdefault("shards", {})
-
-            t_roll = random.random()
-            tickets = 20.0 if t_roll < 0.10 else (15.0 if t_roll < 0.50 else 10.0)
-            p["pull_tickets"] += tickets
-
-            c_roll = random.random()
-            candies = 120 if c_roll < 0.50 else (70 if c_roll < 0.80 else 0)
-            if candies > 0: p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + candies
-
-            shard_got = False
-            if random.random() < 0.07:
-                p_shards["kizuna"] = p_shards.get("kizuna", 0) + 1
-                shard_got = True
-
-            ev_notifs = update_event_quest_progress(p, "event_raid", 1)
-            save_player(p)
-            txt = f"• **{p['username']}**: +{tickets:.0f} Vé"
-            if ev_notifs:
-                txt += "\n   " + "\n   ".join(ev_notifs)
-            if candies > 0: txt += f", +{candies} Kẹo 🍬"
-            if shard_got: txt += ", 🩸 **+1 Mảnh Kizuna**!"
-            p2_rewards.append(txt)
-        final_emb.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (7% Mảnh Kizuna, 50% 120 Kẹo):", value="\n".join(p2_rewards), inline=False)
-
-    await channel.send(embed=final_emb, view=OpenDetailsView(all_event_raid_turns))
-        return
-
-    # PHASE 1 DROP REWARDS
-    p1_rewards = []
-    for uid in participants:
-        p = get_player(uid)
-        p_items = p.setdefault("items", {})
-        p_shards = p.setdefault("shards", {})
-
-        t_roll = random.random()
-        tickets = 20.0 if t_roll < 0.10 else (15.0 if t_roll < 0.50 else 10.0)
-        p["pull_tickets"] += tickets
-
-        c_roll = random.random()
-        candies = 100 if c_roll < 0.10 else (50 if c_roll < 0.40 else 0)
-        if candies > 0: p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + candies
-
-        shard_got = False
-        if random.random() < 0.025:
-            p_shards["kizuna"] = p_shards.get("kizuna", 0) + 1
-            shard_got = True
-
-        save_player(p)
-        txt = f"• **{p['username']}**: +{tickets:.0f} Vé"
-        if candies > 0: txt += f", +{candies} Kẹo 🍬"
-        if shard_got: txt += ", 🩸 **+1 Mảnh Kizuna**!"
-        p1_rewards.append(txt)
-
-    # ========================================================================
-    # PHASE 2: KIZUNA THỨC TỈNH (100,000 HP / WONDER GUARD PHẢN 60% ST)
-    # ========================================================================
-    p2_cfg = EVENT_BOSS_PHASE2_CONFIG
-    p2_max_hp = p2_cfg["hp"]
-    p2_hp = p2_max_hp
-    p2_power = p2_cfg["power"]
-    p2_rounds = 0
-    wonder_guard_turns = 0
-
-    for c in combatants:
-        c["current_card_index"] = 0
-        c["is_alive"] = True
-        for cd in c["team_cards"]: cd["current_hp"] = cd["max_hp"]
-
-    p2_emb_init = discord.Embed(
-        title="🩸 KIZUNA THỨC TỈNH - HUYẾT MA ĐẾ TỐI THƯỢNG (PHASE 2)",
-        description=(
-            f"⚡ **Huyết Nguyệt Giáng Lâm:** Toàn bộ thẻ bài dũng giả được hồi sinh và hồi phục 100% HP!\n"
-            f"❤️ **Máu:** `75,000 HP` | ⚔️ **Sức mạnh:** `7,000 DMG` (chia đều)\n"
-            f"🛡️ **Wonder Guard (15%):** Miễn thương & **phản lại 90% sát thương lẫn hiệu ứng** trong 2 lượt!"
-        ),
-        color=0x450A0A
-    )
-    p2_emb_init.set_image(url=p2_cfg["image"])
-    msg = await channel.send(embed=p2_emb_init)
-    await asyncio.sleep(2.5)
-
-    while p2_hp > 0 and p2_rounds < 35:
-        active = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
-        if not active: break
-        p2_rounds += 1
-        frontline = [c["team_cards"][c["current_card_index"]] for c in active]
-
-        heal_amt = int(p2_max_hp * 0.015)
-        p2_hp = min(p2_max_hp, p2_hp + heal_amt)
-        passive_log = f"🩸 **[True Vampire]** Tự hồi **+{heal_amt:,} HP** (3% HP tối đa)!"
-
-        round_p_dmg = sum(ac["power"] for ac in frontline)
-        reflected_dmg_log = ""
-        if wonder_guard_turns > 0:
-            wonder_guard_turns -= 1
-            ref_dmg = int(round_p_dmg * 0.90) # Sửa thành phản lại 90% sát thương
-            ref_each = max(50, ref_dmg // len(frontline))
-            for ac in frontline: ac["current_hp"] -= ref_each
-            reflected_dmg_log = f"\n🛡️ **[Wonder Guard Hiệu Lực]** Boss MIỄN TOÀN BỘ SÁT THƯƠNG và **phản lại {ref_dmg:,} DMG** ({ref_each:,} DMG/thẻ)! (Còn {wonder_guard_turns} lượt)"
-        else:
-            p2_hp = max(0, p2_hp - round_p_dmg)
-
-        boss_action_log = ""
-        turn_img = None
-        
-        # Áp dụng trói buộc: Khi Wonder Guard đang hoạt động, Kizuna chỉ đánh thường, không dùng kỹ năng!
-        if wonder_guard_turns > 0:
-            dmg_each = max(100, p2_power // len(frontline))
-            boss_action_log = f"⚔️ [Wonder Guard Duy Trì] Boss chỉ đánh thường, gây chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ tiền tuyến!"
-            for ac in frontline: ac["current_hp"] -= dmg_each
-        else:
-            # Rơ-le chiêu cân bằng mới
-            roll = random.random()
-            if roll < 0.15: # 15% kích hoạt Wonder Guard mới
-                wonder_guard_turns = 2
-                turn_img = p2_cfg["skills"]["wonder_guard"]["gif"]
-                boss_action_log = "🛡️ **[Wonder guard (20%)]** Kích hoạt huyết thuẫn: **MIỄN THƯƠNG & PHẢN 90% SÁT THƯƠNG + HIỆU ỨNG** trong 2 lượt (trong thời gian này Boss chỉ đánh thường và không kích hoạt chiêu khác)!"
-                
-                # Turn kích hoạt này Boss cũng chỉ đánh thường
-                dmg_each = max(100, p2_power // len(frontline))
-                boss_action_log += f"\n⚔️ Kizuna đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ tiền tuyến!"
-                for ac in frontline: ac["current_hp"] -= dmg_each
-            elif roll < 0.30: # 20% kích hoạt Blood Chain (từ 0.20 đến 0.40)
-                turn_img = p2_cfg["skills"]["blood_chain"]["gif"]
-                dmg_total = int(p2_power * 1.5)
-                dmg_each = max(100, dmg_total // len(frontline))
-                boss_action_log = f"🩸 **Blood chain (20%)**! Giáng {dmg_total:,} DMG (chia đều **{dmg_each:,} DMG** mỗi thẻ)!"
-                for ac in frontline: ac["current_hp"] -= dmg_each
-            elif roll < 0.50: # 20% kích hoạt Dark Chain (từ 0.40 đến 0.60)
-                turn_img = p2_cfg["skills"]["dark_chain"]["gif"]
-                dmg_base_each = max(100, p2_power // len(frontline))
-                boss_action_log = f"🌑 **Dark chain (20%)**! Gây {dmg_base_each:,} DMG chia đều kèm **15% Máu Tối Đa** từng thẻ tiền tuyến!"
-                for ac in frontline:
-                    extra_hp = int(ac["max_hp"] * 0.15)
-                    ac["current_hp"] -= (dmg_base_each + extra_hp)
-            else: # 50% còn lại là đánh thường
-                dmg_each = max(100, p2_power // len(frontline))
-                boss_action_log = f"⚔️ Kizuna đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ tiền tuyến!"
-                for ac in frontline: ac["current_hp"] -= dmg_each
-
-        push_logs = []
-        for c in active:
-            ac = c["team_cards"][c["current_card_index"]]
-            if ac["current_hp"] <= 0:
-                dead_name = ac["name"]
-                c["current_card_index"] += 1
-                if c["current_card_index"] < len(c["team_cards"]):
-                    push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục ngã! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
-                else:
-                    c["is_alive"] = False
-                    push_logs.append(f"☠️ **{c['username']}** đã hết thẻ bài!")
-
-        round_status = [f"• **{c['username']}**: {c['team_cards'][c['current_card_index']]['name']} (❤️{max(0, c['team_cards'][c['current_card_index']]['current_hp']):,} HP)" if c['is_alive'] else f"• **{c['username']}**: ☠️ Tử trận" for c in combatants]
-
-        r_emb = discord.Embed(
-            title=f"🎃 HIỆP {p2_rounds} - KIZUNA THỨC TỈNH (PHASE 2)",
-            description=f"❤️ **Máu Boss:** `{get_hp_bar(p2_hp, p2_max_hp)}` **{p2_hp:,}/{p2_max_hp:,} HP**",
-            color=0x450A0A
-        )
-        r_emb.add_field(name="🩸 Nội Tại Hồi Phục:", value=passive_log, inline=False)
-        r_emb.add_field(name="💥 Tiền Tuyến Tấn Công:", value=f"Toàn quân gây: **{round_p_dmg:,} DMG**{reflected_dmg_log}", inline=False)
-        r_emb.add_field(name="👺 Phản Kích Của Boss:", value=boss_action_log, inline=False)
-        if push_logs: r_emb.add_field(name="🔄 Thay Đổi Tiền Tuyến:", value="\n".join(push_logs), inline=False)
-        r_emb.add_field(name="🛡️ Tình Trạng Đội Hình:", value="\n".join(round_status), inline=False)
-
-        if turn_img: r_emb.set_image(url=turn_img)
-        else: r_emb.set_thumbnail(url=p2_cfg["image"])
-
-        all_event_raid_turns.append({
-            "round": p2_rounds,
-            "phase": 2,
-            "title": f"Phase 2 - Hiệp {p2_rounds}: Thức Tỉnh",
-            "short_label": f"P2 - H{p2_rounds}",
-            "short_desc": f"Boss còn {p2_hp:,} HP",
-            "desc": f"🩸 **Kizuna - Huyết Ma Đế Thức Tỉnh (Phase 2)**\n❤️ Máu Boss: `{get_hp_bar(p2_hp, p2_max_hp)}` **{p2_hp:,}/{p2_max_hp:,} HP**",
-            "color": 0x450A0A,
-            "image": turn_img,
-            "fields": [
-                ("🩸 Nội Tại Hồi Phục:", passive_log, False),
-                ("💥 Tiền Tuyến Tấn Công:", f"Toàn quân gây: **{round_p_dmg:,} DMG**{reflected_dmg_log}", False),
                 ("👺 Phản Kích Của Boss:", boss_action_log, False),
                 ("🛡️ Tình Trạng Đội Hình:", "\n".join(round_status), False)
             ]
