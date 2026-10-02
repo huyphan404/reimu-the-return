@@ -4189,8 +4189,8 @@ async def spawn_event_boss_raid(channel, author, is_admin=False):
     embed.add_field(
         name="🎁 Phần Thưởng Rơi (Drop):",
         value=(
-            "• **Phase 1:** 10% 20 vé, 40% 15 vé, 50% 10 vé | 30% 50 kẹo, 10% 100 kẹo | 2.5% Mảnh Kizuna\n"
-            "• **Phase 2:** 10% 20 vé, 40% 15 vé, 50% 10 vé | 50% 120 kẹo, 30% 70 kẹo | 7% Mảnh Kizuna"
+            "• **Phase 1:** 10% 20 vé, 40% 15 vé, 50% 10 vé | 30% 10 kẹo, 10% 20 kẹo | 2.5% Mảnh Kizuna\n"
+            "• **Phase 2:** 10% 20 vé, 40% 15 vé, 50% 10 vé | 50% 20 kẹo, 30% 35 kẹo | 7% Mảnh Kizuna"
         ),
         inline=False
     )
@@ -4384,7 +4384,7 @@ async def execute_event_raid(channel, raid_data):
         p["pull_tickets"] += tickets
 
         c_roll = random.random()
-        candies = 100 if c_roll < 0.10 else (50 if c_roll < 0.40 else 0)
+        candies = 20 if c_roll < 0.10 else (50 if c_roll < 0.40 else 0)
         if candies > 0: p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + candies
 
         shard_got = False
@@ -4543,7 +4543,7 @@ async def execute_event_raid(channel, raid_data):
             p["pull_tickets"] += tickets
 
             c_roll = random.random()
-            candies = 120 if c_roll < 0.50 else (70 if c_roll < 0.80 else 0)
+            candies = 20 if c_roll < 0.50 else (35 if c_roll < 0.80 else 0)
             if candies > 0: p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + candies
 
             shard_got = False
@@ -4557,7 +4557,7 @@ async def execute_event_raid(channel, raid_data):
             if candies > 0: txt += f", +{candies} Kẹo 🍬"
             if shard_got: txt += ", 🩸 **+1 Mảnh Kizuna**!"
             p2_rewards.append(txt)
-        final_emb.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (7% Mảnh Kizuna, 50% 120 Kẹo):", value="\n".join(p2_rewards), inline=False)
+        final_emb.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (7% Mảnh Kizuna, 50% 20 Kẹo, 30% 35 Kẹo):", value="\n".join(p2_rewards), inline=False)
 
     await channel.send(embed=final_emb, view=OpenDetailsView(all_event_raid_turns))
 
