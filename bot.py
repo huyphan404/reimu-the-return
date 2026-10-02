@@ -1745,8 +1745,73 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
         )
 
     return out
+    
+# ==============================================================================
+# HÀM XỬ LÝ LƯỢT ĐÁNH THẺ [#t3] KIZUNA THE EMPEROR OF VAMPIRE (DÙNG CHO PVP, RAID, BATTLE)
+# ==============================================================================
+def t3_combat_turn(t3_state: dict, card_data: dict, round_no: int, target_max_hp: int, target_name: str, is_ace2: bool = False):
+    """
+    Xử lý lượt đánh và kỹ năng của thẻ T3 Kizuna trong PvP, Battle, Raid Boss.
+    - True vampire (100%): Tự hồi 5% Max HP mỗi lượt.
+    - Blood chain (30%): 1.5x DMG (Bản thường) / 2.0x DMG (Ace 2), 1 lần/trận.
+    - Dark chain (20% thường / 30% Ace 2): Gây thêm 15% Max HP mục tiêu (tối đa 3 lần/trận).
+    - Wonder guard (20% ở Ace 2): Miễn thương & phản sát thương chủ động trong 3 lượt (1 lần/trận).
+    """
+    logs = []
+    gif = None
+    multiplier = 1.0
+    bonus_hp_dmg = 0
 
+    # 1. NỘI TẠI: TRUE VAMPIRE (100% kích hoạt mỗi lượt)
+    max_hp = card_data.get("max_hp", card_data.get("hp", 7700))
+    heal_amt = int(max_hp * 0.05)
+    card_data["current_hp"] = min(max_hp, card_data.get("current_hp", max_hp) + heal_amt)
+    logs.append(f"🩸 **[#t3] Kizuna** - **True Vampire (100%)**: Tự hồi **+{heal_amt:,} HP** ({card_data['current_hp']:,}/{max_hp:,} HP)!")
 
+    # Khởi tạo state
+    dark_chain_uses = t3_state.get("dark_chain_uses", 0)
+    blood_used = t3_state.get("blood_used", False)
+    wonder_guard_used = t3_state.get("wonder_guard_used", False)
+
+    # 2. XỬ LÝ KỸ NĂNG CHỦ ĐỘNG
+    roll = random.random()
+
+    if is_ace2 and not wonder_guard_used and roll < 0.20:
+        t3_state["wonder_guard_used"] = True
+        t3_state["wonder_guard_turns"] = 3
+        gif = T3_WONDER_GUARD_GIF
+        logs.append(
+            f"🛡️ **[Ace 2] [#t3] Kizuna** kích hoạt **WONDER GUARD (20%)**! "
+            f"Dựng huyết thuẫn tuyệt đối: **MIỄN TOÀN BỘ SÁT THƯƠNG & PHẢN 40% SÁT THƯƠNG CHỦ ĐỘNG** trong 3 lượt!"
+        )
+
+    elif not blood_used and roll < (0.50 if is_ace2 else 0.30):
+        t3_state["blood_used"] = True
+        multiplier = 2.0 if is_ace2 else 1.5
+        gif = T3_BLOOD_GIF
+        logs.append(
+            f"💥 **[#t3] Kizuna** tung xích máu **BLOOD CHAIN (30%)**! "
+            f"Đòn đánh bộc phát ma lực **×{multiplier} Sát Thương** giáng vào {target_name}!"
+        )
+
+    elif dark_chain_uses < 3 and roll < (0.80 if is_ace2 else 0.50):
+        t3_state["dark_chain_uses"] = dark_chain_uses + 1
+        multiplier = 1.5 if is_ace2 else 1.0
+        bonus_hp_dmg = int(target_max_hp * 0.15)
+        gif = T3_DARK_GIF
+        logs.append(
+            f"🌑 **[#t3] Kizuna** thi triển **DARK CHAIN**! "
+            f"Gây sát thương ×{multiplier} kèm **+{bonus_hp_dmg:,} DMG** (15% Máu Tối Đa {target_name})! "
+            f"*(Lần {t3_state['dark_chain_uses']}/3)*"
+        )
+
+    return {
+        "multiplier": multiplier,
+        "bonus_hp_dmg": bonus_hp_dmg,
+        "logs": logs,
+        "gif": gif,
+        "wonder_guard_active": t3_state.get("wonder_guard_turns", 0) > 0
+    }
 
 # ==============================================================================
 # HỆ THỐNG XEM CHI TIẾT TRẬN CHIẾN & HOẠT ẢNH GIF KỸ NĂNG (IN-DISCORD)
