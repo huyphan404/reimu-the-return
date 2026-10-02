@@ -294,11 +294,47 @@ CARDS_DATA = {
                 "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/fd/9a/evpBLiollsxMmiF1wK18.gif"
             }
         }
+    },
+    "t3": {
+        "id": "t3",
+        "name": "Kizuna the emperor of vampire",
+        "rank": "T",
+        "power": 780,
+        "hp": 7700,
+        "image": "https://media.discordapp.net/attachments/1543072032034521228/1555151435237294090/image.png?backend=b2&ex=6abf7b23&is=6abe29a3&hm=046b321ed799b1a5c6266bb195b80de0a345c35fdeb75211aef98176ab00e12a&=&format=webp&quality=lossless",
+        "passive": {
+            "name": "True vampire",
+            "chance": 1.0,
+            "heal_pct": 0.05,
+            "desc": "Nội tại 100% kích hoạt: Mỗi lượt tự hồi phục 5% máu tối đa",
+            "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/2f/38/H1AP9mdI3CzGLVUrFBF.gif"
+        },
+        "skills": {
+            "blood_chain": {
+                "name": "Blood chain",
+                "chance": 0.30,
+                "multiplier": 1.5,
+                "max_uses": 1,
+                "desc": "30% kích hoạt: Gây ra 1.5x sát thương cho mục tiêu (1 lần/trận)",
+                "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/2f/38/H1AP9mdI3CzGLVUrFBF.gif"
+            },
+            "dark_chain": {
+                "name": "Dark chain",
+                "chance": 0.20,
+                "multiplier": 1.0,
+                "pct_max_hp": 0.15,
+                "max_uses": 3,
+                "desc": "20% kích hoạt: Gây 1.0x sát thương kèm theo 15% máu tối đa đối phương (tối đa 3 lần/trận)",
+                "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/56/40/iq0ztIh38KLjZwtzI.gif"
+            }
+        }
     }
 }
 CARDS_DATA["T1"] = CARDS_DATA["t1"]
 CARDS_DATA["T2"] = CARDS_DATA["t2"]
 CARDS_DATA["t2"] = CARDS_DATA["t2"]
+CARDS_DATA["T3"] = CARDS_DATA["t3"]
+CARDS_DATA["t3"] = CARDS_DATA["t3"]
 
 # ==============================================================================
 # GIF HOẠT ẢNH TUYỆT KỸ THẺ [T] #t1 SEIKI (dùng chung cho Raid, Battle & PvP)
@@ -309,6 +345,10 @@ T1_SPARK_GIF = T1_SKILL_CONFIGS["master_spark"]["gif"]
 T1_HEAL_GIF = T1_SKILL_CONFIGS["medicine_sign"]["gif"]
 T2_PASSIVE_GIF = CARDS_DATA["t2"]["passive"]["gif"]
 T2_THOAI_MA_GIF = CARDS_DATA["t2"]["skills"]["thoai_ma_kiem"]["gif"]
+T3_PASSIVE_GIF = CARDS_DATA["t3"]["passive"]["gif"]
+T3_BLOOD_CHAIN_GIF = CARDS_DATA["t3"]["skills"]["blood_chain"]["gif"]
+T3_DARK_CHAIN_GIF = CARDS_DATA["t3"]["skills"]["dark_chain"]["gif"]
+T3_WONDER_GUARD_GIF = "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/e5/ab/GDt4bKoq.gif"
 
 CARDS_BY_RANK = {
     "SS": [c for c in CARDS_DATA.values() if c["rank"] == "SS"],
@@ -439,6 +479,140 @@ MAHORAGA_BOSS_CONFIG = {
         }
     }
 }
+# ==============================================================================
+# HỆ THỐNG EVENT HALLOWEEN 2026 & ITEM GROUP
+# ==============================================================================
+EVENT_CONFIG = {
+    "id": "halloween_2026",
+    "name": "Halloween Event 2026",
+    "active": True,
+    "start_date": "2026-10-02",
+    "end_date": "2026-10-30",
+    "image": "https://media.discordapp.net/attachments/1527157582115111077/1555132294170419230/images.png?backend=b2&ex=6abf694f&is=6abe17cf&hm=0da7e8bf9d0062f5711ce6391b3216939b3b641e8743b8a6c707250d849e0bec&=&format=webp&quality=lossless&width=362&height=512",
+    "quote": "Marisa: Thu thập những mảnh kẹo và đổi lấy phần thưởng nào!",
+    "quests": {
+        "battle": {"target": 100, "name": "Tham gia /battle 100 lần", "reward_candy": 50, "reward_tickets": 10},
+        "pvp": {"target": 100, "name": "Tham gia /pvp 100 lần", "reward_candy": 50, "reward_tickets": 10},
+        "normal_raid": {"target": 30, "name": "Tham gia /raid normal boss 30 lần", "reward_candy": 60, "reward_tickets": 15},
+        "event_raid": {"target": 30, "name": "Tham gia /event raid boss 30 lần", "reward_candy": 80, "reward_tickets": 20}
+    }
+}
+
+ITEMS_DATABASE = {
+    "candy_shard": {
+        "id": "candy_shard",
+        "name": "Mảnh Kẹo Halloween",
+        "desc": "Mảnh kẹo kỳ bí thu thập trong sự kiện Halloween 2026. Dùng để đổi vật phẩm tại /event shop.",
+        "usable": False,
+        "tradeable": True,
+        "icon": "🍬"
+    },
+    "halloween_box": {
+        "id": "halloween_box",
+        "name": "[E] Rương Ma Quái Halloween",
+        "desc": "Mở ra nhận ngẫu nhiên 3-10 Vé Pull, 50-200 XP hoặc 5-15 Mảnh Kẹo! (Dùng lệnh /item use id_item:halloween_box)",
+        "usable": True,
+        "tradeable": True,
+        "icon": "🎃"
+    },
+    "magic_candy": {
+        "id": "magic_candy",
+        "name": "[E] Kẹo Ma Lực Tinh Hoa",
+        "desc": "Sử dụng nhận ngay +3 Lượt Pull tích lũy vào tài khoản! (Dùng lệnh /item use id_item:magic_candy)",
+        "usable": True,
+        "tradeable": True,
+        "icon": "🍭"
+    },
+    "soul_lantern": {
+        "id": "soul_lantern",
+        "name": "[E] Đèn Lồng Dẫn Hồn",
+        "desc": "Thanh lọc linh hồn, sử dụng nhận ngay +500 XP kinh nghiệm! (Dùng lệnh /item use id_item:soul_lantern)",
+        "usable": True,
+        "tradeable": True,
+        "icon": "🏮"
+    },
+    "thanh_loi": {
+        "id": "thanh_loi",
+        "name": "[E] Thánh Lõi (Holy Core)",
+        "desc": "Vật phẩm thần thánh dùng để thức tỉnh Ace 2 cho Kizuna the emperor of vampire! (Gõ /evol id:t3)",
+        "usable": False,
+        "tradeable": True,
+        "icon": "💎"
+    }
+}
+
+EVENT_SHOP_ITEMS = {
+    "1": {"id": "halloween_box", "cost": 15, "name": "[E] Rương Ma Quái Halloween", "qty": 1},
+    "2": {"id": "magic_candy", "cost": 25, "name": "[E] Kẹo Ma Lực Tinh Hoa (3 Vé Pull)", "qty": 1},
+    "3": {"id": "soul_lantern", "cost": 20, "name": "[E] Đèn Lồng Dẫn Hồn (500 XP)", "qty": 1},
+    "4": {"id": "seiki_shard", "cost": 60, "name": "Mảnh Seiki Đệ Pháp Toàn Năng (+1)", "qty": 1, "is_shard": "seiki"},
+    "5": {"id": "mahoraga_shard", "cost": 50, "name": "Mảnh Mahoraga Thần Tướng (+1)", "qty": 1, "is_shard": "mahoraga"},
+    "6": {"id": "thanh_loi", "cost": 100, "name": "Thánh Lõi (Tiến hóa Ace 2 Kizuna)", "qty": 1}
+}
+
+# ==============================================================================
+# BOSS EVENT: KIZUNA - HUYẾT MA ĐẾ (2 PHASES)
+# ==============================================================================
+EVENT_BOSS_CONFIG = {
+    "id": "kizuna_boss",
+    "name": "Kizuna - Huyết Ma Đế (Phase 1)",
+    "desc": "Huyết Ma Đế thức tỉnh từ bóng tối ngàn năm, khát khao máu tươi của dũng giả Gensokyo!",
+    "image": "https://media.discordapp.net/attachments/1543072032034521228/1555151435237294090/image.png?backend=b2&ex=6abf7b23&is=6abe29a3&hm=046b321ed799b1a5c6266bb195b80de0a345c35fdeb75211aef98176ab00e12a&=&format=webp&quality=lossless",
+    "hp": 50000,
+    "power": 6000,
+    "passive_regen_pct": 0.03,
+    "max_players": 6,
+    "cooldown_seconds": 3600,
+    "skills": {
+        "blood_chain": {
+            "name": "Blood chain",
+            "chance": 0.20,
+            "multiplier": 1.5,
+            "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/2f/38/H1AP9mdI3CzGLVUrFBF.gif"
+        },
+        "dark_chain": {
+            "name": "Dark chain",
+            "chance": 0.40,
+            "multiplier": 1.0,
+            "pct_max_hp": 0.15,
+            "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/56/40/iq0ztIh38KLjZwtzI.gif"
+        }
+    }
+}
+
+EVENT_BOSS_PHASE2_CONFIG = {
+    "id": "kizuna_boss_p2",
+    "name": "Kizuna - Huyết Ma Đế (Phase 2 Thức Tỉnh)",
+    "desc": "Huyết Ma Thức Tỉnh! Kết giới Wonder Guard kích hoạt phản chấn toàn bộ đòn đánh!",
+    "image": "https://media.discordapp.net/attachments/1543072032034521228/1555151435237294090/image.png?backend=b2&ex=6abf7b23&is=6abe29a3&hm=046b321ed799b1a5c6266bb195b80de0a345c35fdeb75211aef98176ab00e12a&=&format=webp&quality=lossless",
+    "hp": 100000,
+    "power": 10000,
+    "passive_regen_pct": 0.03,
+    "max_players": 6,
+    "skills": {
+        "blood_chain": {
+            "name": "Blood chain",
+            "chance": 0.20,
+            "multiplier": 1.5,
+            "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/2f/38/H1AP9mdI3CzGLVUrFBF.gif"
+        },
+        "dark_chain": {
+            "name": "Dark chain",
+            "chance": 0.40,
+            "multiplier": 1.0,
+            "pct_max_hp": 0.15,
+            "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/56/40/iq0ztIh38KLjZwtzI.gif"
+        },
+        "wonder_guard": {
+            "name": "Wonder guard",
+            "chance": 0.20,
+            "reflect_pct": 0.60,
+            "duration": 3,
+            "gif": "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/e5/ab/GDt4bKoq.gif"
+        }
+    }
+}
+
 # ==============================================================================
 # CƠ CHẾ TIẾN HÓA ACE 2 (KÈM ID NHÂN VẬT & DIRECT GIF HIỂN THỊ TRỰC TIẾP)
 # ==============================================================================
@@ -616,6 +790,28 @@ EVOL_CONFIG["t1"] = {
     "bonus_hp": 300
 }
 
+EVOL_CONFIG["t3"] = {
+    "id": "t3",
+    "key": "kizuna",
+    "name": "Kizuna the emperor of vampire",
+    "title": "[#t3] Kizuna the emperor of vampire - Ace 2 ⭐⭐",
+    "ace_level": "Ace 2 ⭐⭐",
+    "required_cards": 0,
+    "required_pulls": 0,
+    "required_item": "thanh_loi",
+    "required_item_name": "Thánh Lõi",
+    "evol_gif": "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/e5/ab/GDt4bKoq.gif",
+    "skill_name": "Tam Đại Huyết Ma Tuyệt Kỹ (Blood Chain • Dark Chain • Wonder Guard)",
+    "skill_desc": (
+        "🩸 **True vampire (Nội Tại - 100%):** Hồi phục 5% máu tối đa mỗi lượt.\n"
+        "🔗 **Blood chain (30%):** Gây ra 2.0x sát thương (1 lần/trận).\n"
+        "⛓️ **Dark chain (30%):** Gây 1.5x sát thương kèm 15% máu tối đa đối thủ (tối đa 3 lần/trận).\n"
+        "🛡️ **Wonder guard (20%):** Miễn toàn bộ sát thương và phản lại 60% sát thương lẫn hiệu ứng chiêu địch trong 3 turn (1 lần/trận, trong 3 turn đó không kích hoạt tiếp)!"
+    ),
+    "bonus_power": 300,
+    "bonus_hp": 300
+}
+
 # ==============================================================================
 # 3.1 CHI TIẾT NĂNG LỰC & KỸ NĂNG 27 NHÂN VẬT TOUHOU (CHO TÍNH NĂNG CHECK NHÂN VẬT)
 # ==============================================================================
@@ -657,10 +853,16 @@ CHARACTER_DETAILS = {
         "title": "Bát Ách Kiếm Thần Tướng (Nhóm T-Đặc Biệt)",
         "skill_name": "The True adapt • Thoái Ma Kiếm",
         "skill_desc": "Thần tướng thuật thức tối thượng Mahoraga nhóm T. Nội tại The True adapt (100% kích hoạt): Mỗi turn hồi 5% Máu tối đa và giảm 5% sát thương phải nhận (cộng dồn mỗi lượt). Tuyệt kỹ Thoái Ma kiếm (30% kích hoạt): Gây 1.5x sát thương cho mục tiêu (550 ATK / 7,000 HP)."
+    },
+    "t3": {
+        "title": "Huyết Ma Đế (Nhóm T - Thần Thoại)",
+        "skill_name": "True vampire • Blood chain • Dark chain • Wonder guard",
+        "skill_desc": "Chúa tể ma cà rồng cổ đại nhóm T. Bản thường: True vampire (100% hồi 5% HP/lượt), Blood chain (30% 1.5x DMG), Dark chain (20% 1.0x + 15% Max HP đối thủ). [Ace 2 ⭐⭐ - Thức Tỉnh]: Yêu cầu 1 Thánh Lõi: Blood chain (30% 2.0x DMG), Dark chain (30% 1.5x + 15% Max HP), Wonder guard (20% miễn thương & phản 60% sát thương trong 3 turn)!"
     }
 }
 CHARACTER_DETAILS["T1"] = CHARACTER_DETAILS["t1"]
 CHARACTER_DETAILS["T2"] = CHARACTER_DETAILS["t2"]
+CHARACTER_DETAILS["T3"] = CHARACTER_DETAILS["t3"]
 
 BOSS_SKILL_CONFIG = {
     "name": "Dị Hình Bùa Chú",
@@ -745,6 +947,22 @@ def get_default_player(user_id, username):
         "shards": {
             "seiki": 0,
             "mahoraga": 0
+        },
+        "items": {
+            "candy_shard": 0,
+            "halloween_box": 0,
+            "magic_candy": 0,
+            "soul_lantern": 0
+        },
+        "event_progress": {
+            "halloween_2026": {
+                "battle_done": 0,
+                "pvp_done": 0,
+                "normal_raid_done": 0,
+                "event_raid_done": 0,
+                "claimed": {},
+                "last_event_raid_time": 0.0
+            }
         },
         "language": "vi",
         "id_schema": 3,
@@ -865,6 +1083,52 @@ def update_daily_quest_progress(player: dict, quest_type: str, amount: int = 1) 
         )
     return notifs
 
+def update_event_task_progress(player: dict, task_type: str, amount: int = 1) -> list:
+    if not EVENT_CONFIG.get("active"):
+        return []
+    ev_id = EVENT_CONFIG["id"]
+    ev_data = player.setdefault("event_progress", {}).setdefault(ev_id, {
+        "battle_done": 0, "pvp_done": 0, "normal_raid_done": 0, "event_raid_done": 0,
+        "claimed": {}, "last_event_raid_time": 0.0
+    })
+    
+    key_map = {
+        "battle": "battle_done",
+        "pvp": "pvp_done",
+        "normal_raid": "normal_raid_done",
+        "event_raid": "event_raid_done"
+    }
+    
+    notifs = []
+    if task_type in key_map:
+        field = key_map[task_type]
+        ev_data[field] = ev_data.get(field, 0) + amount
+        q_cfg = EVENT_CONFIG["quests"].get(task_type)
+        if q_cfg:
+            target = q_cfg["target"]
+            claimed = ev_data.setdefault("claimed", {})
+            if ev_data[field] >= target and not claimed.get(task_type):
+                claimed[task_type] = True
+                c_candy = q_cfg["reward_candy"]
+                c_ticket = q_cfg["reward_tickets"]
+                player.setdefault("items", {})["candy_shard"] = player["items"].get("candy_shard", 0) + c_candy
+                player["pull_tickets"] = player.get("pull_tickets", 0.0) + float(c_ticket)
+                notifs.append(
+                    f"🎃 **HOÀN THÀNH NHIỆM VỤ EVENT:** *{q_cfg['name']}* ({ev_data[field]}/{target})!\n"
+                    f"🎁 Nhận ngay: **+{c_candy} Mảnh Kẹo 🍬** & **+{c_ticket} Vé Pull 🎟️**!"
+                )
+        all_ev_done = all(ev_data.get("claimed", {}).get(k, False) for k in EVENT_CONFIG["quests"].keys())
+        if all_ev_done and not ev_data.get("all_quests_claimed", False):
+            ev_data["all_quests_claimed"] = True
+            player["tokens"] = player.get("tokens", 0) + 250
+            player.setdefault("items", {})["thanh_loi"] = player["items"].get("thanh_loi", 0) + 1
+            notifs.append(
+                "👑 **HOÀN THÀNH TOÀN BỘ 4/4 NHIỆM VỤ EVENT HALLOWEEN 2026!**\n"
+                "⛩️ **Reimu:** *\"Ngươi làm tốt lắm trợ thủ! Đây là phần thưởng xứng đáng của ngươi!\"*\n"
+                "🎁 Nhận ngay: **+250 Tokens 💎** & **+1 Vật Phẩm Thánh Lõi 💎 (Dùng tiến hóa [#t3] Kizuna Ace 2)!**"
+            )
+    return notifs
+
 def format_card_id(cid) -> str:
     if cid is None:
         return "#??"
@@ -903,7 +1167,7 @@ CARD_ALIASES = {
     "tewi": 28,
     "koishi": 10, "komeiji": 10,
     "seiki": "t1", "t1": "t1", "dephap": "t1", "toannang": "t1",
-    "mahoraga": "t2", "t2": "t2", "batach": "t2"
+    "mahoraga": "t2", "t2": "t2", "batach": "t2", "kizuna": "t3", "t3": "t3", "vampire": "t3", "huyetma": "t3"
 }
 
 def normalize_card_id(raw_id):
@@ -1036,6 +1300,15 @@ def get_player(user_id, username="Visitor"):
     if "prestige" not in data:
         data["prestige"] = 0
     
+    if "items" not in data or not isinstance(data.get("items"), dict):
+        data["items"] = {}
+    if "event_progress" not in data or not isinstance(data.get("event_progress"), dict):
+        data["event_progress"] = {}
+    data["event_progress"].setdefault("halloween_2026", {
+        "battle_done": 0, "pvp_done": 0, "normal_raid_done": 0, "event_raid_done": 0,
+        "claimed": {}, "last_event_raid_time": 0.0
+    })
+
     # ===== HỆ THỐNG DI TRÚ ID SCHEMA 3: THÊM [#14] IBARAKI-DOUJI'S ARM (ĐẨY 14-27 LÊN 15-28) =====
     if data.get("id_schema", 1) < 3:
         if data.get("id_schema", 1) < 2:
@@ -1317,6 +1590,63 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
             f"💚 **[Ace 2] [#t1] Seiki** kích hoạt **MEDICINE SIGN** (35%)! "
             f"Hồi phục **+{out['heal']:,} HP** (40% Máu Tối Đa bản thân)!"
         )
+    return out
+
+
+def t3_combat_action(t3_flags, ac, round_no, target_max_hp, target_desc):
+    """Xử lý tuyệt kỹ Kizuna the emperor of vampire (Nhóm T)"""
+    out = {"bonus": 0, "direct": 0, "heal": 0, "invul": False, "reflect": 0.0, "logs": [], "gif": None}
+    
+    # 🩸 True vampire (100% Nội Tại): Hồi phục 5% Máu tối đa mỗi lượt
+    heal_val = int(ac.get("max_hp", ac.get("hp", 1)) * 0.05)
+    ac["current_hp"] = min(ac.get("max_hp", ac.get("hp", 1)), ac["current_hp"] + heal_val)
+    out["logs"].append(f"🩸 **[Nội Tại - True Vampire (100%)]** **{ac['name']}** tự hồi phục **+{heal_val:,} HP** (5% Máu tối đa)!")
+
+    # Kiểm tra Wonder Guard còn hiệu lực không
+    wg_turns = t3_flags.get("wonder_guard_turns", 0)
+    if wg_turns > 0:
+        t3_flags["wonder_guard_turns"] -= 1
+        out["invul"] = True
+        out["reflect"] = 0.60
+        out["logs"].append(f"🛡️ **[Wonder Guard Còn Hiệu Lực]** Miễn thương & phản lại 60% sát thương đòn đánh! (Còn {t3_flags['wonder_guard_turns']} lượt)")
+        return out
+
+    is_ace2 = ac.get("is_ace2", False)
+
+    # Nếu Ace 2: Kiểm tra Wonder Guard (20% - 1 lần/trận)
+    if is_ace2 and not t3_flags.get("wonder_guard_used") and random.random() < 0.20:
+        t3_flags["wonder_guard_used"] = True
+        t3_flags["wonder_guard_turns"] = 3
+        out["invul"] = True
+        out["reflect"] = 0.60
+        out["gif"] = T3_WONDER_GUARD_GIF
+        out["logs"].append(f"🛡️ **[Ace 2] [#t3] Kizuna** kích hoạt **WONDER GUARD** (20%)! Miễn toàn bộ sát thương và phản lại 60% sát thương trong 3 turn!")
+        return out
+
+    # Blood chain (30% - 1 lần/trận)
+    if not t3_flags.get("blood_chain_used") and random.random() < 0.30:
+        t3_flags["blood_chain_used"] = True
+        mult = 2.0 if is_ace2 else 1.5
+        out["bonus"] = int(ac["power"] * (mult - 1.0))
+        out["gif"] = T3_BLOOD_CHAIN_GIF
+        tag = "[Ace 2]" if is_ace2 else "[Ace 1]"
+        out["logs"].append(f"🔗 **{tag} [#t3] Kizuna** tung ra **BLOOD CHAIN** (30%)! Cường hóa x{mult} sát thương (+{out['bonus']:,} DMG)!")
+        return out
+
+    # Dark chain (Ace 1: 20%, Ace 2: 30% - tối đa 3 lần/trận)
+    dc_uses = t3_flags.get("dark_chain_uses", 0)
+    dc_chance = 0.30 if is_ace2 else 0.20
+    if dc_uses < 3 and random.random() < dc_chance:
+        t3_flags["dark_chain_uses"] = dc_uses + 1
+        mult = 1.5 if is_ace2 else 1.0
+        if mult > 1.0:
+            out["bonus"] = int(ac["power"] * (mult - 1.0))
+        out["direct"] = int(target_max_hp * 0.15)
+        out["gif"] = T3_DARK_CHAIN_GIF
+        tag = "[Ace 2]" if is_ace2 else "[Ace 1]"
+        out["logs"].append(f"⛓️ **{tag} [#t3] Kizuna** kích hoạt **DARK CHAIN** (x{mult} DMG + 15% Máu tối đa {target_desc} = +{out['direct']:,} DMG! Lần {t3_flags['dark_chain_uses']}/3)!")
+        return out
+
     return out
 
 # ==============================================================================
@@ -1642,7 +1972,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
             active_raid["task"].cancel()
         active_raid = None
 
-    if boss_type not in ["reimu", "seiki", "mahoraga"]:
+    if boss_type not in ["reimu", "seiki", "mahoraga", "event_jack"]:
         boss_spawn_roll = random.random()
         if boss_spawn_roll < (1.0 / 3.0):
             boss_type = "seiki"
@@ -1653,7 +1983,15 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
 
     is_seiki = (boss_type == "seiki")
     is_mahoraga = (boss_type == "mahoraga")
-    cfg = SEIKI_BOSS_CONFIG if is_seiki else (MAHORAGA_BOSS_CONFIG if is_mahoraga else BOSS_CONFIG)
+    is_event_jack = (boss_type == "event_jack")
+    if is_event_jack:
+        cfg = EVENT_BOSS_CONFIG
+    elif is_seiki:
+        cfg = SEIKI_BOSS_CONFIG
+    elif is_mahoraga:
+        cfg = MAHORAGA_BOSS_CONFIG
+    else:
+        cfg = BOSS_CONFIG
 
     start_event = asyncio.Event()
     raid_data = {
@@ -1676,7 +2014,45 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
     is_admin = (author is not None)
     title = f"🚨 [ADMIN TRIỆU HỒI] CẢNH BÁO KHẨN CẤP: DỊ BIẾN {cfg['name'].upper()}!" if is_admin else f"🚨 CẢNH BÁO KHẨN CẤP: DỊ BIẾN {cfg['name'].upper()}!"
 
-    if is_seiki:
+    if is_event_jack:
+        embed = discord.Embed(
+            title=f"🚨 [EVENT BOSS] {cfg['name'].upper()} XUẤT HIỆN!",
+            description=(
+                f"👺 **{cfg['name']}**\n*{cfg['desc']}*\n\n"
+                "🩸 **Dị biến đêm Halloween: Huyết Ma Đế thức tỉnh!**\n"
+                "Đánh bại Boss qua 2 Phase nghẹt thở để nhận Mảnh Kizuna, Mảnh Leon, Mảnh Kẹo và Vé Pull!"
+            ),
+            color=0xDC2626
+        )
+        embed.set_image(url=cfg["image"])
+        embed.add_field(name="❤️ Máu Boss (HP):", value=f"• Phase 1: **{cfg['hp']:,} HP**\n• Phase 2: **{EVENT_BOSS_PHASE2_CONFIG['hp']:,} HP**", inline=True)
+        embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{cfg['power']:,} DMG** (chia đều)\n• Phase 2: **{EVENT_BOSS_PHASE2_CONFIG['power']:,} DMG** (chia đều)", inline=True)
+        embed.add_field(name=f"👥 Người Tham Gia (0/{cfg.get('max_players', 6)}):", value="Chưa có ai", inline=False)
+        embed.add_field(
+            name="🔮 Kỹ Năng Huyết Ma Đế:",
+            value=(
+                "• 🩸 **Nội Tại (100%):** Mỗi lượt tự hồi phục 3% Máu Tối Đa!\n"
+                "• 🔗 **Blood chain (20%):** 1.5x sát thương chia đều tiền tuyến!\n"
+                "• ⛓️ **Dark chain (40%):** Sát thương cơ bản + 15% Máu tối đa mỗi mục tiêu!\n"
+                "• 🛡️ **Wonder guard (Phase 2 - 20%):** Miễn thương & phản lại 60% sát thương trong 3 turn!"
+            ),
+            inline=False
+        )
+        embed.add_field(
+            name="🎁 Phần Thưởng Rơi (Cực Khủng):",
+            value=(
+                "• **Phase 1:** 2.5% Mảnh Kizuna, 2.5% Mảnh Leon, 10% 20 vé, 40% 15 vé, 50% 10 vé, 30% 50 kẹo, 10% 100 kẹo!\n"
+                "• **Phase 2:** 7% Mảnh Kizuna, 7% Mảnh Leon, 10% 20 vé, 40% 15 vé, 50% 10 vé, 30% 70 kẹo, 50% 120 kẹo!\n"
+                "• 🎯 Tiến độ nhiệm vụ: **+1 Lần Tham Gia Event Raid** (/event)!"
+            ),
+            inline=False
+        )
+        embed.add_field(
+            name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
+            value="• Bấm 'Tham Gia' bên dưới để vào đội hình!\n• Hết 2 phút sẽ tự động khai màn đại chiến!",
+            inline=False
+        )
+    elif is_seiki:
         reimu_line = f"🌸 **Reimu thảng thốt:** *\"{cfg['reimu_quote']}\"*\n\n"
         desc = (f"👑 **Được triệu hồi bởi Admin:** {author.mention}\n\n{reimu_line}👺 **{cfg['name']}**\n*{cfg['desc']}*" 
                 if is_admin else f"{reimu_line}👺 **{cfg['name']}**\n*{cfg['desc']}*")
@@ -2229,6 +2605,23 @@ async def execute_raid(channel, raid_data):
                     )
                 t2_notif = (t2_notif + "\n" if t2_notif else "") + t2_notif_str
 
+            if str(ac["cid"]).lower() == "t3":
+                t3_fl = c.setdefault("t3_flags", {})
+                t3_act = t3_combat_action(t3_fl, ac, p1_rounds, p1_max_hp, f"Boss {boss_cfg['name']}")
+                card_dmg += t3_act["bonus"]
+                if t3_act["direct"]:
+                    raw_dc = t3_act["direct"]
+                    actual_dc, p1_true_dmg_accum, cap_dc_msg = apply_raid_true_damage(raw_dc, p1_true_dmg_accum, p1_true_cap, "Dark Chain (Kizuna)")
+                    p1_hp = max(0, p1_hp - actual_dc)
+                    c["total_dmg"] += actual_dc
+                    if cap_dc_msg:
+                        t3_act["logs"].append(cap_dc_msg)
+                if t3_act.get("invul"):
+                    c["kizuna_invul_turn"] = p1_rounds
+                if t3_act.get("gif") and not turn_image:
+                    turn_image = t3_act["gif"]
+                t1_notif = (t1_notif + "\n" if t1_notif else "") + "\n".join(t3_act["logs"])
+
             round_player_dmg += card_dmg
             c["total_dmg"] += card_dmg
 
@@ -2654,8 +3047,77 @@ async def execute_raid(channel, raid_data):
         p["pull_tickets"] += t_val
         p["xp"] += 100
         update_daily_quest_progress(p, "raid", 1)
+        ev_task = "event_raid" if raid_data.get("boss_type") == "event_jack" else "normal_raid"
+        ev_n = update_event_task_progress(p, ev_task, 1)
+        if ev_n:
+            items_won.extend(ev_n)
         save_player(p)
         p1_rewards_data[uid] = {"total_pulls": t_val, "items": items_won, "username": p["username"]}
+
+    if boss_type in ["event_jack", "event_kizuna"]:
+        total_raid_dmg = sum(c["total_dmg"] for c in combatants)
+        final_embed = discord.Embed(
+            title="🩸 KẾT QUẢ ĐẠI CHIẾN: KIZUNA - HUYẾT MA ĐẾ (EVENT RAID)!",
+            description=(
+                "🌸 **Reimu lau mồ hôi:** *\"Khá lắm! Huyết Ma Đế đã bị đẩy lùi trở lại bóng tối ngàn năm! Mau thu dọn chiến lợi phẩm!\"*\n\n"
+                f"🎉 Đội quân dũng giả đã đánh bại **Kizuna - Huyết Ma Đế** sau **{p1_rounds} hiệp**!\n"
+                f"💥 **Tổng Sát Thương:** **{total_raid_dmg:,} DMG**\n"
+                f"⏳ **Hồi chiêu cá nhân:** **1 tiếng** (dùng `/event raid` để gọi lại khi hết hồi chiêu)"
+            ),
+            color=0xDC2626
+        )
+        final_embed.set_thumbnail(url=boss_cfg["image"])
+        kizuna_summary = []
+        for uid in participants:
+            p = get_player(uid)
+            # Quà Phase 1: 10% 20 vé | 40% 15 vé | 50% 10 vé | 30% 50 kẹo | 10% 100 kẹo | 2.5% kizuna shard | 2.5% leon shard
+            r_ticket = random.random()
+            if r_ticket < 0.10: t_val = 20.0
+            elif r_ticket < 0.50: t_val = 15.0
+            else: t_val = 10.0
+
+            r_candy = random.random()
+            c_val = 0
+            if r_candy < 0.10: c_val = 100
+            elif r_candy < 0.40: c_val = 50
+
+            items_line = [f"🎟️ +{int(t_val)} Vé Pull"]
+            if c_val > 0:
+                p.setdefault("items", {})["candy_shard"] = p["items"].get("candy_shard", 0) + c_val
+                items_line.append(f"🍬 +{c_val} Mảnh Kẹo")
+
+            p_shards = p.setdefault("shards", {})
+            if random.random() < 0.025:
+                p_shards["kizuna"] = p_shards.get("kizuna", 0) + 1
+                items_line.append("🩸 +1 Mảnh Kizuna (2.5%!)")
+            if random.random() < 0.025:
+                p_shards["leon"] = p_shards.get("leon", 0) + 1
+                items_line.append("🦁 +1 Mảnh Leon (2.5%!)")
+
+            # Thưởng thêm chiến tích Phase 2 (7% Kizuna, 7% Leon, 30% 70 kẹo, 50% 120 kẹo):
+            r_candy_p2 = random.random()
+            c_p2 = 120 if r_candy_p2 < 0.50 else (70 if r_candy_p2 < 0.80 else 0)
+            if c_p2 > 0:
+                p["items"]["candy_shard"] = p["items"].get("candy_shard", 0) + c_p2
+                items_line.append(f"🍬 +{c_p2} Kẹo (P2)")
+
+            if random.random() < 0.07:
+                p_shards["kizuna"] = p_shards.get("kizuna", 0) + 1
+                items_line.append("🩸 +1 Mảnh Kizuna (P2 - 7%!)")
+            if random.random() < 0.07:
+                p_shards["leon"] = p_shards.get("leon", 0) + 1
+                items_line.append("🦁 +1 Mảnh Leon (P2 - 7%!)")
+
+            p["pull_tickets"] += t_val
+            p["xp"] += 200
+            ev_n = update_event_task_progress(p, "event_raid", 1)
+            save_player(p)
+            kizuna_summary.append(f"🏆 **{p['username']}**: {', '.join(items_line)}")
+            if ev_n:
+                kizuna_summary.extend([f"   └ {n}" for n in ev_n])
+        final_embed.add_field(name="🎁 Chiến Lợi Phẩm Huyết Ma Đế:", value="\n".join(kizuna_summary), inline=False)
+        await channel.send(embed=final_embed, view=OpenDetailsView(all_raid_turns))
+        return
 
     if boss_type == "mahoraga":
         total_raid_dmg = sum(c["total_dmg"] for c in combatants)
@@ -4177,9 +4639,46 @@ class EvolSelectView(discord.ui.View):
             return
         await do_evolve_interaction(interaction, self.player, "t1")
 
+    @discord.ui.button(label="🩸 [#t3] Tiến Hóa Kizuna Ace 2 (1 Thánh Lõi)", style=discord.ButtonStyle.danger, emoji="🩸", row=3)
+    async def button_evol_kizuna(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
+            return
+        await do_evolve_interaction(interaction, self.player, "t3")
+
 def execute_card_evolution(player, cid: Union[int, str]):
     if str(cid).strip().lower() in ("t1", "seiki", "dephap", "toannang"):
         return execute_seiki_ace2(player)
+
+    if str(cid).strip().lower() in ("t3", "kizuna", "vampire", "huyetma"):
+        if is_card_ace2(player, "t3"):
+            return False, "⚠️ Thẻ **[#t3] Kizuna the emperor of vampire** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
+        if player.get("inventory", {}).get("t3", 0) < 1 and "t3" not in player.get("unlocked_cards", []):
+            return False, "❌ Bạn cần sở hữu thẻ [#t3] Kizuna (Ace 1) trước khi tiến hóa Ace 2!", None
+        
+        items = player.setdefault("items", {})
+        if items.get("thanh_loi", 0) < 1:
+            return False, "❌ Bạn chưa có vật phẩm **Thánh Lõi**! Hãy đổi tại `/event shop` hoặc săn Boss để nhận.", None
+        
+        items["thanh_loi"] -= 1
+        player.setdefault("evolutions", {})["t3"] = 2
+        save_player(player)
+
+        embed = discord.Embed(
+            title="🌟 TIẾN HÓA THÀNH CÔNG: [#t3] KIZUNA THE EMPEROR OF VAMPIRE - ACE 2 ⭐⭐!",
+            description=(
+                "🩸 **HUYẾT MA THỨC TỈNH - ĐỘT PHÁ CẢNH GIỚI ACE 2:**\n\n"
+                "🩸 **True vampire (100%):** Mỗi lượt tự hồi 5% máu tối đa.\n"
+                "🔗 **Blood chain (30%):** Sát thương cường hóa lên **2.0x** (1 lần/trận).\n"
+                "⛓️ **Dark chain (30%):** Sát thương **1.5x + 15% Máu tối đa** đối thủ (tối đa 3 lần/trận).\n"
+                "🛡️ **Wonder guard (20%):** Miễn thương & **phản lại 60% sát thương** trong 3 turn!\n\n"
+                f"📉 **Chi phí:** Đã tiêu hao **1x Thánh Lõi** (Kho còn: \`{items.get('thanh_loi', 0)}\` cái)"
+            ),
+            color=0xDC2626
+        )
+        embed.set_image(url="https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/e5/ab/GDt4bKoq.gif")
+        embed.set_footer(text="Touhou Evolution System • Kizuna Ace 2 Activated")
+        return True, "", embed
 
     cfg = EVOL_CONFIG.get(cid)
     if not cfg:
@@ -4262,6 +4761,8 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             cid_target = 13
         elif nv_clean in ("t1", "#t1", "seiki", "dephap", "toannang"):
             cid_target = "t1"
+        elif nv_clean in ("t3", "#t3", "kizuna", "vampire", "huyetma"):
+            cid_target = "t3"
 
     if cid_target:
         success, err_msg, embed = execute_card_evolution(player, cid_target)
@@ -4457,7 +4958,8 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     app_commands.Choice(name="[#21] Reisen Udongein Inaba (Ace 2 - Cần 40 thẻ, Red Eye Mind Explosion)", value="21"),
     app_commands.Choice(name="[#23] Cirno (Ace 2 - Cần 60 thẻ, Perfect Freeze)", value="23"),
     app_commands.Choice(name="[#13] Utsuho Reiuji (Ace 2 - Cần 30 thẻ, Nuclear Spell Card)", value="13"),
-    app_commands.Choice(name="[#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Cần Ace2 Marisa + Reimu + Sakuya & 10 Mảnh Seiki)", value="t1")
+    app_commands.Choice(name="[#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Cần Ace2 Marisa + Reimu + Sakuya & 10 Mảnh Seiki)", value="t1"),
+    app_commands.Choice(name="[#t3] Kizuna the emperor of vampire (Ace 2 - Cần 1 Thánh Lõi)", value="t3")
 ])
 async def slash_evol(interaction: discord.Interaction, id_hoac_ten: str = None):
     await handle_evol(interaction, id_hoac_ten)
@@ -4557,6 +5059,8 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
         embed.add_field(name="🔓 GIẢI PHÓNG THẺ BÀI BỊ KHÓA:", value="\n".join(unlocked_notifs), inline=False)
     if dq_notifs:
         embed.add_field(name="📜 Tiến Trình Nhiệm Vụ Ngày:", value="\n\n".join(dq_notifs), inline=False)
+    if ev_notifs:
+        embed.add_field(name="🎃 Tiến Trình Event Halloween:", value="\n\n".join(ev_notifs), inline=False)
     embed.set_footer(text=f"Vé pull còn lại: {player['pull_tickets']:.2f} | Free hôm nay: {player['free_pulls_remaining']}/5")
     if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
     else: await ctx_or_interaction.send(embed=embed)
@@ -4599,6 +5103,8 @@ async def handle_daily(ctx_or_interaction):
     )
     if dq_notifs:
         embed.add_field(name="📜 Tiến Trình Nhiệm Vụ Ngày:", value="\n\n".join(dq_notifs), inline=False)
+    if ev_notifs:
+        embed.add_field(name="🎃 Tiến Trình Event Halloween:", value="\n\n".join(ev_notifs), inline=False)
     if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
     else: await ctx_or_interaction.send(embed=embed)
 
@@ -4779,7 +5285,7 @@ async def handle_collection(ctx_or_interaction):
 
     t_lines = []
     shards_cnt = player.get("shards", {}).get("seiki", 0)
-    for t_cid in ["t1", "t2"]:
+    for t_cid in ["t1", "t2", "t3"]:
         if t_cid in CARDS_DATA:
             t_card = CARDS_DATA[t_cid]
             t_cnt = player["inventory"].get(t_cid, 0)
@@ -4793,11 +5299,16 @@ async def handle_collection(ctx_or_interaction):
                 t_shard_info = f"   └ 💎 **Mảnh Seiki:** `{shards_cnt}/10` mảnh"
                 if shards_cnt >= 10:
                     t_shard_info += " ✨ *(Đủ 10 mảnh! Dùng `/t translate` để đổi ngay!)*"
-            else:
+            elif t_cid == "t2":
                 mahoraga_shards = player.get("shards", {}).get("mahoraga", 0)
                 t_shard_info = f"   └ 🔱 **Mảnh Mahoraga:** `{mahoraga_shards}/10` mảnh"
                 if mahoraga_shards >= 10:
                     t_shard_info += " ✨ *(Đủ 10 mảnh! Dùng `/t translate loai_shard:mahoraga` để đổi ngay!)*"
+            elif t_cid == "t3":
+                kizuna_shards = player.get("shards", {}).get("kizuna", 0)
+                t_shard_info = f"   └ 🩸 **Mảnh Kizuna:** `{kizuna_shards}/15` mảnh"
+                if kizuna_shards >= 15:
+                    t_shard_info += " ✨ *(Đủ 15 mảnh! Dùng `/t translate loai_shard:kizuna` để đổi ngay!)*"
             t_lines.append(f"{t_status}\n{t_shard_info}")
 
     desc_text = "\n".join(lines)
@@ -4845,6 +5356,10 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
         shard_key = "mahoraga"
         target_card_id = "t2"
         needed_shards = 10
+    elif shard_key in ["kizuna", "t3", "vampire", "huyetma", "kizuna_shard"]:
+        shard_key = "kizuna"
+        target_card_id = "t3"
+        needed_shards = 15
     else:
         msg = f"❌ Loại mảnh `{loai_shard}` không tồn tại! Hiện tại có: `seiki` (đổi Thẻ T1 Seiki) và `mahoraga` (đổi Thẻ T2 Mahoraga)."
         if isinstance(ctx_or_interaction, discord.Interaction):
@@ -4877,7 +5392,27 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
     player["inventory"][target_card_id] = player["inventory"].get(target_card_id, 0) + 1
     save_player(player)
 
-    if target_card_id == "t2":
+    if target_card_id == "t3":
+        embed = discord.Embed(
+            title="🩸 QUY ĐỔI MẢNH THÀNH CÔNG: TRIỆU HỒI KIZUNA THE EMPEROR OF VAMPIRE!",
+            description=(
+                f"✨ **Chúc mừng {user.mention}!** Bạn đã dung hợp thành công **15 Mảnh Kizuna**!\n\n"
+                f"🎴 **THẺ BÀI ĐẶC BIỆT NHẬN ĐƯỢC:**\n"
+                f"• **Tên:** **[{card_info['rank']}] #{target_card_id} {card_info['name']}**\n"
+                f"• **Chỉ số:** ⚔️ Power: **{card_info['power']:,}** | ❤️ HP: **{card_info['hp']:,}**\n"
+                f"• **Nội tại & Tuyệt kỹ:**\n"
+                f"  - 🩸 **True vampire (100%):** Mỗi lượt tự hồi phục 5% máu tối đa.\n"
+                f"  - 🔗 **Blood chain (30%):** Gây ra 1.5x sát thương cho mục tiêu (1 lần/trận).\n"
+                f"  - ⛓️ **Dark chain (20%):** Gây 1.0x sát thương kèm theo 15% máu tối đa đối phương (tối đa 3 lần/trận).\n\n"
+                f"📦 **Kho mảnh còn lại:** \`{shards_dict[shard_key]} Mảnh Kizuna\`\n"
+                f"🎒 **Kho đồ hiện tại:** Đang sở hữu \`{player['inventory'][target_card_id]} lá\`!\n"
+                f"⭐ *Tiến hóa Ace 2: Tiêu hao 1 Thánh Lõi trong túi đồ (/item) để thức tỉnh Wonder Guard!*"
+            ),
+            color=0xDC2626
+        )
+        embed.set_image(url=card_info["image"])
+        embed.set_footer(text="Dùng /team add id_the:t3 để đưa Kizuna vào đội hình chiến đấu!")
+    elif target_card_id == "t2":
         embed = discord.Embed(
             title="🔱 QUY ĐỔI MẢNH THÀNH CÔNG: TRIỆU HỒI MAHORAGA BÁT ÁCH KIẾM THẦN TƯỚNG!",
             description=(
@@ -4954,6 +5489,25 @@ async def handle_view_shards(ctx_or_interaction):
         ),
         inline=False
     )
+    kizuna_shards = shards_dict.get("kizuna", 0)
+    leon_shards = shards_dict.get("leon", 0)
+    has_kizuna = player["inventory"].get("t3", 0)
+    embed.add_field(
+        name="🩸 Mảnh Kizuna the Emperor of Vampire:",
+        value=(
+            f"• Hiện có: **`{kizuna_shards}/15` mảnh**\n"
+            f"• Tiến độ: \`{get_hp_bar(min(15, kizuna_shards), 15)}\` ({min(100, int(kizuna_shards/15*100))}%)\n"
+            f"• Thẻ quy đổi: **[T] #t3 Kizuna the emperor of vampire** (Kho: {has_kizuna} lá)\n"
+            f"• Thao tác: Gõ \`/t translate loai_shard:kizuna\` khi đủ 15 mảnh để đổi thẻ!\n"
+            f"• Nguồn rơi: Tỉ lệ rơi từ **Boss Event Kizuna** (2.5% P1, 7% P2)."
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="🦁 Mảnh Leon (Vật Phẩm Sự Kiện Tương Lai):",
+        value=f"• Hiện có: **`{leon_shards}` mảnh** (Tích trữ từ Boss Event Kizuna).",
+        inline=False
+    )
     embed.set_thumbnail(url=card_info["image"])
     if isinstance(ctx_or_interaction, discord.Interaction):
         await ctx_or_interaction.response.send_message(embed=embed)
@@ -4964,7 +5518,8 @@ class ShardGroup(app_commands.Group, name="t", description="Quản lý kho mản
     @app_commands.command(name="translate", description="Quy đổi 10 mảnh đặc biệt (shards) sang thẻ bài chính thức (Seiki T1)")
     @app_commands.describe(loai_shard="Loại mảnh muốn quy đổi (mặc định: seiki)")
     @app_commands.choices(loai_shard=[
-        app_commands.Choice(name="Mảnh Seiki Đệ Pháp Toàn Năng (Đổi ra Thẻ [T] #t1 Seiki)", value="seiki")
+        app_commands.Choice(name="Mảnh Seiki Đệ Pháp Toàn Năng (Đổi ra Thẻ [T] #t1 Seiki)", value="seiki"),
+        app_commands.Choice(name="Mảnh Kizuna Huyết Ma Đế (Đổi ra Thẻ [T] #t3 Kizuna - Cần 15 Mảnh)", value="kizuna")
     ])
     async def slash_t_translate(self, interaction: discord.Interaction, loai_shard: str = "seiki"):
         await handle_translate_shard(interaction, loai_shard)
@@ -5135,13 +5690,14 @@ async def prefix_quest(ctx):
 # TÍNH NĂNG CHECK NHÂN VẬT & SOI KỸ NĂNG (TOÀN BỘ 27 NHÂN VẬT + ACE 2)
 # ==============================================================================
 class CharacterCheckView(discord.ui.View):
-    def __init__(self, current_index: int = 0, user_id: int = None, show_ace: bool = False, show_t1: bool = False, show_t2: bool = False):
+    def __init__(self, current_index: int = 0, user_id: int = None, show_ace: bool = False, show_t1: bool = False, show_t2: bool = False, show_t3: bool = False):
         super().__init__(timeout=180)
-        self.current_index = max(0, min(current_index, 26))
+        self.current_index = max(0, min(current_index, 27))
         self.user_id = user_id
         self.show_ace = show_ace
         self.show_t1 = show_t1
         self.show_t2 = show_t2
+        self.show_t3 = show_t3
         self.rebuild_items()
 
     def rebuild_items(self):
@@ -5197,6 +5753,15 @@ class CharacterCheckView(discord.ui.View):
         t2_btn.callback = self.show_t2_card
         self.add_item(t2_btn)
 
+        t3_btn = discord.ui.Button(
+            label="🩸 [T] #t3 Kizuna",
+            style=discord.ButtonStyle.success if self.show_t3 else discord.ButtonStyle.secondary,
+            emoji="🩸",
+            row=1
+        )
+        t3_btn.callback = self.show_t3_card
+        self.add_item(t3_btn)
+
         opt_part1 = []
         for i in range(1, 15):
             c = CARDS_DATA[i]
@@ -5238,6 +5803,8 @@ class CharacterCheckView(discord.ui.View):
             return self.get_t1_embed()
         if self.show_t2:
             return self.get_t2_embed()
+        if self.show_t3:
+            return self.get_t3_embed()
         cid = self.current_index + 1
         card = CARDS_DATA[cid]
         details = CHARACTER_DETAILS.get(cid, {})
@@ -5351,10 +5918,97 @@ class CharacterCheckView(discord.ui.View):
     async def show_t2_card(self, interaction: discord.Interaction):
         self.show_t2 = True
         self.show_t1 = False
+        self.show_t3 = False
+        self.show_ace = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+    async def show_t3_card(self, interaction: discord.Interaction):
+        self.show_t3 = True
+        self.show_t1 = False
         self.show_t2 = False
         self.show_ace = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    def get_t3_embed(self) -> discord.Embed:
+        card = CARDS_DATA["t3"]
+        details = CHARACTER_DETAILS.get("t3", {})
+        player = get_player(self.user_id) if self.user_id else None
+        user_level = player.get("level", 1) if player else 1
+        lvl_atk_buff = (user_level - 1) * 20
+        lvl_hp_buff = (user_level - 1) * 25
+        owned_cnt = player.get("inventory", {}).get("t3", 0) if player else 0
+        shards_cnt = player.get("shards", {}).get("kizuna", 0) if player else 0
+        thanh_loi_cnt = player.get("items", {}).get("thanh_loi", 0) if player else 0
+        is_locked = is_card_locked(player, "t3") if player else False
+        is_kizuna_ace2 = is_card_ace2(player, "t3") if player else False
+
+        embed = discord.Embed(
+            title="🩸 [THẺ ĐẶC BIỆT NHÓM T] #t3 KIZUNA THE EMPEROR OF VAMPIRE",
+            description=(
+                f"*{details.get('title', 'Huyết Ma Đế')}*\n"
+                "✨ Chúa tể ma cà rồng cổ đại nhóm T. Quy đổi từ **15 Mảnh Kizuna** (\`/t translate loai_shard:kizuna\`).\n"
+                "Tiến hóa **Ace 2 ⭐⭐**: Tiêu hao **1 Thánh Lõi** trong túi đồ (\`/evol id:t3\`)."
+            ),
+            color=0xDC2626
+        )
+        embed.set_image(url=card["image"])
+
+        power_val = card["power"] + (300 if is_kizuna_ace2 else 0)
+        hp_val = card["hp"] + (300 if is_kizuna_ace2 else 0)
+        stats_text = (
+            f"• ⚔️ **Sức Mạnh (Power / ATK):** \`{power_val:,}\`" + (" *(+300 Ace 2)*" if is_kizuna_ace2 else "") + "\n"
+            f"• ❤️ **Máu (HP):** \`{hp_val:,}\`" + (" *(+300 Ace 2)*" if is_kizuna_ace2 else "") + "\n"
+            f"• 🛡️ **Trong Đội Hình (Cấp {user_level}):** \`{power_val + lvl_atk_buff:,}\` ATK | \`{hp_val + lvl_hp_buff:,}\` HP\n"
+            f"*(Mỗi cấp người chơi tăng +20 ATK và +25 HP)*"
+        )
+        embed.add_field(name="⚔️ SỨC MẠNH & CHỈ SỐ:", value=stats_text, inline=False)
+
+        pas = card.get("passive", {})
+        sk = card.get("skills", {})
+        skills_text = (
+            f"🩸 **NỘI TẠI — {pas.get('name', 'True vampire')} (100% Thụ Động):**\n"
+            f"• {pas.get('desc', 'Mỗi lượt tự hồi phục 5% máu tối đa')}\n"
+            f"   🎬 Hoạt ảnh: {pas.get('gif', '')}\n\n"
+            f"🔗 **TUYỆT KỸ 1 — {sk.get('blood_chain', {}).get('name', 'Blood chain')} (30% - 1 lần/trận):**\n"
+            f"• {sk.get('blood_chain', {}).get('desc', 'Gây ra 1.5x sát thương cho mục tiêu')}\n"
+            f"   🎬 Hoạt ảnh: {sk.get('blood_chain', {}).get('gif', '')}\n\n"
+            f"⛓️ **TUYỆT KỸ 2 — {sk.get('dark_chain', {}).get('name', 'Dark chain')} (20% - tối đa 3 lần/trận):**\n"
+            f"• {sk.get('dark_chain', {}).get('desc', 'Gây 1.0x sát thương kèm theo 15% máu tối đa đối phương')}\n"
+            f"   🎬 Hoạt ảnh: {sk.get('dark_chain', {}).get('gif', '')}\n"
+        )
+        embed.add_field(name="🩸 BỘ KỸ NĂNG HUYẾT MA ĐẾ (BẢN CHUẨN):", value=skills_text, inline=False)
+
+        if is_kizuna_ace2:
+            embed.add_field(
+                name="🌟 TRẠNG THÁI ACE 2 ⭐⭐ - ĐỘT PHÁ CẢNH GIỚI HUYẾT MA:",
+                value=(
+                    "🩸 **True vampire (100%):** Hồi 5% Máu tối đa mỗi lượt!\n"
+                    "🔗 **Blood chain (30%):** Cường hóa lên **2.0x sát thương** (1 lần/trận)!\n"
+                    "⛓️ **Dark chain (30%):** Sát thương **1.5x + 15% Máu tối đa** đối thủ (tối đa 3 lần/trận)!\n"
+                    "🛡️ **Wonder guard (20%):** Miễn toàn bộ sát thương và **phản lại 60% sát thương** trong 3 turn (1 lần/trận)!\n"
+                    "🎬 Hoạt ảnh Wonder Guard: https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/e5/ab/GDt4bKoq.gif"
+                ),
+                inline=False
+            )
+
+        if player:
+            lock_str = "\n🔒 **CẢNH BÁO: Thẻ này hiện đang bị ADMIN KHÓA!**" if is_locked else ""
+            shard_str = "\n✨ *Đã đủ 15 mảnh! Dùng \`/t translate loai_shard:kizuna\` để đổi thẻ ngay!*" if shards_cnt >= 15 else ""
+            ace_badge = "🌟 ĐÃ THỨC TỈNH ACE 2 ⭐⭐" if is_kizuna_ace2 else f"Bản chuẩn (Thánh Lõi: {thanh_loi_cnt} cái)"
+            embed.add_field(
+                name="🎒 TÚI ĐỒ CỦA BẠN:",
+                value=f"• Sở hữu: **{owned_cnt}** lá{lock_str}\n• 🩸 Mảnh Kizuna: **{shards_cnt}/15**{shard_str}\n• 💎 Thánh Lõi: **{thanh_loi_cnt}** cái\n• Cảnh giới: **{ace_badge}**",
+                inline=True
+            )
+        embed.add_field(
+            name="📊 HẠNG THẺ:",
+            value="• Phẩm cấp: **Rank [T] — Thần Thoại**\n• Nguồn: Đổi từ **15 Mảnh Kizuna** (Event Raid)",
+            inline=True
+        )
+        embed.set_footer(text="Thẻ nhóm T thần thoại • Bấm ◀ / ▶ hoặc menu để xem 28 nhân vật chuẩn!")
+        return embed
+
 
     def get_t2_embed(self) -> discord.Embed:
         card = CARDS_DATA["t2"]
@@ -5499,6 +6153,7 @@ class CharacterCheckView(discord.ui.View):
         self.show_ace = False
         self.show_t1 = False
         self.show_t2 = False
+        self.show_t3 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
@@ -5507,6 +6162,7 @@ class CharacterCheckView(discord.ui.View):
         self.show_ace = False
         self.show_t1 = False
         self.show_t2 = False
+        self.show_t3 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
@@ -5515,6 +6171,7 @@ class CharacterCheckView(discord.ui.View):
         self.show_ace = False
         self.show_t1 = False
         self.show_t2 = False
+        self.show_t3 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
@@ -5523,6 +6180,7 @@ class CharacterCheckView(discord.ui.View):
         self.show_ace = False
         self.show_t1 = False
         self.show_t2 = False
+        self.show_t3 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
@@ -5530,6 +6188,7 @@ class CharacterCheckView(discord.ui.View):
         self.show_ace = not self.show_ace
         self.show_t1 = False
         self.show_t2 = False
+        self.show_t3 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
@@ -5539,6 +6198,7 @@ class CharacterCheckView(discord.ui.View):
         self.show_ace = False
         self.show_t1 = False
         self.show_t2 = False
+        self.show_t3 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
@@ -5563,6 +6223,14 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
                 await ctx_or_interaction.response.send_message(embed=embed_t2, view=view_t2)
             else:
                 await ctx_or_interaction.send(embed=embed_t2, view=view_t2)
+            return
+        if nv_clean in ("t3", "kizuna", "vampire", "huyetma"):
+            view_t3 = CharacterCheckView(current_index=0, user_id=user.id, show_ace=False, show_t1=False, show_t2=False, show_t3=True)
+            embed_t3 = view_t3.get_current_embed()
+            if isinstance(ctx_or_interaction, discord.Interaction):
+                await ctx_or_interaction.response.send_message(embed=embed_t3, view=view_t3)
+            else:
+                await ctx_or_interaction.send(embed=embed_t3, view=view_t3)
             return
         if nv_clean.isdigit():
             val = int(nv_clean)
@@ -5942,6 +6610,18 @@ async def handle_battle(ctx_or_interaction):
             battle_logs.append(msg_t2)
             turn_actions.append(msg_t2)
 
+        if str(pc["cid"]).lower() == "t3":
+            if "p_t3" not in locals(): p_t3 = {}
+            t3_act = t3_combat_action(p_t3, pc, r_cnt, oc["hp"], f"**{oc['name']}**")
+            curr_pc_power += t3_act["bonus"]
+            if t3_act["direct"]:
+                oc["current_hp"] = max(0, oc["current_hp"] - t3_act["direct"])
+            if t3_act.get("invul"):
+                pc_invul = True
+            if t3_act.get("gif") and not turn_image:
+                turn_image = t3_act["gif"]
+            turn_actions.extend(t3_act["logs"])
+
         curr_oc_power = oc["power"]
         if oc["cid"] == 19 and oc.get("is_ace2") and not o_marisa:
             if random.random() < 0.25:
@@ -6114,6 +6794,7 @@ async def handle_battle(ctx_or_interaction):
         st["stage2_battles_done"] = st.get("stage2_battles_done", 0) + 1
 
     dq_notifs = update_daily_quest_progress(player, "battle", 1)
+    ev_notifs = update_event_task_progress(player, "battle", 1)
 
     tut = player.get("tutorial", {})
     tut_completed = False
@@ -6157,6 +6838,8 @@ async def handle_battle(ctx_or_interaction):
         )
     if dq_notifs:
         embed.add_field(name="📜 Tiến Trình Nhiệm Vụ Ngày:", value="\n\n".join(dq_notifs), inline=False)
+    if ev_notifs:
+        embed.add_field(name="🎃 Tiến Trình Event Halloween:", value="\n\n".join(ev_notifs), inline=False)
     embed.set_footer(text="Hồi chiêu lệnh: 1 phút • Bấm 'Soi Toàn Bộ Đội Hình Đối Thủ' để xem chi tiết thẻ và kỹ năng đối phương")
     details_view = OpenDetailsView(battle_turns, opp_cards=opp_cards, opp_name=opp_name, opp_level=opp_level)
     if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed, view=details_view)
@@ -6541,6 +7224,18 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
             pvp_logs.append(msg_t2)
             turn_actions.append(msg_t2)
 
+        if str(cc["cid"]).lower() == "t3":
+            if "c_t3_fl" not in locals(): c_t3_fl = {}
+            t3_act = t3_combat_action(c_t3_fl, cc, r_cnt, tc["max_hp"], f"**{tc['name']}** ({target.display_name})")
+            c_curr_power += t3_act["bonus"]
+            if t3_act["direct"]:
+                tc["current_hp"] = max(0, tc["current_hp"] - t3_act["direct"])
+            if t3_act.get("invul"):
+                c_invul = True
+            if t3_act.get("gif") and not turn_image:
+                turn_image = t3_act["gif"]
+            turn_actions.extend(t3_act["logs"])
+
         if tc["cid"] == 19 and tc["is_ace2"] and not t_marisa:
             if random.random() < 0.30:
                 t_marisa = True
@@ -6775,6 +7470,8 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
 
     dq_c = update_daily_quest_progress(c_player, "pvp", 1)
     dq_t = update_daily_quest_progress(t_player, "pvp", 1)
+    ev_c = update_event_task_progress(c_player, "pvp", 1)
+    ev_t = update_event_task_progress(t_player, "pvp", 1)
 
     save_player(c_player)
     save_player(t_player)
@@ -6786,6 +7483,8 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
     )
     if pvp_logs:
         embed.add_field(name="📜 Điểm Nhấn Trận Đấu:", value="\n".join(pvp_logs[:5]), inline=False)
+    if ev_c or ev_t:
+        embed.add_field(name="🎃 Tiến Trình Event Halloween:", value="\n".join(ev_c + ev_t), inline=False)
 
     c_lvl_str = f" 🎉 *(Lên Lv.{c_player['level']}!)*" if c_player['level'] > old_c_lvl else ""
     t_lvl_str = f" 🎉 *(Lên Lv.{t_player['level']}!)*" if t_player['level'] > old_t_lvl else ""
@@ -8616,9 +9315,442 @@ async def slash_dbcheck(interaction: discord.Interaction):
         embed = discord.Embed(title="🚨 CHƯA KẾT NỐI MONGODB ATLAS", description=f"⚠️ Đang dùng SQLite tạm thời.\n{mongo_error_detail}", color=0xEF4444)
     await interaction.followup.send(embed=embed)
 
+
+# ==============================================================================
+# BỘ LỆNH /EVENT, /EVENT SHOP, /EVENT RAID, /EVENT_ADMIN
+# ==============================================================================
+async def handle_event_menu(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    ev_data = player.get("event_progress", {}).get("halloween_2026", {})
+
+    status_active = "🟢 Đang Diễn Ra (02/10 - 30/10)" if EVENT_CONFIG.get("active") else "🔴 Sự Kiện Đã Kết Thúc"
+
+    embed = discord.Embed(
+        title="🎃 HALLOWEEN EVENT 2026: ĐÊM HỘI MA QUÁI GENSOKYO",
+        description=(
+            f"**Trạng thái:** {status_active}\n"
+            f"⭐ **{EVENT_CONFIG['quote']}**\n\n"
+            "Hãy hoàn thành các hoạt động chiến đấu để gom Mảnh Kẹo Halloween đổi thưởng trong `/event shop`!"
+        ),
+        color=0xF59E0B
+    )
+    embed.set_image(url=EVENT_CONFIG["image"])
+
+    quests = EVENT_CONFIG["quests"]
+    for q_key, q_cfg in quests.items():
+        field_name = q_key + "_done"
+        cur = ev_data.get(field_name, 0)
+        target = q_cfg["target"]
+        is_claimed = ev_data.get("claimed", {}).get(q_key, False)
+        status_txt = "✅ **ĐÃ XONG** (Đã nhận quà)" if is_claimed else f"⏳ Đang thực hiện (`{cur}/{target}`)"
+        embed.add_field(
+            name=f"🎯 {q_cfg['name']}:",
+            value=f"• Tiến độ: **{cur}/{target}** ({min(100, int(cur/target*100))}%)\n• Thưởng: **+{q_cfg['reward_candy']} Mảnh Kẹo 🍬** & **+{q_cfg['reward_tickets']} Vé 🎟️**\n• Trạng thái: {status_txt}",
+            inline=False
+        )
+    all_ev_done_cnt = sum(1 for k in quests.keys() if ev_data.get("claimed", {}).get(k, False))
+    bonus_ev_stat = "✅ ĐÃ NHẬN THƯỞNG!" if ev_data.get("all_quests_claimed", False) else ("🎁 SẴN SÀNG NHẬN!" if all_ev_done_cnt >= 4 else f"🔒 Hoàn thành 4/4 nhiệm vụ để nhận ({all_ev_done_cnt}/4)")
+    embed.add_field(
+        name="👑 ĐẠI TIỆC HOÀN THÀNH 4/4 NHIỆM VỤ EVENT:",
+        value=f"• Thưởng lớn: **+250 Tokens 💎** & **+1 Vật phẩm Thánh Lõi 💎** (Dùng tiến hóa [#t3] Kizuna Ace 2)!\n• Trạng thái: **{bonus_ev_stat}**",
+        inline=False
+    )
+
+    candies = player.get("items", {}).get("candy_shard", 0)
+    embed.add_field(
+        name="🎒 KHO KẸO HIỆN CÓ:",
+        value=f"🍬 **{candies:,} Mảnh Kẹo Halloween** (Dùng `/event shop` để mua rương [E], vé pull, mảnh Seiki & Mahoraga)",
+        inline=False
+    )
+    embed.set_footer(text="Dùng /event raid để chủ động gọi Boss Event (cooldown 1 tiếng) • Dùng /item để xem kho")
+
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed)
+    else:
+        await ctx_or_interaction.send(embed=embed)
+
+@bot.tree.command(name="event", description="Xem nội dung, tiến trình nhiệm vụ và thông tin sự kiện Halloween 2026")
+async def slash_event(interaction: discord.Interaction):
+    await handle_event_menu(interaction)
+
+@bot.command(name="event")
+async def prefix_event(ctx, sub: str = None):
+    if sub:
+        s = sub.lower().strip()
+        if s == "shop":
+            await handle_event_shop(ctx)
+            return
+        elif s == "raid":
+            await handle_event_raid_summon(ctx)
+            return
+    await handle_event_menu(ctx)
+
+class EventShopModal(discord.ui.Modal):
+    def __init__(self, player):
+        super().__init__(title="Mua Vật Phẩm Tại Event Shop")
+        self.player = player
+        self.item_no = discord.ui.TextInput(label="Số thứ tự món đồ (1 - 5):", placeholder="Ví dụ: 1 hoặc 2...", required=True)
+        self.qty_in = discord.ui.TextInput(label="Số lượng muốn mua:", default="1", required=True)
+        self.add_item(self.item_no)
+        self.add_item(self.qty_in)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        sel = self.item_no.value.strip()
+        if sel not in EVENT_SHOP_ITEMS:
+            await interaction.response.send_message("❌ Món đồ không hợp lệ! Hãy chọn số từ 1 đến 5.", ephemeral=True)
+            return
+        try:
+            qty = max(1, int(self.qty_in.value.strip()))
+        except ValueError:
+            await interaction.response.send_message("❌ Số lượng phải là số nguyên dương!", ephemeral=True)
+            return
+
+        shop_item = EVENT_SHOP_ITEMS[sel]
+        total_cost = shop_item["cost"] * qty
+        items = self.player.setdefault("items", {})
+        candies = items.get("candy_shard", 0)
+
+        if candies < total_cost:
+            await interaction.response.send_message(f"❌ Bạn không đủ Mảnh Kẹo! (Cần {total_cost} kẹo, hiện có {candies} kẹo).", ephemeral=True)
+            return
+
+        items["candy_shard"] = candies - total_cost
+
+        if shop_item.get("is_shard"):
+            s_type = shop_item["is_shard"]
+            self.player.setdefault("shards", {})[s_type] = self.player.setdefault("shards", {}).get(s_type, 0) + qty
+            res_txt = f"🔮 **+{qty} Mảnh {s_type.upper()}** (Kho: {self.player['shards'][s_type]} mảnh)!"
+        else:
+            it_id = shop_item["id"]
+            items[it_id] = items.get(it_id, 0) + qty
+            res_txt = f"📦 **+{qty}x {shop_item['name']}** (Kho: {items[it_id]} cái)!"
+
+        save_player(self.player)
+        await interaction.response.send_message(
+            f"🎉 **ĐỔI QUÀ THÀNH CÔNG!**\n"
+            f"• Đã mua: {res_txt}\n"
+            f"• Tiêu hao: **-{total_cost} Mảnh Kẹo 🍬** (Còn lại: `{items['candy_shard']}` kẹo)",
+            ephemeral=False
+        )
+
+class EventShopView(discord.ui.View):
+    def __init__(self, user, player):
+        super().__init__(timeout=120)
+        self.user = user
+        self.player = player
+
+    @discord.ui.button(label="🛍️ Mua Vật Phẩm Bằng Mảnh Kẹo", style=discord.ButtonStyle.success, emoji="🍬")
+    async def buy_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên shop của bạn!", ephemeral=True)
+            return
+        await interaction.response.send_modal(EventShopModal(self.player))
+
+async def handle_event_shop(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    candies = player.get("items", {}).get("candy_shard", 0)
+
+    embed = discord.Embed(
+        title="🍬 CỬA HÀNG SỰ KIỆN HALLOWEEN (EVENT SHOP)",
+        description=(
+            f"Chào mừng **{user.display_name}** ghé thăm quầy đổi kẹo sự kiện!\n"
+            f"🍬 **Số dư Mảnh Kẹo của bạn:** **`{candies:,}` Mảnh Kẹo**\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            "**1. [E] Rương Ma Quái Halloween** — `15 Kẹo` / 1 Rương\n"
+            "   └ *Mở ra ngẫu nhiên vé pull, XP hoặc kẹo may mắn!*\n"
+            "**2. [E] Kẹo Ma Lực Tinh Hoa** — `25 Kẹo` / 1 Viên\n"
+            "   └ *Sử dụng nhận ngay +3 Lượt Pull!*\n"
+            "**3. [E] Đèn Lồng Dẫn Hồn** — `20 Kẹo` / 1 Chiếc\n"
+            "   └ *Sử dụng nhận ngay +500 XP kinh nghiệm!*\n"
+            "**4. Mảnh Seiki Đệ Pháp Toàn Năng** — `60 Kẹo` / 1 Mảnh\n"
+            "   └ *Đủ 10 mảnh dùng /t translate đổi Thẻ [T] #t1 Seiki!*\n"
+            "**5. Mảnh Mahoraga Thần Tướng** — `50 Kẹo` / 1 Mảnh\n"
+            "   └ *Đủ 10 mảnh đổi Thẻ [T] #t2 Mahoraga!*"
+        ),
+        color=0xF59E0B
+    )
+    embed.set_footer(text="Bấm nút 'Mua Vật Phẩm' bên dưới để nhập số thứ tự và số lượng!")
+    view = EventShopView(user, player)
+
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed, view=view)
+    else:
+        await ctx_or_interaction.send(embed=embed, view=view)
+
+async def handle_event_raid_summon(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    
+    if not EVENT_CONFIG.get("active"):
+        msg = "❌ Hiện tại sự kiện Halloween không hoạt động!"
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    ev_data = player.setdefault("event_progress", {}).setdefault("halloween_2026", {})
+    last_summon = ev_data.get("last_event_raid_time", 0.0)
+    now_ts = time.time()
+    cooldown = EVENT_BOSS_CONFIG["cooldown_seconds"] # 3600s = 1h
+
+    if now_ts - last_summon < cooldown:
+        rem = int(cooldown - (now_ts - last_summon))
+        mins, secs = rem // 60, rem % 60
+        msg = f"⏳ Bạn vừa triệu hồi Boss Event gần đây! Hồi chiêu cá nhân còn: **{mins} phút {secs} giây** (cooldown 1 tiếng/lần)."
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    ev_data["last_event_raid_time"] = now_ts
+    save_player(player)
+
+    channel = ctx_or_interaction.channel
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(f"🎃 **{user.mention} ĐÃ CHỦ ĐỘNG TRIỆU HỒI EVENT BOSS!**", ephemeral=False)
+    
+    # Triệu hồi Boss Event Kizuna - Huyết Ma Đế
+    await spawn_boss_raid(channel, user, boss_type="event_kizuna")
+
+# ==============================================================================
+# HỆ THỐNG KHO ĐỒ ITEM GROUP (/ITEM, /ITEM USE, /ITEM TRADE)
+# ==============================================================================
+async def handle_item_inventory(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    items = player.get("items", {})
+
+    lines = []
+    for it_id, it_info in ITEMS_DATABASE.items():
+        cnt = items.get(it_id, 0)
+        tag = "`[E - Có Thể Dùng]`" if it_info["usable"] else "`[Vật Phẩm Sự Kiện]`"
+        lines.append(f"{it_info['icon']} **{it_info['name']}**: `{cnt:,}` cái {tag}\n   └ *{it_info['desc']}*")
+
+    embed = discord.Embed(
+        title=f"🎒 KHO VẬT PHẨM ITEM GROUP - {user.display_name.upper()}",
+        description="\n\n".join(lines) if lines else "Kho đồ item đang trống!",
+        color=0x8B5CF6
+    )
+    embed.add_field(
+        name="💡 Hướng dẫn sử dụng:",
+        value="• Dùng lệnh `/item use id_item:<mã> so_luong:<số>` để sử dụng vật phẩm gắn mác **[E]**.\n• Dùng lệnh `/item trade` để trao đổi vật phẩm với bạn bè!",
+        inline=False
+    )
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed)
+    else:
+        await ctx_or_interaction.send(embed=embed)
+
+async def handle_item_use(ctx_or_interaction, item_id: str, quantity: int = 1):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    items = player.setdefault("items", {})
+    quantity = max(1, quantity)
+
+    clean_id = item_id.lower().strip()
+    if clean_id not in ITEMS_DATABASE:
+        msg = f"❌ Không tìm thấy vật phẩm `{item_id}`! (Các item có thể dùng: `halloween_box`, `magic_candy`, `soul_lantern`)."
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    it_cfg = ITEMS_DATABASE[clean_id]
+    if not it_cfg["usable"]:
+        msg = f"⚠️ Vật phẩm **{it_cfg['name']}** không có nhãn [E] (không thể tự sử dụng, chỉ dùng để đổi quà hoặc trao đổi)!"
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    owned = items.get(clean_id, 0)
+    if owned < quantity:
+        msg = f"❌ Bạn không đủ số lượng để dùng! (Hiện có: {owned}, muốn dùng: {quantity})."
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    items[clean_id] = owned - quantity
+    rewards_log = []
+
+    if clean_id == "magic_candy":
+        gained_tickets = 3.0 * quantity
+        player["pull_tickets"] = player.get("pull_tickets", 0.0) + gained_tickets
+        rewards_log.append(f"🎟️ Nhận ngay **+{int(gained_tickets)} Lượt Pull** tích lũy!")
+
+    elif clean_id == "soul_lantern":
+        gained_xp = 500 * quantity
+        player["xp"] = player.get("xp", 0) + gained_xp
+        rewards_log.append(f"✨ Nhận ngay **+{gained_xp:,} XP** kinh nghiệm!")
+
+    elif clean_id == "halloween_box":
+        t_tick = 0
+        t_xp = 0
+        t_candy = 0
+        for _ in range(quantity):
+            t_tick += random.randint(3, 8)
+            t_xp += random.randint(50, 150)
+            t_candy += random.randint(5, 12)
+        player["pull_tickets"] = player.get("pull_tickets", 0.0) + float(t_tick)
+        player["xp"] = player.get("xp", 0) + t_xp
+        items["candy_shard"] = items.get("candy_shard", 0) + t_candy
+        rewards_log.append(f"🎟️ **+{t_tick} Vé Pull**\n✨ **+{t_xp:,} XP**\n🍬 **+{t_candy} Mảnh Kẹo Halloween**")
+
+    save_player(player)
+
+    embed = discord.Embed(
+        title=f"✨ SỬ DỤNG VẬT PHẨM THÀNH CÔNG: {it_cfg['name']}",
+        description=f"👤 **Người dùng:** {user.mention}\n🔢 **Số lượng:** `{quantity}` cái\n\n🎁 **PHẦN THƯỞNG NHẬN ĐƯỢC:**\n" + "\n".join(rewards_log),
+        color=0x10B981
+    )
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed)
+    else:
+        await ctx_or_interaction.send(embed=embed)
+
+async def handle_item_trade(ctx_or_interaction, target_user: discord.Member, your_str: str, their_str: str):
+    author = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    if target_user.id == author.id or getattr(target_user, "bot", False):
+        msg = "❌ Người nhận không hợp lệ!"
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    # Parse cú pháp id:qty
+    def parse_item(s):
+        try:
+            parts = s.split(":")
+            return parts[0].strip().lower(), max(1, int(parts[1].strip()))
+        except Exception:
+            return None, 0
+
+    y_id, y_qty = parse_item(your_str)
+    t_id, t_qty = parse_item(their_str)
+
+    if not y_id or y_id not in ITEMS_DATABASE or not t_id or t_id not in ITEMS_DATABASE:
+        msg = "❌ Cú pháp không hợp lệ! Ví dụ chuẩn: `/item trade user:@A your:candy_shard:10 their:halloween_box:1`"
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    p_a = get_player(author.id, author.display_name)
+    p_b = get_player(target_user.id, target_user.display_name)
+
+    it_a = p_a.setdefault("items", {})
+    it_b = p_b.setdefault("items", {})
+
+    if it_a.get(y_id, 0) < y_qty:
+        msg = f"❌ Bạn không đủ {y_qty}x {y_id}!"
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+    if it_b.get(t_id, 0) < t_qty:
+        msg = f"❌ Đối phương không đủ {t_qty}x {t_id}!"
+        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else: await ctx_or_interaction.send(msg)
+        return
+
+    # Thực hiện trao đổi
+    it_a[y_id] -= y_qty
+    it_b[y_id] = it_b.get(y_id, 0) + y_qty
+
+    it_b[t_id] -= t_qty
+    it_a[t_id] = it_a.get(t_id, 0) + t_qty
+
+    save_player(p_a)
+    save_player(p_b)
+
+    embed = discord.Embed(
+        title="🤝 GIAO DỊCH ITEM GROUP THÀNH CÔNG!",
+        description=(
+            f"✨ Giao dịch vật phẩm giữa {author.mention} và {target_user.mention} đã hoàn tất!\n\n"
+            f"📤 **{author.display_name}** chuyển: `{y_qty}x {ITEMS_DATABASE[y_id]['name']}`\n"
+            f"📥 **{target_user.display_name}** chuyển: `{t_qty}x {ITEMS_DATABASE[t_id]['name']}`"
+        ),
+        color=0x10B981
+    )
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed)
+    else:
+        await ctx_or_interaction.send(embed=embed)
+
+# ==============================================================================
+# ĐĂNG KÝ SLASH COMMAND GROUPS /EVENT, /EVENT_ADMIN & /ITEM
+# ==============================================================================
+class EventGroup(app_commands.Group, name="event", description="Sự kiện Halloween 2026"):
+    @app_commands.command(name="info", description="Xem nội dung và nhiệm vụ sự kiện")
+    async def event_info(self, interaction: discord.Interaction):
+        await handle_event_menu(interaction)
+
+    @app_commands.command(name="shop", description="Cửa hàng sự kiện: Dùng Mảnh Kẹo đổi quà")
+    async def event_shop(self, interaction: discord.Interaction):
+        await handle_event_shop(interaction)
+
+    @app_commands.command(name="raid", description="Chủ động triệu hồi Boss Event Halloween (Cooldown 1 tiếng/người)")
+    async def event_raid(self, interaction: discord.Interaction):
+        await handle_event_raid_summon(interaction)
+
+bot.tree.add_command(EventGroup())
+
+class EventAdminGroup(app_commands.Group, name="event_admin", description="[Admin] Quản trị Event"):
+    @app_commands.command(name="start", description="[Admin] Kích hoạt mở sự kiện Halloween")
+    async def admin_start(self, interaction: discord.Interaction):
+        if not is_authorized_admin(interaction.user):
+            await interaction.response.send_message("⛔ Bạn không có quyền hạn!", ephemeral=True)
+            return
+        EVENT_CONFIG["active"] = True
+        await interaction.response.send_message("🎃 **[ADMIN] ĐÃ MỞ SỰ KIỆN HALLOWEEN 2026 THÀNH CÔNG!** Toàn server có thể tham gia!", ephemeral=False)
+
+    @app_commands.command(name="end", description="[Admin] Đóng sự kiện")
+    async def admin_end(self, interaction: discord.Interaction):
+        if not is_authorized_admin(interaction.user):
+            await interaction.response.send_message("⛔ Bạn không có quyền hạn!", ephemeral=True)
+            return
+        EVENT_CONFIG["active"] = False
+        await interaction.response.send_message("🔒 **[ADMIN] ĐÃ ĐÓNG SỰ KIỆN EVENT THÀNH CÔNG!**", ephemeral=False)
+
+bot.tree.add_command(EventAdminGroup())
+
+@bot.tree.command(name="admin_event_boss_spawn", description="[Admin] Triệu hồi ngay lập tức Event Boss Kizuna - Huyết Ma Đế")
+async def slash_admin_event_boss(interaction: discord.Interaction):
+    if not is_authorized_admin(interaction.user):
+        await interaction.response.send_message("⛔ Bạn không có quyền hạn!", ephemeral=True)
+        return
+    await interaction.response.send_message("🎃 Đang triệu hồi Event Boss Kizuna - Huyết Ma Đế...", ephemeral=True)
+    await spawn_boss_raid(interaction.channel, interaction.user, boss_type="event_kizuna")
+
+class ItemGroup(app_commands.Group, name="item", description="Quản lý kho vật phẩm, sử dụng và trao đổi item"):
+    @app_commands.command(name="check", description="Kiểm tra kho đồ những vật phẩm thuộc nhóm Item Group")
+    async def item_check(self, interaction: discord.Interaction):
+        await handle_item_inventory(interaction)
+
+    @app_commands.command(name="use", description="Sử dụng vật phẩm có gắn nhãn [E] (như Rương, Kẹo ma lực, Đèn lồng)")
+    @app_commands.describe(id_item="Mã vật phẩm muốn dùng", so_luong="Số lượng muốn dùng (mặc định: 1)")
+    async def item_use(self, interaction: discord.Interaction, id_item: str, so_luong: int = 1):
+        await handle_item_use(interaction, id_item, so_luong)
+
+    @app_commands.command(name="trade", description="Trao đổi vật phẩm thuộc nhóm Item giữa 2 người chơi")
+    @app_commands.describe(user="Người muốn trao đổi", your="Vật phẩm của bạn (ví dụ: candy_shard:10)", their="Vật phẩm đối phương (ví dụ: halloween_box:1)")
+    async def item_trade(self, interaction: discord.Interaction, user: discord.Member, your: str, their: str):
+        await handle_item_trade(interaction, user, your, their)
+
+bot.tree.add_command(ItemGroup())
+
+@bot.tree.command(name="item", description="Kiểm tra kho những vật phẩm thuộc nhóm Item Group")
+async def slash_item_standalone(interaction: discord.Interaction):
+    await handle_item_inventory(interaction)
+
+@bot.command(name="item")
+async def prefix_item(ctx, action: str = "check", arg1: str = None, arg2: str = None):
+    act = action.lower().strip()
+    if act == "check" or not arg1:
+        await handle_item_inventory(ctx)
+    elif act == "use":
+        qty = 1
+        if arg2 and arg2.isdigit():
+            qty = int(arg2)
+        await handle_item_use(ctx, arg1, qty)
+
 if __name__ == "__main__":
     if not DISCORD_TOKEN:
         print("❌ LỖI: Chưa cấu hình DISCORD_TOKEN trong .env!", flush=True)
     else:
         bot.run(DISCORD_TOKEN)
-        
