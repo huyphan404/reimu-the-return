@@ -509,10 +509,10 @@ EVENT_BOSS_CONFIG = {
         },
         "dark_chain": {
             "name": "Dark chain",
-            "chance": 0.40,
+            "chance": 0.20,
             "multiplier": 1.0,
             "pct_hp": 0.15,
-            "desc": "40% gây 1x sát thương chia đều kèm 15% Máu Tối Đa cho tất cả các thẻ tiền tuyến",
+            "desc": "20% gây 1x sát thương chia đều kèm 15% Máu Tối Đa cho tất cả các thẻ tiền tuyến",
             "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/56/40/iq0ztIh38KLjZwtzI.gif"
         }
     }
@@ -535,18 +535,18 @@ EVENT_BOSS_PHASE2_CONFIG = {
         },
         "dark_chain": {
             "name": "Dark chain",
-            "chance": 0.40,
+            "chance": 0.20,
             "multiplier": 1.0,
             "pct_hp": 0.15,
-            "desc": "40% gây 1x sát thương chia đều kèm 15% Máu Tối Đa cho tất cả các thẻ tiền tuyến",
+            "desc": "20% gây 1x sát thương chia đều kèm 15% Máu Tối Đa cho tất cả các thẻ tiền tuyến",
             "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/56/40/iq0ztIh38KLjZwtzI.gif"
         },
         "wonder_guard": {
             "name": "Wonder guard",
-            "chance": 0.20,
-            "turns": 3,
-            "reflect_pct": 0.60,
-            "desc": "20% kích hoạt: Miễn toàn bộ sát thương và phản lại 60% sát thương + hiệu ứng của địch trong 3 lượt (không kích hoạt lặp lại khi đang hiệu lực)",
+            "chance": 0.15,
+            "turns": 2,
+            "reflect_pct": 0.40,
+            "desc": "215% kích hoạt: Miễn toàn bộ sát thương và phản lại 40% sát thương + hiệu ứng của địch trong 2 lượt (không kích hoạt lặp lại khi đang hiệu lực)",
             "gif": "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/e5/ab/GDt4bKoq.gif"
         }
     }
@@ -4281,10 +4281,10 @@ async def execute_event_raid(channel, raid_data):
             dmg_each = max(100, dmg_total // len(frontline))
             boss_action_log = f"🩸 **[KỸ NĂNG] Kizuna** thi triển **Blood chain (20%)**! Bộc phát {dmg_total:,} DMG (chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ)!"
             for ac in frontline: ac["current_hp"] -= dmg_each
-        elif roll < 0.60:
+        elif roll < 0.40:
             turn_img = p1_cfg["skills"]["dark_chain"]["gif"]
             dmg_base_each = max(100, p1_power // len(frontline))
-            boss_action_log = f"🌑 **[KỸ NĂNG] Kizuna** tung **Dark chain (40%)**! Gây {dmg_base_each:,} DMG cơ bản kèm **15% Máu Tối Đa** từng thẻ bài tiền tuyến!"
+            boss_action_log = f"🌑 **[KỸ NĂNG] Kizuna** tung **Dark chain (20%)**! Gây {dmg_base_each:,} DMG cơ bản kèm **15% Máu Tối Đa** từng thẻ bài tiền tuyến!"
             for ac in frontline:
                 extra_hp = int(ac["max_hp"] * 0.15)
                 ac["current_hp"] -= (dmg_base_each + extra_hp)
@@ -4421,7 +4421,7 @@ async def execute_event_raid(channel, raid_data):
         reflected_dmg_log = ""
         if wonder_guard_turns > 0:
             wonder_guard_turns -= 1
-            ref_dmg = int(round_p_dmg * 0.60)
+            ref_dmg = int(round_p_dmg * 0.40) # Sửa thành phản lại 40% sát thương
             ref_each = max(50, ref_dmg // len(frontline))
             for ac in frontline: ac["current_hp"] -= ref_each
             reflected_dmg_log = f"\n🛡️ **[Wonder Guard Hiệu Lực]** Boss MIỄN TOÀN BỘ SÁT THƯƠNG và **phản lại {ref_dmg:,} DMG** ({ref_each:,} DMG/thẻ)! (Còn {wonder_guard_turns} lượt)"
@@ -4430,28 +4430,41 @@ async def execute_event_raid(channel, raid_data):
 
         boss_action_log = ""
         turn_img = None
-        roll = random.random()
-        if wonder_guard_turns == 0 and roll < 0.20:
-            wonder_guard_turns = 3
-            turn_img = p2_cfg["skills"]["wonder_guard"]["gif"]
-            boss_action_log = "🛡️ **[Wonder guard (20%)]** Kích hoạt huyết thuẫn: **MIỄN THƯƠNG & PHẢN 60% SÁT THƯƠNG** trong 3 lượt!"
-        elif roll < 0.40:
-            turn_img = p2_cfg["skills"]["blood_chain"]["gif"]
-            dmg_total = int(p2_power * 1.5)
-            dmg_each = max(100, dmg_total // len(frontline))
-            boss_action_log = f"🩸 **Blood chain (20%)**! Giáng {dmg_total:,} DMG (chia đều **{dmg_each:,} DMG** mỗi thẻ)!"
-            for ac in frontline: ac["current_hp"] -= dmg_each
-        elif roll < 0.80:
-            turn_img = p2_cfg["skills"]["dark_chain"]["gif"]
-            dmg_base_each = max(100, p2_power // len(frontline))
-            boss_action_log = f"🌑 **Dark chain (40%)**! Gây {dmg_base_each:,} DMG chia đều kèm **15% Máu Tối Đa** từng thẻ!"
-            for ac in frontline:
-                extra_hp = int(ac["max_hp"] * 0.15)
-                ac["current_hp"] -= (dmg_base_each + extra_hp)
-        else:
+        
+        # Áp dụng trói buộc: Khi Wonder Guard đang hoạt động, Kizuna chỉ đánh thường, không dùng kỹ năng!
+        if wonder_guard_turns > 0:
             dmg_each = max(100, p2_power // len(frontline))
-            boss_action_log = f"⚔️ Đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ tiền tuyến!"
+            boss_action_log = f"⚔️ [Wonder Guard Duy Trì] Boss chỉ đánh thường, gây chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ tiền tuyến!"
             for ac in frontline: ac["current_hp"] -= dmg_each
+        else:
+            # Rơ-le chiêu cân bằng mới
+            roll = random.random()
+            if roll < 0.20: # 20% kích hoạt Wonder Guard mới
+                wonder_guard_turns = 2
+                turn_img = p2_cfg["skills"]["wonder_guard"]["gif"]
+                boss_action_log = "🛡️ **[Wonder guard (20%)]** Kích hoạt huyết thuẫn: **MIỄN THƯƠNG & PHẢN 40% SÁT THƯƠNG + HIỆU ỨNG** trong 2 lượt (trong thời gian này Boss chỉ đánh thường và không kích hoạt chiêu khác)!"
+                
+                # Turn kích hoạt này Boss cũng chỉ đánh thường
+                dmg_each = max(100, p2_power // len(frontline))
+                boss_action_log += f"\n⚔️ Kizuna đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ tiền tuyến!"
+                for ac in frontline: ac["current_hp"] -= dmg_each
+            elif roll < 0.40: # 20% kích hoạt Blood Chain (từ 0.20 đến 0.40)
+                turn_img = p2_cfg["skills"]["blood_chain"]["gif"]
+                dmg_total = int(p2_power * 1.5)
+                dmg_each = max(100, dmg_total // len(frontline))
+                boss_action_log = f"🩸 **Blood chain (20%)**! Giáng {dmg_total:,} DMG (chia đều **{dmg_each:,} DMG** mỗi thẻ)!"
+                for ac in frontline: ac["current_hp"] -= dmg_each
+            elif roll < 0.60: # 20% kích hoạt Dark Chain (từ 0.40 đến 0.60)
+                turn_img = p2_cfg["skills"]["dark_chain"]["gif"]
+                dmg_base_each = max(100, p2_power // len(frontline))
+                boss_action_log = f"🌑 **Dark chain (20%)**! Gây {dmg_base_each:,} DMG chia đều kèm **15% Máu Tối Đa** từng thẻ tiền tuyến!"
+                for ac in frontline:
+                    extra_hp = int(ac["max_hp"] * 0.15)
+                    ac["current_hp"] -= (dmg_base_each + extra_hp)
+            else: # 40% còn lại là đánh thường
+                dmg_each = max(100, p2_power // len(frontline))
+                boss_action_log = f"⚔️ Kizuna đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ tiền tuyến!"
+                for ac in frontline: ac["current_hp"] -= dmg_each
 
         push_logs = []
         for c in active:
