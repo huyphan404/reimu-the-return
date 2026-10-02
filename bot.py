@@ -1500,6 +1500,100 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 active_raid = None
+    # ==============================================================================
+# 7. SỰ KIỆN BOT ON_READY & ON_MESSAGE (XỬ LÝ CHATBOT GEMINI & LOGS)
+# ==============================================================================
+@bot.event
+async def on_ready():
+    print(f"==================================================", flush=True)
+    print(f"✅ Bot đã đăng nhập thành công dưới tên: {bot.user.name} ({bot.user.id})", flush=True)
+    print(f"⛩️ Sẵn sàng phục vụ tại Đền Hakurei!", flush=True)
+    print(f"==================================================", flush=True)
+    try:
+        synced = await bot.tree.sync()
+        print(f"⚡ Đã tự động đồng bộ {len(synced)} Slash Commands!", flush=True)
+    except Exception as e:
+        print(f"⚠️ Lỗi đồng bộ Slash Commands: {e}", flush=True)
+
+@bot.event
+async def on_message(message: discord.Message):
+    # 1. Bỏ qua tin nhắn từ chính bot hoặc bot khác
+    if message.author.bot:
+        return
+
+    # 2. Xử lý các lệnh prefix (!pull, !daily, !help,...)
+    await bot.process_commands(message)
+
+    # 3. Kiểm tra xem tin nhắn có gọi bot không (tag bot, reply bot hoặc nhắc tên)
+    content_lower = message.content.lower()
+    is_mentioned = bot.user in message.mentions or (message.reference and message.reference.resolved and getattr(message.reference.resolved, "author", None) == bot.user)
+    bot_names = ["reimu", "hakurei", "linh mộng", "bác lệ", "bác lệ linh mộng"]
+    name_called = any(name in content_lower for name in bot_names)
+
+    # Nếu không tag bot và không nhắc tên bot thì bỏ qua
+    if not (is_mentioned or name_called):
+        return
+
+    # 4. In Log ra console để bạn theo dõi
+    print(f"📩 [CHAT IN #{message.channel}] {message.author.display_name} ({message.author.id}): {message.content}", flush=True)
+
+    # 5. Tỷ lệ 10% xuất hiện Boss ngẫu nhiên khi chat (nếu hết hồi chiêu)
+    global boss_cooldown_until, active_raid
+    now = time.time()
+    if active_raid is None and now >= boss_cooldown_until:
+        if random.random() < 0.10:
+            print(f"🚨 [EVENT] Kích hoạt xuất hiện Boss ngẫu nhiên tại kênh #{message.channel}!", flush=True)
+            await spawn_boss_raid(message.channel)
+            return
+
+    # 6. Gửi tin nhắn đến Gemini Flash AI
+    clean_content = message.content
+    if bot.user:
+        clean_content = clean_content.replace(f"<@{bot.user.id}>", "").replace(f"<@!{bot.user.id}>", "").strip()
+
+    if not clean_content:
+        clean_content = "Ngươi gọi ta có chuyện gì? Mau bỏ tiền vào hòm công đức rồi nói!"
+
+    # Nhận diện đặc biệt nếu là bố Han Seiki
+    is_father = (message.author.id == AUTHORIZED_ADMIN_ID or "seiki" in message.author.display_name.lower())
+    
+    # Lấy lịch sử trò chuyện
+    history = get_conversation_history(message.channel.id, message.author.id)
+    
+    # Chuẩn bị prompt với ngữ cảnh
+    prompt_with_context = (
+        f"[Thông tin người nói: Tên '{message.author.display_name}', "
+        f"{'ĐÂY LÀ BỐ HAN SEIKI CỦA BẠN - HÃY NGOAN NGOÃN VÀ HIẾU THẢO!' if is_father else 'Đây là khách viếng đền bình thường'}]\n"
+        f"Nội dung: {clean_content}"
+    )
+    
+    contents = []
+    for h in history:
+        contents.append({"role": h.get("role", "user"), "parts": [{"text": h.get("text", "")}]})
+    contents.append({"role": "user", "parts": [{"text": prompt_with_context}]})
+
+    # Hiển thị trạng thái đang soạn tin nhắn (typing)
+    async with message.channel.typing():
+        try:
+            reply_text = await ask_gemini(contents, REIMU_SYSTEM_PROMPT, temperature=0.85)
+            
+            # Lưu lịch sử trò chuyện
+            history.append({"role": "user", "text": clean_content})
+            history.append({"role": "model", "text": reply_text})
+            save_conversation_history(message.channel.id, message.author.id, history)
+
+            # Phản hồi lại tin nhắn
+            if len(reply_text) > 2000:
+                for chunk in [reply_text[i:i+1900] for i in range(0, len(reply_text), 1900)]:
+                    await message.reply(chunk)
+            else:
+                await message.reply(reply_text)
+                
+            print(f"🤖 [REIMU TRẢ LỜI -> {message.author.display_name}]: {reply_text[:100]}...", flush=True)
+            
+        except Exception as e:
+            print(f"❌ [LỖI GEMINI CHAT]: {e}", flush=True)
+            await message.reply("⛩️ *Hòm công đức đang đông khách quá, ta lười tiếp ngươi lúc này! Mau cúng tiền rồi quay lại sau!*")
 # ==============================================================================
 # HÀM TIẾN HÓA SEIKI ACE 2 & HÀM XỬ LÝ KỸ NĂNG DÙNG CHUNG (RAID / BATTLE / PVP)
 # ==============================================================================
