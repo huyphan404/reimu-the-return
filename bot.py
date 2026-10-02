@@ -4348,6 +4348,9 @@ async def spawn_event_boss_raid(channel, author, is_admin=False):
     task = asyncio.create_task(event_raid_timer_lifecycle(channel, raid_data, view))
     raid_data["task"] = task
 
+# ==============================================================================
+# HÀM CHIẾN ĐẤU EVENT BOSS KIZUNA (ĐẦY ĐỦ KỸ NĂNG & GIF THẺ T VÀ THẺ ACE 2)
+# ==============================================================================
 async def execute_event_raid(channel, raid_data):
     global active_event_raid
     active_event_raid = None
@@ -4393,19 +4396,41 @@ async def execute_event_raid(channel, raid_data):
             "team_cards": team_cards,
             "current_card_index": 0,
             "is_alive": len(team_cards) > 0,
-            "total_dmg": 0
+            "total_dmg": 0,
+            "sakuya_stun_used": False,
+            "reimu_invul_used": False,
+            "marisa_spark_used": False,
+            "flandre_used": False,
+            "reisen_used": False,
+            "cirno_freeze_used": False,
+            "seiki_seal_used": False,
+            "seiki_spark_used": False,
+            "seiki_heal_used": False,
+            "seiki_used_turn": -1,
+            "seal_used": False,
+            "bong_used": False,
+            "med_used": False,
+            "mahoraga_adapt_turns": 0,
+            "t3_state": {}
         })
 
     all_event_raid_turns = []
 
     # ========================================================================
-    # PHASE 1: KIZUNA - HUYẾT MA ĐẾ (50,000 HP / 6,000 DMG)
+    # PHASE 1: KIZUNA - HUYẾT MA ĐẾ (50,000 HP / 3,000 DMG)
     # ========================================================================
     p1_cfg = EVENT_BOSS_CONFIG
     p1_max_hp = p1_cfg["hp"]
     p1_hp = p1_max_hp
     p1_power = p1_cfg["power"]
     p1_rounds = 0
+    boss_mind_turns = 0
+    boss_freeze_debuff_turns = 0
+    boss_molten_ground_turns = 0
+    boss_skill_erased = False
+
+    p1_true_cap = int(p1_max_hp * 0.50)
+    p1_true_dmg_accum = 0
 
     init_embed = discord.Embed(
         title="🎃 ĐẠI CHIẾN BẮT ĐẦU: KIZUNA - HUYẾT MA ĐẾ (PHASE 1)",
@@ -4417,49 +4442,259 @@ async def execute_event_raid(channel, raid_data):
     msg = await channel.send(embed=init_embed)
     await asyncio.sleep(2.0)
 
-    while p1_hp > 0 and p1_rounds < 30:
-        active = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
-        if not active: break
+    while p1_hp > 0 and p1_rounds < 35:
+        active_combatants = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
+        if not active_combatants: break
         p1_rounds += 1
-        frontline = [c["team_cards"][c["current_card_index"]] for c in active]
+        frontline_cards = [c["team_cards"][c["current_card_index"]] for c in active_combatants]
 
         heal_amt = int(p1_max_hp * 0.015)
         p1_hp = min(p1_max_hp, p1_hp + heal_amt)
-        passive_log = f"🩸 **[Nội Tại - True Vampire]** Huyết Ma Đế hấp thụ ma khí hồi **+{heal_amt:,} HP** (1,5% HP tối đa)!"
+        passive_log = f"🩸 **[True Vampire]** Huyết Ma Đế hấp thụ ma khí hồi **+{heal_amt:,} HP** (1,5% HP tối đa)!"
 
-        round_p_dmg = sum(ac["power"] for ac in frontline)
-        p1_hp = max(0, p1_hp - round_p_dmg)
-        player_atk_str = f"Toàn quân dồn đòn đánh gây **{round_p_dmg:,} DMG** lên Kizuna!"
+        # Xử lý hiệu ứng debuff kéo dài lên Boss
+        reisen_boss_log = None
+        if boss_mind_turns > 0:
+            boss_mind_turns -= 1
+            if random.random() < 0.20:
+                _mind_dmg = p1_power
+                p1_hp = max(0, p1_hp - _mind_dmg)
+                reisen_boss_log = f"🌀 **[Red Eye Mind]** Boss mất kiểm soát tự gây **{_mind_dmg:,} DMG** lên mình! (Còn {boss_mind_turns} lượt)"
 
+        boss_molten_log = None
+        if boss_molten_ground_turns > 0:
+            boss_molten_ground_turns -= 1
+            raw_burn = int(p1_max_hp * 0.02)
+            actual_burn, p1_true_dmg_accum, _ = apply_raid_true_damage(raw_burn, p1_true_dmg_accum, p1_true_cap, "Bỏng Mặt Đất")
+            if actual_burn > 0:
+                p1_hp = max(0, p1_hp - actual_burn)
+                boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Boss gây **{actual_burn:,} DMG**! (Còn {boss_molten_ground_turns} lượt)"
+
+        boss_stunned = False
+        sakuya_stun_notif = None
+        marisa_spark_notif = None
+        flandre_notif = None
+        remilia_notif = None
+        reisen_notif = None
+        cirno_notif = None
+        utsuho_notif = None
+        cirno_freeze_log = None
+        t1_notif = None
+        t2_notif = None
+        t3_notif = None
+        turn_image = None
+
+        # 1. Kích hoạt Stun Sakuya
+        for c in active_combatants:
+            ac = c["team_cards"][c["current_card_index"]]
+            if ac["cid"] == 18 and ac["is_ace2"] and not c["sakuya_stun_used"]:
+                if random.random() < 0.40:
+                    c["sakuya_stun_used"] = True
+                    boss_stunned = True
+                    turn_image = EVOL_CONFIG[18]["skill_gif"]
+                    sakuya_stun_notif = f"⏳ **[Ace 2] [#18] Sakuya** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss bị **STUN**!"
+                    break
+
+        if boss_freeze_debuff_turns > 0 and not boss_stunned:
+            boss_freeze_debuff_turns -= 1
+            if random.random() < 0.45:
+                boss_stunned = True
+                cirno_freeze_log = f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%), mất lượt trong hiệp này!"
+
+        # 2. Toàn quân tung kỹ năng tấn công
+        round_player_dmg = 0
+        for c in active_combatants:
+            ac = c["team_cards"][c["current_card_index"]]
+            card_dmg = ac["power"]
+
+            if ac["cid"] == 19 and ac["is_ace2"] and not c.get("marisa_spark_used"):
+                if random.random() < 0.30:
+                    c["marisa_spark_used"] = True
+                    card_dmg = int(card_dmg * 2.0)
+                    if not turn_image: turn_image = EVOL_CONFIG[19]["skill_gif"]
+                    marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa** ({c['username']}) tung **Master Spark (×2.0)**! Giáng **{card_dmg:,} DMG**!"
+
+            if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
+                if random.random() < 0.25:
+                    c["flandre_used"] = True
+                    raw_rip = int(p1_hp * 0.30)
+                    actual_rip, p1_true_dmg_accum, _ = apply_raid_true_damage(raw_rip, p1_true_dmg_accum, p1_true_cap, "Ripples of 495 Years")
+                    p1_hp = max(0, p1_hp - actual_rip)
+                    c["total_dmg"] += actual_rip
+                    if not turn_image: turn_image = EVOL_CONFIG[9]["skill_gif"]
+                    flandre_notif = f"🦇 **[Ace 2] [#09] Flandre** ({c['username']}) kích hoạt **Ripples of 495 Years**! Gây **{actual_rip:,} DMG** chuẩn!"
+
+            if ac["cid"] == 12 and ac["is_ace2"]:
+                raw_gungnir = int(p1_max_hp * 0.03)
+                actual_gungnir, p1_true_dmg_accum, _ = apply_raid_true_damage(raw_gungnir, p1_true_dmg_accum, p1_true_cap, "Gungnir")
+                card_dmg += actual_gungnir
+                if not turn_image: turn_image = EVOL_CONFIG[12]["skill_gif"]
+                remilia_notif = f"🩸 **[Ace 2] [#12] Remilia** ({c['username']}) - **Thương Đỏ Gungnir**: +**{actual_gungnir:,} DMG** (3% Max HP)!"
+
+            if ac["cid"] == 21 and ac["is_ace2"] and not c.get("reisen_used"):
+                if random.random() < 0.25:
+                    c["reisen_used"] = True
+                    boss_mind_turns = 4
+                    if not turn_image: turn_image = EVOL_CONFIG[21]["skill_gif"]
+                    reisen_notif = f"🔴 **[Ace 2] [#21] Reisen** ({c['username']}) kích hoạt **Red Eye Mind**! 🌀 Boss bị ảo giác 4 lượt!"
+
+            if ac["cid"] == 23 and ac["is_ace2"] and not c.get("cirno_freeze_used"):
+                if random.random() < 0.40:
+                    c["cirno_freeze_used"] = True
+                    boss_freeze_debuff_turns = 2
+                    if not turn_image: turn_image = EVOL_CONFIG[23]["skill_gif"]
+                    cirno_notif = f"❄️ **[Ace 2] [#23] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss trong 2 lượt!"
+
+            if ac["cid"] == 13 and ac["is_ace2"]:
+                if random.random() < 0.30:
+                    card_dmg = int(card_dmg * 3.0)
+                    boss_molten_ground_turns = 3
+                    if not turn_image: turn_image = EVOL_CONFIG[13]["skill_gif"]
+                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho** ({c['username']}) tung **Nuclear Spell Card (×3.0)**! Giáng **{card_dmg:,} DMG** & nung chảy đất 3 lượt!"
+
+            # KỸ NĂNG THẺ T1 SEIKI
+            if str(ac["cid"]).lower() == "t1":
+                if ac.get("is_ace2"):
+                    _t1 = t1_ace2_attack(c, ac, p1_rounds, p1_max_hp, "Boss Kizuna", is_boss=True)
+                    if _t1["bonus"]:
+                        actual_cleave, p1_true_dmg_accum, _ = apply_raid_true_damage(_t1["bonus"], p1_true_dmg_accum, p1_true_cap, "Cleave Seiki")
+                        card_dmg += actual_cleave
+                    if _t1["direct"]:
+                        actual_bong, p1_true_dmg_accum, _ = apply_raid_true_damage(_t1["direct"], p1_true_dmg_accum, p1_true_cap, "Bóng Khái Niệm")
+                        p1_hp = max(0, p1_hp - actual_bong)
+                        c["total_dmg"] += actual_bong
+                    if _t1.get("invul"):
+                        c["seiki_seal_used"] = True
+                        c["seiki_used_turn"] = p1_rounds
+                        c["seiki_invul_turn"] = p1_rounds
+                    if _t1["disable"]: boss_skill_erased = True
+                    if _t1["heal"]: ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + _t1["heal"])
+                    if _t1["gif"] and not turn_image: turn_image = _t1["gif"]
+                    t1_notif = (t1_notif + "\n" if t1_notif else "") + "\n".join(_t1["logs"])
+                elif c.get("seiki_used_turn") != p1_rounds:
+                    if not c.get("seiki_spark_used") and random.random() < 0.30:
+                        c["seiki_spark_used"] = True
+                        c["seiki_used_turn"] = p1_rounds
+                        card_dmg = int(card_dmg * 1.5)
+                        if not turn_image: turn_image = T1_SPARK_GIF
+                        marisa_spark_notif = (marisa_spark_notif + "\n" if marisa_spark_notif else "") + f"🌟 **[Nhóm T] [#t1] Seiki** ({c['username']}) tung **Master Spark (×1.5)**! Giáng **{card_dmg:,} DMG**!"
+                    elif not c.get("seiki_heal_used") and ac["current_hp"] < ac["max_hp"] and random.random() < 0.20:
+                        c["seiki_heal_used"] = True
+                        c["seiki_used_turn"] = p1_rounds
+                        heal_val = int(ac["max_hp"] * 0.30)
+                        ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_val)
+                        if not turn_image: turn_image = T1_HEAL_GIF
+
+            # KỸ NĂNG THẺ T2 MAHORAGA
+            if str(ac["cid"]).lower() == "t2":
+                heal_mahoraga = int(ac["max_hp"] * 0.05)
+                ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_mahoraga)
+                c["mahoraga_adapt_turns"] = c.get("mahoraga_adapt_turns", 0) + 1
+                adapt_pct = min(0.90, c["mahoraga_adapt_turns"] * 0.05)
+                if random.random() < 0.30:
+                    card_dmg = int(card_dmg * 1.5)
+                    if not turn_image: turn_image = T2_THOAI_MA_GIF
+                    t2_notif_str = f"🔱 **[Nhóm T] [#t2] Mahoraga** ({c['username']}) Thích Nghi (+{heal_mahoraga:,} HP) & vung **Thoái Ma Kiếm (×1.5)** giáng **{card_dmg:,} DMG**!"
+                else:
+                    if not turn_image: turn_image = T2_PASSIVE_GIF
+                    t2_notif_str = f"🔱 **[Nhóm T] [#t2] Mahoraga** ({c['username']}) kích hoạt **The True Adapt**! Tự hồi +{heal_mahoraga:,} HP (Kháng ST {int(adapt_pct*100)}%)!"
+                t2_notif = (t2_notif + "\n" if t2_notif else "") + t2_notif_str
+
+            # KỸ NĂNG THẺ T3 KIZUNA
+            if str(ac["cid"]).lower() == "t3":
+                t3_st = c.setdefault("t3_state", {})
+                _t3 = t3_combat_turn(t3_st, ac, p1_rounds, p1_max_hp, "Boss Kizuna", is_ace2=ac.get("is_ace2"))
+                card_dmg = int(card_dmg * _t3["multiplier"])
+                if _t3["bonus_hp_dmg"] > 0:
+                    actual_hp_dmg, p1_true_dmg_accum, _ = apply_raid_true_damage(_t3["bonus_hp_dmg"], p1_true_dmg_accum, p1_true_cap, "Dark Chain")
+                    card_dmg += actual_hp_dmg
+                if _t3["gif"] and not turn_image: turn_image = _t3["gif"]
+                t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(_t3["logs"])
+
+            round_player_dmg += card_dmg
+            c["total_dmg"] += card_dmg
+
+        p1_hp = max(0, p1_hp - round_player_dmg)
+        player_atk_str = f"Toàn quân xuất trận gây **{round_player_dmg:,} DMG** lên Kizuna!"
+
+        # 3. Boss phản kích
         boss_action_log = ""
-        roll = random.random()
-        turn_img = None
-        if roll < 0.20:
-            turn_img = p1_cfg["skills"]["blood_chain"]["gif"]
-            dmg_total = int(p1_power * 1.5)
-            dmg_each = max(100, dmg_total // len(frontline))
-            boss_action_log = f"🩸 **[KỸ NĂNG] Kizuna** thi triển **Blood chain (20%)**! Bộc phát {dmg_total:,} DMG (chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ)!"
-            for ac in frontline: ac["current_hp"] -= dmg_each
-        elif roll < 0.40:
-            turn_img = p1_cfg["skills"]["dark_chain"]["gif"]
-            dmg_base_each = max(100, p1_power // len(frontline))
-            boss_action_log = f"🌑 **[KỸ NĂNG] Kizuna** tung **Dark chain (20%)**! Gây {dmg_base_each:,} DMG cơ bản kèm **15% Máu Tối Đa** từng thẻ bài tiền tuyến!"
-            for ac in frontline:
-                extra_hp = int(ac["max_hp"] * 0.15)
-                ac["current_hp"] -= (dmg_base_each + extra_hp)
+        if p1_hp <= 0:
+            boss_action_log = "💥 **Kizuna Phase 1 đã bị đánh gục!**"
+        elif boss_stunned:
+            boss_action_log = "❄️ Boss bị đóng băng thời gian, không thể phát động đòn đánh!"
         else:
-            dmg_each = max(100, p1_power // len(frontline))
-            boss_action_log = f"⚔️ Kizuna đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline)} thẻ tiền tuyến!"
-            for ac in frontline: ac["current_hp"] -= dmg_each
+            roll_b = random.random()
+            if roll_b < 0.20:
+                turn_image = p1_cfg["skills"]["blood_chain"]["gif"]
+                dmg_total = int(p1_power * 1.5)
+                dmg_each = max(100, dmg_total // len(frontline_cards))
+                boss_action_log = f"🩸 **[KỸ NĂNG] Kizuna** thi triển **Blood chain (20%)**! Giáng {dmg_total:,} DMG (chia đều **{dmg_each:,} DMG** lên {len(frontline_cards)} thẻ)!"
+                for c in active_combatants:
+                    ac = c["team_cards"][c["current_card_index"]]
+                    invul = False
+                    if ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                        if random.random() < 0.40:
+                            c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
+                        boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
+                    if not invul:
+                        if str(ac["cid"]).lower() == "t2":
+                            adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                            ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
+                        else:
+                            ac["current_hp"] -= dmg_each
+            elif roll_b < 0.40:
+                turn_image = p1_cfg["skills"]["dark_chain"]["gif"]
+                dmg_base_each = max(100, p1_power // len(frontline_cards))
+                boss_action_log = f"🌑 **[KỸ NĂNG] Kizuna** tung **Dark chain (20%)**! Gây {dmg_base_each:,} DMG cơ bản kèm **15% Máu Tối Đa** từng thẻ tiền tuyến!"
+                for c in active_combatants:
+                    ac = c["team_cards"][c["current_card_index"]]
+                    invul = False
+                    if ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                        if random.random() < 0.40:
+                            c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
+                        boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
+                    if not invul:
+                        extra_hp = int(ac["max_hp"] * 0.15)
+                        if str(ac["cid"]).lower() == "t2":
+                            adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                            ac["current_hp"] -= int((dmg_base_each + extra_hp) * (1.0 - adapt_pct))
+                        else:
+                            ac["current_hp"] -= (dmg_base_each + extra_hp)
+            else:
+                dmg_each = max(100, p1_power // len(frontline_cards))
+                boss_action_log = f"⚔️ Kizuna đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline_cards)} thẻ tiền tuyến!"
+                for c in active_combatants:
+                    ac = c["team_cards"][c["current_card_index"]]
+                    invul = False
+                    if ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                        if random.random() < 0.40:
+                            c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
+                        boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
+                    if not invul:
+                        if str(ac["cid"]).lower() == "t2":
+                            adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                            ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
+                        else:
+                            ac["current_hp"] -= dmg_each
 
         push_logs = []
-        for c in active:
+        for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if ac["current_hp"] <= 0:
                 dead_name = ac["name"]
                 c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
-                    push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục ngã! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
+                    push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
                 else:
                     c["is_alive"] = False
                     push_logs.append(f"☠️ **{c['username']}** đã hết thẻ bài!")
@@ -4473,11 +4708,21 @@ async def execute_event_raid(channel, raid_data):
         )
         r_emb.add_field(name="🩸 Nội Tại Hồi Phục:", value=passive_log, inline=False)
         r_emb.add_field(name="💥 Tiền Tuyến Tấn Công:", value=player_atk_str, inline=False)
+        if sakuya_stun_notif: r_emb.add_field(name="❄️ Kỹ Năng Đột Biến:", value=sakuya_stun_notif, inline=False)
+        if marisa_spark_notif: r_emb.add_field(name="🌟 Master Spark:", value=marisa_spark_notif, inline=False)
+        if remilia_notif: r_emb.add_field(name="🩸 Thương Đỏ Gungnir:", value=remilia_notif, inline=False)
+        if reisen_notif: r_emb.add_field(name="🔴 Red Eye Mind:", value=reisen_notif, inline=False)
+        if cirno_notif: r_emb.add_field(name="❄️ Perfect Freeze:", value=cirno_notif, inline=False)
+        if utsuho_notif: r_emb.add_field(name="☢️ Nuclear Spell Card:", value=utsuho_notif, inline=False)
+        if flandre_notif: r_emb.add_field(name="🦇 Ripples of 495 Years:", value=flandre_notif, inline=False)
+        if t1_notif: r_emb.add_field(name="🔮 Tuyệt Kỹ [#t1] Seiki:", value=t1_notif, inline=False)
+        if t2_notif: r_emb.add_field(name="🔱 Thần Tướng [#t2] Mahoraga:", value=t2_notif, inline=False)
+        if t3_notif: r_emb.add_field(name="🩸 Hoàng Đế [#t3] Kizuna:", value=t3_notif, inline=False)
         r_emb.add_field(name="👺 Phản Kích Của Boss:", value=boss_action_log, inline=False)
         if push_logs: r_emb.add_field(name="🔄 Thay Đổi Tiền Tuyến:", value="\n".join(push_logs), inline=False)
         r_emb.add_field(name="🛡️ Tình Trạng Đội Hình:", value="\n".join(round_status), inline=False)
 
-        if turn_img: r_emb.set_image(url=turn_img)
+        if turn_image: r_emb.set_image(url=turn_image)
         else: r_emb.set_thumbnail(url=p1_cfg["image"])
 
         all_event_raid_turns.append({
@@ -4488,7 +4733,7 @@ async def execute_event_raid(channel, raid_data):
             "short_desc": f"Boss còn {p1_hp:,} HP",
             "desc": f"🩸 **Kizuna - Huyết Ma Đế (Phase 1)**\n❤️ Máu Boss: `{get_hp_bar(p1_hp, p1_max_hp)}` **{p1_hp:,}/{p1_max_hp:,} HP**",
             "color": 0x991B1B,
-            "image": turn_img,
+            "image": turn_image,
             "fields": [
                 ("🩸 Nội Tại Hồi Phục:", passive_log, False),
                 ("💥 Tiền Tuyến Tấn Công:", player_atk_str, False),
@@ -4510,6 +4755,456 @@ async def execute_event_raid(channel, raid_data):
         )
         fail_emb.set_thumbnail(url=p1_cfg["image"])
         await channel.send(embed=fail_emb, view=OpenDetailsView(all_event_raid_turns))
+        return
+
+    # PHASE 1 DROP REWARDS
+    p1_rewards = []
+    for uid in participants:
+        p = get_player(uid)
+        p_items = p.setdefault("items", {})
+        p_shards = p.setdefault("shards", {})
+
+        t_roll = random.random()
+        tickets = 20.0 if t_roll < 0.10 else (15.0 if t_roll < 0.50 else 10.0)
+        p["pull_tickets"] += tickets
+
+        c_roll = random.random()
+        candies = 100 if c_roll < 0.10 else (50 if c_roll < 0.40 else 0)
+        if candies > 0: p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + candies
+
+        shard_got = False
+        if random.random() < 0.025:
+            p_shards["kizuna"] = p_shards.get("kizuna", 0) + 1
+            shard_got = True
+
+        save_player(p)
+        txt = f"• **{p['username']}**: +{tickets:.0f} Vé"
+        if candies > 0: txt += f", +{candies} Kẹo 🍬"
+        if shard_got: txt += ", 🩸 **+1 Mảnh Kizuna**!"
+        p1_rewards.append(txt)
+
+    # ========================================================================
+    # PHASE 2: KIZUNA THỨC TỈNH (75,000 HP / 7,000 DMG / WONDER GUARD PHẢN 90% ST)
+    # ========================================================================
+    p2_cfg = EVENT_BOSS_PHASE2_CONFIG
+    p2_max_hp = p2_cfg["hp"]
+    p2_hp = p2_max_hp
+    p2_power = p2_cfg["power"] # 7,000 DMG
+    p2_rounds = 0
+    wonder_guard_turns = 0
+    boss_mind_turns = 0
+    boss_freeze_debuff_turns = 0
+    boss_molten_ground_turns = 0
+
+    p2_true_cap = int(p2_max_hp * 0.50)
+    p2_true_dmg_accum = 0
+
+    for c in combatants:
+        c["current_card_index"] = 0
+        c["is_alive"] = True
+        c["sakuya_stun_used"] = False
+        c["reimu_invul_used"] = False
+        c["marisa_spark_used"] = False
+        c["flandre_used"] = False
+        c["reisen_used"] = False
+        c["cirno_freeze_used"] = False
+        c["seiki_seal_used"] = False
+        c["seiki_spark_used"] = False
+        c["seiki_heal_used"] = False
+        c["seiki_used_turn"] = -1
+        c["seal_used"] = False
+        c["bong_used"] = False
+        c["med_used"] = False
+        for cd in c["team_cards"]: cd["current_hp"] = cd["max_hp"]
+
+    p2_emb_init = discord.Embed(
+        title="🩸 KIZUNA THỨC TỈNH - HUYẾT MA ĐẾ TỐI THƯỢNG (PHASE 2)",
+        description=(
+            f"⚡ **Huyết Nguyệt Giáng Lâm:** Toàn bộ thẻ bài dũng giả được hồi sinh và hồi phục 100% HP!\n"
+            f"❤️ **Máu:** `{p2_max_hp:,} HP` | ⚔️ **Sức mạnh:** `{p2_power:,} DMG` (chia đều)\n"
+            f"🛡️ **Wonder Guard (15%):** Miễn thương & **phản lại 90% sát thương lẫn hiệu ứng** trong 2 lượt!"
+        ),
+        color=0x450A0A
+    )
+    p2_emb_init.set_image(url=p2_cfg["image"])
+    msg = await channel.send(embed=p2_emb_init)
+    await asyncio.sleep(2.5)
+
+    while p2_hp > 0 and p2_rounds < 35:
+        active_combatants = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
+        if not active_combatants: break
+        p2_rounds += 1
+        frontline_cards = [c["team_cards"][c["current_card_index"]] for c in active_combatants]
+
+        heal_amt = int(p2_max_hp * 0.015)
+        p2_hp = min(p2_max_hp, p2_hp + heal_amt)
+        passive_log = f"🩸 **[True Vampire]** Tự hồi **+{heal_amt:,} HP** (1,5% HP tối đa)!"
+
+        # Debuffs lên Boss Phase 2
+        reisen_boss_log = None
+        if boss_mind_turns > 0:
+            boss_mind_turns -= 1
+            if random.random() < 0.20:
+                _mind_dmg = p2_power
+                p2_hp = max(0, p2_hp - _mind_dmg)
+                reisen_boss_log = f"🌀 **[Red Eye Mind]** Boss tự gây **{_mind_dmg:,} DMG** lên mình! (Còn {boss_mind_turns} lượt)"
+
+        boss_molten_log = None
+        if boss_molten_ground_turns > 0:
+            boss_molten_ground_turns -= 1
+            raw_burn = int(p2_max_hp * 0.02)
+            actual_burn, p2_true_dmg_accum, _ = apply_raid_true_damage(raw_burn, p2_true_dmg_accum, p2_true_cap, "Bỏng Mặt Đất")
+            if actual_burn > 0:
+                p2_hp = max(0, p2_hp - actual_burn)
+                boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Boss Phase 2 gây **{actual_burn:,} DMG**!"
+
+        boss_stunned = False
+        sakuya_stun_notif = None
+        marisa_spark_notif = None
+        flandre_notif = None
+        remilia_notif = None
+        reisen_notif = None
+        cirno_notif = None
+        utsuho_notif = None
+        t1_notif = None
+        t2_notif = None
+        t3_notif = None
+        turn_image = None
+
+        for c in active_combatants:
+            ac = c["team_cards"][c["current_card_index"]]
+            if ac["cid"] == 18 and ac["is_ace2"] and not c["sakuya_stun_used"]:
+                if random.random() < 0.40:
+                    c["sakuya_stun_used"] = True
+                    boss_stunned = True
+                    turn_image = EVOL_CONFIG[18]["skill_gif"]
+                    sakuya_stun_notif = f"⏳ **[Ace 2] [#18] Sakuya** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss Phase 2 bị **STUN**!"
+                    break
+
+        if boss_freeze_debuff_turns > 0 and not boss_stunned:
+            boss_freeze_debuff_turns -= 1
+            if random.random() < 0.45:
+                boss_stunned = True
+
+        # Tính sát thương & Kỹ năng người chơi Phase 2
+        round_player_dmg = 0
+        for c in active_combatants:
+            ac = c["team_cards"][c["current_card_index"]]
+            card_dmg = ac["power"]
+
+            if ac["cid"] == 19 and ac["is_ace2"] and not c.get("marisa_spark_used"):
+                if random.random() < 0.30:
+                    c["marisa_spark_used"] = True
+                    card_dmg = int(card_dmg * 2.0)
+                    if not turn_image: turn_image = EVOL_CONFIG[19]["skill_gif"]
+                    marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa** ({c['username']}) tung **Master Spark (×2.0)**! Giáng **{card_dmg:,} DMG**!"
+
+            if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
+                if random.random() < 0.25:
+                    c["flandre_used"] = True
+                    raw_rip = int(p2_hp * 0.30)
+                    actual_rip, p2_true_dmg_accum, _ = apply_raid_true_damage(raw_rip, p2_true_dmg_accum, p2_true_cap, "Ripples of 495 Years")
+                    p2_hp = max(0, p2_hp - actual_rip)
+                    c["total_dmg"] += actual_rip
+                    if not turn_image: turn_image = EVOL_CONFIG[9]["skill_gif"]
+                    flandre_notif = f"🦇 **[Ace 2] [#09] Flandre** ({c['username']}) kích hoạt **Ripples of 495 Years**! Gây **{actual_rip:,} DMG** chuẩn!"
+
+            if ac["cid"] == 12 and ac["is_ace2"]:
+                raw_gungnir = int(p2_max_hp * 0.03)
+                actual_gungnir, p2_true_dmg_accum, _ = apply_raid_true_damage(raw_gungnir, p2_true_dmg_accum, p2_true_cap, "Gungnir")
+                card_dmg += actual_gungnir
+                if not turn_image: turn_image = EVOL_CONFIG[12]["skill_gif"]
+                remilia_notif = f"🩸 **[Ace 2] [#12] Remilia** ({c['username']}) - **Thương Đỏ Gungnir**: +**{actual_gungnir:,} DMG**!"
+
+            if ac["cid"] == 21 and ac["is_ace2"] and not c.get("reisen_used"):
+                if random.random() < 0.25:
+                    c["reisen_used"] = True
+                    boss_mind_turns = 4
+                    if not turn_image: turn_image = EVOL_CONFIG[21]["skill_gif"]
+                    reisen_notif = f"🔴 **[Ace 2] [#21] Reisen** ({c['username']}) kích hoạt **Red Eye Mind**! 🌀 Boss bị ảo giác 4 lượt!"
+
+            if ac["cid"] == 23 and ac["is_ace2"] and not c.get("cirno_freeze_used"):
+                if random.random() < 0.40:
+                    c["cirno_freeze_used"] = True
+                    boss_freeze_debuff_turns = 2
+                    if not turn_image: turn_image = EVOL_CONFIG[23]["skill_gif"]
+                    cirno_notif = f"❄️ **[Ace 2] [#23] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss Phase 2!"
+
+            if ac["cid"] == 13 and ac["is_ace2"]:
+                if random.random() < 0.30:
+                    card_dmg = int(card_dmg * 3.0)
+                    boss_molten_ground_turns = 3
+                    if not turn_image: turn_image = EVOL_CONFIG[13]["skill_gif"]
+                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho** ({c['username']}) tung **Nuclear Spell Card (×3.0)**! Giáng **{card_dmg:,} DMG** & nung đất 3 lượt!"
+
+            # KỸ NĂNG THẺ T1 SEIKI
+            if str(ac["cid"]).lower() == "t1":
+                if ac.get("is_ace2"):
+                    _t1 = t1_ace2_attack(c, ac, p2_rounds, p2_max_hp, "Boss Kizuna Phase 2", is_boss=True)
+                    if _t1["bonus"]:
+                        actual_cleave, p2_true_dmg_accum, _ = apply_raid_true_damage(_t1["bonus"], p2_true_dmg_accum, p2_true_cap, "Cleave Seiki")
+                        card_dmg += actual_cleave
+                    if _t1["direct"]:
+                        actual_bong, p2_true_dmg_accum, _ = apply_raid_true_damage(_t1["direct"], p2_true_dmg_accum, p2_true_cap, "Bóng Khái Niệm")
+                        p2_hp = max(0, p2_hp - actual_bong)
+                        c["total_dmg"] += actual_bong
+                    if _t1.get("invul"):
+                        c["seiki_seal_used"] = True
+                        c["seiki_used_turn"] = p2_rounds
+                        c["seiki_invul_turn"] = p2_rounds
+                    if _t1["disable"]: pass
+                    if _t1["heal"]: ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + _t1["heal"])
+                    if _t1["gif"] and not turn_image: turn_image = _t1["gif"]
+                    t1_notif = (t1_notif + "\n" if t1_notif else "") + "\n".join(_t1["logs"])
+                elif c.get("seiki_used_turn") != p2_rounds:
+                    if not c.get("seiki_spark_used") and random.random() < 0.30:
+                        c["seiki_spark_used"] = True
+                        c["seiki_used_turn"] = p2_rounds
+                        card_dmg = int(card_dmg * 1.5)
+                        if not turn_image: turn_image = T1_SPARK_GIF
+                        marisa_spark_notif = (marisa_spark_notif + "\n" if marisa_spark_notif else "") + f"🌟 **[Nhóm T] [#t1] Seiki** ({c['username']}) tung **Master Spark (×1.5)**! Giáng **{card_dmg:,} DMG**!"
+                    elif not c.get("seiki_heal_used") and ac["current_hp"] < ac["max_hp"] and random.random() < 0.20:
+                        c["seiki_heal_used"] = True
+                        c["seiki_used_turn"] = p2_rounds
+                        heal_val = int(ac["max_hp"] * 0.30)
+                        ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_val)
+                        if not turn_image: turn_image = T1_HEAL_GIF
+
+            # KỸ NĂNG THẺ T2 MAHORAGA
+            if str(ac["cid"]).lower() == "t2":
+                heal_mahoraga = int(ac["max_hp"] * 0.05)
+                ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_mahoraga)
+                c["mahoraga_adapt_turns"] = c.get("mahoraga_adapt_turns", 0) + 1
+                adapt_pct = min(0.90, c["mahoraga_adapt_turns"] * 0.05)
+                if random.random() < 0.30:
+                    card_dmg = int(card_dmg * 1.5)
+                    if not turn_image: turn_image = T2_THOAI_MA_GIF
+                    t2_notif_str = f"🔱 **[Nhóm T] [#t2] Mahoraga** ({c['username']}) Thích Nghi (+{heal_mahoraga:,} HP) & vung **Thoái Ma Kiếm (×1.5)** giáng **{card_dmg:,} DMG**!"
+                else:
+                    if not turn_image: turn_image = T2_PASSIVE_GIF
+                    t2_notif_str = f"🔱 **[Nhóm T] [#t2] Mahoraga** ({c['username']}) kích hoạt **The True Adapt**! Tự hồi +{heal_mahoraga:,} HP (Kháng ST {int(adapt_pct*100)}%)!"
+                t2_notif = (t2_notif + "\n" if t2_notif else "") + t2_notif_str
+
+            # KỸ NĂNG THẺ T3 KIZUNA
+            if str(ac["cid"]).lower() == "t3":
+                t3_st = c.setdefault("t3_state", {})
+                _t3 = t3_combat_turn(t3_st, ac, p2_rounds, p2_max_hp, "Boss Kizuna Phase 2", is_ace2=ac.get("is_ace2"))
+                card_dmg = int(card_dmg * _t3["multiplier"])
+                if _t3["bonus_hp_dmg"] > 0:
+                    actual_hp_dmg, p2_true_dmg_accum, _ = apply_raid_true_damage(_t3["bonus_hp_dmg"], p2_true_dmg_accum, p2_true_cap, "Dark Chain")
+                    card_dmg += actual_hp_dmg
+                if _t3["gif"] and not turn_image: turn_image = _t3["gif"]
+                t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(_t3["logs"])
+
+            round_player_dmg += card_dmg
+            c["total_dmg"] += card_dmg
+
+        # XỬ LÝ PHẢN 90% SÁT THƯƠNG TỪ WONDER GUARD KIZUNA
+        reflected_dmg_log = ""
+        if wonder_guard_turns > 0:
+            wonder_guard_turns -= 1
+            ref_dmg = int(round_player_dmg * 0.90) # Phản đúng 90% sát thương
+            ref_each = max(50, ref_dmg // len(frontline_cards))
+            for ac in frontline_cards: ac["current_hp"] -= ref_each
+            reflected_dmg_log = f"\n🛡️ **[Wonder Guard Hiệu Lực]** Boss MIỄN THƯƠNG và **phản lại {ref_dmg:,} DMG (90%)** ({ref_each:,} DMG/thẻ)!"
+        else:
+            p2_hp = max(0, p2_hp - round_player_dmg)
+
+        boss_action_log = ""
+        if p2_hp <= 0:
+            boss_action_log = "💥 **Huyết Ma Đế Kizuna Phase 2 đã bị tiêu diệt hoàn toàn!**"
+        elif boss_stunned:
+            boss_action_log = "❄️ Boss Phase 2 bị đóng băng thời gian, không thể phát động đòn đánh!"
+        else:
+            if wonder_guard_turns > 0:
+                dmg_each = max(100, p2_power // len(frontline_cards))
+                boss_action_log = f"⚔️ [Wonder Guard Duy Trì] Boss chỉ đánh thường, gây chia đều **{dmg_each:,} DMG** lên {len(frontline_cards)} thẻ tiền tuyến!"
+                for c in active_combatants:
+                    ac = c["team_cards"][c["current_card_index"]]
+                    if str(ac["cid"]).lower() == "t2":
+                        adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                        ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
+                    else:
+                        ac["current_hp"] -= dmg_each
+            else:
+                roll_b = random.random()
+                if roll_b < 0.15: # 15% kích hoạt Wonder Guard 90%
+                    wonder_guard_turns = 2
+                    turn_image = p2_cfg["skills"]["wonder_guard"]["gif"]
+                    dmg_each = max(100, p2_power // len(frontline_cards))
+                    boss_action_log = (
+                        f"🛡️ **[Wonder guard (15%)]** Kích hoạt huyết thuẫn: **MIỄN THƯƠNG & PHẢN 90% SÁT THƯƠNG + HIỆU ỨNG** trong 2 lượt!\n"
+                        f"⚔️ Kizuna đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline_cards)} thẻ tiền tuyến!"
+                    )
+                    for c in active_combatants:
+                        ac = c["team_cards"][c["current_card_index"]]
+                        if str(ac["cid"]).lower() == "t2":
+                            adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                            ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
+                        else:
+                            ac["current_hp"] -= dmg_each
+                elif roll_b < 0.35: # 20% Blood Chain
+                    turn_image = p2_cfg["skills"]["blood_chain"]["gif"]
+                    dmg_total = int(p2_power * 1.5)
+                    dmg_each = max(100, dmg_total // len(frontline_cards))
+                    boss_action_log = f"🩸 **Blood chain (20%)**! Giáng {dmg_total:,} DMG (chia đều **{dmg_each:,} DMG** mỗi thẻ)!"
+                    for c in active_combatants:
+                        ac = c["team_cards"][c["current_card_index"]]
+                        invul = False
+                        if ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                            if random.random() < 0.40:
+                                c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                            c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
+                            boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
+                        if not invul:
+                            if str(ac["cid"]).lower() == "t2":
+                                adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                                ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
+                            else:
+                                ac["current_hp"] -= dmg_each
+                elif roll_b < 0.55: # 20% Dark Chain
+                    turn_image = p2_cfg["skills"]["dark_chain"]["gif"]
+                    dmg_base_each = max(100, p2_power // len(frontline_cards))
+                    boss_action_log = f"🌑 **Dark chain (20%)**! Gây {dmg_base_each:,} DMG chia đều kèm **15% Máu Tối Đa** từng thẻ tiền tuyến!"
+                    for c in active_combatants:
+                        ac = c["team_cards"][c["current_card_index"]]
+                        invul = False
+                        if ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                            if random.random() < 0.40:
+                                c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                            c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
+                            boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
+                        if not invul:
+                            extra_hp = int(ac["max_hp"] * 0.15)
+                            if str(ac["cid"]).lower() == "t2":
+                                adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                                ac["current_hp"] -= int((dmg_base_each + extra_hp) * (1.0 - adapt_pct))
+                            else:
+                                ac["current_hp"] -= (dmg_base_each + extra_hp)
+                else: # Đánh thường 7,000 DMG chia đều
+                    dmg_each = max(100, p2_power // len(frontline_cards))
+                    boss_action_log = f"⚔️ Kizuna đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline_cards)} thẻ tiền tuyến!"
+                    for c in active_combatants:
+                        ac = c["team_cards"][c["current_card_index"]]
+                        invul = False
+                        if ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                            if random.random() < 0.40:
+                                c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                            c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
+                            boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
+                        if not invul:
+                            if str(ac["cid"]).lower() == "t2":
+                                adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                                ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
+                            else:
+                                ac["current_hp"] -= dmg_each
+
+        push_logs = []
+        for c in active_combatants:
+            ac = c["team_cards"][c["current_card_index"]]
+            if ac["current_hp"] <= 0:
+                dead_name = ac["name"]
+                c["current_card_index"] += 1
+                if c["current_card_index"] < len(c["team_cards"]):
+                    push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
+                else:
+                    c["is_alive"] = False
+                    push_logs.append(f"☠️ **{c['username']}** đã hết thẻ bài!")
+
+        round_status = [f"• **{c['username']}**: {c['team_cards'][c['current_card_index']]['name']} (❤️{max(0, c['team_cards'][c['current_card_index']]['current_hp']):,} HP)" if c['is_alive'] else f"• **{c['username']}**: ☠️ Tử trận" for c in combatants]
+
+        r_emb = discord.Embed(
+            title=f"🎃 HIỆP {p2_rounds} - KIZUNA THỨC TỈNH (PHASE 2)",
+            description=f"❤️ **Máu Boss:** `{get_hp_bar(p2_hp, p2_max_hp)}` **{p2_hp:,}/{p2_max_hp:,} HP**",
+            color=0x450A0A
+        )
+        r_emb.add_field(name="🩸 Nội Tại Hồi Phục:", value=passive_log, inline=False)
+        r_emb.add_field(name="💥 Tiền Tuyến Tấn Công:", value=f"{player_atk_str}{reflected_dmg_log}", inline=False)
+        if sakuya_stun_notif: r_emb.add_field(name="❄️ Kỹ Năng Đột Biến:", value=sakuya_stun_notif, inline=False)
+        if marisa_spark_notif: r_emb.add_field(name="🌟 Master Spark:", value=marisa_spark_notif, inline=False)
+        if remilia_notif: r_emb.add_field(name="🩸 Thương Đỏ Gungnir:", value=remilia_notif, inline=False)
+        if reisen_notif: r_emb.add_field(name="🔴 Red Eye Mind:", value=reisen_notif, inline=False)
+        if cirno_notif: r_emb.add_field(name="❄️ Perfect Freeze:", value=cirno_notif, inline=False)
+        if utsuho_notif: r_emb.add_field(name="☢️ Nuclear Spell Card:", value=utsuho_notif, inline=False)
+        if flandre_notif: r_emb.add_field(name="🦇 Ripples of 495 Years:", value=flandre_notif, inline=False)
+        if t1_notif: r_emb.add_field(name="🔮 Tuyệt Kỹ [#t1] Seiki:", value=t1_notif, inline=False)
+        if t2_notif: r_emb.add_field(name="🔱 Thần Tướng [#t2] Mahoraga:", value=t2_notif, inline=False)
+        if t3_notif: r_emb.add_field(name="🩸 Hoàng Đế [#t3] Kizuna:", value=t3_notif, inline=False)
+        r_emb.add_field(name="👺 Phản Kích Của Boss:", value=boss_action_log, inline=False)
+        if push_logs: r_emb.add_field(name="🔄 Thay Đổi Tiền Tuyến:", value="\n".join(push_logs), inline=False)
+        r_emb.add_field(name="🛡️ Tình Trạng Đội Hình:", value="\n".join(round_status), inline=False)
+
+        if turn_image: r_emb.set_image(url=turn_image)
+        else: r_emb.set_thumbnail(url=p2_cfg["image"])
+
+        all_event_raid_turns.append({
+            "round": p2_rounds,
+            "phase": 2,
+            "title": f"Phase 2 - Hiệp {p2_rounds}: Thức Tỉnh",
+            "short_label": f"P2 - H{p2_rounds}",
+            "short_desc": f"Boss còn {p2_hp:,} HP",
+            "desc": f"🩸 **Kizuna - Huyết Ma Đế Thức Tỉnh (Phase 2)**\n❤️ Máu Boss: `{get_hp_bar(p2_hp, p2_max_hp)}` **{p2_hp:,}/{p2_max_hp:,} HP**",
+            "color": 0x450A0A,
+            "image": turn_image,
+            "fields": [
+                ("🩸 Nội Tại Hồi Phục:", passive_log, False),
+                ("💥 Tiền Tuyến Tấn Công:", f"{player_atk_str}{reflected_dmg_log}", False),
+                ("👺 Phản Kích Của Boss:", boss_action_log, False),
+                ("🛡️ Tình Trạng Đội Hình:", "\n".join(round_status), False)
+            ]
+        })
+
+        try: await msg.edit(embed=r_emb)
+        except Exception: pass
+        if p2_hp <= 0: break
+        await asyncio.sleep(1.8)
+
+    p2_won = (p2_hp <= 0)
+    final_emb = discord.Embed(
+        title="🏆 HOÀN TẤT EVENT RAID BOSS: KIZUNA - HUYẾT MA ĐẾ!",
+        description=f"Kết quả Phase 2: {'🎉 **CHIẾN THẮNG HUY HOÀNG (Boss 0 HP)!**' if p2_won else f'💀 **THẤT THỦ TẠI PHASE 2 (Boss còn {p2_hp:,} HP)!**'}",
+        color=0x10B981 if p2_won else 0xF59E0B
+    )
+    final_emb.set_thumbnail(url=p2_cfg["image"] if p2_won else p1_cfg["image"])
+    final_emb.add_field(name="📦 Phần Thưởng Phase 1 (Đã trao):", value="\n".join(p1_rewards), inline=False)
+
+    if p2_won:
+        p2_rewards = []
+        for uid in participants:
+            p = get_player(uid)
+            p_items = p.setdefault("items", {})
+            p_shards = p.setdefault("shards", {})
+
+            t_roll = random.random()
+            tickets = 20.0 if t_roll < 0.10 else (15.0 if t_roll < 0.50 else 10.0)
+            p["pull_tickets"] += tickets
+
+            c_roll = random.random()
+            candies = 120 if c_roll < 0.50 else (70 if c_roll < 0.80 else 0)
+            if candies > 0: p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + candies
+
+            shard_got = False
+            if random.random() < 0.07:
+                p_shards["kizuna"] = p_shards.get("kizuna", 0) + 1
+                shard_got = True
+
+            ev_notifs = update_event_quest_progress(p, "event_raid", 1)
+            save_player(p)
+            txt = f"• **{p['username']}**: +{tickets:.0f} Vé"
+            if ev_notifs:
+                txt += "\n   " + "\n   ".join(ev_notifs)
+            if candies > 0: txt += f", +{candies} Kẹo 🍬"
+            if shard_got: txt += ", 🩸 **+1 Mảnh Kizuna**!"
+            p2_rewards.append(txt)
+        final_emb.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (7% Mảnh Kizuna, 50% 120 Kẹo):", value="\n".join(p2_rewards), inline=False)
+
+    await channel.send(embed=final_emb, view=OpenDetailsView(all_event_raid_turns))
         return
 
     # PHASE 1 DROP REWARDS
