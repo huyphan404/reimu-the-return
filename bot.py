@@ -2622,11 +2622,11 @@ async def execute_raid(channel, raid_data):
             seiki_action = "normal"
             seiki_spark_turns = 0
 
-        round_player_dmg = 0
+round_player_dmg = 0
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             card_dmg = ac["power"]
-           if ac["cid"] == 19 and ac["is_ace2"] and not c.get("marisa_spark_used"):
+            if ac["cid"] == 19 and ac["is_ace2"] and not c.get("marisa_spark_used"):
                 if random.random() < 0.30:
                     c["marisa_spark_used"] = True
                     card_dmg = int(card_dmg * 2.0)
@@ -2634,7 +2634,7 @@ async def execute_raid(channel, raid_data):
                         turn_image = EVOL_CONFIG[19]["skill_gif"]
                     marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.0 giáng **{card_dmg:,} DMG** lên Boss!"
 
-            # Kỹ năng Yukari Ace 2 tấn công (Đã sửa đúng 12 spaces):
+            # Kỹ năng Yukari Ace 2 tấn công:
             if ac["cid"] == 4 and ac.get("is_ace2"):
                 if not c.get("yukari_station_used") and random.random() < 0.30:
                     c["yukari_station_used"] = True
@@ -2693,7 +2693,7 @@ async def execute_raid(channel, raid_data):
                     boss_freeze_debuff_turns = 2
                     if not turn_image:
                         turn_image = EVOL_CONFIG[23]["skill_gif"]
-                    cirno_notif = f"❄️ **[Ace 2] [#23] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
+                    cirno_notif = f"❄️ **[Ace 2] [#23] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% không thể đánh trả**!"
 
             if ac["cid"] == 13 and ac["is_ace2"]:
                 if random.random() < 0.30:
@@ -2746,18 +2746,7 @@ async def execute_raid(channel, raid_data):
                         if not turn_image:
                             turn_image = T1_HEAL_GIF
                         passive_log = (passive_log + "\n" if passive_log else "") + f"💚 **[Nhóm T] [#t1] Seiki** ({c['username']}) thi triển **Medicine Sign** (20%)! Hồi phục **+{heal_val:,} HP** cho bản thân! ({ac['current_hp']:,}/{ac['max_hp']:,} HP)"
-    
-    # Nội tại Invisible Gap của Yukari Ace 2:
-    if ac["cid"] == 4 and ac.get("is_ace2") and random.random() < 0.10:
-        invul = True
-        turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/bc/b9/oajpg8zfw1wc.gif"
-        p1_hp = max(0, p1_hp - dmg_per_card) # Phản lại 100% sát thương vào Boss
-        c["total_dmg"] += dmg_per_card
-        boss_action_log += f"\n🌀 **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **Invisible Gap** (10%)! Nuốt trọn đòn đánh thường và **phản lại {dmg_per_card:,} DMG (100%)** vào Boss!"
 
-    if not invul:
-        ac["current_hp"] -= dmg_per_card
-        
             if str(ac["cid"]).lower() == "t2":
                 heal_mahoraga = int(ac["max_hp"] * 0.05)
                 ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_mahoraga)
@@ -2780,6 +2769,7 @@ async def execute_raid(channel, raid_data):
                         f"Hồi phục **+{heal_mahoraga:,} HP** ({ac['current_hp']:,}/{ac['max_hp']:,} HP) và tăng kháng sát thương lên **{int(adapt_pct*100)}%**!"
                     )
                 t2_notif = (t2_notif + "\n" if t2_notif else "") + t2_notif_str
+
             if str(ac["cid"]).lower() == "t3":
                 t3_st = c.setdefault("t3_state", {})
                 _t3 = t3_combat_turn(t3_st, ac, p1_rounds, p1_max_hp, f"Boss {boss_cfg['name']}", is_ace2=ac.get("is_ace2"))
@@ -2793,9 +2783,6 @@ async def execute_raid(channel, raid_data):
                     turn_image = _t3["gif"]
                 t3_notif_str = "\n".join(_t3["logs"])
                 t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
-
-            round_player_dmg += card_dmg
-            c["total_dmg"] += card_dmg
 
         if boss_type == "seiki" and seiki_invul and not boss_stunned:
             player_atk_str = f"🛡️ Toàn quân dồn **{round_player_dmg:,} DMG** nhưng **Seiki Dị Hình** đã kích hoạt **Fantasy Seal**, MIỄN TOÀN BỘ SÁT THƯƠNG trong hiệp này!"
@@ -5760,7 +5747,8 @@ class EvolSelectView(discord.ui.View):
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
         await do_evolve_interaction(interaction, self.player, "t1")
- def execute_card_evolution(player, cid: Union[int, str]):
+        
+        def execute_card_evolution(player, cid: Union[int, str]):
     if str(cid).strip().lower() in ("t3", "kizuna", "vampire", "emperor"):
         return execute_kizuna_ace2(player)
     if str(cid).strip().lower() in ("t1", "seiki", "dephap", "toannang"):
