@@ -320,9 +320,9 @@ CARDS_DATA = {
                 "name": "Dark chain",
                 "chance": 0.20,
                 "multiplier": 1.0,
-                "max_hp_pct": 0.15,
+                "max_hp_pct": 0.05,
                 "max_uses": 3,
-                "desc": "20% gây 1.0x sát thương kèm 15% máu tối đa đối phương (tối đa 3 lần/trận)",
+                "desc": "20% gây 1.0x sát thương kèm 5% máu tối đa đối phương (tối đa 3 lần/trận)",
                 "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/56/40/iq0ztIh38KLjZwtzI.gif"
             }
         }
@@ -777,10 +777,10 @@ T3_ACE2_CONFIG = {
     "dark_chain": {
         "chance": 0.30,
         "multiplier": 1.5,
-        "max_hp_pct": 0.15,
+        "max_hp_pct": 0.05,
         "max_uses": 3,
         "gif": T3_DARK_GIF,
-        "desc": "30% gây 1.5x sát thương kèm 15% máu tối đa đối phương (tối đa 3 lần/trận)"
+        "desc": "30% gây 1.5x sát thương kèm 5% máu tối đa đối phương (tối đa 3 lần/trận)"
     }
 }
 
@@ -850,7 +850,7 @@ CHARACTER_DETAILS = {
     "t3": {
         "title": "Hoàng Đế Ma Cà Rồng (Nhóm T-Đặc Biệt)",
         "skill_name": "True vampire • Blood chain • Dark chain • Wonder guard",
-        "skill_desc": "Thẻ bài T3 Kizuna the emperor of vampire (780 ATK / 7,700 HP). Nội tại True vampire (hồi 5% HP mỗi lượt). Blood chain (30%: 1.5x sát thương, 1 lần), Dark chain (20%: 1.0x sát thương + 15% Max HP mục tiêu, tối đa 3 lần). [Ace 2 ⭐⭐ - Cần vật phẩm Thánh Lõi]: Blood chain tăng lên 2.0x, Dark chain tăng lên 1.5x + 15% Max HP, mở khóa Wonder guard (20%: miễn thương & phản 60% sát thương + hiệu ứng trong 3 turn, 1 lần/trận)!"
+        "skill_desc": "Thẻ bài T3 Kizuna the emperor of vampire (780 ATK / 7,700 HP). Nội tại True vampire (hồi 5% HP mỗi lượt). Blood chain (30%: 1.5x sát thương, 1 lần), Dark chain (20%: 1.0x sát thương + 5% Max HP mục tiêu, tối đa 3 lần). [Ace 2 ⭐⭐ - Cần vật phẩm Thánh Lõi]: Blood chain tăng lên 2.0x, Dark chain tăng lên 1.5x + 15% Max HP, mở khóa Wonder guard (20%: miễn thương & phản 60% sát thương + hiệu ứng trong 3 turn, 1 lần/trận)!"
     }
 }
 CHARACTER_DETAILS["T1"] = CHARACTER_DETAILS["t1"]
@@ -1631,7 +1631,7 @@ def execute_kizuna_ace2(player):
             "❤️ **True vampire (Nội tại - 100%):** Hồi phục **5% Máu Tối Đa** mỗi lượt!\n"
             "🛡️ **Wonder guard (20%):** Miễn thương & **phản lại 60% sát thương lẫn hiệu ứng** của địch trong **3 lượt** (1 lần/trận)!\n"
             "💥 **Blood chain (30%):** Gây **2.0x sát thương** (1 lần/trận)!\n"
-            "🌑 **Dark chain (30%):** Gây **1.5x sát thương** kèm **15% Máu Tối Đa mục tiêu** (tối đa 3 lần/trận)!\n\n"
+            "🌑 **Dark chain (30%):** Gây **1.5x sát thương** kèm **5% Máu Tối Đa mục tiêu** (tối đa 3 lần/trận)!\n\n"
             f"📉 **Chi phí:** Đã tiêu hao **1 Thánh Lõi** (Còn lại: `{items.get('thanh_loi', 0)}` lõi)\n"
             "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn!"
         ),
@@ -1797,11 +1797,11 @@ def t3_combat_turn(t3_state: dict, card_data: dict, round_no: int, target_max_hp
     elif dark_chain_uses < 3 and roll < (0.80 if is_ace2 else 0.50):
         t3_state["dark_chain_uses"] = dark_chain_uses + 1
         multiplier = 1.5 if is_ace2 else 1.0
-        bonus_hp_dmg = int(target_max_hp * 0.15)
+        bonus_hp_dmg = int(target_max_hp * 0.05)
         gif = T3_DARK_GIF
         logs.append(
             f"🌑 **[#t3] Kizuna** thi triển **DARK CHAIN**! "
-            f"Gây sát thương ×{multiplier} kèm **+{bonus_hp_dmg:,} DMG** (15% Máu Tối Đa {target_name})! "
+            f"Gây sát thương ×{multiplier} kèm **+{bonus_hp_dmg:,} DMG** (5% Máu Tối Đa {target_name})! "
             f"*(Lần {t3_state['dark_chain_uses']}/3)*"
         )
 
@@ -6409,7 +6409,7 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
                 f"• **Kỹ năng:**\n"
                 f"  - 🩸 **True vampire:** Hồi 5% máu mỗi lượt\n"
                 f"  - 💥 **Blood chain (30%):** Gây 1.5x sát thương (1 lần/trận)\n"
-                f"  - 🌑 **Dark chain (20%):** Gây 1.0x sát thương + 15% Máu Tối Đa mục tiêu (tối đa 3 lần/trận)\n\n"
+                f"  - 🌑 **Dark chain (20%):** Gây 1.0x sát thương + 5% Máu Tối Đa mục tiêu (tối đa 3 lần/trận)\n\n"
                 f"📦 **Kho mảnh còn lại:** `{shards_dict[shard_key]} Mảnh Kizuna`"
             ),
             color=0x991B1B
@@ -6955,7 +6955,7 @@ class CharacterCheckView(discord.ui.View):
         skills_text = (
             "🩸 **True vampire (Nội tại 100%):** Hồi 5% máu tối đa mỗi lượt.\n"
             "💥 **Blood chain (30%):** Gây " + ("**2.0x sát thương** (Ace 2)" if is_kizuna_ace else "**1.5x sát thương**") + " (1 lần/trận).\n"
-            "🌑 **Dark chain (" + ("30%" if is_kizuna_ace else "20%") + "):** Gây " + ("**1.5x sát thương**" if is_kizuna_ace else "**1.0x sát thương**") + " + **15% Máu Tối Đa mục tiêu** (tối đa 3 lần/trận)."
+            "🌑 **Dark chain (" + ("30%" if is_kizuna_ace else "20%") + "):** Gây " + ("**1.5x sát thương**" if is_kizuna_ace else "**1.0x sát thương**") + " + **5% Máu Tối Đa mục tiêu** (tối đa 3 lần/trận)."
         )
         if is_kizuna_ace:
             skills_text += "\n🛡️ **Wonder guard (20% - Kỹ năng Ace 2):** Miễn toàn bộ sát thương & **phản 60% sát thương lẫn hiệu ứng** trong **3 lượt** (1 lần/trận)!"
