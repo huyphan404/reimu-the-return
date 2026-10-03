@@ -489,6 +489,13 @@ ITEMS_DATABASE = {
         "usable": True,
         "tradeable": True,
         "desc": "Vật phẩm [E] có thể mở: Nhận ngẫu nhiên 5-15 Vé Pull, 50-100 Kẹo hoặc 1-2 Mảnh Kizuna!"
+    },
+        "quat_giay": {
+        "id": "quat_giay",
+        "name": "Quạt Giấy 🪭",
+        "usable": False,
+        "tradeable": True,
+        "desc": "Bảo vật quạt giấy cảnh giới của Yukari Yakumo, dùng để tiến hóa [#04] Yukari lên Ace 2 ⭐⭐."
     }
 }
 
@@ -705,8 +712,26 @@ EVOL_CONFIG = {
         "skill_gif": "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/5a/61/6mcQnspY.gif",
         "bonus_power": 300,
         "bonus_hp": 300
-    }
+    },
+    4: {
+       "id": 4,
+       "key": "yukari",
+       "name": "Yukari Yakumo",
+       "title": "[#04] Yukari Yakumo - Ace 2 ⭐⭐",
+       "ace_level": "Ace 2 ⭐⭐",
+       "required_cards": 10,
+       "required_item": "quat_giay",
+       "evol_gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/d8/aa/WN8D1IccKr8iW.gif",
+       "skill_name": "Trip To The Old Station • Last Word • Invisible Gap",
+       "skill_desc": (
+        "🌌 **Trip To The Old Station (30%):** Gây sát thương ×2.0 (1 lần/trận).\n"
+        "👁️ **⸮⸮⸮ : Last Word ! (25%):** Gây sát thương ×2.5 và STUN đóng băng đối thủ 1 turn (1 lần/trận).\n"
+        "🌀 **Invisible Gap (Nội Tại - 10%):** Phản lại 100% sát thương đòn đánh thường của kẻ địch (không chặn kỹ năng)."
+    ),
+       "bonus_power": 300,
+       "bonus_hp": 300
 }
+EVOL_CONFIG["4"] = EVOL_CONFIG[4]
 EVOL_CONFIG["15"] = EVOL_CONFIG[15]
 EVOL_CONFIG["18"] = EVOL_CONFIG[18]
 EVOL_CONFIG["19"] = EVOL_CONFIG[19]
@@ -948,6 +973,7 @@ def get_default_player(user_id, username):
             "thanh_loi": 0,
             "keo_halloween": 0,
             "ruong_halloween_e": 0
+            "quat_giay": 0
         },
         "event_progress": {
             "battle": 0,
