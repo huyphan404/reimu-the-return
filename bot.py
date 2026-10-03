@@ -714,22 +714,23 @@ EVOL_CONFIG = {
         "bonus_hp": 300
     },
     4: {
-       "id": 4,
-       "key": "yukari",
-       "name": "Yukari Yakumo",
-       "title": "[#04] Yukari Yakumo - Ace 2 ⭐⭐",
-       "ace_level": "Ace 2 ⭐⭐",
-       "required_cards": 10,
-       "required_item": "quat_giay",
-       "evol_gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/d8/aa/WN8D1IccKr8iW.gif",
-       "skill_name": "Trip To The Old Station • Last Word • Invisible Gap",
-       "skill_desc": (
-        "🌌 **Trip To The Old Station (30%):** Gây sát thương ×2.0 (1 lần/trận).\n"
-        "👁️ **⸮⸮⸮ : Last Word ! (25%):** Gây sát thương ×2.5 và STUN đóng băng đối thủ 1 turn (1 lần/trận).\n"
-        "🌀 **Invisible Gap (Nội Tại - 10%):** Phản lại 100% sát thương đòn đánh thường của kẻ địch (không chặn kỹ năng)."
-    ),
-       "bonus_power": 300,
-       "bonus_hp": 300
+        "id": 4,
+        "key": "yukari",
+        "name": "Yukari Yakumo",
+        "title": "[#04] Yukari Yakumo - Ace 2 ⭐⭐",
+        "ace_level": "Ace 2 ⭐⭐",
+        "required_cards": 10,
+        "required_item": "quat_giay",
+        "evol_gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/d8/aa/WN8D1IccKr8iW.gif",
+        "skill_name": "Trip To The Old Station • Last Word • Invisible Gap",
+        "skill_desc": (
+            "🌌 **Trip To The Old Station (30%):** Gây sát thương ×2.0 (1 lần/trận).\n"
+            "👁️ **⸮⸮⸮ : Last Word ! (25%):** Gây sát thương ×2.5 và STUN đóng băng đối thủ 1 turn (1 lần/trận).\n"
+            "🌀 **Invisible Gap (Nội Tại - 10%):** Phản lại 100% sát thương đòn đánh thường của kẻ địch (không chặn kỹ năng)."
+        ),
+        "bonus_power": 300,
+        "bonus_hp": 300
+    }
 }
 EVOL_CONFIG["4"] = EVOL_CONFIG[4]
 EVOL_CONFIG["15"] = EVOL_CONFIG[15]
@@ -972,7 +973,7 @@ def get_default_player(user_id, username):
         "items": {
             "thanh_loi": 0,
             "keo_halloween": 0,
-            "ruong_halloween_e": 0
+            "ruong_halloween_e": 0,
             "quat_giay": 0
         },
         "event_progress": {
@@ -1307,11 +1308,12 @@ def get_player(user_id, username="Visitor"):
         data["shards"].setdefault("thanh_loi", 0)
 
     if "items" not in data or not isinstance(data.get("items"), dict):
-        data["items"] = {"thanh_loi": 0, "keo_halloween": 0, "ruong_halloween_e": 0}
+        data["items"] = {"thanh_loi": 0, "keo_halloween": 0, "ruong_halloween_e": 0, "quat_giay": 0}
     else:
         data["items"].setdefault("thanh_loi", 0)
         data["items"].setdefault("keo_halloween", 0)
         data["items"].setdefault("ruong_halloween_e", 0)
+        data["items"].setdefault("quat_giay", 0)
 
     if "event_progress" not in data or not isinstance(data.get("event_progress"), dict):
         data["event_progress"] = {"battle": 0, "pvp": 0, "raid": 0, "event_raid": 0, "claimed": False}
@@ -2450,6 +2452,8 @@ async def execute_raid(channel, raid_data):
             "current_card_index": 0,
             "is_alive": len(team_cards) > 0,
             "total_dmg": 0,
+            "yukari_station_used": False,   
+            "yukari_lastword_used": False,
             "sakuya_stun_used": False,
             "reimu_invul_used": False,
             "marisa_spark_used": False,
@@ -2629,7 +2633,24 @@ async def execute_raid(channel, raid_data):
                     if not turn_image:
                         turn_image = EVOL_CONFIG[19]["skill_gif"]
                     marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.0 giáng **{card_dmg:,} DMG** lên Boss!"
+# Kỹ năng Yukari Ace 2 tấn công:
+if ac["cid"] == 4 and ac.get("is_ace2"):
+    # 1. Trip To The Old Station: 30% gây x2.0 DMG
+    if not c.get("yukari_station_used") and random.random() < 0.30:
+        c["yukari_station_used"] = True
+        card_dmg = int(card_dmg * 2.0)
+        if not turn_image:
+            turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
+        turn_actions.append(f"🌌 **[Ace 2] [#04] Yukari** ({c['username']}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{card_dmg:,} DMG**!")
 
+    # 2. Last Word: 25% gây x2.5 DMG + STUN đối thủ 1 turn
+    elif not c.get("yukari_lastword_used") and random.random() < 0.25:
+        c["yukari_lastword_used"] = True
+        card_dmg = int(card_dmg * 2.5)
+        boss_stunned = True
+        if not turn_image:
+            turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+        turn_actions.append(f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{card_dmg:,} DMG** và **STUN đối thủ**!")
             if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
                 if random.random() < 0.25:
                     c["flandre_used"] = True
@@ -2726,7 +2747,21 @@ async def execute_raid(channel, raid_data):
                         if not turn_image:
                             turn_image = T1_HEAL_GIF
                         passive_log = (passive_log + "\n" if passive_log else "") + f"💚 **[Nhóm T] [#t1] Seiki** ({c['username']}) thi triển **Medicine Sign** (20%)! Hồi phục **+{heal_val:,} HP** cho bản thân! ({ac['current_hp']:,}/{ac['max_hp']:,} HP)"
+for c in active_combatants:
+    ac = c["team_cards"][c["current_card_index"]]
+    invul = False
+    
+    # Nội tại Invisible Gap của Yukari Ace 2:
+    if ac["cid"] == 4 and ac.get("is_ace2") and random.random() < 0.10:
+        invul = True
+        turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/bc/b9/oajpg8zfw1wc.gif"
+        p1_hp = max(0, p1_hp - dmg_per_card) # Phản lại 100% sát thương vào Boss
+        c["total_dmg"] += dmg_per_card
+        boss_action_log += f"\n🌀 **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **Invisible Gap** (10%)! Nuốt trọn đòn đánh thường và **phản lại {dmg_per_card:,} DMG (100%)** vào Boss!"
 
+    if not invul:
+        ac["current_hp"] -= dmg_per_card
+        
             if str(ac["cid"]).lower() == "t2":
                 heal_mahoraga = int(ac["max_hp"] * 0.05)
                 ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_mahoraga)
@@ -3187,6 +3222,12 @@ async def execute_raid(channel, raid_data):
                 if cur_shards >= 10:
                     shard_notice += " ✨ *(Đã đủ 10 mảnh! Dùng `/t translate`)*"
                 items_won.append(shard_notice)
+                
+# 2.5% rơi Quạt Giấy ở Seiki Phase 2:
+                if random.random() < 0.025:
+                    p_items = p.setdefault("items", {})
+                    p_items["quat_giay"] = p_items.get("quat_giay", 0) + 1
+                    items_won.append(f"🪭 **+1 Quạt Giấy** (2.5% Rơi từ Seiki Phase 2! Kho: {p_items['quat_giay']} cái)")
 
         p["pull_tickets"] += t_val
         p["xp"] += 100
@@ -4155,7 +4196,12 @@ async def execute_raid(channel, raid_data):
                 if cur_shards >= 10:
                     shard_notice += " ✨ *(Đã đủ 10 mảnh! Dùng `/t translate`)*"
                 items_won.append(shard_notice)
-
+# 1.0% rơi Quạt Giấy ở Reimu Phase 2:
+            if random.random() < 0.01:
+                p_items = p.setdefault("items", {})
+                p_items["quat_giay"] = p_items.get("quat_giay", 0) + 1
+                items_won.append(f"🪭 **+1 Quạt Giấy** (1% Cực Hiếm rơi từ Reimu Phase 2! Kho: {p_items['quat_giay']} cái)")
+                
             p["pull_tickets"] += t_val
             p["xp"] += 150
             save_player(p)
@@ -4426,6 +4472,8 @@ async def execute_event_raid(channel, raid_data):
             "current_card_index": 0,
             "is_alive": len(team_cards) > 0,
             "total_dmg": 0,
+            "yukari_station_used": False,  
+            "yukari_lastword_used": False,
             "sakuya_stun_used": False,
             "reimu_invul_used": False,
             "marisa_spark_used": False,
@@ -4829,6 +4877,8 @@ async def execute_event_raid(channel, raid_data):
     for c in combatants:
         c["current_card_index"] = 0
         c["is_alive"] = True
+        c["yukari_station_used"] = False
+        c["yukari_lastword_used"] = False
         c["sakuya_stun_used"] = False
         c["reimu_invul_used"] = False
         c["marisa_spark_used"] = False
@@ -5638,6 +5688,13 @@ class EvolSelectView(discord.ui.View):
         self.player = player
         self.user_id = user_id
 
+    @discord.ui.button(label="🌌 [#04] Tiến Hóa Yukari Ace 2 (10 Thẻ + 1 Quạt Giấy 🪭)", style=discord.ButtonStyle.primary, emoji="🪭", row=0)
+    async def button_evol_yukari(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
+            return
+        await do_evolve_interaction(interaction, self.player, 4)
+        
     @discord.ui.button(label="⛩️ [#15] Tiến Hóa Reimu Ace 2 (20 Thẻ)", style=discord.ButtonStyle.danger, emoji="🌸")
     async def button_evol_reimu(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
@@ -5708,7 +5765,7 @@ class EvolSelectView(discord.ui.View):
             return
         await do_evolve_interaction(interaction, self.player, "t1")
 
-def execute_card_evolution(player, cid: Union[int, str]):
+ def execute_card_evolution(player, cid: Union[int, str]):
     if str(cid).strip().lower() in ("t3", "kizuna", "vampire", "emperor"):
         return execute_kizuna_ace2(player)
     if str(cid).strip().lower() in ("t1", "seiki", "dephap", "toannang"):
@@ -5726,31 +5783,52 @@ def execute_card_evolution(player, cid: Union[int, str]):
     current_cnt = inventory.get(cid_str, 0)
     req_cards = cfg["required_cards"]
 
+    # 1. Kiểm tra số lượng thẻ nhân vật
     if current_cnt < req_cards:
         return (
             False,
             f"❌ Bạn chưa đủ số lượng thẻ **[#{cfg['id']:02d}] {cfg['name']}** trong túi đồ!\n"
             f"• Số thẻ hiện có: **{current_cnt}/{req_cards}** lá\n"
-            f"• Cần thêm: **{req_cards - current_cnt}** lá nữa để tiến hóa! (Có thể quay `/pull` hoặc dùng `/trade` với bạn bè)",
+            f"• Cần thêm: **{req_cards - current_cnt}** lá nữa để tiến hóa! (Có thể quay `/pull` hoặc dùng `/trade`)",
             None
         )
 
+    # 2. Kiểm tra vật phẩm đặc biệt (Quạt Giấy nếu là Yukari)
+    req_item = cfg.get("required_item")
+    if req_item:
+        p_items = player.setdefault("items", {})
+        if p_items.get(req_item, 0) < 1:
+            item_name = ITEMS_DATABASE.get(req_item, {}).get("name", req_item)
+            return (
+                False,
+                f"❌ Bạn cần sở hữu **1x {item_name}** để tiến hóa **[#{cfg['id']:02d}] {cfg['name']}** lên Ace 2!\n"
+                f"💡 *Có thể mua trong `/token` (600 Token), giao dịch qua `/item trade` hoặc săn Boss Phase 2.*",
+                None
+            )
+
+    # 3. Khấu trừ chi phí thẻ & vật phẩm
     player["inventory"][cid_str] = current_cnt - req_cards
     remaining_cnt = player["inventory"][cid_str]
+    
+    item_deduct_str = ""
+    if req_item:
+        player["items"][req_item] -= 1
+        item_name = ITEMS_DATABASE.get(req_item, {}).get("name", req_item)
+        item_deduct_str = f" và **1x {item_name}** *(Kho còn: {player['items'][req_item]} cái)*"
 
     if "evolutions" not in player or not isinstance(player["evolutions"], dict):
         player["evolutions"] = {}
     player["evolutions"][cid_str] = 2
     save_player(player)
 
-    color_map = {9: 0xDC2626, 15: 0xEF4444, 18: 0x3B82F6, 19: 0xF59E0B, 12: 0x9333EA, 21: 0xEC4899, 23: 0x06B6D4, 13: 0xF97316}
+    color_map = {4: 0x8B5CF6, 9: 0xDC2626, 15: 0xEF4444, 18: 0x3B82F6, 19: 0xF59E0B, 12: 0x9333EA, 21: 0xEC4899, 23: 0x06B6D4, 13: 0xF97316}
     embed = discord.Embed(
         title=f"🌟 TIẾN HÓA THÀNH CÔNG: [{cfg['ace_level']}] [#{cfg['id']:02d}] {cfg['name'].upper()}!",
         description=(
             f"⚡ **TIẾN TRÌNH ĐẠT CẢNH GIỚI TỐI THƯỢNG:**\n"
             f"🎴 **ID & Nhân vật:** **[#{cfg['id']:02d}] {cfg['name']}**\n"
             f"⭐ **Cấp bậc mới:** `{cfg['ace_level']}`\n"
-            f"📉 **Khấu trừ chi phí:** Đã tiêu hao **{req_cards}** lá *(Túi đồ còn lại: **{remaining_cnt}** lá)*\n\n"
+            f"📉 **Khấu trừ chi phí:** Đã tiêu hao **{req_cards}** lá{item_deduct_str} *(Túi đồ còn lại: **{remaining_cnt}** lá)*\n\n"
             f"💪 **BUFF CHỈ SỐ ACE 2:**\n"
             f"⚔️ **+{ACE_POWER_BUFF} ATK (Power)** & ❤️ **+{ACE_HP_BUFF} Máu (Max HP)** vĩnh viễn!\n\n"
             f"🔮 **KỸ NĂNG / NỘI TẠI ĐỘC NHẤT:**\n"
@@ -5777,7 +5855,9 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     cid_target = None
     if nhan_vat_hoac_id:
         nv_clean = str(nhan_vat_hoac_id).lower().strip()
-        if "15" in nv_clean or "reimu" in nv_clean:
+        if nv_clean in ("4", "#4", "04", "#04") or "yukari" in nv_clean:
+            cid_target = 4
+        elif "15" in nv_clean or "reimu" in nv_clean:
             cid_target = 15
         elif "18" in nv_clean or "sakuya" in nv_clean:
             cid_target = 18
@@ -5844,6 +5924,16 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     utsuho_ace = is_card_ace2(player, 13)
     utsuho_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐" if utsuho_ace else ("🟢 SẴN SÀNG TIẾN HÓA!" if utsuho_cnt >= 30 else f"🔴 Chưa đủ ({utsuho_cnt}/30)")
 
+    yukari_cnt = player.get("inventory", {}).get("4", 0)
+    yukari_fan_cnt = player.get("items", {}).get("quat_giay", 0)
+    yukari_ace = is_card_ace2(player, 4)
+    if yukari_ace:
+        yukari_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐"
+    elif yukari_cnt >= 10 and yukari_fan_cnt >= 1:
+        yukari_status = "🟢 SẴN SÀNG TIẾN HÓA! (Đủ 10 Thẻ + 1 Quạt Giấy 🪭)"
+    else:
+        yukari_status = f"🔴 Chưa đủ (Thẻ: {yukari_cnt}/10 | Quạt Giấy: {yukari_fan_cnt}/1)"
+        
     seiki_shards = player.get("shards", {}).get("seiki", 0)
     seiki_ace = is_card_ace2(player, "t1")
     seiki_req_ok = all(is_card_ace2(player, c) for c in T1_ACE2_CONFIG["required_ace2"])
@@ -5962,6 +6052,18 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
         inline=False
     )
 
+    yukari_cfg = EVOL_CONFIG[4]
+    embed.add_field(
+        name=f"🌌 [#{yukari_cfg['id']:02d}] {yukari_cfg['name']} (Yêu cầu: 10 thẻ + 1 Quạt Giấy 🪭):",
+        value=(
+            f"• Trạng thái: **{yukari_status}**\n"
+            f"• Túi đồ: **{yukari_cnt}/10** Thẻ Yukari | **{yukari_fan_cnt}/1** Quạt Giấy 🪭\n"
+            f"• Buff Ace: **+300 ATK** & **+300 HP**\n"
+            f"• Kỹ năng: **Trip To The Old Station** (30% x2.0 DMG) • **Last Word** (25% x2.5 DMG + Stun 1 turn) • **Invisible Gap** (10% phản 100% đòn đánh thường)"
+        ),
+        inline=False
+    )
+    
     embed.add_field(
         name="🔮 [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Điều kiện đặc biệt):",
         value=(
@@ -5984,6 +6086,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
 @bot.tree.command(name="evol", description="Tiến hóa nhân vật lên Ace 2 (9, 12, 13, 15, 18, 19, 21, 23 hoặc t1)")
 @app_commands.describe(id_hoac_ten="Nhập số ID thẻ hoặc chọn nhân vật")
 @app_commands.choices(id_hoac_ten=[
+    app_commands.Choice(name="[#04] Yukari Yakumo (Ace 2 - Cần 10 thẻ + 1 Quạt Giấy 🪭)", value="4"),
     app_commands.Choice(name="[#15] Reimu Hakurei (Ace 2 - Cần 20 thẻ, trừ 20 khi Ace)", value="15"),
     app_commands.Choice(name="[#18] Sakuya Izayoi (Ace 2 - Cần 30 thẻ, trừ 30 khi Ace)", value="18"),
     app_commands.Choice(name="[#19] Marisa Kirisame (Ace 2 - Cần 25 thẻ, Master Spark x2.0)", value="19"),
@@ -6724,7 +6827,7 @@ class CharacterCheckView(discord.ui.View):
     def rebuild_items(self):
         self.clear_items()
         cid = self.current_index + 1
-        has_ace = cid in (9, 12, 13, 15, 18, 19, 21, 23)
+        has_ace = cid in (4,9, 12, 13, 15, 18, 19, 21, 23)
 
         first_btn = discord.ui.Button(label="⏮️", style=discord.ButtonStyle.secondary, row=0)
         first_btn.callback = self.first_page
@@ -7464,6 +7567,8 @@ async def handle_battle(ctx_or_interaction):
     p_molten_ground_turns = 0
     battle_logs = []
     battle_turns = []
+    p_yukari_station, p_yukari_lastword = False, False
+    o_yukari_station, o_yukari_lastword = False, False
 
     while p_idx < len(player_cards) and o_idx < len(opp_cards) and r_cnt < 30:
         r_cnt += 1
@@ -8020,6 +8125,8 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
     t_seiki_used_turn = -1
     pvp_turns = []
     pvp_logs = []
+    p_yukari_station, p_yukari_lastword = False, False
+    o_yukari_station, o_yukari_lastword = False, False
 
     while c_idx < len(c_cards) and t_idx < len(t_cards) and r_cnt < 30:
         r_cnt += 1
@@ -10158,6 +10265,21 @@ class TokenShopView(discord.ui.View):
             await interaction.response.send_message("❌ Đây không phải phiên shop của bạn!", ephemeral=True)
             return
         await interaction.response.send_modal(TokenRandomModal(self.player))
+        
+    @discord.ui.button(label="🪭 Mua Quạt Giấy Yukari (600 Token)", style=discord.ButtonStyle.secondary, emoji="🪭", row=1)
+    async def btn_buy_fan(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên shop của bạn!", ephemeral=True)
+            return
+        cur_tokens = self.player.get("tokens", 0)
+        if cur_tokens < 600:
+            await interaction.response.send_message(f"❌ Bạn không đủ tokens! (Cần 600 tokens, hiện có {cur_tokens:,} tokens)", ephemeral=True)
+            return
+        self.player["tokens"] -= 600
+        p_items = self.player.setdefault("items", {})
+        p_items["quat_giay"] = p_items.get("quat_giay", 0) + 1
+        save_player(self.player)
+        await interaction.response.send_message(f"✅ Đã mua thành công **+1 Quạt Giấy 🪭**! (Số dư còn lại: `{self.player['tokens']:,}` Tokens)")
 
 async def handle_token_shop(ctx_or_interaction):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
@@ -10178,7 +10300,9 @@ async def handle_token_shop(ctx_or_interaction):
             f"⭐ **2. Mua Thẻ Chỉ Định Bậc S — 20 Tokens / 1 Lá**\n"
             f"   └ *Chọn Suika (#5), Eirin (#6), Yuuka (#7), Yuyuko (#8), Flandre (#9), Koishi (#10), Kaguya (#11), Remilia (#12), Utsuho (#13)*\n\n"
             f"🎲 **3. Rương May Mắn Random SS-C — 10 Tokens / 1 Lượt**\n"
-            f"   └ *Quay ngẫu nhiên 1 lá bài bất kỳ từ bậc SS đến C (có cộng dồn vé nếu trùng)*\n"
+            f"   └ *Quay ngẫu nhiên 1 lá bài bất kỳ từ bậc SS đến C*\n\n"
+            f"🪭 **4. Bảo Vật Quạt Giấy Yukari — 600 Tokens / 1 Cái**\n"
+            f"   └ *Vật phẩm dùng để tiến hóa [#04] Yukari Yakumo lên Ace 2 ⭐⭐*\n"
         ),
         color=0xF43F5E
     )
@@ -10702,6 +10826,7 @@ class ItemGroup(app_commands.Group, name="item", description="Quản lý kho v�
         app_commands.Choice(name="Thánh Lõi", value="thanh_loi"),
         app_commands.Choice(name="Kẹo Halloween", value="keo_halloween"),
         app_commands.Choice(name="Rương Halloween [E]", value="ruong_halloween_e")
+        app_commands.Choice(name="Quạt Giấy 🪭 (quat_giay)", value="quat_giay")
     ])
     async def slash_item_trade_cmd(self, interaction: discord.Interaction, user: discord.Member, vat_pham: str, so_luong: int = 1):
         await handle_item_trade(interaction, user, vat_pham, so_luong)
@@ -10786,6 +10911,7 @@ class AdminGiveGroup(app_commands.Group, name="admin_give", description="[CHỦ 
         app_commands.Choice(name="Thánh Lõi (thanh_loi)", value="thanh_loi"),
         app_commands.Choice(name="Kẹo Halloween 🍬 (keo_halloween)", value="keo_halloween"),
         app_commands.Choice(name="Rương Halloween Ma Quái [E] (ruong_halloween_e)", value="ruong_halloween_e")
+        app_commands.Choice(name="Quạt Giấy 🪭", value="quat_giay")
     ])
     async def slash_admin_give_item(self, interaction: discord.Interaction, vat_pham: str, so_luong: int = 1, nguoi_dung: Optional[discord.Member] = None):
         if not is_authorized_admin(interaction.user.id):
