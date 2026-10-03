@@ -2599,7 +2599,7 @@ async def execute_raid(channel, raid_data):
                 boss_stunned = True
                 cirno_freeze_log = f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%), không thể hành động trong hiệp này! (Còn {boss_freeze_debuff_turns} lượt duy trì)"
 
-seiki_invul = False
+        seiki_invul = False
         seiki_action = "normal"
         if boss_type == "seiki" and not boss_stunned:
             if seiki_spark_turns > 0:
