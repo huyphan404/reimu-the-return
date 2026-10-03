@@ -2626,31 +2626,30 @@ async def execute_raid(channel, raid_data):
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             card_dmg = ac["power"]
-            if ac["cid"] == 19 and ac["is_ace2"] and not c.get("marisa_spark_used"):
+           if ac["cid"] == 19 and ac["is_ace2"] and not c.get("marisa_spark_used"):
                 if random.random() < 0.30:
                     c["marisa_spark_used"] = True
                     card_dmg = int(card_dmg * 2.0)
                     if not turn_image:
                         turn_image = EVOL_CONFIG[19]["skill_gif"]
                     marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.0 giáng **{card_dmg:,} DMG** lên Boss!"
-# Kỹ năng Yukari Ace 2 tấn công:
-if ac["cid"] == 4 and ac.get("is_ace2"):
-    # 1. Trip To The Old Station: 30% gây x2.0 DMG
-    if not c.get("yukari_station_used") and random.random() < 0.30:
-        c["yukari_station_used"] = True
-        card_dmg = int(card_dmg * 2.0)
-        if not turn_image:
-            turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
-        turn_actions.append(f"🌌 **[Ace 2] [#04] Yukari** ({c['username']}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{card_dmg:,} DMG**!")
 
-    # 2. Last Word: 25% gây x2.5 DMG + STUN đối thủ 1 turn
-    elif not c.get("yukari_lastword_used") and random.random() < 0.25:
-        c["yukari_lastword_used"] = True
-        card_dmg = int(card_dmg * 2.5)
-        boss_stunned = True
-        if not turn_image:
-            turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
-        turn_actions.append(f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{card_dmg:,} DMG** và **STUN đối thủ**!")
+            # Kỹ năng Yukari Ace 2 tấn công (Đã sửa đúng 12 spaces):
+            if ac["cid"] == 4 and ac.get("is_ace2"):
+                if not c.get("yukari_station_used") and random.random() < 0.30:
+                    c["yukari_station_used"] = True
+                    card_dmg = int(card_dmg * 2.0)
+                    if not turn_image:
+                        turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
+                    yukari_notif = f"🌌 **[Ace 2] [#04] Yukari** ({c['username']}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{card_dmg:,} DMG**!"
+                elif not c.get("yukari_lastword_used") and random.random() < 0.25:
+                    c["yukari_lastword_used"] = True
+                    card_dmg = int(card_dmg * 2.5)
+                    boss_stunned = True
+                    if not turn_image:
+                        turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+                    yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{card_dmg:,} DMG** và **STUN đối thủ**!"
+
             if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
                 if random.random() < 0.25:
                     c["flandre_used"] = True
@@ -2747,9 +2746,6 @@ if ac["cid"] == 4 and ac.get("is_ace2"):
                         if not turn_image:
                             turn_image = T1_HEAL_GIF
                         passive_log = (passive_log + "\n" if passive_log else "") + f"💚 **[Nhóm T] [#t1] Seiki** ({c['username']}) thi triển **Medicine Sign** (20%)! Hồi phục **+{heal_val:,} HP** cho bản thân! ({ac['current_hp']:,}/{ac['max_hp']:,} HP)"
-for c in active_combatants:
-    ac = c["team_cards"][c["current_card_index"]]
-    invul = False
     
     # Nội tại Invisible Gap của Yukari Ace 2:
     if ac["cid"] == 4 and ac.get("is_ace2") and random.random() < 0.10:
@@ -3224,10 +3220,10 @@ for c in active_combatants:
                 items_won.append(shard_notice)
                 
 # 2.5% rơi Quạt Giấy ở Seiki Phase 2:
-                if random.random() < 0.025:
-                    p_items = p.setdefault("items", {})
-                    p_items["quat_giay"] = p_items.get("quat_giay", 0) + 1
-                    items_won.append(f"🪭 **+1 Quạt Giấy** (2.5% Rơi từ Seiki Phase 2! Kho: {p_items['quat_giay']} cái)")
+            if random.random() < 0.025:
+                p_items = p.setdefault("items", {})
+                p_items["quat_giay"] = p_items.get("quat_giay", 0) + 1
+                items_won.append(f"🪭 **+1 Quạt Giấy** (2.5% Rơi từ Seiki Phase 2! Kho: {p_items['quat_giay']} cái)")
 
         p["pull_tickets"] += t_val
         p["xp"] += 100
@@ -5764,7 +5760,6 @@ class EvolSelectView(discord.ui.View):
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
         await do_evolve_interaction(interaction, self.player, "t1")
-
  def execute_card_evolution(player, cid: Union[int, str]):
     if str(cid).strip().lower() in ("t3", "kizuna", "vampire", "emperor"):
         return execute_kizuna_ace2(player)
@@ -10825,7 +10820,7 @@ class ItemGroup(app_commands.Group, name="item", description="Quản lý kho v�
     @app_commands.choices(vat_pham=[
         app_commands.Choice(name="Thánh Lõi", value="thanh_loi"),
         app_commands.Choice(name="Kẹo Halloween", value="keo_halloween"),
-        app_commands.Choice(name="Rương Halloween [E]", value="ruong_halloween_e")
+        app_commands.Choice(name="Rương Halloween [E]", value="ruong_halloween_e"),
         app_commands.Choice(name="Quạt Giấy 🪭 (quat_giay)", value="quat_giay")
     ])
     async def slash_item_trade_cmd(self, interaction: discord.Interaction, user: discord.Member, vat_pham: str, so_luong: int = 1):
@@ -10910,7 +10905,7 @@ class AdminGiveGroup(app_commands.Group, name="admin_give", description="[CHỦ 
     @app_commands.choices(vat_pham=[
         app_commands.Choice(name="Thánh Lõi (thanh_loi)", value="thanh_loi"),
         app_commands.Choice(name="Kẹo Halloween 🍬 (keo_halloween)", value="keo_halloween"),
-        app_commands.Choice(name="Rương Halloween Ma Quái [E] (ruong_halloween_e)", value="ruong_halloween_e")
+        app_commands.Choice(name="Rương Halloween Ma Quái [E] (ruong_halloween_e)", value="ruong_halloween_e"),
         app_commands.Choice(name="Quạt Giấy 🪭", value="quat_giay")
     ])
     async def slash_admin_give_item(self, interaction: discord.Interaction, vat_pham: str, so_luong: int = 1, nguoi_dung: Optional[discord.Member] = None):
