@@ -3193,35 +3193,25 @@ async def execute_raid(channel, raid_data):
                 t_val = 3.0
                 d_str = "✨ **+3 Vé** (50%)"
 
-        items_won = [d_str]
-        p_shards = p.setdefault("shards", {})
-        if boss_type == "mahoraga":
-            if random.random() < 0.05:
-                p_shards["mahoraga"] = p_shards.get("mahoraga", 0) + 1
-                items_won.append(f"🔱 **+1 Mảnh Mahoraga** (5% Siêu Hiếm! Kho: {p_shards['mahoraga']} mảnh)")
-        else:
-            if random.random() < 0.025:
-                p_shards["seiki"] = p_shards.get("seiki", 0) + 1
-                cur_shards = p_shards["seiki"]
-                shard_notice = f"🔮 **+1 Mảnh Seiki** (2.5% Siêu Hiếm! Kho: {cur_shards}/10)"
-                if cur_shards >= 10:
-                    shard_notice += " ✨ *(Đã đủ 10 mảnh! Dùng `/t translate`)*"
-                items_won.append(shard_notice)
-                
-# 2.5% rơi Quạt Giấy ở Seiki Phase 2:
-            if random.random() < 0.025:
-                p_items = p.setdefault("items", {})
-                p_items["quat_giay"] = p_items.get("quat_giay", 0) + 1
-                items_won.append(f"🪭 **+1 Quạt Giấy** (2.5% Rơi từ Seiki Phase 2! Kho: {p_items['quat_giay']} cái)")
+items_won = [d_str]
+                if random.random() < 0.05:
+                    p_shards = p.setdefault("shards", {})
+                    p_shards["seiki"] = p_shards.get("seiki", 0) + 1
+                    cur_shards = p_shards["seiki"]
+                    shard_notice = f"🔮 **+1 Mảnh Seiki** (5% Siêu Hiếm! Kho: {cur_shards}/10)"
+                    if cur_shards >= 10:
+                        shard_notice += " ✨ *(Đã đủ 10 mảnh! Dùng `/t translate`)*"
+                    items_won.append(shard_notice)
 
-        p["pull_tickets"] += t_val
-        p["xp"] += 100
-        dq_notifs = update_daily_quest_progress(p, "raid", 1)
-        ev_notifs = update_event_quest_progress(p, "raid", 1)
-        all_n = dq_notifs + ev_notifs
-        for n in all_n:
-            items_won.append(n)
-        save_player(p)
+                # 2.5% rơi Quạt Giấy ở Seiki Phase 2
+                if random.random() < 0.025:
+                    p_items = p.setdefault("items", {})
+                    p_items["quat_giay"] = p_items.get("quat_giay", 0) + 1
+                    items_won.append(f"🪭 **+1 Quạt Giấy** (2.5% Rơi từ Seiki Phase 2! Kho: {p_items['quat_giay']} cái)")
+
+                p["pull_tickets"] += t_val
+                p["xp"] += 150
+                save_player(p)
         p1_rewards_data[uid] = {"total_pulls": t_val, "items": items_won, "username": p["username"]}
 
     if boss_type == "mahoraga":
@@ -7631,25 +7621,24 @@ async def handle_battle(ctx_or_interaction):
                 battle_logs.append(msg_m)
                 turn_actions.append(msg_m)
 # Kỹ năng Yukari Ace 2 trong PvE Battle:
-     if pc["cid"] == 4 and pc["is_ace2"]:
-         if not p_yukari_station and random.random() < 0.30:
-             p_yukari_station = True
-             curr_pc_power = int(curr_pc_power * 2.0)
-             if not turn_image:
-                 turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
-             msg_y = f"🌌 **[Ace 2] [#04] Yukari** ({user.display_name}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{curr_pc_power:,} DMG**!"
-             battle_logs.append(msg_y)
-             turn_actions.append(msg_y)
-         elif not p_yukari_lastword and random.random() < 0.25:
-             p_yukari_lastword = True
-             curr_pc_power = int(curr_pc_power * 2.5)
-             stunned_oc = True
-             if not turn_image:
-                 turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
-             msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({user.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{curr_pc_power:,} DMG** và **STUN đối thủ**!"
-             battle_logs.append(msg_y)
-             turn_actions.append(msg_y)
-
+        if pc["cid"] == 4 and pc["is_ace2"]:
+            if not p_yukari_station and random.random() < 0.30:
+                p_yukari_station = True
+                curr_pc_power = int(curr_pc_power * 2.0)
+                if not turn_image:
+                    turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
+                msg_y = f"🌌 **[Ace 2] [#04] Yukari** ({user.display_name}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{curr_pc_power:,} DMG**!"
+                battle_logs.append(msg_y)
+                turn_actions.append(msg_y)
+            elif not p_yukari_lastword and random.random() < 0.25:
+                p_yukari_lastword = True
+                curr_pc_power = int(curr_pc_power * 2.5)
+                stunned_oc = True
+                if not turn_image:
+                    turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+                msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({user.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{curr_pc_power:,} DMG** và **STUN đối thủ**!"
+                battle_logs.append(msg_y)
+                turn_actions.append(msg_y)
         if pc["cid"] == 12 and pc["is_ace2"]:
             gungnir_bonus = int(oc["hp"] * 0.03)
             curr_pc_power += gungnir_bonus
@@ -8260,24 +8249,24 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_m)
                 turn_actions.append(msg_m)
 # Kỹ năng Yukari Ace 2 bên Thách đấu:
-     if cc["cid"] == 4 and cc["is_ace2"]:
-         if not p_yukari_station and random.random() < 0.30:
-             p_yukari_station = True
-             c_curr_power = int(c_curr_power * 2.0)
-             if not turn_image:
-                 turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
-             msg_y = f"🌌 **[Ace 2] [#04] Yukari** ({challenger.display_name}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{c_curr_power:,} DMG**!"
-             pvp_logs.append(msg_y)
-             turn_actions.append(msg_y)
-         elif not p_yukari_lastword and random.random() < 0.25:
-             p_yukari_lastword = True
-             c_curr_power = int(c_curr_power * 2.5)
-             t_stunned = True
-             if not turn_image:
-                 turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
-             msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({challenger.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{c_curr_power:,} DMG** và **STUN đối thủ**!"
-             pvp_logs.append(msg_y)
-             turn_actions.append(msg_y)
+        if cc["cid"] == 4 and cc["is_ace2"]:
+            if not p_yukari_station and random.random() < 0.30:
+                p_yukari_station = True
+                c_curr_power = int(c_curr_power * 2.0)
+                if not turn_image:
+                    turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
+                msg_y = f"🌌 **[Ace 2] [#04] Yukari** ({challenger.display_name}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{c_curr_power:,} DMG**!"
+                pvp_logs.append(msg_y)
+                turn_actions.append(msg_y)
+            elif not p_yukari_lastword and random.random() < 0.25:
+                p_yukari_lastword = True
+                c_curr_power = int(c_curr_power * 2.5)
+                t_stunned = True
+                if not turn_image:
+                    turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+                msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({challenger.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{c_curr_power:,} DMG** và **STUN đối thủ**!"
+                pvp_logs.append(msg_y)
+                turn_actions.append(msg_y)
 
         if cc["cid"] == 12 and cc["is_ace2"]:
             _gungnir = int(tc["max_hp"] * 0.03)
@@ -8417,24 +8406,24 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_m)
                 turn_actions.append(msg_m)
 # Kỹ năng Yukari Ace 2 bên Nhận thách đấu:
-     if tc["cid"] == 4 and tc["is_ace2"]:
-         if not o_yukari_station and random.random() < 0.30:
-             o_yukari_station = True
-             t_curr_power = int(t_curr_power * 2.0)
-             if not turn_image:
-                 turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
-             msg_y = f"🌌 **[Ace 2] [#04] Yukari** ({target.display_name}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{t_curr_power:,} DMG**!"
-             pvp_logs.append(msg_y)
-             turn_actions.append(msg_y)
-         elif not o_yukari_lastword and random.random() < 0.25:
-             o_yukari_lastword = True
-             t_curr_power = int(t_curr_power * 2.5)
-             c_stunned = True
-             if not turn_image:
-                 turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
-             msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({target.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{t_curr_power:,} DMG** và **STUN đối thủ**!"
-             pvp_logs.append(msg_y)
-             turn_actions.append(msg_y)
+        if tc["cid"] == 4 and tc["is_ace2"]:
+            if not o_yukari_station and random.random() < 0.30:
+                o_yukari_station = True
+                t_curr_power = int(t_curr_power * 2.0)
+                if not turn_image:
+                    turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
+                msg_y = f"🌌 **[Ace 2] [#04] Yukari** ({target.display_name}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{t_curr_power:,} DMG**!"
+                pvp_logs.append(msg_y)
+                turn_actions.append(msg_y)
+            elif not o_yukari_lastword and random.random() < 0.25:
+                o_yukari_lastword = True
+                t_curr_power = int(t_curr_power * 2.5)
+                c_stunned = True
+                if not turn_image:
+                    turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+                msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({target.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{t_curr_power:,} DMG** và **STUN đối thủ**!"
+                pvp_logs.append(msg_y)
+                turn_actions.append(msg_y)
 
         if tc["cid"] == 12 and tc["is_ace2"]:
             _gungnir = int(cc["max_hp"] * 0.03)
