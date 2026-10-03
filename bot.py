@@ -6798,22 +6798,24 @@ async def slash_quest(interaction: discord.Interaction):
 async def prefix_quest(ctx):
     await handle_quest(ctx)
 # ==============================================================================
-# TÍNH NĂNG CHECK NHÂN VẬT & SOI KỸ NĂNG (TOÀN BỘ 27 NHÂN VẬT + ACE 2)
+# TÍNH NĂNG CHECK NHÂN VẬT & SOI KỸ NĂNG (ĐÃ FIX TOÀN DIỆN LỖI KẸT T3 & ACE 2 ID 4)
 # ==============================================================================
 class CharacterCheckView(discord.ui.View):
-    def __init__(self, current_index: int = 0, user_id: int = None, show_ace: bool = False, show_t1: bool = False, show_t2: bool = False):
+    def __init__(self, current_index: int = 0, user_id: int = None, show_ace: bool = False, show_t1: bool = False, show_t2: bool = False, show_t3: bool = False):
         super().__init__(timeout=180)
-        self.current_index = max(0, min(current_index, 26))
+        self.current_index = max(0, min(current_index, 27)) # 28 nhân vật (index 0 -> 27)
         self.user_id = user_id
         self.show_ace = show_ace
         self.show_t1 = show_t1
         self.show_t2 = show_t2
+        self.show_t3 = show_t3
         self.rebuild_items()
 
     def rebuild_items(self):
         self.clear_items()
         cid = self.current_index + 1
-        has_ace = cid in (4,9, 12, 13, 15, 18, 19, 21, 23)
+        # Đầy đủ 9 nhân vật có thể Ace 2: 4, 9, 12, 13, 15, 18, 19, 21, 23
+        has_ace = cid in (4, 9, 12, 13, 15, 18, 19, 21, 23)
 
         first_btn = discord.ui.Button(label="⏮️", style=discord.ButtonStyle.secondary, row=0)
         first_btn.callback = self.first_page
@@ -6834,7 +6836,8 @@ class CharacterCheckView(discord.ui.View):
         last_btn.callback = self.last_page
         self.add_item(last_btn)
 
-        if has_ace:
+        # Nút chuyển đổi Ace 2 cho nhân vật thường
+        if has_ace and not (self.show_t1 or self.show_t2 or self.show_t3):
             if self.show_ace:
                 ace_toggle = discord.ui.Button(label="⭐ Xem Bản Thường", style=discord.ButtonStyle.secondary, emoji="🔄", row=1)
             else:
@@ -6845,6 +6848,7 @@ class CharacterCheckView(discord.ui.View):
             no_ace_btn = discord.ui.Button(label="⭐ Nhân Vật Bản Chuẩn", style=discord.ButtonStyle.secondary, disabled=True, row=1)
             self.add_item(no_ace_btn)
 
+        # Nút chuyển nhanh sang các thẻ đặc biệt [T]
         t1_btn = discord.ui.Button(
             label="🔮 [T] #t1 Seiki",
             style=discord.ButtonStyle.success if self.show_t1 else discord.ButtonStyle.secondary,
@@ -6865,22 +6869,23 @@ class CharacterCheckView(discord.ui.View):
 
         t3_btn = discord.ui.Button(
             label="🩸 [T] #t3 Kizuna",
-            style=discord.ButtonStyle.success if getattr(self, 'show_t3', False) else discord.ButtonStyle.secondary,
+            style=discord.ButtonStyle.success if self.show_t3 else discord.ButtonStyle.secondary,
             emoji="🩸",
             row=1
         )
         t3_btn.callback = self.show_t3_card
         self.add_item(t3_btn)
 
+        # Dropdown menu 1-14
         opt_part1 = []
         for i in range(1, 15):
             c = CARDS_DATA[i]
-            star = " ⭐⭐" if i in (9, 12, 13, 15, 18, 19, 21, 23) else ""
+            star = " ⭐⭐" if i in (4, 9, 12, 13, 15, 18, 19, 21, 23) else ""
             opt_part1.append(discord.SelectOption(
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
                 description=f"ATK {c['power']:,} | HP {c['hp']:,} • Rank {c['rank']}"[:100],
-                default=(i == cid)
+                default=(i == cid and not (self.show_t1 or self.show_t2 or self.show_t3))
             ))
         select1 = discord.ui.Select(
             placeholder="🔽 Chọn nhanh #01 - #14 (Hecatia ➔ Ibaraki Arm)...",
@@ -6890,15 +6895,16 @@ class CharacterCheckView(discord.ui.View):
         select1.callback = self.select_callback
         self.add_item(select1)
 
+        # Dropdown menu 15-28
         opt_part2 = []
         for i in range(15, 29):
             c = CARDS_DATA[i]
-            star = " ⭐⭐" if i in (9, 12, 13, 15, 18, 19, 21, 23) else ""
+            star = " ⭐⭐" if i in (4, 9, 12, 13, 15, 18, 19, 21, 23) else ""
             opt_part2.append(discord.SelectOption(
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
                 description=f"ATK {c['power']:,} | HP {c['hp']:,} • Rank {c['rank']}"[:100],
-                default=(i == cid)
+                default=(i == cid and not (self.show_t1 or self.show_t2 or self.show_t3))
             ))
         select2 = discord.ui.Select(
             placeholder="🔽 Chọn nhanh #15 - #28 (Reimu ➔ Tewi)...",
@@ -6909,16 +6915,18 @@ class CharacterCheckView(discord.ui.View):
         self.add_item(select2)
 
     def get_current_embed(self) -> discord.Embed:
-        if getattr(self, 'show_t3', False):
+        if self.show_t3:
             return self.get_t3_embed()
         if self.show_t1:
             return self.get_t1_embed()
         if self.show_t2:
             return self.get_t2_embed()
+
         cid = self.current_index + 1
         card = CARDS_DATA[cid]
         details = CHARACTER_DETAILS.get(cid, {})
-        has_ace = cid in (9, 12, 13, 15, 18, 19, 21, 23)
+        # Đã bổ sung đầy đủ ID 4 (Yukari) vào danh sách Ace 2
+        has_ace = cid in (4, 9, 12, 13, 15, 18, 19, 21, 23)
         is_ace_mode = self.show_ace and has_ace
 
         player = get_player(self.user_id) if self.user_id else None
@@ -7018,6 +7026,283 @@ class CharacterCheckView(discord.ui.View):
         )
         return embed
 
+    # ================= CÁC HÀM SỰ KIỆN NÚT BẤM (ĐÃ RESET TRIỆT ĐỂ SHOW_T3, T1, T2) =================
+    async def first_page(self, interaction: discord.Interaction):
+        self.current_index = 0
+        self.show_ace = False
+        self.show_t1 = False
+        self.show_t2 = False
+        self.show_t3 = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def prev_page(self, interaction: discord.Interaction):
+        self.current_index = (self.current_index - 1) % 28
+        self.show_ace = False
+        self.show_t1 = False
+        self.show_t2 = False
+        self.show_t3 = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def next_page(self, interaction: discord.Interaction):
+        self.current_index = (self.current_index + 1) % 28
+        self.show_ace = False
+        self.show_t1 = False
+        self.show_t2 = False
+        self.show_t3 = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def last_page(self, interaction: discord.Interaction):
+        self.current_index = 27
+        self.show_ace = False
+        self.show_t1 = False
+        self.show_t2 = False
+        self.show_t3 = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def toggle_ace(self, interaction: discord.Interaction):
+        self.show_ace = not self.show_ace
+        self.show_t1 = False
+        self.show_t2 = False
+        self.show_t3 = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def select_callback(self, interaction: discord.Interaction):
+        selected_id = int(interaction.data["values"][0])
+        self.current_index = selected_id - 1
+        self.show_ace = False
+        self.show_t1 = False
+        self.show_t2 = False
+        self.show_t3 = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def show_t1_card(self, interaction: discord.Interaction):
+        self.show_t1 = True
+        self.show_t2 = False
+        self.show_t3 = False
+        self.show_ace = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def show_t2_card(self, interaction: discord.Interaction):
+        self.show_t2 = True
+        self.show_t1 = False
+        self.show_t3 = False
+        self.show_ace = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def show_t3_card(self, interaction: discord.Interaction):
+        self.show_t3 = True
+        self.show_t1 = False
+        self.show_t2 = False
+        self.show_ace = False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    def get_t1_embed(self) -> discord.Embed:
+        card = CARDS_DATA["t1"]
+        details = CHARACTER_DETAILS["t1"]
+        player = get_player(self.user_id) if self.user_id else None
+        user_level = player.get("level", 1) if player else 1
+        lvl_atk_buff = (user_level - 1) * 20
+        lvl_hp_buff = (user_level - 1) * 25
+        owned_cnt = player.get("inventory", {}).get("t1", 0) if player else 0
+        shards_cnt = player.get("shards", {}).get("seiki", 0) if player else 0
+        is_locked = is_card_locked(player, "t1") if player else False
+        is_seiki_ace = is_card_ace2(player, "t1") if player else False
+
+        embed = discord.Embed(
+            title="🔮 [THẺ ĐẶC BIỆT NHÓM T] #t1 SEIKI ĐỆ PHÁP TOÀN NĂNG",
+            description=(
+                f"*{details['title']}*\n"
+                "✨ Thẻ bài thần thoại chỉ có thể nhận bằng cách thu thập **10 Mảnh Seiki** "
+                "(tỉ lệ rơi 2.5% từ Boss Raid) rồi dùng lệnh `/t translate`."
+            ),
+            color=0x7C3AED
+        )
+        embed.set_image(url=card["image"])
+
+        power_val = card["power"] + (300 if is_seiki_ace else 0)
+        hp_val = card["hp"] + (300 if is_seiki_ace else 0)
+        stats_text = (
+            f"• ⚔️ **Sức Mạnh (Power / ATK):** `{power_val:,}`" + (" *(+300 Ace 2)*" if is_seiki_ace else "") + "\n"
+            f"• ❤️ **Máu (HP):** `{hp_val:,}`" + (" *(+300 Ace 2)*" if is_seiki_ace else "") + "\n"
+            f"• 🛡️ **Trong Đội Hình (Cấp {user_level}):** `{power_val + lvl_atk_buff:,}` ATK | `{hp_val + lvl_hp_buff:,}` HP\n"
+            f"*(Mỗi cấp người chơi tăng +20 ATK và +25 HP)*"
+        )
+        embed.add_field(name="⚔️ SỨC MẠNH & CHỈ SỐ:", value=stats_text, inline=False)
+
+        sk = card["skills"]
+        skills_text = (
+            f"1️⃣ **{sk['fantasy_seal']['name']}** — {sk['fantasy_seal']['desc']}\n"
+            f"   🎬 Hoạt ảnh: {sk['fantasy_seal']['gif']}\n"
+            f"2️⃣ **{sk['master_spark']['name']}** — {sk['master_spark']['desc']}\n"
+            f"   🎬 Hoạt ảnh: {sk['master_spark']['gif']}\n"
+            f"3️⃣ **{sk['medicine_sign']['name']}** — {sk['medicine_sign']['desc']}\n"
+            f"   🎬 Hoạt ảnh: {sk['medicine_sign']['gif']}\n"
+            "⚖️ *Nguyên tắc cân bằng: tối đa 1 chiêu mỗi lượt, mỗi chiêu kích hoạt 1 lần trong trận.*"
+        )
+        embed.add_field(name="🔮 TAM ĐẠI TUYỆT KỸ (BẢN CHUẨN):", value=skills_text, inline=False)
+
+        if is_seiki_ace:
+            embed.add_field(
+                name="🌟 TRẠNG THÁI ACE 2 ⭐⭐ - BỘ KỸ NĂNG THỨC TỈNH:",
+                value=(
+                    "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường +**2% Máu Tối Đa** mục tiêu!\n"
+                    "💚 **Medicine Sign (35%):** Hồi **40% Máu Tối Đa** bản thân, 1 lần/trận.\n"
+                    f"🎬 {T1_ACE2_CONFIG['medicine_sign']['gif']}\n"
+                    "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận.\n"
+                    f"🎬 {T1_ACE2_CONFIG['fantasy_seal']['gif']}\n"
+                    "🌑 **Bóng Khái Niệm (40%):** Gây **15% Máu Tối Đa** + **xóa kỹ năng đối phương**, 1 lần/trận.\n"
+                    f"🎬 {T1_ACE2_CONFIG['bong_khai_niem']['gif']}\n"
+                    "⚖️ *Tối đa 1 chiêu mỗi lượt. Hoạt động xuyên suốt Raid, Battle & PvP!*"
+                ),
+                inline=False
+            )
+
+        if player:
+            lock_str = "\n🔒 **CẢNH BÁO: Thẻ này hiện đang bị ADMIN KHÓA!** Cần quay `/pull` ra lại để mở." if is_locked else ""
+            shard_str = "\n✨ *Đã đủ 10 mảnh! Dùng `/t translate` để đổi thẻ ngay!*" if shards_cnt >= 10 else ""
+            ace_badge = "🌟 ĐÃ THỨC TỈNH ACE 2 ⭐⭐" if is_seiki_ace else "Bản chuẩn (Có thể tiến hóa Ace 2)"
+            embed.add_field(
+                name="🎒 TÚI ĐỒ CỦA BẠN:",
+                value=f"• Sở hữu: **{owned_cnt}** lá{lock_str}\n• 💎 Mảnh Seiki: **{shards_cnt}/10**{shard_str}\n• Cảnh giới: **{ace_badge}**",
+                inline=True
+            )
+        embed.add_field(
+            name="📊 HẠNG THẺ:",
+            value="• Phẩm cấp: **Rank [T] — Đặc Biệt**\n• Nguồn: Đổi từ **10 Mảnh Seiki** (Boss Raid)",
+            inline=True
+        )
+        embed.set_footer(text="Thẻ nhóm T đặc biệt • Bấm ◀ / ▶ hoặc menu để xem 28 nhân vật chuẩn!")
+        return embed
+
+    def get_t2_embed(self) -> discord.Embed:
+        card = CARDS_DATA["t2"]
+        details = CHARACTER_DETAILS.get("t2", {})
+        player = get_player(self.user_id) if self.user_id else None
+        user_level = player.get("level", 1) if player else 1
+        lvl_atk_buff = (user_level - 1) * 20
+        lvl_hp_buff = (user_level - 1) * 25
+        owned_cnt = player.get("inventory", {}).get("t2", 0) if player else 0
+        shards_cnt = player.get("shards", {}).get("mahoraga", 0) if player else 0
+        is_locked = is_card_locked(player, "t2") if player else False
+
+        embed = discord.Embed(
+            title="🔱 [THẺ ĐẶC BIỆT NHÓM T] #t2 MAHORAGA BÁT ÁCH KIẾM THẦN TƯỚNG",
+            description=(
+                f"*{details.get('title', 'Bát Ách Kiếm Thần Tướng')}*\n"
+                "✨ Thần tướng thuật thức tối thượng - Thẻ bài thần thoại nhóm T chỉ có thể nhận bằng cách thu thập **10 Mảnh Mahoraga** "
+                "(tỉ lệ rơi 5% khi tham gia diệt Boss Mahoraga 90K HP) rồi dùng lệnh `/t translate loai_shard:mahoraga`."
+            ),
+            color=0xDC2626
+        )
+        embed.set_image(url=card["image"])
+
+        power_val = card["power"]
+        hp_val = card["hp"]
+        stats_text = (
+            f"• ⚔️ **Sức Mạnh (Power / ATK):** `{power_val:,}`\n"
+            f"• ❤️ **Máu (HP):** `{hp_val:,}`\n"
+            f"• 🛡️ **Trong Đội Hình (Cấp {user_level}):** `{power_val + lvl_atk_buff:,}` ATK | `{hp_val + lvl_hp_buff:,}` HP\n"
+            f"*(Mỗi cấp người chơi tăng +20 ATK và +25 HP)*"
+        )
+        embed.add_field(name="⚔️ SỨC MẠNH & CHỈ SỐ:", value=stats_text, inline=False)
+
+        pas = card.get("passive", {})
+        sk = card.get("skills", {})
+        skills_text = (
+            f"🌀 **NỘI TẠI — {pas.get('name', 'The True adapt')} (100% Thụ Động):**\n"
+            f"• {pas.get('desc', 'Mỗi turn hồi 5% máu tối đa & mỗi turn giảm 5% sát thương phải nhận (cộng dồn)')}\n"
+            f"   🎬 Hoạt ảnh: {pas.get('gif', '')}\n\n"
+            f"⚔️ **TUYỆT KỸ — {sk.get('thoai_ma_kiem', {}).get('name', 'Thoái Ma kiếm')} (30% kích hoạt):**\n"
+            f"• {sk.get('thoai_ma_kiem', {}).get('desc', 'Gây ra 1.5x sát thương cho mục tiêu')}\n"
+            f"   🎬 Hoạt ảnh: {sk.get('thoai_ma_kiem', {}).get('gif', '')}\n"
+        )
+        embed.add_field(name="🔱 BỘ KỸ NĂNG BÁT ÁCH THẦN TƯỚNG:", value=skills_text, inline=False)
+
+        if player:
+            lock_str = "\n🔒 **CẢNH BÁO: Thẻ này hiện đang bị ADMIN KHÓA!**" if is_locked else ""
+            shard_str = "\n✨ *Đã đủ 10 mảnh! Dùng `/t translate loai_shard:mahoraga` để đổi thẻ ngay!*" if shards_cnt >= 10 else ""
+            embed.add_field(
+                name="🎒 TÚI ĐỒ CỦA BẠN:",
+                value=f"• Sở hữu: **{owned_cnt}** lá{lock_str}\n• 🔱 Mảnh Mahoraga: **{shards_cnt}/10**{shard_str}",
+                inline=True
+            )
+        embed.add_field(
+            name="📊 HẠNG THẺ:",
+            value="• Phẩm cấp: **Rank [T] — Đặc Biệt**\n• Nguồn: Đổi từ **10 Mảnh Mahoraga** (Boss Mahoraga 90K HP)",
+            inline=True
+        )
+        embed.set_footer(text="Thẻ nhóm T đặc biệt • Bấm ◀ / ▶ hoặc menu để xem 28 nhân vật chuẩn!")
+        return embed
+
+    def get_t3_embed(self) -> discord.Embed:
+        card = CARDS_DATA["t3"]
+        details = CHARACTER_DETAILS.get("t3", {})
+        player = get_player(self.user_id) if self.user_id else None
+        user_level = player.get("level", 1) if player else 1
+        lvl_atk_buff = (user_level - 1) * 20
+        lvl_hp_buff = (user_level - 1) * 25
+        owned_cnt = player.get("inventory", {}).get("t3", 0) if player else 0
+        shards_cnt = player.get("shards", {}).get("kizuna", 0) if player else 0
+        thanh_loi_cnt = player.get("shards", {}).get("thanh_loi", 0) if player else 0
+        is_locked = is_card_locked(player, "t3") if player else False
+        is_kizuna_ace = is_card_ace2(player, "t3") if player else False
+
+        embed = discord.Embed(
+            title="🩸 [THẺ ĐẶC BIỆT NHÓM T] #t3 KIZUNA THE EMPEROR OF VAMPIRE" + (" - ACE 2 ⭐⭐" if is_kizuna_ace else ""),
+            description=(
+                f"*{details.get('title', 'Hoàng Đế Ma Cà Rồng')}*\n"
+                "✨ Thẻ bài thần thoại nhóm T có thể nhận bằng cách thu thập **15 Mảnh Kizuna** "
+                "rồi dùng lệnh `/t translate loai_shard:kizuna`. Tiến hóa Ace 2 yêu cầu **1 Thánh Lõi**."
+            ),
+            color=0x991B1B
+        )
+        embed.set_image(url=card["image"])
+
+        power_val = card["power"] + (300 if is_kizuna_ace else 0)
+        hp_val = card["hp"] + (300 if is_kizuna_ace else 0)
+        stats_text = (
+            f"• ⚔️ **Sức Mạnh (Power / ATK):** `{power_val:,}`" + (" *(+300 Ace 2)*" if is_kizuna_ace else "") + "\n"
+            f"• ❤️ **Máu (HP):** `{hp_val:,}`" + (" *(+300 Ace 2)*" if is_kizuna_ace else "") + "\n"
+            f"• 🛡️ **Trong Đội Hình (Cấp {user_level}):** `{power_val + lvl_atk_buff:,}` ATK | `{hp_val + lvl_hp_buff:,}` HP\n"
+            f"*(Mỗi cấp người chơi tăng +20 ATK và +25 HP)*"
+        )
+        embed.add_field(name="⚔️ SỨC MẠNH & CHỈ SỐ:", value=stats_text, inline=False)
+
+        skills_text = (
+            "🩸 **True vampire (Nội tại 100%):** Hồi 5% máu tối đa mỗi lượt.\n"
+            "💥 **Blood chain (30%):** Gây " + ("**2.0x sát thương** (Ace 2)" if is_kizuna_ace else "**1.5x sát thương**") + " (1 lần/trận).\n"
+            "🌑 **Dark chain (" + ("30%" if is_kizuna_ace else "20%") + "):** Gây " + ("**1.5x sát thương**" if is_kizuna_ace else "**1.0x sát thương**") + " + **5% Máu Tối Đa mục tiêu** (tối đa 3 lần/trận)."
+        )
+        if is_kizuna_ace:
+            skills_text += "\n🛡️ **Wonder guard (20% - Kỹ năng Ace 2):** Miễn toàn bộ sát thương & **phản 60% sát thương lẫn hiệu ứng** trong **3 lượt** (1 lần/trận)!"
+
+        embed.add_field(name="🩸 BỘ KỸ NĂNG HOÀNG ĐẾ MA CÀ RỒNG:", value=skills_text, inline=False)
+
+        if player:
+            lock_str = "\n🔒 **CẢNH BÁO: Thẻ này hiện đang bị ADMIN KHÓA!**" if is_locked else ""
+            shard_str = "\n✨ *Đã đủ 15 mảnh! Dùng `/t translate loai_shard:kizuna` để đổi thẻ ngay!*" if shards_cnt >= 15 else ""
+            ace_str = "🌟 ĐÃ ĐẠT ACE 2 ⭐⭐" if is_kizuna_ace else (f"🟢 ĐỦ ĐIỀU KIỆN TIẾN HÓA (Có {thanh_loi_cnt} Thánh Lõi)!" if thanh_loi_cnt >= 1 and owned_cnt > 0 else f"🔴 Cần 1 Thánh Lõi (Hiện có: {thanh_loi_cnt}/1)")
+            embed.add_field(
+                name="🎒 TÚI ĐỒ CỦA BẠN:",
+                value=f"• Sở hữu: **{owned_cnt}** lá{lock_str}\n• 🩸 Mảnh Kizuna: **{shards_cnt}/15**{shard_str}\n• 👑 Thánh Lõi: **{thanh_loi_cnt}/1**\n• Trạng thái Ace 2: **{ace_str}**",
+                inline=True
+            )
+        embed.add_field(
+            name="📊 HẠNG THẺ:",
+            value="• Phẩm cấp: **Rank [T] — Đặc Biệt**\n• Nguồn: Đổi từ **15 Mảnh Kizuna**\n• Tiến hóa Ace 2: Tiêu hao **1 Thánh Lõi**",
+            inline=True
+        )
+        embed.set_footer(text="Thẻ nhóm T đặc biệt • Bấm ◀ / ▶ hoặc menu để xem 28 nhân vật chuẩn!")
+        return embed
     async def show_t1_card(self, interaction: discord.Interaction):
         self.show_t1 = True
         self.show_t2 = False
