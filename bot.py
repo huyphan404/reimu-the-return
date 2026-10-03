@@ -2618,11 +2618,11 @@ async def execute_raid(channel, raid_data):
                 else:
                     seiki_action = "normal"
 
-        if boss_skill_erased:
+if boss_skill_erased:
             seiki_action = "normal"
             seiki_spark_turns = 0
 
-round_player_dmg = 0
+        round_player_dmg = 0
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             card_dmg = ac["power"]
@@ -5748,7 +5748,7 @@ class EvolSelectView(discord.ui.View):
             return
         await do_evolve_interaction(interaction, self.player, "t1")
         
-        def execute_card_evolution(player, cid: Union[int, str]):
+def execute_card_evolution(player, cid: Union[int, str]):
     if str(cid).strip().lower() in ("t3", "kizuna", "vampire", "emperor"):
         return execute_kizuna_ace2(player)
     if str(cid).strip().lower() in ("t1", "seiki", "dephap", "toannang"):
