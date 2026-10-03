@@ -2599,7 +2599,7 @@ async def execute_raid(channel, raid_data):
                 boss_stunned = True
                 cirno_freeze_log = f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%), không thể hành động trong hiệp này! (Còn {boss_freeze_debuff_turns} lượt duy trì)"
 
-        seiki_invul = False
+seiki_invul = False
         seiki_action = "normal"
         if boss_type == "seiki" and not boss_stunned:
             if seiki_spark_turns > 0:
@@ -2618,7 +2618,7 @@ async def execute_raid(channel, raid_data):
                 else:
                     seiki_action = "normal"
 
-if boss_skill_erased:
+        if boss_skill_erased:
             seiki_action = "normal"
             seiki_spark_turns = 0
 
@@ -2783,6 +2783,9 @@ if boss_skill_erased:
                     turn_image = _t3["gif"]
                 t3_notif_str = "\n".join(_t3["logs"])
                 t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
+
+            round_player_dmg += card_dmg
+            c["total_dmg"] += card_dmg
 
         if boss_type == "seiki" and seiki_invul and not boss_stunned:
             player_atk_str = f"🛡️ Toàn quân dồn **{round_player_dmg:,} DMG** nhưng **Seiki Dị Hình** đã kích hoạt **Fantasy Seal**, MIỄN TOÀN BỘ SÁT THƯƠNG trong hiệp này!"
