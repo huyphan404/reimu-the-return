@@ -3168,7 +3168,7 @@ async def execute_raid(channel, raid_data):
         await channel.send(embed=embed_fail, view=OpenDetailsView(all_raid_turns))
         return
 
-p1_rewards_data = {}
+    p1_rewards_data = {}
     for uid in participants:
         p = get_player(uid)
         roll = random.random()
@@ -3672,7 +3672,7 @@ p1_rewards_data = {}
         p2_defeated = (p2_hp <= 0)
         total_raid_dmg = sum(c["total_dmg"] for c in combatants)
 
-p2_rewards_data = {}
+        p2_rewards_data = {}
         if p2_defeated:
             for uid in participants:
                 p = get_player(uid)
