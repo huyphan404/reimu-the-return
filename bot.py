@@ -3168,7 +3168,7 @@ async def execute_raid(channel, raid_data):
         await channel.send(embed=embed_fail, view=OpenDetailsView(all_raid_turns))
         return
 
-    p1_rewards_data = {}
+p1_rewards_data = {}
     for uid in participants:
         p = get_player(uid)
         roll = random.random()
@@ -3193,27 +3193,31 @@ async def execute_raid(channel, raid_data):
                 t_val = 3.0
                 d_str = "✨ **+3 Vé** (50%)"
 
-items_won = [d_str]
-                if random.random() < 0.05:
-                    p_shards = p.setdefault("shards", {})
-                    p_shards["seiki"] = p_shards.get("seiki", 0) + 1
-                    cur_shards = p_shards["seiki"]
-                    shard_notice = f"🔮 **+1 Mảnh Seiki** (5% Siêu Hiếm! Kho: {cur_shards}/10)"
-                    if cur_shards >= 10:
-                        shard_notice += " ✨ *(Đã đủ 10 mảnh! Dùng `/t translate`)*"
-                    items_won.append(shard_notice)
+        items_won = [d_str]
+        p_shards = p.setdefault("shards", {})
+        if boss_type == "mahoraga":
+            if random.random() < 0.05:
+                p_shards["mahoraga"] = p_shards.get("mahoraga", 0) + 1
+                items_won.append(f"🔱 **+1 Mảnh Mahoraga** (5% Siêu Hiếm! Kho: {p_shards['mahoraga']} mảnh)")
+        else:
+            if random.random() < 0.025:
+                p_shards["seiki"] = p_shards.get("seiki", 0) + 1
+                cur_shards = p_shards["seiki"]
+                shard_notice = f"🔮 **+1 Mảnh Seiki** (2.5% Siêu Hiếm! Kho: {cur_shards}/10)"
+                if cur_shards >= 10:
+                    shard_notice += " ✨ *(Đã đủ 10 mảnh! Dùng `/t translate`)*"
+                items_won.append(shard_notice)
 
-                # 2.5% rơi Quạt Giấy ở Seiki Phase 2
-                if random.random() < 0.025:
-                    p_items = p.setdefault("items", {})
-                    p_items["quat_giay"] = p_items.get("quat_giay", 0) + 1
-                    items_won.append(f"🪭 **+1 Quạt Giấy** (2.5% Rơi từ Seiki Phase 2! Kho: {p_items['quat_giay']} cái)")
-
-                p["pull_tickets"] += t_val
-                p["xp"] += 150
-                save_player(p)
+        p["pull_tickets"] += t_val
+        p["xp"] += 100
+        dq_notifs = update_daily_quest_progress(p, "raid", 1)
+        ev_notifs = update_event_quest_progress(p, "raid", 1)
+        all_n = dq_notifs + ev_notifs
+        for n in all_n:
+            items_won.append(n)
+        save_player(p)
         p1_rewards_data[uid] = {"total_pulls": t_val, "items": items_won, "username": p["username"]}
-
+        
     if boss_type == "mahoraga":
         total_raid_dmg = sum(c["total_dmg"] for c in combatants)
         final_embed = discord.Embed(
@@ -3668,7 +3672,7 @@ items_won = [d_str]
         p2_defeated = (p2_hp <= 0)
         total_raid_dmg = sum(c["total_dmg"] for c in combatants)
 
-        p2_rewards_data = {}
+p2_rewards_data = {}
         if p2_defeated:
             for uid in participants:
                 p = get_player(uid)
@@ -3685,20 +3689,20 @@ items_won = [d_str]
                     d_str = "💎 **+10 Vé** (50%)"
 
                 items_won = [d_str]
-if random.random() < 0.05:
-                 p_shards = p.setdefault("shards", {})
-                 p_shards["seiki"] = p_shards.get("seiki", 0) + 1
-                 cur_shards = p_shards["seiki"]
-                 shard_notice = f"🔮 **+1 Mảnh Seiki** (5% Siêu Hiếm! Kho: {cur_shards}/10)"
-                 if cur_shards >= 10:
-                     shard_notice += " ✨ *(Đã đủ 10 mảnh! Dùng `/t translate`)*"
-                 items_won.append(shard_notice)
+                if random.random() < 0.05:
+                    p_shards = p.setdefault("shards", {})
+                    p_shards["seiki"] = p_shards.get("seiki", 0) + 1
+                    cur_shards = p_shards["seiki"]
+                    shard_notice = f"🔮 **+1 Mảnh Seiki** (5% Siêu Hiếm! Kho: {cur_shards}/10)"
+                    if cur_shards >= 10:
+                        shard_notice += " ✨ *(Đã đủ 10 mảnh! Dùng `/t translate`)*"
+                    items_won.append(shard_notice)
 
-             # 2.5% rơi Quạt Giấy ở Seiki Phase 2 (Đã thụt lề chuẩn)
-             if random.random() < 0.025:
-                 p_items = p.setdefault("items", {})
-                 p_items["quat_giay"] = p_items.get("quat_giay", 0) + 1
-                 items_won.append(f"🪭 **+1 Quạt Giấy** (2.5% Rơi từ Seiki Phase 2! Kho: {p_items['quat_giay']} cái)")
+                # 2.5% rơi Quạt Giấy ở Seiki Phase 2
+                if random.random() < 0.025:
+                    p_items = p.setdefault("items", {})
+                    p_items["quat_giay"] = p_items.get("quat_giay", 0) + 1
+                    items_won.append(f"🪭 **+1 Quạt Giấy** (2.5% Rơi từ Seiki Phase 2! Kho: {p_items['quat_giay']} cái)")
 
                 p["pull_tickets"] += t_val
                 p["xp"] += 150
@@ -7639,6 +7643,7 @@ async def handle_battle(ctx_or_interaction):
                 msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({user.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{curr_pc_power:,} DMG** và **STUN đối thủ**!"
                 battle_logs.append(msg_y)
                 turn_actions.append(msg_y)
+                
         if pc["cid"] == 12 and pc["is_ace2"]:
             gungnir_bonus = int(oc["hp"] * 0.03)
             curr_pc_power += gungnir_bonus
