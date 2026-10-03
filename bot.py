@@ -6026,7 +6026,7 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
         else: await ctx_or_interaction.send(embed=embed)
         return
 
-    count = max(1, min(10, count))
+    count = max(1, min(40, count))
     total_avail = player.get("free_pulls_remaining", 0) + int(player.get("pull_tickets", 0))
 
     if total_avail < count:
@@ -6073,7 +6073,7 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
     else: await ctx_or_interaction.send(embed=embed)
 
 @bot.tree.command(name="pull", description="Quay thẻ nhân vật Touhou (Free 5 lượt/ngày)")
-@app_commands.describe(so_luong="Số lượt quay (1 đến 10, mặc định: 1)")
+@app_commands.describe(so_luong="Số lượt quay (1 đến 40, mặc định: 1)")
 async def slash_pull(interaction: discord.Interaction, so_luong: int = 1):
     await handle_pull(interaction, so_luong)
 
