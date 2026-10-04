@@ -2004,8 +2004,14 @@ class OpponentTeamView(discord.ui.View):
         )
 
         skill_text = c.get("skill") or "Tấn công Danmaku cơ bản"
-        if is_ace and c["cid"] in [9, 12, 13, 15, 18, 19, 21, 23]:
-            if c["cid"] == 15:
+        if is_ace and c["cid"] in [4, 9, 12, 13, 15, 18, 19, 21, 23]:
+            if c["cid"] == 4:
+                skill_text += (
+                    "\n🌌 **[Ace 2 Hiệu Ứng]** 30% *Trip To The Old Station* (×2.0 DMG, 1 lần/trận) • "
+                    "25% *Last Word* (×2.5 DMG + Stun 1 turn, 1 lần/trận) • "
+                    "10% *Invisible Gap* (Nội tại phản 100% sát thương đánh thường)."
+                )
+            elif c["cid"] == 15:
                 skill_text += "\n🛡️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Vô Tưởng Chuyển Sinh* né toàn bộ sát thương."
             elif c["cid"] == 18:
                 skill_text += "\n⏳ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Thời Gian Đóng Băng* khiến đối phương mất lượt."
@@ -7544,7 +7550,7 @@ async def handle_battle(ctx_or_interaction):
 
     p_idx, o_idx, r_cnt = 0, 0, 0
     p_sakuya, p_reimu, p_marisa = False, False, False
-    p_flandre = False
+    p_flandre, o_flandre = False, False
     o_sakuya, o_reimu, o_marisa = False, False, False
     reisen_used = False
     o_reisen_used = False
@@ -7806,14 +7812,46 @@ async def handle_battle(ctx_or_interaction):
 
         curr_oc_power = oc["power"]
         if oc["cid"] == 19 and oc.get("is_ace2") and not o_marisa:
-            if random.random() < 0.25:
+            if random.random() < 0.30:
                 o_marisa = True
                 curr_oc_power = int(curr_oc_power * 2.0)
                 if not turn_image:
                     turn_image = EVOL_CONFIG[19]["skill_gif"]
-                msg_m = f"🌟 **Đối thủ [Ace 2] [#19] Marisa** tung ra **Master Spark** (25%)! Bộc phá ×1.5 sát thương gây **{curr_oc_power:,} DMG**!"
+                msg_m = f"🌟 **Đối thủ [Ace 2] [#19] Marisa** tung ra **Master Spark** (30%)! Bộc phá ×2.0 sát thương gây **{curr_oc_power:,} DMG**!"
                 battle_logs.append(msg_m)
                 turn_actions.append(msg_m)
+
+        # Kỹ năng Yukari Ace 2 của NPC Battle:
+        if oc["cid"] == 4 and oc.get("is_ace2"):
+            if not o_yukari_station and random.random() < 0.30:
+                o_yukari_station = True
+                curr_oc_power = int(curr_oc_power * 2.0)
+                if not turn_image:
+                    turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
+                msg_y = f"🌌 **Đối thủ [Ace 2] [#04] Yukari** tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{curr_oc_power:,} DMG**!"
+                battle_logs.append(msg_y)
+                turn_actions.append(msg_y)
+            elif not o_yukari_lastword and random.random() < 0.25:
+                o_yukari_lastword = True
+                curr_oc_power = int(curr_oc_power * 2.5)
+                stunned_pc = True
+                if not turn_image:
+                    turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+                msg_y = f"👁️ **Đối thủ [Ace 2] [#04] Yukari** kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{curr_oc_power:,} DMG** và **STUN bạn 1 lượt**!"
+                battle_logs.append(msg_y)
+                turn_actions.append(msg_y)
+
+        # Kỹ năng Flandre Ace 2 của NPC Battle:
+        if oc["cid"] == 9 and oc.get("is_ace2") and not o_flandre:
+            if random.random() < 0.25:
+                o_flandre = True
+                rip_dmg = int(pc["current_hp"] * 0.50)
+                pc["current_hp"] = max(0, pc["current_hp"] - rip_dmg)
+                if not turn_image:
+                    turn_image = EVOL_CONFIG[9]["skill_gif"]
+                msg_f = f"🦇 **Đối thủ [Ace 2] [#09] Flandre** kích hoạt **Ripples of 495 Years** (25%)! Xóa sổ **{rip_dmg:,} HP (50% HP của {pc['name']})** ngay lập tức!"
+                battle_logs.append(msg_f)
+                turn_actions.append(msg_f)
 
         if oc["cid"] == 12 and oc.get("is_ace2"):
             o_gungnir_bonus = int(pc["hp"] * 0.03)
