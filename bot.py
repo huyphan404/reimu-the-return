@@ -1673,9 +1673,16 @@ def execute_kizuna_ace2(player):
 # BỘ KỸ NĂNG ACE 2 CHO THẺ [T] #t1 SEIKI (CLEAVE, MEDICINE SIGN, FANTASY SEAL, BÓNG KHÁI NIỆM)
 # ==============================================================================
 def execute_seiki_ace2(player):
-    """Tiến hóa Ace 2 [#t1] Seiki: yêu cầu Ace 2 của Marisa [#19], Reimu [#15], Sakuya [#18] + 10 Mảnh Seiki."""
+    """Tiến hóa Ace 2 [#t1] Seiki: yêu cầu đã mở khóa thẻ #t1 + Ace 2 của Marisa [#19], Reimu [#15], Sakuya [#18] + 10 Mảnh Seiki."""
     if is_card_ace2(player, "t1"):
         return False, "⚠️ **[#t1] Seiki Đệ Pháp Toàn Năng** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
+
+    if not is_card_unlocked(player, "t1") and player.get("inventory", {}).get("t1", 0) <= 0:
+        return False, (
+            "❌ **Bạn chưa mở khóa thẻ gốc [#t1] Seiki Đệ Pháp Toàn Năng!**\n"
+            "• Bắt buộc phải thu thập **10 Mảnh Seiki** và dùng lệnh `/t translate` (hoặc `/translate`) để đổi thẻ gốc trước.\n"
+            "• Sau khi sở hữu thẻ gốc, bạn mới có thể dùng thêm **10 Mảnh Seiki** nữa để tiến hóa lên **Ace 2 ⭐⭐**!"
+        ), None
 
     missing = [cid for cid in T1_ACE2_CONFIG["required_ace2"] if not is_card_ace2(player, cid)]
     if missing:
@@ -5949,14 +5956,18 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
         yukari_status = f"🔴 Chưa đủ (Thẻ: {yukari_cnt}/10 | Quạt Giấy: {yukari_fan_cnt}/1)"
         
     seiki_shards = player.get("shards", {}).get("seiki", 0)
+    seiki_unlocked = is_card_unlocked(player, "t1") or player.get("inventory", {}).get("t1", 0) > 0
     seiki_ace = is_card_ace2(player, "t1")
     seiki_req_ok = all(is_card_ace2(player, c) for c in T1_ACE2_CONFIG["required_ace2"])
     if seiki_ace:
         seiki_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐"
-    elif seiki_req_ok and seiki_shards >= 10:
-        seiki_status = f"🟢 SẴN SÀNG TIẾN HÓA! (Mảnh: {seiki_shards}/10)"
+    elif seiki_unlocked and seiki_req_ok and seiki_shards >= 10:
+        seiki_status = f"🟢 SẴN SÀNG TIẾN HÓA! (Đã mở thẻ #t1 | Mảnh: {seiki_shards}/10)"
     else:
-        seiki_status = f"🔴 Chưa đủ (Ace2 Marisa/Reimu/Sakuya: {'✅' if seiki_req_ok else '❌'} | Mảnh: {seiki_shards}/10)"
+        seiki_status = (
+            f"🔴 Chưa đủ (Mở thẻ #t1 qua /translate: {'✅' if seiki_unlocked else '❌'} | "
+            f"Ace2 Marisa/Reimu/Sakuya: {'✅' if seiki_req_ok else '❌'} | Mảnh: {seiki_shards}/10)"
+        )
 
     embed = discord.Embed(
         title="🌟 PHÒNG TIẾN HÓA NHÂN VẬT TOUHOU (EVOLUTION - ACE 2)",
