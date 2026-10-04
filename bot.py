@@ -3347,6 +3347,7 @@ async def execute_raid(channel, raid_data):
             cirno_freeze_log = None
             t1_notif = None
             t2_notif = None
+            t3_notif = None
             turn_image = None
 
             for c in active_combatants:
@@ -3497,19 +3498,20 @@ async def execute_raid(channel, raid_data):
                             f"Hồi phục **+{heal_mahoraga:,} HP** ({ac['current_hp']:,}/{ac['max_hp']:,} HP) và tăng kháng sát thương lên **{int(adapt_pct*100)}%**!"
                         )
                     t2_notif = (t2_notif + "\n" if t2_notif else "") + t2_notif_str
-            if str(ac["cid"]).lower() == "t3":
-                t3_st = c.setdefault("t3_state", {})
-                _t3 = t3_combat_turn(t3_st, ac, p1_rounds, p1_max_hp, f"Boss {boss_cfg['name']}", is_ace2=ac.get("is_ace2"))
-                card_dmg = int(card_dmg * _t3["multiplier"])
-                if _t3["bonus_hp_dmg"] > 0:
-                    actual_hp_dmg, p1_true_dmg_accum, cap_hp_msg = apply_raid_true_damage(_t3["bonus_hp_dmg"], p1_true_dmg_accum, p1_true_cap, "Dark Chain (Kizuna)")
-                    card_dmg += actual_hp_dmg
-                    if cap_hp_msg:
-                        _t3["logs"].append(cap_hp_msg)
-                if _t3["gif"] and not turn_image:
-                    turn_image = _t3["gif"]
-                t3_notif_str = "\n".join(_t3["logs"])
-                t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
+
+                if str(ac["cid"]).lower() == "t3":
+                    t3_st = c.setdefault("t3_state", {})
+                    _t3 = t3_combat_turn(t3_st, ac, p2_rounds, p2_max_hp, f"Boss {p2_cfg['name']}", is_ace2=ac.get("is_ace2"))
+                    card_dmg = int(card_dmg * _t3["multiplier"])
+                    if _t3["bonus_hp_dmg"] > 0:
+                        actual_hp_dmg, p2_true_dmg_accum, cap_hp_msg = apply_raid_true_damage(_t3["bonus_hp_dmg"], p2_true_dmg_accum, p2_true_cap, "Dark Chain (Kizuna)")
+                        card_dmg += actual_hp_dmg
+                        if cap_hp_msg:
+                            _t3["logs"].append(cap_hp_msg)
+                    if _t3["gif"] and not turn_image:
+                        turn_image = _t3["gif"]
+                    t3_notif_str = "\n".join(_t3["logs"])
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
 
                 round_player_dmg += card_dmg
                 c["total_dmg"] += card_dmg
@@ -3637,6 +3639,10 @@ async def execute_raid(channel, raid_data):
                 round_embed.add_field(name="🦇 Ripples of 495 Years:", value=flandre_notif, inline=False)
             if t1_notif:
                 round_embed.add_field(name="🔮 Tuyệt Kỹ [Ace 2] [#t1] Seiki:", value=t1_notif, inline=False)
+            if t2_notif:
+                round_embed.add_field(name="🔱 Thần Tướng [Nhóm T] [#t2] Mahoraga:", value=t2_notif, inline=False)
+            if t3_notif:
+                round_embed.add_field(name="🩸 Hoàng Đế [Nhóm T] [#t3] Kizuna:", value=t3_notif, inline=False)
             round_embed.add_field(name="👹 Boss Phase 2 Ra Đòn:", value=boss_action_log, inline=False)
             if push_logs:
                 round_embed.add_field(name="🔄 Thay Đổi Tiền Tuyến:", value="\n".join(push_logs), inline=False)
@@ -4015,10 +4021,10 @@ async def execute_raid(channel, raid_data):
                 t2_notif = (t2_notif + "\n" if t2_notif else "") + t2_notif_str
             if str(ac["cid"]).lower() == "t3":
                 t3_st = c.setdefault("t3_state", {})
-                _t3 = t3_combat_turn(t3_st, ac, p1_rounds, p1_max_hp, f"Boss {boss_cfg['name']}", is_ace2=ac.get("is_ace2"))
+                _t3 = t3_combat_turn(t3_st, ac, p2_rounds, p2_max_hp, f"Boss {BOSS_PHASE2_CONFIG['name']}", is_ace2=ac.get("is_ace2"))
                 card_dmg = int(card_dmg * _t3["multiplier"])
                 if _t3["bonus_hp_dmg"] > 0:
-                    actual_hp_dmg, p1_true_dmg_accum, cap_hp_msg = apply_raid_true_damage(_t3["bonus_hp_dmg"], p1_true_dmg_accum, p1_true_cap, "Dark Chain (Kizuna)")
+                    actual_hp_dmg, p2_true_dmg_accum, cap_hp_msg = apply_raid_true_damage(_t3["bonus_hp_dmg"], p2_true_dmg_accum, p2_true_cap, "Dark Chain (Kizuna)")
                     card_dmg += actual_hp_dmg
                     if cap_hp_msg:
                         _t3["logs"].append(cap_hp_msg)
