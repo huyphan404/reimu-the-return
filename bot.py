@@ -1715,7 +1715,7 @@ def execute_seiki_ace2(player):
             "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận.\n"
             "🌑 **Bóng Khái Niệm (20%):** Gây **×1.5 Sát Thương** kèm **10% Máu Tối Đa** mục tiêu và **xóa kỹ năng đối phương**, 1 lần/trận.\n\n"
             f"📉 **Chi phí:** Đã tiêu hao **10 Mảnh Seiki** (Còn lại: `{shards['seiki']}` mảnh)\n"
-            "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn! (Đạt 995 ATK & 7,300 HP gốc)
+            "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn! (Đạt 995 ATK & 7,300 HP gốc)"
         ),
         color=0x7C3AED
     )
