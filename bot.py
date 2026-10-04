@@ -9405,6 +9405,9 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
     p_idx = 0
     rounds = 0
     sakuya_used, reimu_used, marisa_used = False, False, False
+    flandre_used, reisen_used, yukari_used = False, False, False
+    p_t1 = {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
+    boss_skill_erased = False
 
     while rumia_hp > 0 and p_idx < len(player_cards) and rounds < 25:
         rounds += 1
@@ -9425,6 +9428,36 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
                 card_dmg = int(card_dmg * 2.0)
                 if not turn_image: turn_image = EVOL_CONFIG[19]["skill_gif"]
                 turn_logs.append(f"🌟 **[Ace 2] Marisa** tung **Master Spark** (×2.0)! Giáng {card_dmg:,} DMG!")
+                
+          # Kỹ năng Seiki Ace 2 trong Story Mode
+        if str(pc["cid"]).lower() == "t1" and pc.get("is_ace2"):
+            _t1 = t1_ace2_attack(p_t1, pc, rounds, rumia_max_hp, "Boss Rumia", is_boss=True)
+            card_dmg += _t1["bonus"]
+            if _t1["direct"]:
+                rumia_hp = max(0, rumia_hp - _t1["direct"])
+            if _t1["disable"]:
+                boss_skill_erased = True
+                turn_logs.append("🌑 **[Bóng Khái Niệm]** Đã xóa toàn bộ ma pháp bóng tối của Rumia!")
+            if _t1["heal"]:
+                pc["current_hp"] = min(pc["max_hp"], pc["current_hp"] + _t1["heal"])
+            if _t1["gif"] and not turn_image:
+                turn_image = _t1["gif"]
+            turn_logs.extend(_t1["logs"])
+
+        # Kỹ năng Remilia Ace 2 (Thụ động +3% Max HP)
+        if pc["cid"] == 12 and pc.get("is_ace2"):
+            gungnir_dmg = int(rumia_max_hp * 0.03)
+            card_dmg += gungnir_dmg
+            turn_logs.append(f"🩸 **[Ace 2] Remilia** - **Thương Đỏ Gungnir**: +{gungnir_dmg:,} DMG (3% Max HP)!")
+
+        # Kỹ năng Flandre Ace 2 (Ripples of 495 Years - 50% HP)
+        if pc["cid"] == 9 and pc.get("is_ace2") and not flandre_used:
+            if random.random() < 0.25:
+                flandre_used = True
+                rip_dmg = int(rumia_hp * 0.50)
+                rumia_hp = max(0, rumia_hp - rip_dmg)
+                if not turn_image: turn_image = EVOL_CONFIG[9]["skill_gif"]
+                turn_logs.append(f"🦇 **[Ace 2] Flandre** tung **Ripples of 495 Years** (25%)! Xóa sổ **{rip_dmg:,} HP (50% HP Rumia)**!")      
 
         rumia_hp = max(0, rumia_hp - card_dmg)
         turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Rumia!")
@@ -9685,6 +9718,9 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
     cirno_freeze_turns = 0
     cirno_skill_used = False
     sakuya_used, reimu_used, marisa_used = False, False, False
+    flandre_used, reisen_used, yukari_used = False, False, False
+    p_t1 = {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
+    boss_skill_erased = False
 
     while cirno_hp > 0 and p_idx < len(player_cards) and rounds < 25:
         rounds += 1
@@ -9713,6 +9749,37 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     card_dmg = int(card_dmg * 2.0)
                     if not turn_image: turn_image = EVOL_CONFIG[19]["skill_gif"]
                     turn_logs.append(f"🌟 **[Ace 2] Marisa** tung **Master Spark** (×2.0)! Giáng {card_dmg:,} DMG!")
+                    
+                    # Kỹ năng Seiki Ace 2 trong Stage 2
+            if str(pc["cid"]).lower() == "t1" and pc.get("is_ace2"):
+                _t1 = t1_ace2_attack(p_t1, pc, rounds, cirno_max_hp, "Boss Cirno", is_boss=True)
+                card_dmg += _t1["bonus"]
+                if _t1["direct"]:
+                    cirno_hp = max(0, cirno_hp - _t1["direct"])
+                if _t1["disable"]:
+                    boss_skill_erased = True
+                    cirno_freeze_turns = 0
+                    turn_logs.append("🌑 **[Bóng Khái Niệm]** Đã khóa vĩnh viễn tuyệt kỹ Perfect Freeze của Cirno!")
+                if _t1["heal"]:
+                    pc["current_hp"] = min(pc["max_hp"], pc["current_hp"] + _t1["heal"])
+                if _t1["gif"] and not turn_image:
+                    turn_image = _t1["gif"]
+                turn_logs.extend(_t1["logs"])
+
+            # Kỹ năng Remilia Ace 2 (Thụ động +3% Max HP)
+            if pc["cid"] == 12 and pc.get("is_ace2"):
+                gungnir_dmg = int(cirno_max_hp * 0.03)
+                card_dmg += gungnir_dmg
+                turn_logs.append(f"🩸 **[Ace 2] Remilia** - **Thương Đỏ Gungnir**: +{gungnir_dmg:,} DMG!")
+
+            # Kỹ năng Flandre Ace 2 (Ripples of 495 Years)
+            if pc["cid"] == 9 and pc.get("is_ace2") and not flandre_used:
+                if random.random() < 0.25:
+                    flandre_used = True
+                    rip_dmg = int(cirno_hp * 0.50)
+                    cirno_hp = max(0, cirno_hp - rip_dmg)
+                    if not turn_image: turn_image = EVOL_CONFIG[9]["skill_gif"]
+                    turn_logs.append(f"🦇 **[Ace 2] Flandre** tung **Ripples of 495 Years**! Xóa sổ **{rip_dmg:,} HP (50% HP Cirno)**!")
 
             cirno_hp = max(0, cirno_hp - card_dmg)
             turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Cirno!")
@@ -9723,7 +9790,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
             if sakuya_used and rounds == 1:
                 turn_logs.append("❄️ Cirno bị đóng băng thời gian nên không thể phản công!")
             else:
-                if not cirno_skill_used and random.random() < 0.40:
+                if not boss_skill_erased and not cirno_skill_used and random.random() < 0.40:
                     cirno_skill_used = True
                     cirno_freeze_turns = 2
                     turn_image = EVOL_CONFIG[23]["skill_gif"]
