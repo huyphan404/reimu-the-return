@@ -124,6 +124,20 @@ def run_web_server():
 
 threading.Thread(target=run_web_server, daemon=True).start()
 
+def keep_alive_ping():
+    """Tự động ping chính web server mỗi 4 phút để Render không bao giờ ngủ"""
+    import urllib.request
+    port = int(os.environ.get("PORT", 10000))
+    url = os.environ.get("RENDER_EXTERNAL_URL") or f"http://127.0.0.1:{port}/"
+    while True:
+        time.sleep(240)
+        try:
+            urllib.request.urlopen(url, timeout=10)
+        except Exception:
+            pass
+
+threading.Thread(target=keep_alive_ping, daemon=True).start()
+
 # ==============================================================================
 # 2. HỆ THỐNG CẤP ĐỘ & XP MỚI (+50 XP MỖI CẤP, MỞ GIỚI HẠN THEO PRESTIGE)
 # ==============================================================================
@@ -11159,33 +11173,34 @@ async def prefix_admin_give_item(ctx, vat_pham: str = "thanh_loi", so_luong: int
     await ctx.send(f"🎁 Đã cấp **+{so_luong:,}x {item_name}** cho {target.mention}! (Tổng kho: `{p_items[clean_vp]:,}` cái)")
 
 
-async def start_bot_safely():
-    retry_delay = 300  # Chờ 5 phút (300 giây) nếu bị 429 để Discord gỡ phạt
+import sys
+
+def start_bot_safely():
+    retry_delay = 60
     while True:
         try:
             print("🔄 [SYSTEM] Đang kết nối tới Discord Gateway...", flush=True)
-            await bot.start(DISCORD_TOKEN)
+            bot.run(DISCORD_TOKEN, reconnect=True)
         except discord.errors.HTTPException as e:
             if e.status == 429:
                 print(
                     f"🚨 [RATE LIMIT 429] IP của Render đang bị Discord chặn tạm thời!\n"
-                    f"⏳ Đang tạm nghỉ {retry_delay // 60} phút trước khi thử lại để tránh bị khóa vĩnh viễn...",
+                    f"⏳ Đang tạm nghỉ {retry_delay} giây trước khi thử lại...",
                     flush=True
                 )
-                await bot.close()
-                await asyncio.sleep(retry_delay)
-                retry_delay = min(1800, int(retry_delay * 1.5))  # Tăng dần tối đa 30 phút
+                time.sleep(retry_delay)
+                retry_delay = min(900, int(retry_delay * 1.5))
             else:
-                print(f"⚠️ [HTTP ERROR] Mã lỗi {e.status}: {e}. Thử lại sau 60s...", flush=True)
-                await bot.close()
-                await asyncio.sleep(60)
+                print(f"⚠️ [HTTP ERROR] Mã lỗi {e.status}: {e}. Khởi động lại sau 30s...", flush=True)
+                time.sleep(30)
+                os.execv(sys.executable, [sys.executable] + sys.argv)
         except Exception as e:
-            print(f"❌ [CRASH] Lỗi không xác định: {e}. Thử lại sau 60s...", flush=True)
-            await bot.close()
-            await asyncio.sleep(60)
+            print(f"❌ [CRASH] Bot bị ngắt kết nối ({e}). Đang khởi động lại sạch sẽ sau 15s...", flush=True)
+            time.sleep(15)
+            os.execv(sys.executable, [sys.executable] + sys.argv)
 
 if __name__ == "__main__":
     if not DISCORD_TOKEN:
         print("❌ LỖI: Chưa cấu hình DISCORD_TOKEN trong .env!", flush=True)
     else:
-        asyncio.run(start_bot_safely())
+        start_bot_safely()
