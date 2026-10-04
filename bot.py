@@ -3165,7 +3165,7 @@ async def execute_raid(channel, raid_data):
         if p1_hp <= 0:
             break
 
-        await asyncio.sleep(1.8)
+        await asyncio.sleep(3.0)
 
     p1_defeated = (p1_hp <= 0)
     if not p1_defeated:
@@ -3686,7 +3686,7 @@ async def execute_raid(channel, raid_data):
 
             if p2_hp <= 0:
                 break
-            await asyncio.sleep(1.8)
+            await asyncio.sleep(3.0)
 
         p2_defeated = (p2_hp <= 0)
         total_raid_dmg = sum(c["total_dmg"] for c in combatants)
@@ -4187,7 +4187,7 @@ async def execute_raid(channel, raid_data):
 
         if p2_hp <= 0:
             break
-        await asyncio.sleep(1.8)
+        await asyncio.sleep(3.0)
 
     p2_defeated = (p2_hp <= 0)
     total_raid_dmg = sum(c["total_dmg"] for c in combatants)
@@ -4843,7 +4843,7 @@ async def execute_event_raid(channel, raid_data):
         try: await msg.edit(embed=r_emb)
         except Exception: pass
         if p1_hp <= 0: break
-        await asyncio.sleep(1.8)
+        await asyncio.sleep(3.0)
 
     if p1_hp > 0:
         fail_emb = discord.Embed(
@@ -5268,7 +5268,7 @@ async def execute_event_raid(channel, raid_data):
         try: await msg.edit(embed=r_emb)
         except Exception: pass
         if p2_hp <= 0: break
-        await asyncio.sleep(1.8)
+        await asyncio.sleep(3.0)
 
     p2_won = (p2_hp <= 0)
     final_emb = discord.Embed(
@@ -11121,8 +11121,33 @@ async def prefix_admin_give_item(ctx, vat_pham: str = "thanh_loi", so_luong: int
     await ctx.send(f"🎁 Đã cấp **+{so_luong:,}x {item_name}** cho {target.mention}! (Tổng kho: `{p_items[clean_vp]:,}` cái)")
 
 
+async def start_bot_safely():
+    retry_delay = 300  # Chờ 5 phút (300 giây) nếu bị 429 để Discord gỡ phạt
+    while True:
+        try:
+            print("🔄 [SYSTEM] Đang kết nối tới Discord Gateway...", flush=True)
+            await bot.start(DISCORD_TOKEN)
+        except discord.errors.HTTPException as e:
+            if e.status == 429:
+                print(
+                    f"🚨 [RATE LIMIT 429] IP của Render đang bị Discord chặn tạm thời!\n"
+                    f"⏳ Đang tạm nghỉ {retry_delay // 60} phút trước khi thử lại để tránh bị khóa vĩnh viễn...",
+                    flush=True
+                )
+                await bot.close()
+                await asyncio.sleep(retry_delay)
+                retry_delay = min(1800, int(retry_delay * 1.5))  # Tăng dần tối đa 30 phút
+            else:
+                print(f"⚠️ [HTTP ERROR] Mã lỗi {e.status}: {e}. Thử lại sau 60s...", flush=True)
+                await bot.close()
+                await asyncio.sleep(60)
+        except Exception as e:
+            print(f"❌ [CRASH] Lỗi không xác định: {e}. Thử lại sau 60s...", flush=True)
+            await bot.close()
+            await asyncio.sleep(60)
+
 if __name__ == "__main__":
     if not DISCORD_TOKEN:
         print("❌ LỖI: Chưa cấu hình DISCORD_TOKEN trong .env!", flush=True)
     else:
-        bot.run(DISCORD_TOKEN)
+        asyncio.run(start_bot_safely())
