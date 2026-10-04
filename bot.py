@@ -2222,7 +2222,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
         )
         embed.add_field(
             name="🎁 Phần Thưởng Thanh Tẩy Boss:",
-            value="• **Phase 1:** 10% nhận **10 Vé**, 40% nhận **5 Vé**, 50% nhận **3 Vé**! (+100 XP)\n• **Phase 2 (Thức Tỉnh):** 10% nhận **30 Vé**, 40% nhận **20 Vé**, 50% nhận **10 Vé**! 🔮 **5%** rơi **+1 Mảnh Seiki**! (+150 XP)\n• 🔮 Mỗi Phase đều có **2.5%** rơi **+1 Mảnh Seiki** (10 mảnh = 1 thẻ [T] #t1 Seiki - dùng `/t translate`)!\n• Nhận thêm điểm danh nhiệm vụ diệt Boss!",
+            value="• **Phase 1:** 10% nhận **10 Vé**, 40% nhận **5 Vé**, 50% nhận **3 Vé**! (+100 XP)\n• **Phase 2 (Thức Tỉnh):** 10% nhận **30 Vé**, 40% nhận **20 Vé**, 50% nhận **10 Vé**! 🔮 **5%** rơi **+1 Mảnh Seiki** | 🪭 **2.5%** rơi **+1 Quạt Giấy**! (+150 XP)\n• 🔮 Mỗi Phase đều có **2.5%** rơi **+1 Mảnh Seiki** (10 mảnh = 1 thẻ [T] #t1 Seiki - dùng `/t translate`)!\n• Nhận thêm điểm danh nhiệm vụ diệt Boss!",
         )
         embed.add_field(
             name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
@@ -2277,7 +2277,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
             value=(
                 "• **Phase 1 (30k HP):** 10% ra **10 Vé**, 40% ra **5 Vé**, 50% ra **3 Vé**!\n"
                 f"• **Chuyển Phase 2 ({BOSS_PHASE2_CONFIG['hp']:,} HP / {BOSS_PHASE2_CONFIG['power']:,} DMG chia đều):** Hồi sinh & phục hồi **100% HP toàn bộ thẻ bài**!\n"
-                "• **Phase 2:** 10% ra **20 Vé**, 40% ra **10 Vé**, 50% ra **5 Vé**!\n"
+                "• **Phase 2:** 10% ra **20 Vé**, 40% ra **10 Vé**, 50% ra **5 Vé**! 🪭 **1%** rơi **+1 Quạt Giấy** (Tiến hóa Yukari Ace 2)!\n"
                 "• **Trận đấu trực tiếp:** Diễn biến từng hiệp được phát sóng trực tiếp!"
             ),
             inline=False
@@ -3737,7 +3737,7 @@ async def execute_raid(channel, raid_data):
                 lvl_up = f" 🌟 **LÊN CẤP {r['new_level']}!**" if r['new_level'] > r['old_level'] else ""
                 shard_line = f"\n   └ {r['items'][1]}" if len(r['items']) > 1 else ""
                 p2_summary.append(f"🏆 **{r['username']}**: Nhận **+{r['total_pulls']:.0f} Vé Pull** ({r['items'][0]}) + 150 XP!{lvl_up}{shard_line}\n   └ *Tổng vé hiện có: {r['total_tickets']:.2f} vé*")
-            final_embed.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (10% 30 vé, 40% 20 vé, 50% 10 vé, 5% Mảnh Seiki, 1% Quạt giấy):", value="\n".join(p2_summary), inline=False)
+            final_embed.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (10% 30 vé, 40% 20 vé, 50% 10 vé, 5% Mảnh Seiki, 2,5% Quạt giấy):", value="\n".join(p2_summary), inline=False)
         else:
             final_embed.add_field(name="⚠️ Kết Quả Phase 2:", value=f"Boss Phase 2 còn {p2_hp:,} HP! Toàn bộ quà Phase 1 vẫn được bảo lưu trọn vẹn.", inline=False)
 
@@ -4235,7 +4235,7 @@ async def execute_raid(channel, raid_data):
             lvl_up = f" 🌟 **LÊN CẤP {r['new_level']}!**" if r['new_level'] > r['old_level'] else ""
             shard_line = f"\n   └ {r['items'][1]}" if len(r['items']) > 1 else ""
             p2_summary.append(f"🏆 **{r['username']}**: Nhận **+{r['total_pulls']:.0f} Vé Pull** ({r['items'][0]}) + 150 XP!{lvl_up}{shard_line}\n   └ *Tổng vé hiện có: {r['total_tickets']:.2f} vé*")
-        final_embed.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (10% 20 vé, 40% 10 vé, 50% 5 vé, 2.5% Mảnh Seiki):", value="\n".join(p2_summary), inline=False)
+        final_embed.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (10% 20 vé, 40% 10 vé, 50% 5 vé, 2.5% Mảnh Seiki, 1% Quạt Giấy 🪭):", value="\n".join(p2_summary), inline=False)
     else:
         final_embed.add_field(name="⚠️ Kết Quả Phase 2:", value=f"Boss Phase 2 còn {p2_hp:,} HP! Toàn bộ quà Phase 1 vẫn được bảo lưu trọn vẹn.", inline=False)
 
