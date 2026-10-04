@@ -758,7 +758,7 @@ T1_ACE2_CONFIG = {
         "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/e7/fe/JOKpsPyd.gif"
     },
     "bong_khai_niem": {
-        "chance": 0.40, "dmg_pct": 0.15,  # 40% kích hoạt 1 lần/trận: 15% Máu Tối Đa + xóa kỹ năng đối phương
+        "chance": 0.20, "multiplier": 1.5, "dmg_pct": 0.10,  # 20% kích hoạt 1 lần/trận: 1.5x sát thương + 10% Máu Tối Đa + xóa kỹ năng đối phương
         "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/38/ec/4v5klqIf3v2WuSLgB.gif"
     }
 }
@@ -778,7 +778,7 @@ EVOL_CONFIG["t1"] = {
         "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **2% Máu Tối Đa** của mục tiêu! "
         "💚 **Medicine Sign (35%):** Hồi phục **40% Máu Tối Đa** cho bản thân, 1 lần/trận. "
         "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận. "
-        "🌑 **Bóng Khái Niệm (40%):** Gây **15% Máu Tối Đa** mục tiêu và **lập tức xóa kỹ năng của đối phương**, 1 lần/trận."
+        "🌑 **Bóng Khái Niệm (20%):** Gây **×1.5 Sát Thương** kèm **10% Máu Tối Đa** mục tiêu và **lập tức xóa kỹ năng của đối phương**, 1 lần/trận."
     ),
     "bonus_power": 300,
     "bonus_hp": 300
@@ -865,7 +865,7 @@ CHARACTER_DETAILS = {
     "t1": {
         "title": "Dị Tà Đệ Nhất Pháp Sư (Nhóm T-Đặc Biệt)",
         "skill_name": "Tam Đại Tuyệt Kỹ (Fantasy Seal • Master Spark • Medicine Sign)",
-        "skill_desc": "Thẻ bài thần thoại nhóm T. Bản thường: Fantasy Seal (40% miễn thương), Master Spark (30% ×1.5), Medicine Sign (20% hồi phục). [Ace 2 ⭐⭐ - Kỹ năng thay đổi]: 🪓 Cleave (thụ động 100%: mọi đòn đánh +2% Máu Tối Đa mục tiêu) • 💚 Medicine Sign (35% hồi 40% Máu, 1 lần/trận) • 🛡️ Fantasy Seal (50% miễn toàn bộ sát thương 1 hiệp, buff lên 50% ở dạng Ace 2, 1 lần/trận) • 🌑 Bóng Khái Niệm (40%: 15% Máu Tối Đa + xóa kỹ năng đối phương, 1 lần/trận). Tuân thủ: tối đa 1 chiêu mỗi lượt!"
+        "skill_desc": "Thẻ bài thần thoại nhóm T. Bản thường: Fantasy Seal (40% miễn thương), Master Spark (30% ×1.5), Medicine Sign (20% hồi phục). [Ace 2 ⭐⭐ - Kỹ năng thay đổi]: 🪓 Cleave (thụ động 100%: mọi đòn đánh +2% Máu Tối Đa mục tiêu) • 💚 Medicine Sign (35% hồi 40% Máu, 1 lần/trận) • 🛡️ Fantasy Seal (50% miễn toàn bộ sát thương 1 hiệp, buff lên 50% ở dạng Ace 2, 1 lần/trận) • 🌑 Bóng Khái Niệm (20%: 1.5x sát thương + 10% Máu Tối Đa + xóa kỹ năng đối phương, 1 lần/trận)."
     },
     "t2": {
         "title": "Bát Ách Kiếm Thần Tướng (Nhóm T-Đặc Biệt)",
@@ -1706,7 +1706,7 @@ def execute_seiki_ace2(player):
             "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **2% Máu Tối Đa** mục tiêu!\n"
             "💚 **Medicine Sign (35%):** Hồi phục **40% Máu Tối Đa** bản thân, 1 lần/trận.\n"
             "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận.\n"
-            "🌑 **Bóng Khái Niệm (40%):** Gây **15% Máu Tối Đa** mục tiêu và **xóa kỹ năng đối phương**, 1 lần/trận.\n\n"
+            "🌑 **Bóng Khái Niệm (20%):** Gây **×1.5 Sát Thương** kèm **10% Máu Tối Đa** mục tiêu và **xóa kỹ năng đối phương**, 1 lần/trận.\n\n"
             f"📉 **Chi phí:** Đã tiêu hao **10 Mảnh Seiki** (Còn lại: `{shards['seiki']}` mảnh)\n"
             "💪 **Buff Ace 2:** +500 ATK & +500 HP vĩnh viễn!"
         ),
@@ -1723,7 +1723,7 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
     Quy tắc: Cleave thụ động 100% mọi đòn đánh; tối đa 1 chiêu/lượt; mỗi chiêu 1 lần/trận.
     ĐẶC BIỆT: Chiêu Fantasy Seal được buff tỷ lệ kích hoạt lên 50% ở dạng Ace 2 (Miễn toàn bộ sát thương 1 hiệp)!"""
     out = {"bonus": 0, "direct": 0, "heal": 0, "invul": False, "instant_kill": False, "boss_half_hp": False,
-           "disable": False, "logs": [], "gif": None}
+           "disable": False, "logs": [], "gif": None, "multiplier": 1.0}
 
     # 🪓 CLEAVE - Nội tại thụ động 100%: đánh thường +2% Máu Tối Đa mục tiêu
     out["bonus"] = int(target_max_hp * T1_ACE2_CONFIG["cleave_pct"])
@@ -1754,14 +1754,15 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
     elif not t1_flags.get("bong_used") and roll < seal_chance + bong_chance:
         t1_flags["bong_used"] = True
         t1_flags["used_turn"] = round_no
+        out["multiplier"] = T1_ACE2_CONFIG["bong_khai_niem"].get("multiplier", 1.5)
         out["direct"] = int(target_max_hp * T1_ACE2_CONFIG["bong_khai_niem"]["dmg_pct"])
         out["disable"] = True
         out["gif"] = T1_ACE2_CONFIG["bong_khai_niem"]["gif"]
         out["logs"].append(
-            f"🌑 **[Ace 2] [#t1] Seiki** kích hoạt **BÓNG KHÁI NIỆM** (40%)! "
-            f"Gây **{out['direct']:,} DMG** (15% Máu Tối Đa {target_desc}) và **LẬP TỨC XÓA KỸ NĂNG của đối phương**!"
+            f"🌑 **[Ace 2] [#t1] Seiki** kích hoạt **BÓNG KHÁI NIỆM** (20%)! "
+            f"Cường hóa **×{out['multiplier']} Sát Thương** kèm **{out['direct']:,} DMG** (10% Máu Tối Đa {target_desc}) và **LẬP TỨC XÓA KỸ NĂNG của đối phương**!"
         )
-    elif not t1_flags.get("med_used") and ac.get("current_hp", 1) < ac.get("max_hp", ac.get("hp", 1))             and roll < seal_chance + bong_chance + med_chance:
+    elif not t1_flags.get("med_used") and ac.get("current_hp", 1) < ac.get("max_hp", ac.get("hp", 1)) and roll < seal_chance + bong_chance + med_chance:
         t1_flags["med_used"] = True
         t1_flags["used_turn"] = round_no
         out["heal"] = int(ac.get("max_hp", ac.get("hp", 1)) * T1_ACE2_CONFIG["medicine_sign"]["heal_pct"])
@@ -2014,7 +2015,7 @@ class OpponentTeamView(discord.ui.View):
             elif c["cid"] == 13:
                 skill_text += "\n☢️ **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Nuclear Spell Card* bộc phá ×3.0 sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn."
         if is_ace and str(c["cid"]).lower() == "t1":
-            skill_text += "\n♾️ **[Ace 2 Hiệu Ứng]** *Cleave* (thụ động, +2% Máu tối đa mỗi đòn) • *Medicine Sign* (35% hồi 40% máu) • *Fantasy Seal* (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • *Bóng Khái Niệm* (40%: 15% máu tối đa + xóa kỹ năng đối phương — mỗi chiêu 1 lần/trận)."
+            skill_text += "\n♾️ **[Ace 2 Hiệu Ứng]** *Cleave* (thụ động, +2% Máu tối đa mỗi đòn) • *Medicine Sign* (35% hồi 40% máu) • *Fantasy Seal* (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • *Bóng Khái Niệm* (20%: 1.5x sát thương + 10% máu tối đa + xóa kỹ năng đối phương — mỗi chiêu 1 lần/trận)."
         if str(c["cid"]).lower() == "t2":
             skill_text += "\n🔱 **[Thần Tướng Hiệu Ứng]** *The True adapt* (thụ động 100%: mỗi turn hồi 5% Máu tối đa và giảm 5% sát thương phải nhận - cộng dồn) • *Thoái Ma kiếm* (30% kích hoạt gây ×1.5 sát thương)."
         embed.add_field(name="✨ Kỹ Năng / Tuyệt Kỹ Danmaku:", value=f"*{skill_text}*", inline=False)
@@ -2705,6 +2706,8 @@ async def execute_raid(channel, raid_data):
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
                     _t1 = t1_ace2_attack(c, ac, p1_rounds, p1_max_hp, f"Boss {boss_cfg['name']}", is_boss=True)
+                    if _t1.get("multiplier", 1.0) > 1.0:
+                        card_dmg = int(card_dmg * _t1["multiplier"])
                     if _t1["bonus"]:
                         raw_cleave = _t1["bonus"]
                         actual_cleave, p1_true_dmg_accum, cap_cleave_msg = apply_raid_true_damage(raw_cleave, p1_true_dmg_accum, p1_true_cap, "Cleave (Seiki Ace 2)")
@@ -3422,7 +3425,11 @@ async def execute_raid(channel, raid_data):
 
                 if str(ac["cid"]).lower() == "t1":
                     if ac.get("is_ace2"):
+                        if str(ac["cid"]).lower() == "t1":
+                    if ac.get("is_ace2"):
                         _t1 = t1_ace2_attack(c, ac, p2_rounds, p2_max_hp, f"Boss Seiki Phase 2", is_boss=True)
+                        if _t1.get("multiplier", 1.0) > 1.0:
+                            card_dmg = int(card_dmg * _t1["multiplier"])
                         if _t1["bonus"]:
                             raw_cleave = _t1["bonus"]
                             actual_cleave, p2_true_dmg_accum, cap_cleave_msg = apply_raid_true_damage(raw_cleave, p2_true_dmg_accum, p2_true_cap, "Cleave (Seiki Ace 2)")
@@ -3937,6 +3944,8 @@ async def execute_raid(channel, raid_data):
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
                     _t1 = t1_ace2_attack(c, ac, p2_rounds, p2_max_hp, f"Boss Reimu Phase 2", is_boss=True)
+                    if _t1.get("multiplier", 1.0) > 1.0:
+                        card_dmg = int(card_dmg * _t1["multiplier"])
                     if _t1["bonus"]:
                         raw_cleave = _t1["bonus"]
                         actual_cleave, p2_true_dmg_accum, cap_cleave_msg = apply_raid_true_damage(raw_cleave, p2_true_dmg_accum, p2_true_cap, "Cleave (Seiki Ace 2)")
@@ -4631,6 +4640,8 @@ async def execute_event_raid(channel, raid_data):
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
                     _t1 = t1_ace2_attack(c, ac, p1_rounds, p1_max_hp, "Boss Kizuna", is_boss=True)
+                    if _t1.get("multiplier", 1.0) > 1.0:
+                        card_dmg = int(card_dmg * _t1["multiplier"])
                     if _t1["bonus"]:
                         actual_cleave, p1_true_dmg_accum, _ = apply_raid_true_damage(_t1["bonus"], p1_true_dmg_accum, p1_true_cap, "Cleave Seiki")
                         card_dmg += actual_cleave
@@ -5019,6 +5030,8 @@ async def execute_event_raid(channel, raid_data):
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
                     _t1 = t1_ace2_attack(c, ac, p2_rounds, p2_max_hp, "Boss Kizuna Phase 2", is_boss=True)
+                    if _t1.get("multiplier", 1.0) > 1.0:
+                        card_dmg = int(card_dmg * _t1["multiplier"])
                     if _t1["bonus"]:
                         actual_cleave, p2_true_dmg_accum, _ = apply_raid_true_damage(_t1["bonus"], p2_true_dmg_accum, p2_true_cap, "Cleave Seiki")
                         card_dmg += actual_cleave
@@ -6074,7 +6087,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             "• Điều kiện: **[#19] Marisa + [#15] Reimu + [#18] Sakuya** đều Ace 2 ⭐⭐\n"
             "• Chi phí: **10 Mảnh Seiki** (không khấu trừ thẻ bài)\n"
             "• Buff Ace: **+300 ATK** & **+300 HP**\n"
-            "• Kỹ năng: **Cleave** (thụ động +2% Máu tối đa mỗi đòn) • **Medicine Sign** (35% hồi 40% máu) • **Fantasy Seal** (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • **Bóng Khái Niệm** (40%: 15% máu tối đa + xóa kỹ năng đối thủ)"
+            "• Kỹ năng: **Cleave** (thụ động +2% Máu tối đa mỗi đòn) • **Medicine Sign** (35% hồi 40% máu) • **Fantasy Seal** (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • **Bóng Khái Niệm** (20%: 1.5x sát thương + 10% máu tối đa + xóa kỹ năng đối thủ)"
         ),
         inline=False
     )
@@ -7175,7 +7188,7 @@ class CharacterCheckView(discord.ui.View):
                     f"🎬 {T1_ACE2_CONFIG['medicine_sign']['gif']}\n"
                     "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận.\n"
                     f"🎬 {T1_ACE2_CONFIG['fantasy_seal']['gif']}\n"
-                    "🌑 **Bóng Khái Niệm (40%):** Gây **15% Máu Tối Đa** + **xóa kỹ năng đối phương**, 1 lần/trận.\n"
+                    "🌑 **Bóng Khái Niệm (20%):** Gây **×1.5 Sát Thương** kèm **10% Máu Tối Đa** + **xóa kỹ năng đối phương**, 1 lần/trận.\n"
                     f"🎬 {T1_ACE2_CONFIG['bong_khai_niem']['gif']}\n"
                     "⚖️ *Tối đa 1 chiêu mỗi lượt. Hoạt động xuyên suốt Raid, Battle & PvP!*"
                 ),
@@ -7698,6 +7711,8 @@ async def handle_battle(ctx_or_interaction):
         if str(pc["cid"]).lower() == "t1":
             if pc.get("is_ace2"):
                 _t1 = t1_ace2_attack(p_t1, pc, r_cnt, oc["hp"], f"**{oc['name']}**", is_boss=False)
+                if _t1.get("multiplier", 1.0) > 1.0:
+                    curr_pc_power = int(curr_pc_power * _t1["multiplier"])
                 curr_pc_power += _t1["bonus"]
                 if _t1["direct"]:
                     oc["current_hp"] = max(0, oc["current_hp"] - _t1["direct"])
@@ -8327,6 +8342,8 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
         if str(cc["cid"]).lower() == "t1":
             if cc.get("is_ace2"):
                 _t1 = t1_ace2_attack(c_t1, cc, r_cnt, tc["max_hp"], f"**{tc['name']}** ({target.display_name})", is_boss=False)
+                if _t1.get("multiplier", 1.0) > 1.0:
+                    c_curr_power = int(c_curr_power * _t1["multiplier"])
                 c_curr_power += _t1["bonus"]
                 if _t1["direct"]:
                     tc["current_hp"] = max(0, tc["current_hp"] - _t1["direct"])
@@ -8484,6 +8501,8 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
         if str(tc["cid"]).lower() == "t1":
             if tc.get("is_ace2"):
                 _t1 = t1_ace2_attack(t_t1, tc, r_cnt, cc["max_hp"], f"**{cc['name']}** ({challenger.display_name})", is_boss=False)
+                if _t1.get("multiplier", 1.0) > 1.0:
+                    t_curr_power = int(t_curr_power * _t1["multiplier"])
                 t_curr_power += _t1["bonus"]
                 if _t1["direct"]:
                     cc["current_hp"] = max(0, cc["current_hp"] - _t1["direct"])
@@ -9432,6 +9451,8 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
           # Kỹ năng Seiki Ace 2 trong Story Mode
         if str(pc["cid"]).lower() == "t1" and pc.get("is_ace2"):
             _t1 = t1_ace2_attack(p_t1, pc, rounds, rumia_max_hp, "Boss Rumia", is_boss=True)
+            if _t1.get("multiplier", 1.0) > 1.0:
+                card_dmg = int(card_dmg * _t1["multiplier"])
             card_dmg += _t1["bonus"]
             if _t1["direct"]:
                 rumia_hp = max(0, rumia_hp - _t1["direct"])
@@ -9753,6 +9774,8 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     # Kỹ năng Seiki Ace 2 trong Stage 2
             if str(pc["cid"]).lower() == "t1" and pc.get("is_ace2"):
                 _t1 = t1_ace2_attack(p_t1, pc, rounds, cirno_max_hp, "Boss Cirno", is_boss=True)
+                if _t1.get("multiplier", 1.0) > 1.0:
+                    card_dmg = int(card_dmg * _t1["multiplier"])
                 card_dmg += _t1["bonus"]
                 if _t1["direct"]:
                     cirno_hp = max(0, cirno_hp - _t1["direct"])
