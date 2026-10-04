@@ -3518,6 +3518,11 @@ async def execute_raid(channel, raid_data):
 
             p2_hp = max(0, p2_hp - round_player_dmg)
 
+            boss_action_log = ""
+            if p2_hp <= 0:
+                boss_action_log = "💥 **Seiki Dị Hình Phase 2 đã bị thanh tẩy hoàn toàn! Dị tà ma thuật tiêu tan!**"
+            elif boss_stunned:
+                boss_action_log = "❄️ Boss Phase 2 bị đóng băng thời gian, bất lực không thể ra đòn!"
             else:
                 if (not boss_skill_erased) and random.random() < 0.15:
                     turn_image = p2_cfg["skills"]["nuclear_spell"]["gif"]
