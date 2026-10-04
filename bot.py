@@ -4700,7 +4700,7 @@ async def execute_event_raid(channel, raid_data):
             boss_action_log = "❄️ Boss bị đóng băng thời gian, không thể phát động đòn đánh!"
         else:
             roll_b = random.random()
-            if roll_b < 0.20:
+            if (not boss_skill_erased) and roll_b < 0.20:
                 turn_image = p1_cfg["skills"]["blood_chain"]["gif"]
                 dmg_total = int(p1_power * 1.5)
                 dmg_each = max(100, dmg_total // len(frontline_cards))
@@ -4721,7 +4721,7 @@ async def execute_event_raid(channel, raid_data):
                             ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
                         else:
                             ac["current_hp"] -= dmg_each
-            elif roll_b < 0.40:
+            elif (not boss_skill_erased) and roll_b < 0.40:
                 turn_image = p1_cfg["skills"]["dark_chain"]["gif"]
                 dmg_base_each = max(100, p1_power // len(frontline_cards))
                 boss_action_log = f"🌑 **[KỸ NĂNG] Kizuna** tung **Dark chain (20%)**! Gây {dmg_base_each:,} DMG cơ bản kèm **15% Máu Tối Đa** từng thẻ tiền tuyến!"
@@ -4867,6 +4867,7 @@ async def execute_event_raid(channel, raid_data):
     p2_power = p2_cfg["power"] # 7,000 DMG
     p2_rounds = 0
     wonder_guard_turns = 0
+    boss_skill_erased = False
     boss_mind_turns = 0
     boss_freeze_debuff_turns = 0
     boss_molten_ground_turns = 0
@@ -5030,6 +5031,8 @@ async def execute_event_raid(channel, raid_data):
                         c["seiki_used_turn"] = p2_rounds
                         c["seiki_invul_turn"] = p2_rounds
                     if _t1["disable"]: pass
+                        boss_skill_erased = True
+                        wonder_guard_turns = 0
                     if _t1["heal"]: ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + _t1["heal"])
                     if _t1["gif"] and not turn_image: turn_image = _t1["gif"]
                     t1_notif = (t1_notif + "\n" if t1_notif else "") + "\n".join(_t1["logs"])
@@ -5078,7 +5081,7 @@ async def execute_event_raid(channel, raid_data):
 
         # XỬ LÝ PHẢN 90% SÁT THƯƠNG TỪ WONDER GUARD KIZUNA
         reflected_dmg_log = ""
-        if wonder_guard_turns > 0:
+        if wonder_guard_turns > 0 and not boss_skill_erased:
             wonder_guard_turns -= 1
             ref_dmg = int(round_player_dmg * 0.90) # Phản đúng 90% sát thương
             ref_each = max(50, ref_dmg // len(frontline_cards))
@@ -5105,7 +5108,7 @@ async def execute_event_raid(channel, raid_data):
                         ac["current_hp"] -= dmg_each
             else:
                 roll_b = random.random()
-                if roll_b < 0.15: # 15% kích hoạt Wonder Guard 90%
+                if (not boss_skill_erased) and roll_b < 0.15: # 15% kích hoạt Wonder Guard 90%
                     wonder_guard_turns = 2
                     turn_image = p2_cfg["skills"]["wonder_guard"]["gif"]
                     dmg_each = max(100, p2_power // len(frontline_cards))
@@ -5120,7 +5123,7 @@ async def execute_event_raid(channel, raid_data):
                             ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
                         else:
                             ac["current_hp"] -= dmg_each
-                elif roll_b < 0.35: # 20% Blood Chain
+                elif (not boss_skill_erased) and roll_b < 0.35: # 20% Blood Chain
                     turn_image = p2_cfg["skills"]["blood_chain"]["gif"]
                     dmg_total = int(p2_power * 1.5)
                     dmg_each = max(100, dmg_total // len(frontline_cards))
@@ -5141,7 +5144,7 @@ async def execute_event_raid(channel, raid_data):
                                 ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
                             else:
                                 ac["current_hp"] -= dmg_each
-                elif roll_b < 0.55: # 20% Dark Chain
+                elif (not boss_skill_erased) and roll_b < 0.55: # 20% Dark Chain
                     turn_image = p2_cfg["skills"]["dark_chain"]["gif"]
                     dmg_base_each = max(100, p2_power // len(frontline_cards))
                     boss_action_log = f"🌑 **Dark chain (20%)**! Gây {dmg_base_each:,} DMG chia đều kèm **15% Máu Tối Đa** từng thẻ tiền tuyến!"
