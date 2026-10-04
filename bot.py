@@ -244,8 +244,8 @@ CARDS_DATA = {
         "id": "t1",
         "name": "Seiki đệ pháp toàn năng",
         "rank": "T",
-        "power": 600,
-        "hp": 6500,
+        "power": 695,
+        "hp": 7000,
         "image": "https://media.discordapp.net/attachments/1543072032034521228/1550428671284879470/content.png?ex=6aae4cb8&is=6aacfb38&hm=17b71e9140ae62c544872acbbfd654f97eaff639a2f40c400047e7cb786ec3a4&=&format=webp&quality=lossless&width=512&height=456",
         "skills": {
             "fantasy_seal": {
@@ -1715,7 +1715,7 @@ def execute_seiki_ace2(player):
             "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận.\n"
             "🌑 **Bóng Khái Niệm (20%):** Gây **×1.5 Sát Thương** kèm **10% Máu Tối Đa** mục tiêu và **xóa kỹ năng đối phương**, 1 lần/trận.\n\n"
             f"📉 **Chi phí:** Đã tiêu hao **10 Mảnh Seiki** (Còn lại: `{shards['seiki']}` mảnh)\n"
-            "💪 **Buff Ace 2:** +500 ATK & +500 HP vĩnh viễn!"
+            "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn! (Đạt 995 ATK & 7,300 HP gốc)
         ),
         color=0x7C3AED
     )
