@@ -3425,8 +3425,6 @@ async def execute_raid(channel, raid_data):
 
                 if str(ac["cid"]).lower() == "t1":
                     if ac.get("is_ace2"):
-                        if str(ac["cid"]).lower() == "t1":
-                    if ac.get("is_ace2"):
                         _t1 = t1_ace2_attack(c, ac, p2_rounds, p2_max_hp, f"Boss Seiki Phase 2", is_boss=True)
                         if _t1.get("multiplier", 1.0) > 1.0:
                             card_dmg = int(card_dmg * _t1["multiplier"])
