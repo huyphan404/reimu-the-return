@@ -436,8 +436,8 @@ SEIKI_BOSS_PHASE2_CONFIG = {
         "cleave": {
             "name": "Cleave",
             "chance": 1.0,
-            "pct": 0.20,
-            "desc": "Nội tại THỤ ĐỘNG 100% kích hoạt: Mọi đòn đánh thường gây thêm sát thương bằng 20% Máu Tối Đa của mục tiêu!",
+            "pct": 0.10,
+            "desc": "Nội tại THỤ ĐỘNG 100% kích hoạt: Mọi đòn đánh thường gây thêm sát thương bằng 10% Máu Tối Đa của mục tiêu!",
             "gif": "https://static2.klipy.com/ii/9ed0121ed465c12e1f3dda331ed33f0e/9b/b3/mOb3k5Ux7HWC.gif"
         }
     }
@@ -2204,7 +2204,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
         embed = discord.Embed(title=title, description=desc, color=0x7C3AED)
         embed.set_image(url=cfg["image"])
         embed.add_field(name="❤️ Máu Boss (HP):", value=f"• Phase 1: **{cfg['hp']:,} HP**\n• Phase 2 Thức Tỉnh: **{SEIKI_BOSS_PHASE2_CONFIG['hp']:,} HP**", inline=True)
-        embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{cfg['power']:,} DMG** *(chia đều, Spark x1.5: 4,500)*\n• Phase 2: **{SEIKI_BOSS_PHASE2_CONFIG['power']:,} DMG** *(chia đều, kèm Cleave +20% Máu tối đa mục tiêu)*", inline=True)
+        embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{cfg['power']:,} DMG** *(chia đều, Spark x1.5: 4,500)*\n• Phase 2: **{SEIKI_BOSS_PHASE2_CONFIG['power']:,} DMG** *(chia đều, kèm Cleave +10% Máu tối đa mục tiêu)*", inline=True)
         embed.add_field(name=f"👥 Người Tham Gia (0/{cfg['max_players']}):", value="Chưa có ai", inline=False)
         embed.add_field(
             name="🔮 Kỹ Năng & Nội Tại (Độc Quyền - Không Trùng Turn):",
@@ -2216,7 +2216,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
                 "*(Lưu ý: Không bao giờ kích hoạt trùng chiêu trong cùng một hiệp)*\n\n"
                 "👹 **PHASE 2 - THỨC TỈNH (90K HP / 10K DMG CHIA ĐỀU):**\n"
                 "• ☢️ **Nuclear Spell Card (10%):** Gây **10,000 DMG** lên **TẤT CẢ** lá bài đang ở tiền tuyến!\n"
-                "• 🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **20% Máu Tối Đa** của mục tiêu!"
+                "• 🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **10% Máu Tối Đa** của mục tiêu!"
             ),
             inline=False
         )
@@ -3255,7 +3255,7 @@ async def execute_raid(channel, raid_data):
                 f"🌸 **Reimu thảng thốt:** *\"{p2_cfg['reimu_quote']}\"*\n\n"
                 f"👺 **{p2_cfg['name']}** đã thức tỉnh ma lực dị tà tối thượng!\n"
                 f"❤️ **Máu tăng lên:** **`{p2_cfg['hp']:,} HP`**\n"
-                f"⚔️ **Sát thương đánh thường:** **`{p2_cfg['power']:,} DMG`** *(chia đều tiền tuyến, kèm nội tại **Cleave** +20% Máu tối đa mục tiêu)*\n"
+                f"⚔️ **Sát thương đánh thường:** **`{p2_cfg['power']:,} DMG`** *(chia đều tiền tuyến, kèm nội tại **Cleave** +10% Máu tối đa mục tiêu)*\n"
                 f"☢️ **Nuclear Spell Card (10%):** Gây **10,000 DMG** lên **TẤT CẢ** lá bài tiền tuyến!\n\n"
                 f"✨ **PHÉP MÀU THANH TẨY:**\n"
                 f"**Lập tức hồi sinh và hồi 100% sinh lực toàn bộ thẻ bài của tất cả dũng giả!**"
@@ -3547,11 +3547,11 @@ async def execute_raid(channel, raid_data):
                     turn_image = p2_cfg["skills"]["cleave"]["gif"]
                     boss_action_log = (
                         f"⚔️ Boss Phase 2 đánh thường tổng **{p2_power:,} DMG**, chia đều **{dmg_per_card:,} DMG** lên mỗi lá bài tiền tuyến ({num_front} lá)!\n"
-                        f"🪓 **[Nội Tại - Cleave (100%)]** Mọi đòn đánh kèm thêm **20% Máu Tối Đa** của từng mục tiêu!"
+                        f"🪓 **[Nội Tại - Cleave (100%)]** Mọi đòn đánh kèm thêm **10% Máu Tối Đa** của từng mục tiêu!"
                     )
                     for c in active_combatants:
                         ac = c["team_cards"][c["current_card_index"]]
-                        cleave_bonus = int(ac["max_hp"] * 0.20)
+                        cleave_bonus = int(ac["max_hp"] * 0.10)
                         invul = False
                         if ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
                             if random.random() < 0.40:
@@ -9231,7 +9231,7 @@ async def slash_boss_status(interaction: discord.Interaction):
     now = time.time()
     embed = discord.Embed(title="👹 TRẠNG THÁI BOSS RAID: REIMU DỊ HÌNH (2 PHASE)", color=0xDC2626)
     embed.add_field(name="👺 Bát Ách Kiếm Thần Tướng Mahoraga (Single Phase):", value=f"• 90,000 HP | 6,000 DMG (chia đều)\n• Nội tại The True Adapt (100%): tự hồi 3% HP tối đa (2,700 HP) và GIẢM 3% sát thương phải nhận mỗi lượt (cộng dồn)!\n• Kỹ năng Thoái Ma Kiếm (25%): 6,000 DMG sát thương thuần lên 1 mục tiêu duy nhất!\n• Phần thưởng: 10% 20 vé, 40% 15 vé, 50% 10 vé, 5% Mảnh Mahoraga!", inline=False)
-    embed.add_field(name="👹 Seiki Dị Hình (2 Phase):", value=f"• Phase 1: HP {SEIKI_BOSS_CONFIG['hp']:,} | {SEIKI_BOSS_CONFIG['power']:,} DMG (chia đều) + nội tại hồi 1.5% HP\n• Phase 2 Thức Tỉnh: HP {SEIKI_BOSS_PHASE2_CONFIG['hp']:,} | {SEIKI_BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều) + Cleave +20% Máu tối đa mục tiêu + Nuclear Spell Card (10%) 10K DMG toàn tiền tuyến!", inline=False)
+    embed.add_field(name="👹 Seiki Dị Hình (2 Phase):", value=f"• Phase 1: HP {SEIKI_BOSS_CONFIG['hp']:,} | {SEIKI_BOSS_CONFIG['power']:,} DMG (chia đều) + nội tại hồi 1.5% HP\n• Phase 2 Thức Tỉnh: HP {SEIKI_BOSS_PHASE2_CONFIG['hp']:,} | {SEIKI_BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều) + Cleave +10% Máu tối đa mục tiêu + Nuclear Spell Card (10%) 10K DMG toàn tiền tuyến!", inline=False)
     embed.set_thumbnail(url=BOSS_CONFIG["image"])
     embed.add_field(name="❤️ Chỉ Số 2 Phase:", value=f"• Phase 1: HP {BOSS_CONFIG['hp']:,} | Đánh thường {BOSS_CONFIG['power']:,} DMG (chia đều)\n• Phase 2: HP {BOSS_PHASE2_CONFIG['hp']:,} | Đánh thường {BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều)", inline=True)
     embed.add_field(name="🎁 Phần Thưởng:", value="100% Quy đổi thành Vé Pull tích lũy!", inline=True)
