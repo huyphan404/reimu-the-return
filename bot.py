@@ -5030,7 +5030,7 @@ async def execute_event_raid(channel, raid_data):
                         c["seiki_seal_used"] = True
                         c["seiki_used_turn"] = p2_rounds
                         c["seiki_invul_turn"] = p2_rounds
-                    if _t1["disable"]: pass
+                    if _t1["disable"]: 
                         boss_skill_erased = True
                         wonder_guard_turns = 0
                     if _t1["heal"]: ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + _t1["heal"])
