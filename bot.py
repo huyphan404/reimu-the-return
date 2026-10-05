@@ -786,7 +786,7 @@ EVOL_CONFIG["t1"] = {
     "required_cards": 0,
     "required_pulls": 0,
     "required_shards": 10,
-    "evol_gif": "https://static2.klipy.com/ii/9ed0121ed465c12e1f3dda331ed33f0e/9b/b3/mOb3k5Ux7HWC.gif",
+    "evol_gif": "https://static2.klipy.com/ii/2f34308bfc69e8c858753b83566e3ab4/00/52/j3kSrYrla8BSqcCal.gif",
     "skill_name": "Tứ Đại Tuyệt Kỹ Thức Tỉnh (Cleave • Medicine Sign • Fantasy Seal • Bóng Khái Niệm)",
     "skill_desc": (
         "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **2% Máu Tối Đa** của mục tiêu! "
@@ -1733,7 +1733,7 @@ def execute_seiki_ace2(player):
         ),
         color=0x7C3AED
     )
-    embed.set_image(url=T1_ACE2_CONFIG.get("gif_cleave", "https://static2.klipy.com/ii/6c12d2b51268b8b0e7c53d1000676b7e/90/13/216KZeX0.gif"))
+    embed.set_image(url=EVOL_CONFIG["t1"]["evol_gif"])
     embed.set_footer(text="Touhou Evolution System • Seiki Ace 2 Activated • Card ID #t1")
     return True, "", embed
 
@@ -6902,8 +6902,8 @@ class CharacterCheckView(discord.ui.View):
         last_btn.callback = self.last_page
         self.add_item(last_btn)
 
-        # Nút chuyển đổi Ace 2 cho nhân vật thường
-        if has_ace and not (self.show_t1 or self.show_t2 or self.show_t3):
+        # Nút chuyển đổi Ace 2 cho nhân vật thường & T1 Seiki
+        if (has_ace and not (self.show_t1 or self.show_t2 or self.show_t3)) or self.show_t1:
             if self.show_ace:
                 ace_toggle = discord.ui.Button(label="⭐ Xem Bản Thường", style=discord.ButtonStyle.secondary, emoji="🔄", row=1)
             else:
@@ -7130,7 +7130,6 @@ class CharacterCheckView(discord.ui.View):
 
     async def toggle_ace(self, interaction: discord.Interaction):
         self.show_ace = not self.show_ace
-        self.show_t1 = False
         self.show_t2 = False
         self.show_t3 = False
         self.rebuild_items()
@@ -7180,18 +7179,26 @@ class CharacterCheckView(discord.ui.View):
         owned_cnt = player.get("inventory", {}).get("t1", 0) if player else 0
         shards_cnt = player.get("shards", {}).get("seiki", 0) if player else 0
         is_locked = is_card_locked(player, "t1") if player else False
-        is_seiki_ace = is_card_ace2(player, "t1") if player else False
+        user_has_seiki_ace = is_card_ace2(player, "t1") if player else False
+        is_seiki_ace = self.show_ace or user_has_seiki_ace
 
         embed = discord.Embed(
-            title="🔮 [THẺ ĐẶC BIỆT NHÓM T] #t1 SEIKI ĐỆ PHÁP TOÀN NĂNG",
+            title=(
+                "🌟 [Ace 2 ⭐⭐] #t1 SEIKI ĐỆ NHẤT PHÁP SƯ (THỨC TỈNH)"
+                if is_seiki_ace else
+                "🔮 [THẺ ĐẶC BIỆT NHÓM T] #t1 SEIKI ĐỆ PHÁP TOÀN NĂNG"
+            ),
             description=(
+                "🔥 **Đang xem trạng thái: THỨC TỈNH ACE 2 ⭐⭐**\n*(Được cường hóa +300 Sức Mạnh & +300 Máu, khai mở Tứ Đại Tuyệt Kỹ!)*"
+                if is_seiki_ace else
                 f"*{details['title']}*\n"
                 "✨ Thẻ bài thần thoại chỉ có thể nhận bằng cách thu thập **10 Mảnh Seiki** "
-                "(tỉ lệ rơi 2.5% từ Boss Raid) rồi dùng lệnh `/t translate`."
+                "(tỉ lệ rơi 2.5% từ Boss Raid) rồi dùng lệnh `/t translate`.\n"
+                "✨ **Nhân vật này có thể tiến hóa Ace 2 ⭐⭐!** *(Bấm nút 'Xem Bản Ace 2' bên dưới)*"
             ),
-            color=0x7C3AED
+            color=0xEF4444 if is_seiki_ace else 0x7C3AED
         )
-        embed.set_image(url=card["image"])
+        embed.set_image(url=EVOL_CONFIG["t1"]["evol_gif"] if is_seiki_ace else card["image"])
 
         power_val = card["power"] + (300 if is_seiki_ace else 0)
         hp_val = card["hp"] + (300 if is_seiki_ace else 0)
