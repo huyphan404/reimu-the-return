@@ -603,6 +603,63 @@ MAHORAGA_BOSS_CONFIG = {
     }
 }
 # ==============================================================================
+# BOSS FATERIA – KHUÔN MẪU CỦA SỐ PHẬN (50K HP / 6K2 DMG CHIA ĐỀU)
+# ==============================================================================
+FATERIA_BOSS_CONFIG = {
+    "id": "fateria",
+    "name": "Fateria – Khuôn mẫu của số phận",
+    "desc": "Thực thể thao túng dòng chảy thời gian và những con rối định mệnh!",
+    "reimu_quote": "kẻ kiểm soát dòng chảy của thời gian, tất cả nghênh chiến!",
+    "image": "https://media.discordapp.net/attachments/1549063334781911070/1556698641002004480/image.png?backend=b2&ex=6ac51c16&is=6ac3ca96&hm=3f8bb669aa03006bbd2fce5b687c6d81a036e8349764d9569f6bd412784446ab&=&format=webp&quality=lossless",
+    "hp": 50000,
+    "power": 6200,
+    "max_players": 6,
+    "cooldown_seconds": 15 * 60,
+    "passive": {
+        "name": "Save loop",
+        "chance": 0.15,
+        "heal_pct": 0.30,
+        "desc": "15% kích hoạt: Hồi 30% HP tối đa (15,000 HP) và miễn nhiễm toàn bộ sát thương trong turn đó!",
+        "gif": "https://static2.klipy.com/ii/e1b92bb53e0c9e442408bc677a56c789/3f/90/YA0o494Vr52yU7U.gif"
+    },
+    "skills": {
+        "fate_loop": {
+            "name": "Fate loop",
+            "chance": 0.10,
+            "turns": 2,
+            "desc": "10% khiến đối thủ không thể dùng skill trong 2 turn liên tiếp (không lặp lại cho đến khi hết 2 turn đó)!",
+            "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/41/a1/shxGKwxeHM5dbAwHKGY.gif"
+        },
+        "clone_attack": {
+            "name": "Clone attack",
+            "chance": 0.20,
+            "clones": {
+                "thunder_blaze": {
+                    "name": "Thunder blaze",
+                    "multiplier": 2.3,
+                    "desc": "Những ngọn lửa chớp điện phập phờn gây 2.3x DMG (14,260 DMG) chia đều sát thương!",
+                    "gif": "https://static2.klipy.com/ii/39f2394ae36df6e199be9eb7c9fa1012/8d/df/9dfE0xSo.gif"
+                },
+                "the_fallen_hero": {
+                    "name": "The fallen hero",
+                    "multiplier": 1.5,
+                    "heal_reduce_pct": 0.30,
+                    "desc": "Tung trảm kích ánh sáng 1.5x DMG (9,300 DMG) chia đều sát thương và giảm 30% hiệu quả hồi máu (Heal)!",
+                    "gif": "https://static2.klipy.com/ii/9294a2e836d178ddc22430dd7765727e/3f/b6/LMzSuK4eAAVA4rh.gif"
+                },
+                "ice_spear": {
+                    "name": "Ice spear",
+                    "multiplier": 1.5,
+                    "Stop_atk_chance": 0.40,
+                    "turns": 2,
+                    "desc": "Những ngọn giáo băng 1.5x DMG (9,300 DMG) chia đều khiến đối phương có 40% không thể tấn công trong 2 lượt sau!",
+                    "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/62/60/sPhfFLdL.gif"
+                }
+            }
+        }
+    }
+}        
+# ==============================================================================
 # CƠ CHẾ TIẾN HÓA ACE 2 (KÈM ID NHÂN VẬT & DIRECT GIF HIỂN THỊ TRỰC TIẾP)
 # ==============================================================================
 EVOL_CONFIG = {
@@ -981,6 +1038,7 @@ def get_default_player(user_id, username):
             "seiki": 0,
             "mahoraga": 0,
             "kizuna": 0,
+            "fateria": 0,
             "thanh_loi": 0
         },
         "items": {
@@ -1313,11 +1371,12 @@ def get_player(user_id, username="Visitor"):
     if "evolutions" not in data: data["evolutions"] = {}
     if "team" not in data: data["team"] = []
     if "shards" not in data or not isinstance(data.get("shards"), dict):
-        data["shards"] = {"seiki": 0, "mahoraga": 0, "kizuna": 0, "thanh_loi": 0}
+        data["shards"] = {"seiki": 0, "mahoraga": 0, "kizuna": 0, "fateria": 0, "thanh_loi": 0}
     else:
         data["shards"].setdefault("seiki", 0)
         data["shards"].setdefault("mahoraga", 0)
         data["shards"].setdefault("kizuna", 0)
+        data["shards"].setdefault("fateria", 0)
         data["shards"].setdefault("thanh_loi", 0)
 
     if "items" not in data or not isinstance(data.get("items"), dict):
@@ -2191,18 +2250,21 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
             active_raid["task"].cancel()
         active_raid = None
 
-    if boss_type not in ["reimu", "seiki", "mahoraga"]:
+    if boss_type not in ["reimu", "seiki", "mahoraga", "fateria"]:
         boss_spawn_roll = random.random()
-        if boss_spawn_roll < (1.0 / 3.0):
+        if boss_spawn_roll < (1.0 / 4.0):
             boss_type = "seiki"
-        elif boss_spawn_roll < (2.0 / 3.0):
+        elif boss_spawn_roll < (2.0 / 4.0):
             boss_type = "reimu"
-        else:
+        elif boss_spawn_roll < (3.0 / 4.0):
             boss_type = "mahoraga"
+        else:
+            boss_type = "fateria"
 
     is_seiki = (boss_type == "seiki")
     is_mahoraga = (boss_type == "mahoraga")
-    cfg = SEIKI_BOSS_CONFIG if is_seiki else (MAHORAGA_BOSS_CONFIG if is_mahoraga else BOSS_CONFIG)
+    is_fateria = (boss_type == "fateria")
+    cfg = SEIKI_BOSS_CONFIG if is_seiki else (MAHORAGA_BOSS_CONFIG if is_mahoraga else (FATERIA_BOSS_CONFIG if is_fateria else BOSS_CONFIG))
 
     start_event = asyncio.Event()
     raid_data = {
@@ -2290,6 +2352,45 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
                 "• Có đúng **2 phút (120 giây)** để bấm **'Tham Gia'** (Miễn phí)!\n"
                 "• **Tự động mở raid:** Khi hết 2 phút, nếu có dũng giả tham chiến, trận đại chiến sẽ **TỰ ĐỘNG KHỞI TRANH** ngay lập tức!\n"
                 "• **Tự động đóng:** Nếu sau 2 phút không có ai tham gia, Mahoraga sẽ tan biến vào hư không!"
+            ),
+            inline=False
+        )
+    elif boss_type == "fateria":
+        reimu_line = f"🌸 **Reimu:** *\"{cfg['reimu_quote']}\"*\n\n"
+        desc = (f"👑 **Được triệu hồi bởi Admin:** {author.mention}\n\n{reimu_line}⏳ **{cfg['name']}**\n*{cfg['desc']}*"
+                if is_admin else f"{reimu_line}⏳ **{cfg['name']}**\n*{cfg['desc']}*")
+        embed = discord.Embed(title=title, description=desc, color=0x0EA5E9)
+        embed.set_image(url=cfg["image"])
+        embed.add_field(name="❤️ Máu Boss (HP):", value=f"**{cfg['hp']:,} HP** *(Single Phase)*", inline=True)
+        embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"**{cfg['power']:,} DMG** *(chia đều tiền tuyến)*", inline=True)
+        embed.add_field(name=f"👥 Người Tham Gia (0/{cfg['max_players']}):", value="Chưa có ai", inline=False)
+        embed.add_field(
+            name="⏳ Nội Tại & Kỹ Năng (Khuôn Mẫu Số Phận):",
+            value=(
+                "• 🔄 **Passive - Save loop (15%):** Hồi **30% HP tối đa (15,000 HP)** và **MIỄN NHIỄM SÁT THƯƠNG** trong turn đó!\n"
+                "• ⛓️ **Skill 1 - Fate loop (10%):** Khiến đối thủ **không thể dùng skill trong 2 turn liên tiếp** (không lặp lại cho đến khi hết 2 turn đó)!\n"
+                "• 🪆 **Skill 2 - Clone attack (20% kích hoạt - Random 1/3 chiêu con rối):**\n"
+                "  - ⚡ **Thunder blaze:** Ngọn lửa chớp điện phập phờn gây **2.3x DMG (14,260 DMG)** chia đều sát thương!\n"
+                "  - 🗡️ **The fallen hero:** Trảm kích ánh sáng **1.5x DMG (9,300 DMG)** chia đều & **giảm 30% Heal** của đối phương!\n"
+                "  - ❄️ **Ice spear:** Ngọn giáo băng **1.5x DMG (9,300 DMG)** chia đều & khiến đối phương **40% không thể tấn công** trong **2 lượt sau**!"
+            ),
+            inline=False
+        )
+        embed.add_field(
+            name="🎁 Phần Thưởng Thanh Tẩy Boss:",
+            value=(
+                "• **10%** nhận **30 Vé** | **40%** nhận **15 Vé** | **50%** nhận **10 Vé**! (+100 XP)\n"
+                "• ⏳ **5%** rơi ra **+1 Fateria Shard**!\n"
+                "• Nhận thêm điểm danh nhiệm vụ diệt Boss!"
+            ),
+            inline=False
+        )
+        embed.add_field(
+            name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
+            value=(
+                "• Có đúng **2 phút (120 giây)** để bấm **'Tham Gia'** (Miễn phí)!\n"
+                "• **Tự động mở raid:** Khi hết 2 phút, nếu có dũng giả tham chiến, trận đại chiến sẽ **TỰ ĐỘNG KHỞI TRANH** ngay lập tức!\n"
+                "• **Tự động đóng:** Nếu sau 2 phút không có ai tham gia, Fateria sẽ biến mất vào dòng chảy thời gian!"
             ),
             inline=False
         )
@@ -2525,6 +2626,16 @@ async def execute_raid(channel, raid_data):
             ),
             color=0x1F2937
         )
+    elif boss_type == "fateria":
+        init_embed = discord.Embed(
+            title="⚔️ ĐẠI CHIẾN BẮT ĐẦU: FATERIA – KHUÔN MẪU CỦA SỐ PHẬN",
+            description=(
+                f"🌸 **Reimu:** *\"{boss_cfg['reimu_quote']}\"*\n\n"
+                f"🔥 **{len(combatants)} Dũng Giả** cùng đội quân thẻ bài đã dàn trận nghênh chiến!\n"
+                f"Theo dõi diễn biến từng hiệp trực tiếp ngay bên dưới!"
+            ),
+            color=0x0EA5E9
+        )
     else:
         init_embed = discord.Embed(
             title="⚔️ ĐẠI CHIẾN BẮT ĐẦU: REIMU DỊ HÌNH (PHASE 1)",
@@ -2542,6 +2653,9 @@ async def execute_raid(channel, raid_data):
     boss_freeze_debuff_turns = 0
     boss_molten_ground_turns = 0
     mahoraga_adapt_red = 0.0
+    fateria_fate_loop_turns = 0
+    fateria_ice_spear_turns = 0
+    fateria_heal_reduction = 0.0
     p1_battle_history = []
     all_raid_turns = []
 
@@ -2575,6 +2689,35 @@ async def execute_raid(channel, raid_data):
                 f"Hồi phục **+{actual_healed:,} HP** (3% HP tối đa) và **GIẢM {int(mahoraga_adapt_red * 100)}% sát thương phải nhận** (cộng dồn mỗi hiệp)!"
             )
 
+        fateria_save_loop_active = False
+        player_skills_locked = False
+        fate_loop_status_log = None
+        ice_spear_active_this_turn = False
+        player_heal_mult = 1.0
+
+        if boss_type == "fateria":
+            if (not boss_skill_erased) and random.random() < FATERIA_BOSS_CONFIG["passive"]["chance"]:
+                fateria_save_loop_active = True
+                heal_amt = int(p1_max_hp * FATERIA_BOSS_CONFIG["passive"]["heal_pct"])
+                old_hp = p1_hp
+                p1_hp = min(p1_max_hp, p1_hp + heal_amt)
+                actual_healed = p1_hp - old_hp
+                passive_log = (
+                    f"🔄 **[Passive - Save loop (15%)]** Fateria quay ngược dòng chảy thời gian: "
+                    f"Hồi phục **+{actual_healed:,} HP** (30% HP tối đa) và **MIỄN NHIỄM TOÀN BỘ SÁT THƯƠNG** trong turn này!"
+                )
+            if fateria_fate_loop_turns > 0:
+                player_skills_locked = True
+                fateria_fate_loop_turns -= 1
+                fate_loop_status_log = (
+                    f"⛓️ **[Hiệu ứng Fate loop]** Đối thủ **không thể dùng skill** trong hiệp này! "
+                    f"(Còn **{fateria_fate_loop_turns}** lượt khóa — hết hiệu ứng sẽ dùng lại skill bình thường)"
+                )
+            if fateria_ice_spear_turns > 0:
+                ice_spear_active_this_turn = True
+                fateria_ice_spear_turns -= 1
+            player_heal_mult = max(0.0, 1.0 - fateria_heal_reduction)
+
         reisen_boss_log = None
         if boss_mind_turns > 0:
             boss_mind_turns -= 1
@@ -2605,20 +2748,22 @@ async def execute_raid(channel, raid_data):
         utsuho_notif = None
         boss_molten_log = None
         cirno_freeze_log = None
+        yukari_notif = None
         t1_notif = None
         t2_notif = None
         t3_notif = None
-        turn_image = None
+        turn_image = FATERIA_BOSS_CONFIG["passive"]["gif"] if fateria_save_loop_active else None
 
-        for c in active_combatants:
-            ac = c["team_cards"][c["current_card_index"]]
-            if ac["cid"] == 18 and ac["is_ace2"] and not c["sakuya_stun_used"]:
-                if random.random() < 0.40:
-                    c["sakuya_stun_used"] = True
-                    boss_stunned = True
-                    turn_image = EVOL_CONFIG[19]["skill_gif"]
-                    sakuya_stun_notif = f"⏳ **[Ace 2] [#18] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss bị **STUN** mất lượt!"
-                    break
+        if not player_skills_locked:
+            for c in active_combatants:
+                ac = c["team_cards"][c["current_card_index"]]
+                if ac["cid"] == 18 and ac["is_ace2"] and not c["sakuya_stun_used"]:
+                    if random.random() < 0.40:
+                        c["sakuya_stun_used"] = True
+                        boss_stunned = True
+                        turn_image = EVOL_CONFIG[18]["skill_gif"]
+                        sakuya_stun_notif = f"⏳ **[Ace 2] [#18] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss bị **STUN** mất lượt!"
+                        break
 
         if boss_freeze_debuff_turns > 0 and not boss_stunned:
             boss_freeze_debuff_turns -= 1
@@ -2650,9 +2795,17 @@ async def execute_raid(channel, raid_data):
             seiki_spark_turns = 0
 
         round_player_dmg = 0
+        ice_spear_blocked_logs = []
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
+            if ice_spear_active_this_turn and random.random() < 0.40:
+                ice_spear_blocked_logs.append(f"❄️ **[Ice spear]** **{ac['name']}** ({c['username']}) bị giáo băng cầm chân (40%), không thể tấn công trong lượt này!")
+                continue
             card_dmg = ac["power"]
+            if player_skills_locked:
+                round_player_dmg += card_dmg
+                c["total_dmg"] += card_dmg
+                continue
             if ac["cid"] == 19 and ac["is_ace2"] and not c.get("marisa_spark_used"):
                 if random.random() < 0.30:
                     c["marisa_spark_used"] = True
@@ -2755,7 +2908,7 @@ async def execute_raid(channel, raid_data):
                     if _t1["disable"]:
                         boss_skill_erased = True
                     if _t1["heal"]:
-                        ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + _t1["heal"])
+                        ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + int(_t1["heal"] * player_heal_mult))
                     if _t1["gif"] and not turn_image:
                         turn_image = _t1["gif"]
                     t1_notif = (t1_notif + "\n" if t1_notif else "") + "\n".join(_t1["logs"])
@@ -2770,14 +2923,14 @@ async def execute_raid(channel, raid_data):
                     elif not c.get("seiki_heal_used") and ac["current_hp"] < ac["max_hp"] and random.random() < 0.20:
                         c["seiki_heal_used"] = True
                         c["seiki_used_turn"] = p1_rounds
-                        heal_val = int(ac["max_hp"] * 0.30)
+                        heal_val = int(ac["max_hp"] * 0.30 * player_heal_mult)
                         ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_val)
                         if not turn_image:
                             turn_image = T1_HEAL_GIF
                         passive_log = (passive_log + "\n" if passive_log else "") + f"💚 **[Nhóm T] [#t1] Seiki** ({c['username']}) thi triển **Medicine Sign** (20%)! Hồi phục **+{heal_val:,} HP** cho bản thân! ({ac['current_hp']:,}/{ac['max_hp']:,} HP)"
 
             if str(ac["cid"]).lower() == "t2":
-                heal_mahoraga = int(ac["max_hp"] * 0.05)
+                heal_mahoraga = int(ac["max_hp"] * 0.05 * player_heal_mult)
                 ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + heal_mahoraga)
                 c["mahoraga_adapt_turns"] = c.get("mahoraga_adapt_turns", 0) + 1
                 adapt_pct = min(0.90, c["mahoraga_adapt_turns"] * 0.05)
@@ -2818,6 +2971,8 @@ async def execute_raid(channel, raid_data):
 
         if boss_type == "seiki" and seiki_invul and not boss_stunned:
             player_atk_str = f"🛡️ Toàn quân dồn **{round_player_dmg:,} DMG** nhưng **Seiki Dị Hình** đã kích hoạt **Fantasy Seal**, MIỄN TOÀN BỘ SÁT THƯƠNG trong hiệp này!"
+        elif boss_type == "fateria" and fateria_save_loop_active:
+            player_atk_str = f"🔄 Toàn quân dồn **{round_player_dmg:,} DMG** nhưng **Fateria** đã kích hoạt **Save loop (15%)**, **MIỄN NHIỄM TOÀN BỘ SÁT THƯƠNG** trong turn này!"
         else:
             if boss_type == "mahoraga":
                 mahoraga_reduced_dmg = int(round_player_dmg * (1.0 - mahoraga_adapt_red))
@@ -2829,6 +2984,8 @@ async def execute_raid(channel, raid_data):
             else:
                 p1_hp = max(0, p1_hp - round_player_dmg)
                 player_atk_str = f"Toàn quân gây **{round_player_dmg:,} DMG** lên Boss!"
+        if ice_spear_blocked_logs:
+            player_atk_str += "\n" + "\n".join(ice_spear_blocked_logs)
 
         boss_action_log = ""
         if boss_type == "seiki":
@@ -3009,6 +3166,98 @@ async def execute_raid(channel, raid_data):
                                 boss_action_log += f"\n🛡️ **[Nhóm T] [#t2] Mahoraga** ({c['username']}) Thích Nghi (-{int(adapt_pct*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!"
                             else:
                                 ac["current_hp"] -= dmg_per_card
+        elif boss_type == "fateria":
+            if p1_hp <= 0:
+                boss_action_log = "💥 **Fateria – Khuôn mẫu của số phận đã bị đánh bại! Dòng chảy thời gian trở lại bình thường!**"
+            elif boss_stunned:
+                boss_action_log = "❄️ Fateria bị đóng băng thời gian, bất lực không thể ra đòn!"
+            else:
+                num_front = len(frontline_cards)
+                # Lưu ý: Fate loop không lặp lại cho đến khi hết 2 turn hiệu ứng
+                can_cast_fate_loop = (not boss_skill_erased) and (fateria_fate_loop_turns == 0) and (not player_skills_locked)
+                roll_f = random.random()
+
+                if can_cast_fate_loop and roll_f < 0.10:
+                    fateria_fate_loop_turns = 2
+                    turn_image = FATERIA_BOSS_CONFIG["skills"]["fate_loop"]["gif"]
+                    dmg_per_card = max(100, p1_power // num_front)
+                    boss_action_log = (
+                        f"⛓️ **[SKILL 1] Fateria** kích hoạt **Fate loop (10%)**! "
+                        f"Khiến đối thủ **không thể dùng skill 2 turn liên tiếp** (không lặp lại cho đến khi hết 2 turn)!\n"
+                        f"⚔️ Sát thương kèm theo: **{p1_power:,} DMG**, chia đều **{dmg_per_card:,} DMG** lên mỗi lá tiền tuyến ({num_front} lá)!"
+                    )
+                    is_normal_atk = False
+                elif (not boss_skill_erased) and roll_f < (0.30 if can_cast_fate_loop else 0.20):
+                    clones_cfg = FATERIA_BOSS_CONFIG["skills"]["clone_attack"]["clones"]
+                    chosen_clone_key = random.choice(["thunder_blaze", "the_fallen_hero", "ice_spear"])
+                    c_info = clones_cfg[chosen_clone_key]
+                    turn_image = c_info["gif"]
+                    total_clone_dmg = int(p1_power * c_info["multiplier"])
+                    dmg_per_card = max(100, total_clone_dmg // num_front)
+                    is_normal_atk = False
+
+                    if chosen_clone_key == "thunder_blaze":
+                        boss_action_log = (
+                            f"⚡ **[SKILL 2 - Clone Attack] Fateria** triệu hồi con rối tung **Thunder blaze**! "
+                            f"Những ngọn lửa chớp điện phập phờn gây **2.3x DMG ({total_clone_dmg:,} DMG)**, chia đều **{dmg_per_card:,} DMG** lên mỗi thẻ ({num_front} lá)!"
+                        )
+                    elif chosen_clone_key == "the_fallen_hero":
+                        fateria_heal_reduction = 0.30
+                        boss_action_log = (
+                            f"🗡️ **[SKILL 2 - Clone Attack] Fateria** triệu hồi con rối tung **The fallen hero**! "
+                            f"Tung trảm kích ánh sáng **1.5x DMG ({total_clone_dmg:,} DMG)**, chia đều **{dmg_per_card:,} DMG** ({num_front} lá) và **GIẢM 30% HEAL**!"
+                        )
+                    else:
+                        fateria_ice_spear_turns = 2
+                        boss_action_log = (
+                            f"❄️ **[SKILL 2 - Clone Attack] Fateria** triệu hồi con rối phóng **Ice spear**! "
+                            f"Những ngọn giáo băng **1.5x DMG ({total_clone_dmg:,} DMG)**, chia đều **{dmg_per_card:,} DMG** ({num_front} lá) và khiến đối phương **40% không tấn công trong 2 lượt sau**!"
+                        )
+                else:
+                    dmg_per_card = max(100, p1_power // num_front)
+                    boss_action_log = f"⚔️ Fateria đánh thường tổng **{p1_power:,} DMG**, chia đều **{dmg_per_card:,} DMG** lên mỗi lá bài tiền tuyến ({num_front} lá)!"
+                    is_normal_atk = True
+
+                for c in active_combatants:
+                    ac = c["team_cards"][c["current_card_index"]]
+                    invul = False
+                    if not player_skills_locked:
+                        if is_normal_atk and ac["cid"] == 4 and ac.get("is_ace2") and random.random() < 0.10:
+                            invul = True
+                            if not fateria_save_loop_active:
+                                p1_hp = max(0, p1_hp - dmg_per_card)
+                                c["total_dmg"] += dmg_per_card
+                            boss_action_log += f"\n🌀 **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **Invisible Gap (10%)**! Phản lại **{dmg_per_card:,} DMG** đánh thường!"
+                        elif ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                            if random.random() < 0.40:
+                                c["reimu_invul_used"] = True
+                                invul = True
+                                turn_image = EVOL_CONFIG[15]["skill_gif"]
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                            c["seiki_seal_used"] = True
+                            c["seiki_used_turn"] = p1_rounds
+                            invul = True
+                            turn_image = T1_SEAL_GIF
+                            title_t1 = "[Ace 2] [#t1] Seiki" if ac.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                            pct_t1 = "50%" if ac.get("is_ace2") else "40%"
+                            boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                        elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
+                            c["t3_state"]["wonder_guard_turns"] -= 1
+                            invul = True
+                            ref_dmg = int(dmg_per_card * 0.60)
+                            if not fateria_save_loop_active:
+                                p1_hp = max(0, p1_hp - ref_dmg)
+                                c["total_dmg"] += ref_dmg
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#t3] Kizuna** ({c['username']}) duy trì **Wonder Guard**! Miễn thương và phản lại **{ref_dmg:,} DMG**!"
+                    if not invul:
+                        if (not player_skills_locked) and str(ac["cid"]).lower() == "t2":
+                            adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+                            actual_dmg = int(dmg_per_card * (1.0 - adapt_pct))
+                            ac["current_hp"] -= actual_dmg
+                            boss_action_log += f"\n🛡️ **[Nhóm T] [#t2] Mahoraga** ({c['username']}) Thích Nghi (-{int(adapt_pct*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!"
+                        else:
+                            ac["current_hp"] -= dmg_per_card
         else:
             if p1_hp <= 0:
                 boss_action_log = "💥 **Reimu Dị Hình Phase 1 đã bị đánh gục hoàn toàn!**"
@@ -3107,10 +3356,14 @@ async def execute_raid(channel, raid_data):
             color=0x7C3AED if boss_type == "seiki" else 0xDC2626
         )
         if passive_log:
-            round_embed.add_field(name="💚 Nội Tại Hồi Phục:", value=passive_log, inline=False)
+            round_embed.add_field(name="💚 Nội Tại / Passive Boss:", value=passive_log, inline=False)
+        if fate_loop_status_log:
+            round_embed.add_field(name="⛓️ Phong Ấn Kỹ Năng (Fate Loop):", value=fate_loop_status_log, inline=False)
         round_embed.add_field(name="💥 Tiền Tuyến Tấn Công:", value=player_atk_str, inline=False)
         if sakuya_stun_notif:
             round_embed.add_field(name="❄️ Kỹ Năng Đột Biến:", value=sakuya_stun_notif, inline=False)
+        if yukari_notif:
+            round_embed.add_field(name="🌌 Cảnh Giới Yukari Ace 2:", value=yukari_notif, inline=False)
         if marisa_spark_notif:
             round_embed.add_field(name="🌟 Master Spark Oanh Tạc:", value=marisa_spark_notif, inline=False)
         if remilia_notif:
@@ -3202,7 +3455,17 @@ async def execute_raid(channel, raid_data):
     for uid in participants:
         p = get_player(uid)
         roll = random.random()
-        if boss_type == "mahoraga":
+        if boss_type == "fateria":
+            if roll < 0.10:
+                t_val = 30.0
+                d_str = "👑 **+30 Vé** (10%)"
+            elif roll < 0.50:
+                t_val = 15.0
+                d_str = "🔥 **+15 Vé** (40%)"
+            else:
+                t_val = 10.0
+                d_str = "💎 **+10 Vé** (50%)"
+        elif boss_type == "mahoraga":
             if roll < 0.10:
                 t_val = 20.0
                 d_str = "👑 **+20 Vé** (10%)"
@@ -3225,7 +3488,11 @@ async def execute_raid(channel, raid_data):
 
         items_won = [d_str]
         p_shards = p.setdefault("shards", {})
-        if boss_type == "mahoraga":
+        if boss_type == "fateria":
+            if random.random() < 0.05:
+                p_shards["fateria"] = p_shards.get("fateria", 0) + 1
+                items_won.append(f"⏳ **+1 Fateria Shard** (5% Siêu Hiếm! Kho: {p_shards['fateria']} mảnh)")
+        elif boss_type == "mahoraga":
             if random.random() < 0.05:
                 p_shards["mahoraga"] = p_shards.get("mahoraga", 0) + 1
                 items_won.append(f"🔱 **+1 Mảnh Mahoraga** (5% Siêu Hiếm! Kho: {p_shards['mahoraga']} mảnh)")
@@ -3270,6 +3537,32 @@ async def execute_raid(channel, raid_data):
         final_embed.add_field(
             name="🎁 Phần Thưởng (10% 20 vé, 40% 15 vé, 50% 10 vé, 5% Mảnh Mahoraga):",
             value="\n".join(m_summary),
+            inline=False
+        )
+        await channel.send(embed=final_embed, view=OpenDetailsView(all_raid_turns))
+        return
+
+    if boss_type == "fateria":
+        total_raid_dmg = sum(c["total_dmg"] for c in combatants)
+        final_embed = discord.Embed(
+            title="⚔️ KẾT QUẢ ĐẠI CHIẾN: FATERIA – KHUÔN MẪU CỦA SỐ PHẬN!",
+            description=(
+                "🌸 **Reimu:** *\"Vòng lặp thời gian đã bị phá vỡ! Kẻ thao túng những con rối số phận đã bị thanh tẩy hoàn toàn!\"*\n\n"
+                f"🎉 Đội quân đã hạ gục **Fateria – Khuôn mẫu của số phận** sau **{p1_rounds} hiệp**!\n"
+                f"💥 **Tổng Sát Thương:** **{total_raid_dmg:,} DMG**\n"
+                f"⏳ **Hồi chiêu Boss tiếp theo:** **15 phút**"
+            ),
+            color=0x0EA5E9
+        )
+        final_embed.set_thumbnail(url=boss_cfg["image"])
+        f_summary = [
+            f"🏆 **{r['username']}**: Nhận **+{r['total_pulls']:.0f} Vé Pull** ({r['items'][0]}) + 100 XP!"
+            + (f"\n   └ {r['items'][1]}" if len(r["items"]) > 1 else "")
+            for r in p1_rewards_data.values()
+        ]
+        final_embed.add_field(
+            name="🎁 Phần Thưởng (10% 30 vé, 40% 15 vé, 50% 10 vé, 5% Fateria Shards):",
+            value="\n".join(f_summary),
             inline=False
         )
         await channel.send(embed=final_embed, view=OpenDetailsView(all_raid_turns))
@@ -6677,6 +6970,15 @@ async def handle_view_shards(ctx_or_interaction):
         ),
         inline=False
     )
+    fateria_shards = shards_dict.get("fateria", 0)
+    embed.add_field(
+        name="⏳ Mảnh Fateria (Khuôn Mẫu Của Số Phận):",
+        value=(
+            f"• Hiện có: **`{fateria_shards}` Fateria Shards**\n"
+            f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Fateria – Khuôn mẫu của số phận** (50K HP / 6K2 DMG)."
+        ),
+        inline=False
+    )
     embed.add_field(
         name="🩸 Mảnh Kizuna & Thánh Lõi (Hoàng Đế Ma Cà Rồng):",
         value=(
@@ -9355,7 +9657,9 @@ async def prefix_boss_status(ctx, *args):
                 await ctx.send(f"⛔ {ctx.author.mention} Ngươi không có quyền hạn! Chỉ có bố Seiki hoặc Quản Trị Viên mới được triệu hồi Boss Raid!")
                 return
             b_type = None
-            if "mahoraga" in sub:
+            if "fateria" in sub or "fate" in sub:
+                b_type = "fateria"
+            elif "mahoraga" in sub:
                 b_type = "mahoraga"
             elif "seiki" in sub:
                 b_type = "seiki"
@@ -9384,16 +9688,17 @@ async def prefix_boss_status(ctx, *args):
     else:
         await ctx.send("🟢 Boss đã sẵn sàng xuất hiện (Tỉ lệ đều 1/3 Mahoraga, Seiki, Reimu khi chat, hoặc dùng `boss admin spawn [mahoraga|seiki|reimu]`)!")
 
-@bot.tree.command(name="boss_admin", description="[Admin] Quản trị Boss Raid (Reimu Dị Hình hoặc Seiki Dị Hình)")
+@bot.tree.command(name="boss_admin", description="[Admin] Quản trị Boss Raid (Fateria, Mahoraga, Seiki, Reimu)")
 @app_commands.describe(action="Hành động muốn thực hiện với Boss Raid", loai_boss="Loại Boss muốn triệu hồi (nếu chọn spawn)")
 @app_commands.choices(action=[
     app_commands.Choice(name="spawn - Triệu hồi Boss ngay tại kênh này", value="spawn"),
     app_commands.Choice(name="reset - Giải phóng Boss kẹt và xóa hồi chiêu", value="reset")
 ], loai_boss=[
+    app_commands.Choice(name="Fateria – Khuôn mẫu của số phận (50k HP / 6k2 DMG)", value="fateria"),
     app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (90k HP / The True Adapt)", value="mahoraga"),
     app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
     app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
-    app_commands.Choice(name="Ngẫu nhiên tỉ lệ 1/3 giữa 3 Boss", value="random")
+    app_commands.Choice(name="Ngẫu nhiên tỉ lệ 1/4 giữa 4 Boss", value="random")
 ])
 async def slash_boss_admin(interaction: discord.Interaction, action: str, loai_boss: str = "random"):
     if not is_authorized_admin(interaction.user):
@@ -9401,26 +9706,27 @@ async def slash_boss_admin(interaction: discord.Interaction, action: str, loai_b
         return
     if action == "spawn":
         b_type = None if loai_boss == "random" else loai_boss
-        boss_label = "Mahoraga" if b_type == "mahoraga" else ("Seiki Dị Hình" if b_type == "seiki" else ("Reimu Dị Hình" if b_type == "reimu" else "Boss Raid ngẫu nhiên"))
+        boss_label = "Fateria" if b_type == "fateria" else ("Mahoraga" if b_type == "mahoraga" else ("Seiki Dị Hình" if b_type == "seiki" else ("Reimu Dị Hình" if b_type == "reimu" else "Boss Raid ngẫu nhiên")))
         await interaction.response.send_message(f"⚡ Đang cưỡng chế triệu hồi {boss_label}...", ephemeral=True)
         await admin_spawn_boss(interaction.channel, interaction.user, boss_type=b_type)
     elif action == "reset":
         await admin_reset_boss(interaction, interaction.user)
 
-@bot.tree.command(name="admin_boss_spawn", description="[Admin] Triệu hồi ngay Boss Raid (Seiki Dị Hình hoặc Reimu Dị Hình) tại kênh này")
+@bot.tree.command(name="admin_boss_spawn", description="[Admin] Triệu hồi ngay Boss Raid (Fateria, Mahoraga, Seiki, Reimu) tại kênh này")
 @app_commands.describe(loai_boss="Chọn Boss muốn triệu hồi")
 @app_commands.choices(loai_boss=[
+    app_commands.Choice(name="Fateria – Khuôn mẫu của số phận (50k HP / 6k2 DMG)", value="fateria"),
     app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (90k HP / The True Adapt)", value="mahoraga"),
     app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
     app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
-    app_commands.Choice(name="Ngẫu nhiên tỉ lệ 1/3 giữa 3 Boss", value="random")
+    app_commands.Choice(name="Ngẫu nhiên tỉ lệ 1/4 giữa 4 Boss", value="random")
 ])
 async def slash_admin_boss_spawn(interaction: discord.Interaction, loai_boss: str = "random"):
     if not is_authorized_admin(interaction.user):
         await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN HẠN!**", ephemeral=True)
         return
     b_type = None if loai_boss == "random" else loai_boss
-    boss_label = "Mahoraga" if b_type == "mahoraga" else ("Seiki Dị Hình" if b_type == "seiki" else ("Reimu Dị Hình" if b_type == "reimu" else "Boss Raid ngẫu nhiên"))
+    boss_label = "Fateria" if b_type == "fateria" else ("Mahoraga" if b_type == "mahoraga" else ("Seiki Dị Hình" if b_type == "seiki" else ("Reimu Dị Hình" if b_type == "reimu" else "Boss Raid ngẫu nhiên")))
     await interaction.response.send_message(f"⚡ Đang triệu hồi {boss_label}...", ephemeral=True)
     await admin_spawn_boss(interaction.channel, interaction.user, boss_type=b_type)
 
