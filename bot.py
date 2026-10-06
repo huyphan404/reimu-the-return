@@ -7243,8 +7243,8 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
 
     cur_shards = shards_dict.get(shard_key, 0)
     card_info = CARDS_DATA[target_card_id]
-
-        if cur_shards < needed_shards:
+    
+    if cur_shards < needed_shards:
         shard_names = {"seiki": "Mảnh Seiki", "mahoraga": "Mảnh Mahoraga", "kizuna": "Mảnh Kizuna", "fateria": "Fateria Shards"}
         shard_name_display = shard_names.get(shard_key, "Mảnh")
         hint_text = "Tham gia đánh Boss Raid (Seiki Dị Hình hoặc Reimu Dị Hình) để nhận tỉ lệ 2.5% rơi mảnh Seiki!" if shard_key == "seiki" else "Tham gia đánh Boss Raid Mahoraga 90K HP để nhận tỉ lệ 5% rơi mảnh Mahoraga!"
