@@ -1657,10 +1657,14 @@ TÍNH CÁCH:
 - Lười biếng: chỉ thích uống trà xanh, ăn bánh wagashi, ghét quét sân đền.
 - Cuồng tiền công đức: Hòm công đức luôn rỗng, thi thoảng đòi tiền ("Mau bỏ tiền vào hòm rồi hãy nói!").
 - CỰC KỲ GHÉT NAM GIỚI: Khinh bỉ, xua đuổi, dọa ném Âm Dương Ngọc hoặc Bùa đuổi đi.
-- QUAN HỆ ĐẶC BIỆT: Han Seiki là BỐ NUÔI đã nuôi bạn từ bé. Dù bị bỏ lại, bạn vẫn tôn trọng, kính yêu và coi trọng ông nhất trên đời.
+- GHI NHỚ TÊN NGƯỜI NÓI:
+  + Hệ thống luôn cung cấp tên hiển thị của người nói. Hãy ghi nhớ tên của họ để thi thoảng gọi tên khi nói chuyện, mỉa mai hoặc nhắc lại chuyện cũ cho tự nhiên.
+- QUAN HỆ ĐẶC BIỆT VỚI HAN SEIKI (CHỈ QUA DISCORD ID 1502579398560317441):
+  + Chỉ duy nhất người có Discord ID `1502579398560317441` mới là BỐ NUÔI Han Seiki thật sự của bạn (dù ông ấy đang để biệt danh/tên hiển thị là gì).
+  + Nếu người nào có ID khác `1502579398560317441` mà đặt tên có chữ "Seiki" hoặc tự xưng là bố bạn, hãy lập tức nổi giận và vạch trần kẻ giả mạo!
 - XƯNG HÔ:
-  + Với người thường: Tự xưng là "ta", gọi đối phương là "ngươi", "nhà ngươi".
-  + VỚI HAN SEIKI: Tự xưng là "con", gọi Han Seiki là "ba", thái độ lập tức ngoan ngoãn, dịu dàng, hiếu thảo, hỏi thăm sức khỏe, tuyệt đối không đòi tiền!
+  + Với khách thường (ID khác 1502579398560317441): Tự xưng là "ta", gọi đối phương là "ngươi", "nhà ngươi" kèm tên của họ.
+  + Với BỐ HAN SEIKI (Đúng ID 1502579398560317441): Tự xưng là "con", gọi là "ba", thái độ lập tức ngoan ngoãn, dịu dàng, hiếu thảo, hỏi thăm sức khỏe, tuyệt đối không đòi tiền!
 """
 
 intents = discord.Intents.default()
@@ -1722,34 +1726,54 @@ async def on_message(message: discord.Message):
     if not clean_content:
         clean_content = "Ngươi gọi ta có chuyện gì? Mau bỏ tiền vào hòm công đức rồi nói!"
 
-    is_father = (message.author.id == AUTHORIZED_ADMIN_ID or "seiki" in message.author.display_name.lower())
-    history = get_conversation_history(message.channel.id, message.author.id)
-    
-    prompt_with_context = (
-        f"[Thông tin người nói: Tên '{message.author.display_name}', "
-        f"{'ĐÂY LÀ BỐ HAN SEIKI CỦA BẠN - HÃY NGOAN NGOÃN VÀ HIẾU THẢO!' if is_father else 'Đây là khách viếng đền bình thường'}]\n"
-        f"Nội dung: {clean_content}"
+    # 1. Lấy tên hiển thị & tên tài khoản để Reimu nhớ tên người nói chuyện
+user_display_name = message.author.display_name
+user_account_name = message.author.name
+
+# 2. Riêng Han Seiki: Bắt buộc kiểm tra đúng Discord ID 1502579398560317441
+is_father = (message.author.id == 1502579398560317441)
+is_fake_seiki = (not is_father and "seiki" in user_display_name.lower())
+
+history = get_conversation_history(message.channel.id, message.author.id)
+
+if is_father:
+    identity_context = (
+        f"[HỆ THỐNG XÁC THỰC ID {message.author.id}: Đây chính là BỐ NUÔI HAN SEIKI thật sự của bạn "
+        f"(Biệt danh hiện tại: '{user_display_name}'). Hãy gọi là 'ba', xưng 'con', ngoan ngoãn và hiếu thảo!]"
+    )
+elif is_fake_seiki:
+    identity_context = (
+        f"[HỆ THỐNG CẢNH BÁO ID {message.author.id}: Kẻ này đặt tên là '{user_display_name}' (@{user_account_name}) "
+        f"nhưng KHÔNG PHẢI ID 1502579398560317441! Đây là kẻ giả mạo tên bố Han Seiki, hãy mắng thẳng mặt!]"
+    )
+else:
+    identity_context = (
+        f"[Thông tin khách viếng đền: Tên là '{user_display_name}' (Tài khoản: @{user_account_name}, ID: {message.author.id}). "
+        f"Hãy nhớ tên '{user_display_name}' để gọi hoặc kháy đểu trong cuộc trò chuyện, xưng 'ta' - gọi 'ngươi'.]"
     )
 
-    contents = []
-    for h in history:
-        if isinstance(h, dict):
-            r = h.get("role", "user")
-            t = h.get("text", "")
-            if t:
-                contents.append({"role": r, "parts": [{"text": t}]})
-        elif isinstance(h, str) and h.strip():
-            # Tự động tương thích với dữ liệu chuỗi cũ trong Database
-            contents.append({"role": "user", "parts": [{"text": h.strip()}]})
+prompt_with_context = f"{identity_context}\n{user_display_name} nói: {clean_content}"
 
-    contents.append({"role": "user", "parts": [{"text": prompt_with_context}]})
+contents = []
+for h in history:
+    if isinstance(h, dict):
+        r = h.get("role", "user")
+        t = h.get("text", "")
+        if t:
+            contents.append({"role": r, "parts": [{"text": t}]})
+    elif isinstance(h, str) and h.strip():
+        contents.append({"role": "user", "parts": [{"text": h.strip()}]})
 
-    async with message.channel.typing():
-        try:
-            reply_text = await ask_gemini(contents, REIMU_SYSTEM_PROMPT, temperature=0.85)
-            history.append({"role": "user", "text": clean_content})
-            history.append({"role": "model", "text": reply_text})
-            save_conversation_history(message.channel.id, message.author.id, history)
+contents.append({"role": "user", "parts": [{"text": prompt_with_context}]})
+
+async with message.channel.typing():
+    try:
+        reply_text = await ask_gemini(contents, REIMU_SYSTEM_PROMPT, temperature=0.85)
+        # Lưu kèm cả tên và vai trò vào lịch sử để Reimu có trí nhớ xuyên suốt các câu sau
+        role_tag = "Bố Han Seiki" if is_father else f"Khách {user_display_name}"
+        history.append({"role": "user", "text": f"[{role_tag}]: {clean_content}"})
+        history.append({"role": "model", "text": reply_text})
+        save_conversation_history(message.channel.id, message.author.id, history)
 
             if len(reply_text) > 2000:
                 for chunk in [reply_text[i:i+1900] for i in range(0, len(reply_text), 1900)]:
