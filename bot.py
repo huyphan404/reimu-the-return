@@ -1795,6 +1795,83 @@ def execute_seiki_ace2(player):
     embed.set_image(url=EVOL_CONFIG["t1"]["evol_gif"])
     embed.set_footer(text="Touhou Evolution System • Seiki Ace 2 Activated • Card ID #t1")
     return True, "", embed
+    
+def apply_bong_khai_niem_boss(boss_type: str, phase: int, erased_skill_current: Optional[str]):
+    """Xóa ngẫu nhiên tối đa 1 chiêu duy nhất của Boss (Limit: 1 chiêu/Boss, dù có bao nhiêu lá Seiki)."""
+    if erased_skill_current is not None:
+        return erased_skill_current, (
+            f"🛡️ **[Giới Hạn Bóng Khái Niệm]** Boss đã từng bị xóa chiêu **[{erased_skill_current}]** trước đó! "
+            f"(Mỗi Boss chỉ bị mất tối đa 1 chiêu duy nhất, không mất thêm!)."
+        )
+    if boss_type == "seiki" and phase == 1:
+        pool = [("multi_spark", "Multi Master Spark"), ("fantasy_seal", "Fantasy Seal"), ("blitz_attack", "Blitz Attack")]
+    elif boss_type == "seiki" and phase == 2:
+        pool = [("nuclear_spell", "Nuclear Spell Card")]
+    elif boss_type == "mahoraga":
+        pool = [("thoai_ma_kiem", "Thoái Ma Kiếm")]
+    elif boss_type == "fateria":
+        pool = [("save_loop", "Save loop"), ("fate_loop", "Fate loop"), ("clone_attack", "Clone attack")]
+    elif boss_type == "kizuna_event" and phase == 1:
+        pool = [("blood_chain", "Blood chain"), ("dark_chain", "Dark chain")]
+    elif boss_type == "kizuna_event" and phase == 2:
+        pool = [("wonder_guard", "Wonder guard"), ("blood_chain", "Blood chain"), ("dark_chain", "Dark chain")]
+    else:
+        pool = [("di_hinh_bua_chu", "Dị Hình Bùa Chú")]
+
+    key, name = random.choice(pool)
+    return key, f"🌑 **[Bóng Khái Niệm]** Đã xóa ngẫu nhiên 1 chiêu duy nhất của Boss: **[{name}]**! *(Đã chạm giới hạn tối đa 1 chiêu)*"
+
+
+def apply_bong_khai_niem_card(target_card: dict):
+    """Xóa ngẫu nhiên tối đa 1 chiêu duy nhất trên 1 lá bài đối phương trong PvP/Battle (Limit: 1 chiêu/lá)."""
+    if target_card.get("erased_skill"):
+        return (
+            f"🛡️ **[Giới Hạn Bóng Khái Niệm]** **{target_card['name']}** đã bị xóa kỹ năng "
+            f"**[{target_card.get('erased_skill_name', target_card['erased_skill'])}]** từ trước! (Tối đa mất 1 chiêu duy nhất)."
+        )
+    cid = target_card["cid"]
+    cid_str = str(cid).lower()
+    is_ace = target_card.get("is_ace2", False)
+    pool = []
+
+    if cid == 4 and is_ace:
+        pool = [("yukari_station", "Trip To The Old Station"), ("yukari_lastword", "⸮⸮⸮ : Last Word !"), ("yukari_gap", "Invisible Gap")]
+    elif cid_str == "t1":
+        if is_ace:
+            pool = [("t1_cleave", "Cleave"), ("t1_seal", "Fantasy Seal"), ("t1_bong", "Bóng Khái Niệm"), ("t1_med", "Medicine Sign")]
+        else:
+            pool = [("t1_seal", "Fantasy Seal"), ("t1_spark", "Master Spark"), ("t1_med", "Medicine Sign")]
+    elif cid_str == "t2":
+        pool = [("t2_adapt", "The True Adapt"), ("t2_kiem", "Thoái Ma Kiếm")]
+    elif cid_str == "t3":
+        if is_ace:
+            pool = [("t3_vampire", "True Vampire"), ("t3_wonder", "Wonder Guard"), ("t3_blood", "Blood Chain"), ("t3_dark", "Dark Chain")]
+        else:
+            pool = [("t3_vampire", "True Vampire"), ("t3_blood", "Blood Chain"), ("t3_dark", "Dark Chain")]
+    elif cid == 18 and is_ace:
+        pool = [("sakuya_stun", "Thời Gian Đóng Băng")]
+    elif cid == 19 and is_ace:
+        pool = [("marisa_spark", "Master Spark")]
+    elif cid == 15 and is_ace:
+        pool = [("reimu_invul", "Vô Tưởng Chuyển Sinh")]
+    elif cid == 9 and is_ace:
+        pool = [("flandre_ripples", "Ripples of 495 Years")]
+    elif cid == 12 and is_ace:
+        pool = [("remilia_gungnir", "Thương Đỏ Gungnir")]
+    elif cid == 21 and is_ace:
+        pool = [("reisen_mind", "Red Eye Mind Explosion")]
+    elif cid == 23 and is_ace:
+        pool = [("cirno_freeze", "Perfect Freeze")]
+    elif cid == 13 and is_ace:
+        pool = [("utsuho_nuclear", "Nuclear Spell Card")]
+
+    if not pool:
+        return f"🌑 **[Bóng Khái Niệm]** **{target_card['name']}** không sở hữu kỹ năng đặc biệt nào để xóa!"
+
+    key, name = random.choice(pool)
+    target_card["erased_skill"] = key
+    target_card["erased_skill_name"] = name
+    return f"🌑 **[Bóng Khái Niệm]** Đã xóa ngẫu nhiên 1 kỹ năng duy nhất **[{name}]** của **{target_card['name']}**! *(Tối đa mất 1 chiêu)*"
 
 
 def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=False):
@@ -1805,12 +1882,15 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
     out = {"bonus": 0, "direct": 0, "heal": 0, "invul": False, "instant_kill": False, "boss_half_hp": False,
            "disable": False, "logs": [], "gif": None, "multiplier": 1.0}
 
-    # 🪓 CLEAVE - Nội tại thụ động 100%: đánh thường +2% Máu Tối Đa mục tiêu
-    out["bonus"] = int(target_max_hp * T1_ACE2_CONFIG["cleave_pct"])
-    out["logs"].append(
-        f"🪓 **[Ace 2] [#t1] Seiki Đệ Nhất Pháp Sư** - **Cleave (Nội Tại - 100%)**: "
-        f"Mọi đòn đánh +**{out['bonus']:,} DMG** (2% Máu Tối Đa {target_desc})!"
-    )
+    erased = ac.get("erased_skill")
+
+    # 🪓 CLEAVE - Nội tại thụ động 100%: đánh thường +2% Máu Tối Đa mục tiêu (nếu không bị xóa bởi Bóng Khái Niệm)
+    if erased != "t1_cleave":
+        out["bonus"] = int(target_max_hp * T1_ACE2_CONFIG["cleave_pct"])
+        out["logs"].append(
+            f"🪓 **[Ace 2] [#t1] Seiki Đệ Nhất Pháp Sư** - **Cleave (Nội Tại - 100%)**: "
+            f"Mọi đòn đánh +**{out['bonus']:,} DMG** (2% Máu Tối Đa {target_desc})!"
+        )
 
     if t1_flags.get("used_turn") == round_no:
         return out
@@ -1821,7 +1901,7 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
     bong_chance = T1_ACE2_CONFIG["bong_khai_niem"]["chance"]
     med_chance = T1_ACE2_CONFIG["medicine_sign"]["chance"]
 
-    if not t1_flags.get("seal_used") and not t1_flags.get("seiki_seal_used") and roll < seal_chance:
+    if erased != "t1_seal" and not t1_flags.get("seal_used") and not t1_flags.get("seiki_seal_used") and roll < seal_chance:
         t1_flags["seal_used"] = True
         t1_flags["seiki_seal_used"] = True
         t1_flags["used_turn"] = round_no
@@ -1831,7 +1911,7 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
             f"🛡️ **[Ace 2] [#t1] Seiki** kích hoạt **FANTASY SEAL** (50%)! "
             f"Vận khởi kết giới phong ấn tuyệt đối — **MIỄN TOÀN BỘ SÁT THƯƠNG** trong hiệp này!"
         )
-    elif not t1_flags.get("bong_used") and roll < seal_chance + bong_chance:
+    elif erased != "t1_bong" and not t1_flags.get("bong_used") and roll < seal_chance + bong_chance:
         t1_flags["bong_used"] = True
         t1_flags["used_turn"] = round_no
         out["multiplier"] = T1_ACE2_CONFIG["bong_khai_niem"].get("multiplier", 1.5)
@@ -1840,9 +1920,9 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
         out["gif"] = T1_ACE2_CONFIG["bong_khai_niem"]["gif"]
         out["logs"].append(
             f"🌑 **[Ace 2] [#t1] Seiki** kích hoạt **BÓNG KHÁI NIỆM** (20%)! "
-            f"Cường hóa **×{out['multiplier']} Sát Thương** kèm **{out['direct']:,} DMG** (10% Máu Tối Đa {target_desc}) và **LẬP TỨC XÓA KỸ NĂNG của đối phương**!"
+            f"Cường hóa **×{out['multiplier']} Sát Thương** kèm **{out['direct']:,} DMG** (10% Máu Tối Đa {target_desc}) và **XÓA NGẪU NHIÊN 1 KỸ NĂNG của đối phương (Tối đa 1 chiêu)**!"
         )
-    elif not t1_flags.get("med_used") and ac.get("current_hp", 1) < ac.get("max_hp", ac.get("hp", 1)) and roll < seal_chance + bong_chance + med_chance:
+    elif erased != "t1_med" and not t1_flags.get("med_used") and ac.get("current_hp", 1) < ac.get("max_hp", ac.get("hp", 1)) and roll < seal_chance + bong_chance + med_chance:
         t1_flags["med_used"] = True
         t1_flags["used_turn"] = round_no
         out["heal"] = int(ac.get("max_hp", ac.get("hp", 1)) * T1_ACE2_CONFIG["medicine_sign"]["heal_pct"])
@@ -1869,22 +1949,26 @@ def t3_combat_turn(t3_state: dict, card_data: dict, round_no: int, target_max_hp
     gif = None
     multiplier = 1.0
     bonus_hp_dmg = 0
+    erased = card_data.get("erased_skill")
 
-    # 1. NỘI TẠI: TRUE VAMPIRE (100% kích hoạt mỗi lượt)
+    # 1. NỘI TẠI: TRUE VAMPIRE (100% kích hoạt mỗi lượt nếu không bị xóa)
     max_hp = card_data.get("max_hp", card_data.get("hp", 7700))
-    heal_amt = int(max_hp * 0.05)
-    card_data["current_hp"] = min(max_hp, card_data.get("current_hp", max_hp) + heal_amt)
-    logs.append(f"🩸 **[#t3] Kizuna** - **True Vampire (100%)**: Tự hồi **+{heal_amt:,} HP** ({card_data['current_hp']:,}/{max_hp:,} HP)!")
+    if erased != "t3_vampire":
+        heal_amt = int(max_hp * 0.05)
+        card_data["current_hp"] = min(max_hp, card_data.get("current_hp", max_hp) + heal_amt)
+        logs.append(f"🩸 **[#t3] Kizuna** - **True Vampire (100%)**: Tự hồi **+{heal_amt:,} HP** ({card_data['current_hp']:,}/{max_hp:,} HP)!")
 
     # Khởi tạo state
     dark_chain_uses = t3_state.get("dark_chain_uses", 0)
     blood_used = t3_state.get("blood_used", False)
     wonder_guard_used = t3_state.get("wonder_guard_used", False)
+    if erased == "t3_wonder":
+        t3_state["wonder_guard_turns"] = 0
 
     # 2. XỬ LÝ KỸ NĂNG CHỦ ĐỘNG
     roll = random.random()
 
-    if is_ace2 and not wonder_guard_used and roll < 0.20:
+    if is_ace2 and erased != "t3_wonder" and not wonder_guard_used and roll < 0.20:
         t3_state["wonder_guard_used"] = True
         t3_state["wonder_guard_turns"] = 3
         gif = T3_WONDER_GUARD_GIF
@@ -1893,7 +1977,7 @@ def t3_combat_turn(t3_state: dict, card_data: dict, round_no: int, target_max_hp
             f"Dựng huyết thuẫn tuyệt đối: **MIỄN TOÀN BỘ SÁT THƯƠNG & PHẢN 60% SÁT THƯƠNG LẪN HIỆU ỨNG** trong 3 lượt!"
         )
 
-    elif not blood_used and roll < (0.50 if is_ace2 else 0.30):
+    elif erased != "t3_blood" and not blood_used and roll < (0.50 if is_ace2 else 0.30):
         t3_state["blood_used"] = True
         multiplier = 2.0 if is_ace2 else 1.5
         gif = T3_BLOOD_GIF
@@ -1902,7 +1986,7 @@ def t3_combat_turn(t3_state: dict, card_data: dict, round_no: int, target_max_hp
             f"Đòn đánh bộc phát ma lực **×{multiplier} Sát Thương** giáng vào {target_name}!"
         )
 
-    elif dark_chain_uses < 3 and roll < (0.80 if is_ace2 else 0.50):
+    elif erased != "t3_dark" and dark_chain_uses < 3 and roll < (0.80 if is_ace2 else 0.50):
         t3_state["dark_chain_uses"] = dark_chain_uses + 1
         multiplier = 1.5 if is_ace2 else 1.0
         bonus_hp_dmg = int(target_max_hp * 0.05)
@@ -2696,7 +2780,7 @@ async def execute_raid(channel, raid_data):
         player_heal_mult = 1.0
 
         if boss_type == "fateria":
-            if (not boss_skill_erased) and random.random() < FATERIA_BOSS_CONFIG["passive"]["chance"]:
+            if (boss_skill_erased != "save_loop") and random.random() < FATERIA_BOSS_CONFIG["passive"]["chance"]:
                 fateria_save_loop_active = True
                 heal_amt = int(p1_max_hp * FATERIA_BOSS_CONFIG["passive"]["heal_pct"])
                 old_hp = p1_hp
@@ -2774,25 +2858,23 @@ async def execute_raid(channel, raid_data):
         seiki_invul = False
         seiki_action = "normal"
         if boss_type == "seiki" and not boss_stunned:
+            if boss_skill_erased == "multi_spark":
+                seiki_spark_turns = 0
             if seiki_spark_turns > 0:
                 seiki_spark_turns -= 1
                 seiki_action = "spark_active"
             else:
                 roll_s = random.random()
-                if roll_s < 0.15:
+                if roll_s < 0.15 and boss_skill_erased != "multi_spark":
                     seiki_spark_turns = 2
                     seiki_action = "spark_start"
-                elif roll_s < 0.35:
+                elif 0.15 <= roll_s < 0.35 and boss_skill_erased != "fantasy_seal":
                     seiki_invul = True
                     seiki_action = "fantasy_seal"
-                elif roll_s < 0.55:
+                elif 0.35 <= roll_s < 0.55 and boss_skill_erased != "blitz_attack":
                     seiki_action = "blitz_attack"
                 else:
                     seiki_action = "normal"
-
-        if boss_skill_erased:
-            seiki_action = "normal"
-            seiki_spark_turns = 0
 
         round_player_dmg = 0
         ice_spear_blocked_logs = []
@@ -2906,7 +2988,19 @@ async def execute_raid(channel, raid_data):
                         c["seiki_used_turn"] = p1_rounds
                         c["seiki_invul_turn"] = p1_rounds
                     if _t1["disable"]:
-                        boss_skill_erased = True
+                        boss_skill_erased, erase_msg = apply_bong_khai_niem_boss(boss_type, 1, boss_skill_erased)
+                        _t1["logs"].append(erase_msg)
+                        if boss_skill_erased == "multi_spark":
+                            seiki_spark_turns = 0
+                            if seiki_action in ("spark_start", "spark_active"):
+                                seiki_action = "normal"
+                        elif boss_skill_erased == "fantasy_seal" and seiki_action == "fantasy_seal":
+                            seiki_invul = False
+                            seiki_action = "normal"
+                        elif boss_skill_erased == "blitz_attack" and seiki_action == "blitz_attack":
+                            seiki_action = "normal"
+                        elif boss_skill_erased == "save_loop":
+                            fateria_save_loop_active = False
                     if _t1["heal"]:
                         ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + int(_t1["heal"] * player_heal_mult))
                     if _t1["gif"] and not turn_image:
@@ -3094,7 +3188,7 @@ async def execute_raid(channel, raid_data):
             elif boss_stunned:
                 boss_action_log = "❄️ Mahoraga bị đóng băng thời gian, bất lực không thể ra đòn!"
             else:
-                if (not boss_skill_erased) and random.random() < MAHORAGA_BOSS_CONFIG["skills"]["thoai_ma_kiem"]["chance"]:
+                if (boss_skill_erased != "thoai_ma_kiem") and random.random() < MAHORAGA_BOSS_CONFIG["skills"]["thoai_ma_kiem"]["chance"]:
                     turn_image = MAHORAGA_BOSS_CONFIG["skills"]["thoai_ma_kiem"]["gif"]
                     target_c = random.choice(active_combatants)
                     ac = target_c["team_cards"][target_c["current_card_index"]]
@@ -3174,7 +3268,7 @@ async def execute_raid(channel, raid_data):
             else:
                 num_front = len(frontline_cards)
                 # Lưu ý: Fate loop không lặp lại cho đến khi hết 2 turn hiệu ứng
-                can_cast_fate_loop = (not boss_skill_erased) and (fateria_fate_loop_turns == 0) and (not player_skills_locked)
+                can_cast_fate_loop = (boss_skill_erased != "fate_loop") and (fateria_fate_loop_turns == 0) and (not player_skills_locked)
                 fate_chance = FATERIA_BOSS_CONFIG["skills"]["fate_loop"].get("chance", 0.10)
                 clone_chance = FATERIA_BOSS_CONFIG["skills"]["clone_attack"].get("chance", 0.20)
                 fateria_skill_gif = None
@@ -3190,7 +3284,7 @@ async def execute_raid(channel, raid_data):
                         f"⚔️ Sát thương kèm theo: **{p1_power:,} DMG**, chia đều **{dmg_per_card:,} DMG** lên mỗi lá tiền tuyến ({num_front} lá)!"
                     )
                     is_normal_atk = False
-                elif (not boss_skill_erased) and random.random() < clone_chance:
+                elif (boss_skill_erased != "clone_attack") and random.random() < clone_chance:
                     clones_cfg = FATERIA_BOSS_CONFIG["skills"]["clone_attack"]["clones"]
                     chosen_clone_key = random.choice(["thunder_blaze", "the_fallen_hero", "ice_spear"])
                     c_info = clones_cfg[chosen_clone_key]
@@ -3276,7 +3370,7 @@ async def execute_raid(channel, raid_data):
             elif boss_stunned:
                 boss_action_log = "❄️ Boss bị đóng băng thời gian, bất lực không thể phản công!"
             else:
-                if (not boss_skill_erased) and random.random() < 0.20:
+                if (boss_skill_erased != "di_hinh_bua_chu") and random.random() < 0.20:
                     turn_image = BOSS_SKILL_CONFIG["gif"]
                     boss_action_log = "👹 **[NỘI TẠI BOSS] Reimu Dị Hình** thi triển **Dị Hình Bùa Chú** (20%)! Giáng **5,000 DMG** diện rộng!"
                     for c in active_combatants:
@@ -3629,6 +3723,7 @@ async def execute_raid(channel, raid_data):
         boss_mind_turns = 0
         boss_freeze_debuff_turns = 0
         boss_molten_ground_turns = 0
+        boss_skill_erased = None
 
         p2_true_cap = int(p2_max_hp * 0.50)
         p2_true_dmg_accum = 0
@@ -3780,7 +3875,8 @@ async def execute_raid(channel, raid_data):
                             c["seiki_used_turn"] = p2_rounds
                             c["seiki_invul_turn"] = p2_rounds
                         if _t1["disable"]:
-                            boss_skill_erased = True
+                            boss_skill_erased, erase_msg = apply_bong_khai_niem_boss("seiki", 2, boss_skill_erased)
+                            _t1["logs"].append(erase_msg)
                         if _t1["heal"]:
                             ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + _t1["heal"])
                         if _t1["gif"] and not turn_image:
@@ -3850,7 +3946,7 @@ async def execute_raid(channel, raid_data):
             elif boss_stunned:
                 boss_action_log = "❄️ Boss Phase 2 bị đóng băng thời gian, bất lực không thể ra đòn!"
             else:
-                if (not boss_skill_erased) and random.random() < 0.15:
+                if (boss_skill_erased != "nuclear_spell") and random.random() < 0.15:
                     turn_image = p2_cfg["skills"]["nuclear_spell"]["gif"]
                     boss_action_log = (
                         f"☢️ **[KỸ NĂNG] Seiki Dị Hình Phase 2** kích hoạt **Nuclear Spell Card (15%)**! "
@@ -4136,6 +4232,7 @@ async def execute_raid(channel, raid_data):
     boss_mind_turns = 0
     boss_freeze_debuff_turns = 0
     boss_molten_ground_turns = 0
+    boss_skill_erased = None
 
     p2_true_cap = int(p2_max_hp * 0.50)
     p2_true_dmg_accum = 0
@@ -4302,7 +4399,8 @@ async def execute_raid(channel, raid_data):
                         c["seiki_used_turn"] = p2_rounds
                         c["seiki_invul_turn"] = p2_rounds
                     if _t1["disable"]:
-                        boss_skill_erased = True
+                        boss_skill_erased, erase_msg = apply_bong_khai_niem_boss("reimu", 2, boss_skill_erased)
+                        _t1["logs"].append(erase_msg)
                     if _t1["heal"]:
                         ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + _t1["heal"])
                     if _t1["gif"] and not turn_image:
@@ -4371,7 +4469,7 @@ async def execute_raid(channel, raid_data):
         elif boss_stunned:
             boss_action_log = "❄️ Boss Phase 2 bị đóng băng thời gian, không thể phát động đòn đánh!"
         else:
-            if (not boss_skill_erased) and random.random() < 0.20:
+            if (boss_skill_erased != "di_hinh_bua_chu") and random.random() < 0.20:
                 turn_image = BOSS_SKILL_CONFIG["gif"]
                 boss_action_log = "👹 **[NỘI TẠI BOSS] Reimu Dị Hình** phát động **Dị Hình Bùa Chú** (20%)! Oanh tạc **5,000 DMG** diện rộng!"
                 for c in active_combatants:
@@ -4851,7 +4949,7 @@ async def execute_event_raid(channel, raid_data):
     boss_mind_turns = 0
     boss_freeze_debuff_turns = 0
     boss_molten_ground_turns = 0
-    boss_skill_erased = False
+    boss_skill_erased = None
 
     p1_true_cap = int(p1_max_hp * 0.50)
     p1_true_dmg_accum = 0
@@ -4991,7 +5089,9 @@ async def execute_event_raid(channel, raid_data):
                         c["seiki_seal_used"] = True
                         c["seiki_used_turn"] = p1_rounds
                         c["seiki_invul_turn"] = p1_rounds
-                    if _t1["disable"]: boss_skill_erased = True
+                    if _t1["disable"]:
+                        boss_skill_erased, erase_msg = apply_bong_khai_niem_boss("kizuna_event", 1, boss_skill_erased)
+                        _t1["logs"].append(erase_msg)
                     if _t1["heal"]: ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + _t1["heal"])
                     if _t1["gif"] and not turn_image: turn_image = _t1["gif"]
                     t1_notif = (t1_notif + "\n" if t1_notif else "") + "\n".join(_t1["logs"])
@@ -5049,7 +5149,7 @@ async def execute_event_raid(channel, raid_data):
             boss_action_log = "❄️ Boss bị đóng băng thời gian, không thể phát động đòn đánh!"
         else:
             roll_b = random.random()
-            if (not boss_skill_erased) and roll_b < 0.20:
+            if (boss_skill_erased != "blood_chain") and roll_b < 0.20:
                 turn_image = p1_cfg["skills"]["blood_chain"]["gif"]
                 dmg_total = int(p1_power * 1.5)
                 dmg_each = max(100, dmg_total // len(frontline_cards))
@@ -5070,7 +5170,7 @@ async def execute_event_raid(channel, raid_data):
                             ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
                         else:
                             ac["current_hp"] -= dmg_each
-            elif (not boss_skill_erased) and roll_b < 0.40:
+            elif (boss_skill_erased != "dark_chain") and 0.20 <= roll_b < 0.40:
                 turn_image = p1_cfg["skills"]["dark_chain"]["gif"]
                 dmg_base_each = max(100, p1_power // len(frontline_cards))
                 boss_action_log = f"🌑 **[KỸ NĂNG] Kizuna** tung **Dark chain (20%)**! Gây {dmg_base_each:,} DMG cơ bản kèm **15% Máu Tối Đa** từng thẻ tiền tuyến!"
@@ -5216,7 +5316,7 @@ async def execute_event_raid(channel, raid_data):
     p2_power = p2_cfg["power"] # 7,000 DMG
     p2_rounds = 0
     wonder_guard_turns = 0
-    boss_skill_erased = False
+    boss_skill_erased = None
     boss_mind_turns = 0
     boss_freeze_debuff_turns = 0
     boss_molten_ground_turns = 0
@@ -5381,9 +5481,11 @@ async def execute_event_raid(channel, raid_data):
                         c["seiki_seal_used"] = True
                         c["seiki_used_turn"] = p2_rounds
                         c["seiki_invul_turn"] = p2_rounds
-                    if _t1["disable"]: 
-                        boss_skill_erased = True
-                        wonder_guard_turns = 0
+                    if _t1["disable"]:
+                        boss_skill_erased, erase_msg = apply_bong_khai_niem_boss("kizuna_event", 2, boss_skill_erased)
+                        _t1["logs"].append(erase_msg)
+                        if boss_skill_erased == "wonder_guard":
+                            wonder_guard_turns = 0
                     if _t1["heal"]: ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + _t1["heal"])
                     if _t1["gif"] and not turn_image: turn_image = _t1["gif"]
                     t1_notif = (t1_notif + "\n" if t1_notif else "") + "\n".join(_t1["logs"])
@@ -5432,7 +5534,7 @@ async def execute_event_raid(channel, raid_data):
 
         # XỬ LÝ PHẢN 90% SÁT THƯƠNG TỪ WONDER GUARD KIZUNA
         reflected_dmg_log = ""
-        if wonder_guard_turns > 0 and not boss_skill_erased:
+        if wonder_guard_turns > 0 and boss_skill_erased != "wonder_guard":
             wonder_guard_turns -= 1
             ref_dmg = int(round_player_dmg * 0.90) # Phản đúng 90% sát thương
             ref_each = max(50, ref_dmg // len(frontline_cards))
@@ -5459,7 +5561,7 @@ async def execute_event_raid(channel, raid_data):
                         ac["current_hp"] -= dmg_each
             else:
                 roll_b = random.random()
-                if (not boss_skill_erased) and roll_b < 0.15: # 15% kích hoạt Wonder Guard 90%
+                if (boss_skill_erased != "wonder_guard") and roll_b < 0.15: # 15% kích hoạt Wonder Guard 90%
                     wonder_guard_turns = 2
                     turn_image = p2_cfg["skills"]["wonder_guard"]["gif"]
                     dmg_each = max(100, p2_power // len(frontline_cards))
@@ -5474,7 +5576,7 @@ async def execute_event_raid(channel, raid_data):
                             ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
                         else:
                             ac["current_hp"] -= dmg_each
-                elif (not boss_skill_erased) and roll_b < 0.35: # 20% Blood Chain
+                elif (boss_skill_erased != "blood_chain") and 0.15 <= roll_b < 0.35: # 20% Blood Chain
                     turn_image = p2_cfg["skills"]["blood_chain"]["gif"]
                     dmg_total = int(p2_power * 1.5)
                     dmg_each = max(100, dmg_total // len(frontline_cards))
@@ -5495,7 +5597,7 @@ async def execute_event_raid(channel, raid_data):
                                 ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
                             else:
                                 ac["current_hp"] -= dmg_each
-                elif (not boss_skill_erased) and roll_b < 0.55: # 20% Dark Chain
+                elif (boss_skill_erased != "dark_chain") and 0.35 <= roll_b < 0.55: # 20% Dark Chain
                     turn_image = p2_cfg["skills"]["dark_chain"]["gif"]
                     dmg_base_each = max(100, p2_power // len(frontline_cards))
                     boss_action_log = f"🌑 **Dark chain (20%)**! Gây {dmg_base_each:,} DMG chia đều kèm **15% Máu Tối Đa** từng thẻ tiền tuyến!"
@@ -8081,15 +8183,17 @@ async def handle_battle(ctx_or_interaction):
                 if _t1["heal"]:
                     pc["current_hp"] = min(pc["hp"], pc["current_hp"] + _t1["heal"])
                 if _t1["disable"]:
-                    _erased = None
-                    if not o_sakuya: o_sakuya = True; _erased = "Thời Gian Đóng Băng"
-                    elif not o_marisa: o_marisa = True; _erased = "Master Spark"
-                    elif not o_reimu: o_reimu = True; _erased = "Vô Tưởng Chuyển Sinh"
-                    elif not o_reisen_used: o_reisen_used = True; _erased = "Red Eye Mind Explosion"
-                    if _erased:
-                        _t1["logs"].append(f"🌑 **Bóng Khái Niệm** đã **XÓA VĨNH VIỄN kỹ năng [{_erased}]** của đối thủ trong trận này!")
-                    else:
-                        _t1["logs"].append("🌑 **Bóng Khái Niệm**: Đối thủ không còn kỹ năng nào để xóa!")
+                    erase_msg = apply_bong_khai_niem_card(oc)
+                    _t1["logs"].append(erase_msg)
+                    ek = oc.get("erased_skill")
+                    if ek == "sakuya_stun": o_sakuya = True
+                    elif ek == "marisa_spark": o_marisa = True
+                    elif ek == "reimu_invul": o_reimu = True
+                    elif ek == "reisen_mind": o_reisen_used = True
+                    elif ek == "flandre_ripples": o_flandre = True
+                    elif ek == "cirno_freeze": o_cirno_freeze_used = True
+                    elif ek == "yukari_station": o_yukari_station = True
+                    elif ek == "yukari_lastword": o_yukari_lastword = True
                 if _t1["gif"] and not turn_image:
                     turn_image = _t1["gif"]
                 turn_actions.extend(_t1["logs"])
@@ -8189,7 +8293,7 @@ async def handle_battle(ctx_or_interaction):
                 battle_logs.append(msg_f)
                 turn_actions.append(msg_f)
 
-        if oc["cid"] == 12 and oc.get("is_ace2"):
+        if oc["cid"] == 12 and oc.get("is_ace2") and oc.get("erased_skill") != "remilia_gungnir":
             o_gungnir_bonus = int(pc["hp"] * 0.03)
             curr_oc_power += o_gungnir_bonus
             if not turn_image:
@@ -8216,7 +8320,7 @@ async def handle_battle(ctx_or_interaction):
                 battle_logs.append(msg_c)
                 turn_actions.append(msg_c)
 
-        if oc["cid"] == 13 and oc.get("is_ace2"):
+        if oc["cid"] == 13 and oc.get("is_ace2") and oc.get("erased_skill") != "utsuho_nuclear":
             if random.random() < 0.30:
                 curr_oc_power = int(curr_oc_power * 3.0)
                 p_molten_ground_turns = 3
@@ -8700,7 +8804,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_actions.append(msg_m)
 # Kỹ năng Yukari Ace 2 bên Thách đấu:
         if cc["cid"] == 4 and cc["is_ace2"]:
-            if not p_yukari_station and random.random() < 0.30:
+            if cc.get("erased_skill") != "yukari_station" and not p_yukari_station and random.random() < 0.30:
                 p_yukari_station = True
                 c_curr_power = int(c_curr_power * 2.0)
                 if not turn_image:
@@ -8708,7 +8812,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 msg_y = f"🌌 **[Ace 2] [#04] Yukari** ({challenger.display_name}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{c_curr_power:,} DMG**!"
                 pvp_logs.append(msg_y)
                 turn_actions.append(msg_y)
-            elif not p_yukari_lastword and random.random() < 0.25:
+            elif cc.get("erased_skill") != "yukari_lastword" and not p_yukari_lastword and random.random() < 0.25:
                 p_yukari_lastword = True
                 c_curr_power = int(c_curr_power * 2.5)
                 t_stunned = True
@@ -8718,7 +8822,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_y)
                 turn_actions.append(msg_y)
 
-        if cc["cid"] == 12 and cc["is_ace2"]:
+        if cc["cid"] == 12 and cc["is_ace2"] and cc.get("erased_skill") != "remilia_gungnir":
             _gungnir = int(tc["max_hp"] * 0.03)
             c_curr_power += _gungnir
             if not turn_image:
@@ -8745,7 +8849,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_c)
                 turn_actions.append(msg_c)
 
-        if cc["cid"] == 13 and cc["is_ace2"]:
+        if cc["cid"] == 13 and cc["is_ace2"] and cc.get("erased_skill") != "utsuho_nuclear":
             if random.random() < 0.30:
                 c_curr_power = int(c_curr_power * 3.0)
                 t_molten_ground_turns = 3
@@ -8781,16 +8885,24 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 if _t1["heal"]:
                     cc["current_hp"] = min(cc["max_hp"], cc["current_hp"] + _t1["heal"])
                 if _t1["disable"]:
-                    _erased = None
-                    if not t_sakuya: t_sakuya = True; _erased = "Thời Gian Đóng Băng"
-                    elif not t_marisa: t_marisa = True; _erased = "Master Spark"
-                    elif not t_reimu: t_reimu = True; _erased = "Vô Tưởng Chuyển Sinh"
-                    elif not t_reisen_used: t_reisen_used = True; _erased = "Red Eye Mind Explosion"
-                    elif not t_flandre: t_flandre = True; _erased = "Ripples of 495 Years"
-                    if _erased:
-                        _t1["logs"].append(f"🌑 **Bóng Khái Niệm** đã **XÓA VĨNH VIỄN kỹ năng [{_erased}]** của {target.display_name} trong trận này!")
-                    else:
-                        _t1["logs"].append("🌑 **Bóng Khái Niệm**: Đối thủ không còn kỹ năng nào để xóa!")
+                    erase_msg = apply_bong_khai_niem_card(tc)
+                    _t1["logs"].append(erase_msg)
+                    ek = tc.get("erased_skill")
+                    if ek == "sakuya_stun": t_sakuya = True
+                    elif ek == "marisa_spark": t_marisa = True
+                    elif ek == "reimu_invul": t_reimu = True
+                    elif ek == "reisen_mind": t_reisen_used = True
+                    elif ek == "flandre_ripples": t_flandre = True
+                    elif ek == "cirno_freeze": t_cirno_freeze_used = True
+                    elif ek == "yukari_station": o_yukari_station = True
+                    elif ek == "yukari_lastword": o_yukari_lastword = True
+                    elif ek == "t1_seal": t_seiki_seal = True; t_t1["seal_used"] = True
+                    elif ek == "t1_spark": t_seiki_spark = True
+                    elif ek == "t1_med": t_seiki_heal = True; t_t1["med_used"] = True
+                    elif ek == "t1_bong": t_t1["bong_used"] = True
+                    elif ek == "t3_wonder": t_t3_state["wonder_guard_used"] = True; t_t3_state["wonder_guard_turns"] = 0
+                    elif ek == "t3_blood": t_t3_state["blood_used"] = True
+                    elif ek == "t3_dark": t_t3_state["dark_chain_uses"] = 99
                 if _t1["gif"] and not turn_image:
                     turn_image = _t1["gif"]
                 turn_actions.extend(_t1["logs"])
@@ -8817,28 +8929,33 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                     turn_actions.append(msg_h)
 
         if str(cc["cid"]).lower() == "t2":
-            c_mahoraga_turns += 1
-            heal_val = int(cc["max_hp"] * 0.05)
-            cc["current_hp"] = min(cc["max_hp"], cc["current_hp"] + heal_val)
-            adapt_pct = min(0.90, c_mahoraga_turns * 0.05)
-            if random.random() < 0.30:
+            erased_c = cc.get("erased_skill")
+            heal_val = 0
+            adapt_pct = 0.0
+            if erased_c != "t2_adapt":
+                c_mahoraga_turns += 1
+                heal_val = int(cc["max_hp"] * 0.05)
+                cc["current_hp"] = min(cc["max_hp"], cc["current_hp"] + heal_val)
+                adapt_pct = min(0.90, c_mahoraga_turns * 0.05)
+            if erased_c != "t2_kiem" and random.random() < 0.30:
                 c_curr_power = int(c_curr_power * 1.5)
                 if not turn_image:
                     turn_image = T2_THOAI_MA_GIF
                 msg_t2 = (
-                    f"🔱 **[Nhóm T] [#t2] Mahoraga** ({challenger.display_name}) kích hoạt **The True Adapt** "
-                    f"(Hồi +{heal_val:,} HP, Kháng ST {int(adapt_pct*100)}%) & vung **Thoái Ma Kiếm** (30%)! "
+                    f"🔱 **[Nhóm T] [#t2] Mahoraga** ({challenger.display_name}) vung **Thoái Ma Kiếm** (30%)! "
                     f"Sát thương ×1.5 giáng **{c_curr_power:,} DMG** lên **{tc['name']}**!"
                 )
-            else:
+                pvp_logs.append(msg_t2)
+                turn_actions.append(msg_t2)
+            elif erased_c != "t2_adapt":
                 if not turn_image:
                     turn_image = T2_PASSIVE_GIF
                 msg_t2 = (
                     f"🔱 **[Nhóm T] [#t2] Mahoraga** ({challenger.display_name}) kích hoạt **The True Adapt**! "
                     f"Hồi phục **+{heal_val:,} HP** ({cc['current_hp']:,}/{cc['max_hp']:,} HP) và tăng kháng sát thương lên **{int(adapt_pct*100)}%**!"
                 )
-            pvp_logs.append(msg_t2)
-            turn_actions.append(msg_t2)
+                pvp_logs.append(msg_t2)
+                turn_actions.append(msg_t2)
 
         
         if str(cc["cid"]).lower() == "t3":
@@ -8859,7 +8976,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_actions.append(msg_m)
 # Kỹ năng Yukari Ace 2 bên Nhận thách đấu:
         if tc["cid"] == 4 and tc["is_ace2"]:
-            if not o_yukari_station and random.random() < 0.30:
+            if tc.get("erased_skill") != "yukari_station" and not o_yukari_station and random.random() < 0.30:
                 o_yukari_station = True
                 t_curr_power = int(t_curr_power * 2.0)
                 if not turn_image:
@@ -8867,7 +8984,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 msg_y = f"🌌 **[Ace 2] [#04] Yukari** ({target.display_name}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{t_curr_power:,} DMG**!"
                 pvp_logs.append(msg_y)
                 turn_actions.append(msg_y)
-            elif not o_yukari_lastword and random.random() < 0.25:
+            elif tc.get("erased_skill") != "yukari_lastword" and not o_yukari_lastword and random.random() < 0.25:
                 o_yukari_lastword = True
                 t_curr_power = int(t_curr_power * 2.5)
                 c_stunned = True
@@ -8877,7 +8994,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_y)
                 turn_actions.append(msg_y)
 
-        if tc["cid"] == 12 and tc["is_ace2"]:
+        if tc["cid"] == 12 and tc["is_ace2"] and tc.get("erased_skill") != "remilia_gungnir":
             _gungnir = int(cc["max_hp"] * 0.03)
             t_curr_power += _gungnir
             if not turn_image:
@@ -8904,7 +9021,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 pvp_logs.append(msg_c)
                 turn_actions.append(msg_c)
 
-        if tc["cid"] == 13 and tc["is_ace2"]:
+        if tc["cid"] == 13 and tc["is_ace2"] and tc.get("erased_skill") != "utsuho_nuclear":
             if random.random() < 0.30:
                 t_curr_power = int(t_curr_power * 3.0)
                 c_molten_ground_turns = 3
@@ -8940,16 +9057,24 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 if _t1["heal"]:
                     tc["current_hp"] = min(tc["max_hp"], tc["current_hp"] + _t1["heal"])
                 if _t1["disable"]:
-                    _erased = None
-                    if not c_sakuya: c_sakuya = True; _erased = "Thời Gian Đóng Băng"
-                    elif not c_marisa: c_marisa = True; _erased = "Master Spark"
-                    elif not c_reimu: c_reimu = True; _erased = "Vô Tưởng Chuyển Sinh"
-                    elif not c_reisen_used: c_reisen_used = True; _erased = "Red Eye Mind Explosion"
-                    elif not c_flandre: c_flandre = True; _erased = "Ripples of 495 Years"
-                    if _erased:
-                        _t1["logs"].append(f"🌑 **Bóng Khái Niệm** đã **XÓA VĨNH VIỄN kỹ năng [{_erased}]** của {challenger.display_name} trong trận này!")
-                    else:
-                        _t1["logs"].append("🌑 **Bóng Khái Niệm**: Đối thủ không còn kỹ năng nào để xóa!")
+                    erase_msg = apply_bong_khai_niem_card(cc)
+                    _t1["logs"].append(erase_msg)
+                    ek = cc.get("erased_skill")
+                    if ek == "sakuya_stun": c_sakuya = True
+                    elif ek == "marisa_spark": c_marisa = True
+                    elif ek == "reimu_invul": c_reimu = True
+                    elif ek == "reisen_mind": c_reisen_used = True
+                    elif ek == "flandre_ripples": c_flandre = True
+                    elif ek == "cirno_freeze": c_cirno_freeze_used = True
+                    elif ek == "yukari_station": p_yukari_station = True
+                    elif ek == "yukari_lastword": p_yukari_lastword = True
+                    elif ek == "t1_seal": c_seiki_seal = True; c_t1["seal_used"] = True
+                    elif ek == "t1_spark": c_seiki_spark = True
+                    elif ek == "t1_med": c_seiki_heal = True; c_t1["med_used"] = True
+                    elif ek == "t1_bong": c_t1["bong_used"] = True
+                    elif ek == "t3_wonder": c_t3_state["wonder_guard_used"] = True; c_t3_state["wonder_guard_turns"] = 0
+                    elif ek == "t3_blood": c_t3_state["blood_used"] = True
+                    elif ek == "t3_dark": c_t3_state["dark_chain_uses"] = 99
                 if _t1["gif"] and not turn_image:
                     turn_image = _t1["gif"]
                 turn_actions.extend(_t1["logs"])
@@ -8976,28 +9101,33 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                     turn_actions.append(msg_h)
 
         if str(tc["cid"]).lower() == "t2":
-            t_mahoraga_turns += 1
-            heal_val = int(tc["max_hp"] * 0.05)
-            tc["current_hp"] = min(tc["max_hp"], tc["current_hp"] + heal_val)
-            adapt_pct = min(0.90, t_mahoraga_turns * 0.05)
-            if random.random() < 0.30:
+            erased_t = tc.get("erased_skill")
+            heal_val = 0
+            adapt_pct = 0.0
+            if erased_t != "t2_adapt":
+                t_mahoraga_turns += 1
+                heal_val = int(tc["max_hp"] * 0.05)
+                tc["current_hp"] = min(tc["max_hp"], tc["current_hp"] + heal_val)
+                adapt_pct = min(0.90, t_mahoraga_turns * 0.05)
+            if erased_t != "t2_kiem" and random.random() < 0.30:
                 t_curr_power = int(t_curr_power * 1.5)
                 if not turn_image:
                     turn_image = T2_THOAI_MA_GIF
                 msg_t2 = (
-                    f"🔱 **[Nhóm T] [#t2] Mahoraga** ({target.display_name}) kích hoạt **The True Adapt** "
-                    f"(Hồi +{heal_val:,} HP, Kháng ST {int(adapt_pct*100)}%) & vung **Thoái Ma Kiếm** (30%)! "
+                    f"🔱 **[Nhóm T] [#t2] Mahoraga** ({target.display_name}) vung **Thoái Ma Kiếm** (30%)! "
                     f"Sát thương ×1.5 giáng **{t_curr_power:,} DMG** lên **{cc['name']}**!"
                 )
-            else:
+                pvp_logs.append(msg_t2)
+                turn_actions.append(msg_t2)
+            elif erased_t != "t2_adapt":
                 if not turn_image:
                     turn_image = T2_PASSIVE_GIF
                 msg_t2 = (
                     f"🔱 **[Nhóm T] [#t2] Mahoraga** ({target.display_name}) kích hoạt **The True Adapt**! "
                     f"Hồi phục **+{heal_val:,} HP** ({tc['current_hp']:,}/{tc['max_hp']:,} HP) và tăng kháng sát thương lên **{int(adapt_pct*100)}%**!"
                 )
-            pvp_logs.append(msg_t2)
-            turn_actions.append(msg_t2)
+                pvp_logs.append(msg_t2)
+                turn_actions.append(msg_t2)
 
         
         if str(tc["cid"]).lower() == "t3":
@@ -9052,7 +9182,10 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_actions.append(f"🛡️ **[Wonder Guard]** **{tc['name']}** phản ngược **Mặt Đất Nung Chảy** sang đối phương!")
 
         if not c_stunned and not t_invul:
-            if str(tc["cid"]).lower() == "t2":
+            if tc["cid"] == 4 and tc.get("is_ace2") and tc.get("erased_skill") != "yukari_gap" and c_curr_power == cc["power"] and random.random() < 0.10:
+                cc["current_hp"] = max(0, cc["current_hp"] - c_curr_power)
+                turn_actions.append(f"🌀 **[Ace 2] [#04] Yukari** ({target.display_name}) kích hoạt **Invisible Gap (10%)**! Miễn thương và phản lại 100% đòn đánh thường (**{c_curr_power:,} DMG**) vào **{cc['name']}**!")
+            elif str(tc["cid"]).lower() == "t2" and tc.get("erased_skill") != "t2_adapt":
                 t_adapt = min(0.90, t_mahoraga_turns * 0.05)
                 actual_dmg = int(c_curr_power * (1.0 - t_adapt))
                 tc["current_hp"] -= actual_dmg
@@ -9071,7 +9204,29 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_actions.append(f"🛡️ **{tc['name']}** miễn nhiễm toàn bộ đòn đánh!")
 
         if not t_stunned and not c_invul:
-            if str(cc["cid"]).lower() == "t2":
+            if cc["cid"] == 4 and cc.get("is_ace2") and cc.get("erased_skill") != "yukari_gap" and t_curr_power == tc["power"] and random.random() < 0.10:
+                tc["current_hp"] = max(0, tc["current_hp"] - t_curr_power)
+                turn_actions.append(f"🌀 **[Ace 2] [#04] Yukari** ({challenger.display_name}) kích hoạt **Invisible Gap (10%)**! Miễn thương và phản lại 100% đòn đánh thường (**{t_curr_power:,} DMG**) vào **{tc['name']}**!")
+            elif str(cc["cid"]).lower() == "t2" and cc.get("erased_skill") != "t2_adapt":
+                c_adapt = min(0.90, c_mahoraga_turns * 0.05)
+                actual_dmg = int(t_curr_power * (1.0 - c_adapt))
+                cc["current_hp"] -= actual_dmg
+                turn_actions.append(f"⚔️ **{tc['name']}** giáng **{t_curr_power:,} DMG** nhưng **{cc['name']}** Thích Nghi (-{int(c_adapt*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!")
+            else:
+                cc["current_hp"] -= t_curr_power
+                turn_actions.append(f"⚔️ **{tc['name']}** giáng **{t_curr_power:,} DMG** lên **{cc['name']}**!")
+        elif t_stunned:
+            turn_actions.append(f"❄️ **{tc['name']}** bị đóng băng không thể tấn công!")
+        elif c_invul:
+            if c_wg_active and not t_stunned:
+                ref_dmg = int(t_curr_power * 0.60)
+                tc["current_hp"] = max(0, tc["current_hp"] - ref_dmg)
+                turn_actions.append(f"🛡️ **[Wonder Guard]** **{cc['name']}** miễn thương hoàn toàn & **PHẢN LẠI {ref_dmg:,} DMG (60%)** vào **{tc['name']}**! *(Còn {c_t3_state['wonder_guard_turns']} lượt)*")
+            else:
+                turn_actions.append(f"🛡️ **{cc['name']}** miễn nhiễm toàn bộ đòn đánh!")
+
+        if not t_stunned and not c_invul:
+            if str(cc["cid"]).lower() == "t2" and cc.get("erased_skill") != "t2_adapt":
                 c_adapt = min(0.90, c_mahoraga_turns * 0.05)
                 actual_dmg = int(t_curr_power * (1.0 - c_adapt))
                 cc["current_hp"] -= actual_dmg
