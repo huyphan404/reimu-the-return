@@ -1865,7 +1865,7 @@ def execute_seiki_ace2(player):
     
 def apply_bong_khai_niem_boss(boss_type: str, phase: int, erased_skill_current: Optional[str]):
     """Xóa ngẫu nhiên tối đa 1 chiêu duy nhất của Boss (Limit: 1 chiêu/Boss, dù có bao nhiêu lá Seiki)."""
-    if erased_skill_current is not None:
+    if erased_skill_current:
         return erased_skill_current, (
             f"🛡️ **[Giới Hạn Bóng Khái Niệm]** Boss đã từng bị xóa chiêu **[{erased_skill_current}]** trước đó! "
             f"(Mỗi Boss chỉ bị mất tối đa 1 chiêu duy nhất, không mất thêm!)."
@@ -2840,7 +2840,7 @@ async def execute_raid(channel, raid_data):
     p1_hp = p1_max_hp
     p1_power = boss_cfg["power"]
     seiki_spark_turns = 0
-    boss_skill_erased = False
+    boss_skill_erased = None
 
     if boss_type == "seiki":
         init_embed = discord.Embed(
@@ -3277,9 +3277,7 @@ async def execute_raid(channel, raid_data):
         if boss_skills_locked_this_turn:
             seiki_invul = False
             seiki_action = "normal"
-            boss_skill_erased = "fate_locked_temp"
-        elif boss_skill_erased == "fate_locked_temp":
-            boss_skill_erased = False
+            fateria_save_loop_active = False
 
         boss_action_log = ""
         if boss_type == "seiki":
@@ -3468,7 +3466,7 @@ async def execute_raid(channel, raid_data):
             else:
                 num_front = len(frontline_cards)
                 # Lưu ý: Fate loop không lặp lại cho đến khi hết 2 turn hiệu ứng
-                can_cast_fate_loop = (boss_skill_erased != "fate_loop") and (fateria_fate_loop_turns == 0) and (not player_skills_locked)
+                can_cast_fate_loop = (not boss_skills_locked_this_turn) and (boss_skill_erased != "fate_loop") and (fateria_fate_loop_turns == 0) and (not player_skills_locked)
                 fate_chance = FATERIA_BOSS_CONFIG["skills"]["fate_loop"].get("chance", 0.10)
                 clone_chance = FATERIA_BOSS_CONFIG["skills"]["clone_attack"].get("chance", 0.20)
                 fateria_skill_gif = None
@@ -3485,7 +3483,7 @@ async def execute_raid(channel, raid_data):
                         f"⚔️ Sát thương kèm theo: **{p1_power:,} DMG**, chia đều **{dmg_per_card:,} DMG** lên mỗi lá tiền tuyến ({num_front} lá)!"
                     )
                     is_normal_atk = False
-                elif (boss_skill_erased != "clone_attack") and random.random() < clone_chance:
+                elif (not boss_skills_locked_this_turn) and (boss_skill_erased != "clone_attack") and random.random() < clone_chance:
                     clones_cfg = FATERIA_BOSS_CONFIG["skills"]["clone_attack"]["clones"]
                     chosen_clone_key = random.choice(["thunder_blaze", "the_fallen_hero", "ice_spear"])
                     c_info = clones_cfg[chosen_clone_key]
@@ -9159,6 +9157,9 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                     elif ek == "t3_wonder": t_t3_state["wonder_guard_used"] = True; t_t3_state["wonder_guard_turns"] = 0
                     elif ek == "t3_blood": t_t3_state["blood_used"] = True
                     elif ek == "t3_dark": t_t3_state["dark_chain_uses"] = 99
+                    elif ek == "t4_save_loop": t_invul = False
+                    elif ek == "t4_fate_loop": t_t4_state["fate_uses"] = 99
+                    elif ek == "t4_clone_attack": t_t4_state["clone_uses"] = 99
                 if _t1["gif"] and not turn_image:
                     turn_image = _t1["gif"]
                 turn_actions.extend(_t1["logs"])
@@ -9350,6 +9351,9 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                     elif ek == "t3_wonder": c_t3_state["wonder_guard_used"] = True; c_t3_state["wonder_guard_turns"] = 0
                     elif ek == "t3_blood": c_t3_state["blood_used"] = True
                     elif ek == "t3_dark": c_t3_state["dark_chain_uses"] = 99
+                    elif ek == "t4_save_loop": c_invul = False
+                    elif ek == "t4_fate_loop": c_t4_state["fate_uses"] = 99
+                    elif ek == "t4_clone_attack": c_t4_state["clone_uses"] = 99
                 if _t1["gif"] and not turn_image:
                     turn_image = _t1["gif"]
                 turn_actions.extend(_t1["logs"])
