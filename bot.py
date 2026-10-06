@@ -344,8 +344,62 @@ CARDS_DATA = {
 CARDS_DATA["T1"] = CARDS_DATA["t1"]
 CARDS_DATA["T2"] = CARDS_DATA["t2"]
 CARDS_DATA["t2"] = CARDS_DATA["t2"]
+CARDS_DATA["t4"] = {
+    "id": "t4",
+    "name": "Fateria – Khuôn mẫu của số phận",
+    "rank": "T",
+    "power": 680,
+    "hp": 7500,
+    "image": "https://media.discordapp.net/attachments/1549063334781911070/1556698641002004480/image.png?backend=b2&ex=6ac51c16&is=6ac3ca96&hm=3f8bb669aa03006bbd2fce5b687c6d81a036e8349764d9569f6bd412784446ab&=&format=webp&quality=lossless",
+    "unlock_gif": "https://static2.klipy.com/ii/bea85337777ad0e23e63683391435543/95/37/sM6GJwtt.gif",
+    "passive": {
+        "name": "Save loop",
+        "chance": 0.15,
+        "heal_pct": 0.50,
+        "desc": "15% kích hoạt: Hồi 50% HP tối đa và miễn nhiễm sát thương trong turn đó",
+        "gif": "https://static2.klipy.com/ii/e1b92bb53e0c9e442408bc677a56c789/3f/90/YA0o494Vr52yU7U.gif"
+    },
+    "skills": {
+        "fate_loop": {
+            "name": "Fate loop",
+            "chance": 0.20,
+            "turns": 2,
+            "max_uses": 2,
+            "desc": "20% khiến đối thủ không dùng skill 2 turn liên tiếp (tối đa 2 lần/trận, không lặp lại khi đang hiệu lực)",
+            "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/41/a1/shxGKwxeHM5dbAwHKGY.gif"
+        },
+        "clone_attack": {
+            "name": "Clone attack",
+            "chance": 0.40,
+            "max_uses": 2,
+            "desc": "40% kích hoạt (tối đa 2 lần/trận) random 1/3 chiêu con rối: Thunder blaze (2.3x DMG), The fallen hero (1.5x DMG + giảm 30% Heal), Ice spear (1.5x DMG + 40% khóa đánh thường 2 lượt sau)",
+            "clones": {
+                "thunder_blaze": {
+                    "name": "Thunder blaze",
+                    "multiplier": 2.3,
+                    "gif": "https://static2.klipy.com/ii/39f2394ae36df6e199be9eb7c9fa1012/8d/df/9dfE0xSo.gif"
+                },
+                "the_fallen_hero": {
+                    "name": "The fallen hero",
+                    "multiplier": 1.5,
+                    "heal_reduce_pct": 0.30,
+                    "gif": "https://static2.klipy.com/ii/9294a2e836d178ddc22430dd7765727e/3f/b6/LMzSuK4eAAVA4rh.gif"
+                },
+                "ice_spear": {
+                    "name": "Ice spear",
+                    "multiplier": 1.5,
+                    "stop_atk_chance": 0.40,
+                    "turns": 2,
+                    "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/62/60/sPhfFLdL.gif"
+                }
+            }
+        }
+    }
+}
 CARDS_DATA["T3"] = CARDS_DATA["t3"]
 CARDS_DATA["t3"] = CARDS_DATA["t3"]
+CARDS_DATA["T4"] = CARDS_DATA["t4"]
+CARDS_DATA["t4"] = CARDS_DATA["t4"]
 
 T1_SKILL_CONFIGS = CARDS_DATA["t1"]["skills"]
 T1_SEAL_GIF = T1_SKILL_CONFIGS["fantasy_seal"]["gif"]
@@ -951,8 +1005,20 @@ CHARACTER_DETAILS = {
 }
 CHARACTER_DETAILS["T1"] = CHARACTER_DETAILS["t1"]
 CHARACTER_DETAILS["T2"] = CHARACTER_DETAILS["t2"]
+CHARACTER_DETAILS["t4"] = {
+    "title": "Khuôn Mẫu Của Số Phận (Nhóm T-Đặc Biệt)",
+    "skill_name": "Save loop • Fate loop • Clone attack",
+    "skill_desc": (
+        "Thẻ bài T4 Fateria – Khuôn mẫu của số phận (680 ATK / 7,500 HP). Mở khóa bằng 20 Fateria Shards.\n"
+        "• 🔄 **Passive - Save loop (15%):** Hồi 50% HP tối đa và miễn nhiễm sát thương trong turn đó.\n"
+        "• ⛓️ **Skill 1 - Fate loop (20%):** Khiến đối thủ không thể dùng skill 2 turn liên tiếp (tối đa 2 lần/trận).\n"
+        "• 🪆 **Skill 2 - Clone attack (40%):** Random 1/3 chiêu con rối (tối đa 2 lần/trận): Thunder blaze (2.3x DMG), The fallen hero (1.5x DMG + giảm 30% Heal), Ice spear (1.5x DMG + 40% không tấn công trong 2 lượt sau)."
+    )
+}
 CHARACTER_DETAILS["T3"] = CHARACTER_DETAILS["t3"]
 CHARACTER_DETAILS["t3"] = CHARACTER_DETAILS["t3"]
+CHARACTER_DETAILS["T4"] = CHARACTER_DETAILS["t4"]
+CHARACTER_DETAILS["t4"] = CHARACTER_DETAILS["t4"]
 
 BOSS_SKILL_CONFIG = {
     "name": "Dị Hình Bùa Chú",
@@ -1271,7 +1337,8 @@ CARD_ALIASES = {
     "koishi": 10, "komeiji": 10,
     "seiki": "t1", "t1": "t1", "dephap": "t1", "toannang": "t1",
     "mahoraga": "t2", "t2": "t2", "batach": "t2",
-    "kizuna": "t3", "t3": "t3", "vampire": "t3", "emperor": "t3"
+    "kizuna": "t3", "t3": "t3", "vampire": "t3", "emperor": "t3",
+    "fateria": "t4", "t4": "t4", "khuonmau": "t4", "sophan": "t4"
 }
 
 def normalize_card_id(raw_id):
@@ -1848,6 +1915,8 @@ def apply_bong_khai_niem_card(target_card: dict):
             pool = [("t3_vampire", "True Vampire"), ("t3_wonder", "Wonder Guard"), ("t3_blood", "Blood Chain"), ("t3_dark", "Dark Chain")]
         else:
             pool = [("t3_vampire", "True Vampire"), ("t3_blood", "Blood Chain"), ("t3_dark", "Dark Chain")]
+    elif cid_str == "t4":
+        pool = [("t4_save_loop", "Save loop"), ("t4_fate_loop", "Fate loop"), ("t4_clone_attack", "Clone attack")]
     elif cid == 18 and is_ace:
         pool = [("sakuya_stun", "Thời Gian Đóng Băng")]
     elif cid == 19 and is_ace:
@@ -2003,6 +2072,89 @@ def t3_combat_turn(t3_state: dict, card_data: dict, round_no: int, target_max_hp
         "logs": logs,
         "gif": gif,
         "wonder_guard_active": t3_state.get("wonder_guard_turns", 0) > 0
+    }
+def t4_combat_turn(t4_state: dict, card_data: dict, target_name: str, heal_mult: float = 1.0, enemy_fate_loop_turns: int = 0):
+    """
+    Xử lý lượt đánh và kỹ năng của thẻ [#t4] Fateria – Khuôn mẫu của số phận:
+    - Passive Save loop (15%): Hồi 50% Max HP và miễn nhiễm sát thương turn đó.
+    - Skill 1 Fate loop (20%): Khiến đối thủ không dùng skill 2 turn liên tiếp (tối đa 2 lần/trận, không lặp khi đang hiệu lực).
+    - Skill 2 Clone attack (40%): Random 1/3 chiêu con rối (tối đa 2 lần/trận):
+      + Thunder blaze: 2.3x DMG
+      + The fallen hero: 1.5x DMG + giảm 30% Heal
+      + Ice spear: 1.5x DMG + 40% không tấn công trong 2 lượt sau
+    """
+    logs = []
+    gif = None
+    multiplier = 1.0
+    save_loop_invul = False
+    fate_loop_triggered = False
+    heal_reduce_triggered = False
+    ice_spear_triggered = False
+    erased = card_data.get("erased_skill")
+
+    max_hp = card_data.get("max_hp", card_data.get("hp", 7500))
+    cur_hp = card_data.get("current_hp", max_hp)
+
+    # 1. PASSIVE: SAVE LOOP (15% kích hoạt)
+    if erased != "t4_save_loop" and random.random() < 0.15:
+        save_loop_invul = True
+        heal_amt = int(max_hp * 0.50 * heal_mult)
+        card_data["current_hp"] = min(max_hp, cur_hp + heal_amt)
+        gif = CARDS_DATA["t4"]["passive"]["gif"]
+        logs.append(
+            f"🔄 **[#t4] Fateria** kích hoạt **Save loop (15%)**! "
+            f"Hồi phục **+{heal_amt:,} HP (50% HP)** ({card_data['current_hp']:,}/{max_hp:,} HP) và **MIỄN NHIỄM SÁT THƯƠNG** trong turn này!"
+        )
+
+    fate_uses = t4_state.get("fate_uses", 0)
+    clone_uses = t4_state.get("clone_uses", 0)
+
+    # 2. SKILL 1 (Fate loop 20%) hoặc SKILL 2 (Clone attack 40%)
+    can_fate = (erased != "t4_fate_loop") and (fate_uses < 2) and (enemy_fate_loop_turns <= 0)
+    can_clone = (erased != "t4_clone_attack") and (clone_uses < 2)
+
+    roll = random.random()
+    if can_fate and roll < 0.20:
+        t4_state["fate_uses"] = fate_uses + 1
+        fate_loop_triggered = True
+        gif = CARDS_DATA["t4"]["skills"]["fate_loop"]["gif"]
+        logs.append(
+            f"⛓️ **[#t4] Fateria** thi triển **FATE LOOP (20%)** *(Lần {t4_state['fate_uses']}/2)*! "
+            f"Khóa toàn bộ kỹ năng của {target_name} trong **2 turn liên tiếp**!"
+        )
+    elif can_clone and ((can_fate and 0.20 <= roll < 0.60) or (not can_fate and roll < 0.40)):
+        t4_state["clone_uses"] = clone_uses + 1
+        clones_cfg = CARDS_DATA["t4"]["skills"]["clone_attack"]["clones"]
+        c_key = random.choice(["thunder_blaze", "the_fallen_hero", "ice_spear"])
+        c_info = clones_cfg[c_key]
+        multiplier = c_info["multiplier"]
+        gif = c_info["gif"]
+        if c_key == "thunder_blaze":
+            logs.append(
+                f"⚡ **[#t4] Fateria** - **Clone attack ({t4_state['clone_uses']}/2): Thunder blaze**! "
+                f"Những ngọn lửa chớp điện phập phờn gây **2.3x DMG** lên {target_name}!"
+            )
+        elif c_key == "the_fallen_hero":
+            heal_reduce_triggered = True
+            logs.append(
+                f"🗡️ **[#t4] Fateria** - **Clone attack ({t4_state['clone_uses']}/2): The fallen hero**! "
+                f"Tung trảm kích ánh sáng **1.5x DMG** và **giảm 30% Heal** của {target_name}!"
+            )
+        else:
+            ice_spear_triggered = True
+            logs.append(
+                f"❄️ **[#t4] Fateria** - **Clone attack ({t4_state['clone_uses']}/2): Ice spear**! "
+                f"Phóng giáo băng **1.5x DMG** khiến {target_name} có **40% không thể tấn công trong 2 lượt sau**!"
+            )
+
+    return {
+        "multiplier": multiplier,
+        "save_loop_invul": save_loop_invul,
+        "fate_loop_triggered": fate_loop_triggered,
+        "heal_reduce_triggered": heal_reduce_triggered,
+        "ice_spear_triggered": ice_spear_triggered,
+        "logs": logs,
+        "gif": gif
     }
 
 # ==============================================================================
@@ -2745,6 +2897,9 @@ async def execute_raid(channel, raid_data):
 
     p1_true_cap = int(p1_max_hp * 0.50)
     p1_true_dmg_accum = 0
+    boss_fate_locked_turns = 0
+    boss_ice_spear_turns = 0
+    boss_heal_mult = 1.0
 
     while p1_hp > 0 and p1_rounds < max_rounds:
         active_combatants = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
@@ -2755,22 +2910,32 @@ async def execute_raid(channel, raid_data):
         frontline_cards = [c["team_cards"][c["current_card_index"]] for c in active_combatants]
 
         passive_log = None
+        boss_skills_locked_this_turn = False
+        if boss_fate_locked_turns > 0:
+            boss_skills_locked_this_turn = True
+            boss_fate_locked_turns -= 1
+
+        boss_ice_spear_this_turn = False
+        if boss_ice_spear_turns > 0:
+            boss_ice_spear_this_turn = True
+            boss_ice_spear_turns -= 1
+
         if boss_type == "seiki":
-            heal_amt = int(p1_max_hp * boss_cfg.get("passive_regen_pct", 0.015))
+            heal_amt = int(p1_max_hp * boss_cfg.get("passive_regen_pct", 0.015) * boss_heal_mult)
             old_hp = p1_hp
             p1_hp = min(p1_max_hp, p1_hp + heal_amt)
             actual_healed = p1_hp - old_hp
             if actual_healed > 0:
-                passive_log = f"💚 **[Nội Tại - Hồi Phục]** Seiki Dị Hình hấp thụ dị khí hồi phục **+{actual_healed:,} HP** (1.5% HP tối đa)!"
+                passive_log = f"💚 **[Nội Tại - Hồi Phục]** Seiki Dị Hình hấp thụ dị khí hồi phục **+{actual_healed:,} HP**!"
         elif boss_type == "mahoraga":
             mahoraga_adapt_red = min(0.90, mahoraga_adapt_red + boss_cfg.get("passive_adapt_pct", 0.03))
-            heal_amt = int(p1_max_hp * boss_cfg.get("passive_regen_pct", 0.03))
+            heal_amt = int(p1_max_hp * boss_cfg.get("passive_regen_pct", 0.03) * boss_heal_mult)
             old_hp = p1_hp
             p1_hp = min(p1_max_hp, p1_hp + heal_amt)
             actual_healed = p1_hp - old_hp
             passive_log = (
                 f"♾️ **[Nội Tại - The True Adapt (100%)]** Mahoraga thích nghi tuyệt đối: "
-                f"Hồi phục **+{actual_healed:,} HP** (3% HP tối đa) và **GIẢM {int(mahoraga_adapt_red * 100)}% sát thương phải nhận** (cộng dồn mỗi hiệp)!"
+                f"Hồi phục **+{actual_healed:,} HP** và **GIẢM {int(mahoraga_adapt_red * 100)}% sát thương phải nhận**!"
             )
 
         fateria_save_loop_active = False
@@ -3062,6 +3227,29 @@ async def execute_raid(channel, raid_data):
                 t3_notif_str = "\n".join(_t3["logs"])
                 t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
 
+            if str(ac["cid"]).lower() == "t4":
+                t4_st = c.setdefault("t4_state", {})
+                _t4 = t4_combat_turn(t4_st, ac, f"Boss {boss_cfg['name']}", heal_mult=player_heal_mult, enemy_fate_loop_turns=boss_fate_locked_turns)
+                card_dmg = int(card_dmg * _t4["multiplier"])
+                if _t4["save_loop_invul"]:
+                    c["seiki_invul_turn"] = p1_rounds
+                    ac["current_hp"] += p1_power
+                if _t4["fate_loop_triggered"]:
+                    boss_fate_locked_turns = 2
+                    boss_skills_locked_this_turn = True
+                    if boss_type == "seiki":
+                        seiki_invul = False
+                        seiki_action = "normal"
+                if _t4["heal_reduce_triggered"]:
+                    boss_heal_mult = 0.70
+                if _t4["ice_spear_triggered"]:
+                    boss_ice_spear_turns = 2
+                if _t4["gif"] and not turn_image:
+                    turn_image = _t4["gif"]
+                if _t4["logs"]:
+                    t4_str = "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + t4_str
+
             round_player_dmg += card_dmg
             c["total_dmg"] += card_dmg
 
@@ -3082,6 +3270,16 @@ async def execute_raid(channel, raid_data):
                 player_atk_str = f"Toàn quân gây **{round_player_dmg:,} DMG** lên Boss!"
         if ice_spear_blocked_logs:
             player_atk_str += "\n" + "\n".join(ice_spear_blocked_logs)
+
+        if not boss_stunned and boss_ice_spear_this_turn and random.random() < 0.40:
+            boss_stunned = True
+            cirno_freeze_log = (cirno_freeze_log + "\n" if cirno_freeze_log else "") + "❄️ **[Ice spear - #t4 Fateria]** Giáo băng cầm chân khiến Boss không thể tấn công trong lượt này (40%)!"
+        if boss_skills_locked_this_turn:
+            seiki_invul = False
+            seiki_action = "normal"
+            boss_skill_erased = "fate_locked_temp"
+        elif boss_skill_erased == "fate_locked_temp":
+            boss_skill_erased = False
 
         boss_action_log = ""
         if boss_type == "seiki":
@@ -3938,6 +4136,22 @@ async def execute_raid(channel, raid_data):
                     t3_notif_str = "\n".join(_t3["logs"])
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
 
+                if str(ac["cid"]).lower() == "t4":
+                    t4_st = c.setdefault("t4_state", {})
+                    _t4 = t4_combat_turn(t4_st, ac, f"Boss {p2_cfg['name']}", heal_mult=1.0, enemy_fate_loop_turns=c.get("p2_fate_turns", 0))
+                    card_dmg = int(card_dmg * _t4["multiplier"])
+                    if _t4["save_loop_invul"]:
+                        c["seiki_invul_turn"] = p2_rounds
+                    if _t4["fate_loop_triggered"]:
+                        c["p2_fate_turns"] = 2
+                        boss_skill_erased = "nuclear_spell"
+                    if _t4["ice_spear_triggered"] and random.random() < 0.40:
+                        boss_stunned = True
+                    if _t4["gif"] and not turn_image:
+                        turn_image = _t4["gif"]
+                    if _t4["logs"]:
+                        t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
+
                 round_player_dmg += card_dmg
                 c["total_dmg"] += card_dmg
 
@@ -4460,6 +4674,22 @@ async def execute_raid(channel, raid_data):
                     turn_image = _t3["gif"]
                 t3_notif_str = "\n".join(_t3["logs"])
                 t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
+
+            if str(ac["cid"]).lower() == "t4":
+                t4_st = c.setdefault("t4_state", {})
+                _t4 = t4_combat_turn(t4_st, ac, f"Boss {BOSS_PHASE2_CONFIG['name']}", heal_mult=1.0, enemy_fate_loop_turns=c.get("p2_fate_turns", 0))
+                card_dmg = int(card_dmg * _t4["multiplier"])
+                if _t4["save_loop_invul"]:
+                    c["seiki_invul_turn"] = p2_rounds
+                if _t4["fate_loop_triggered"]:
+                    c["p2_fate_turns"] = 2
+                    boss_skill_erased = "di_hinh_bua_chu"
+                if _t4["ice_spear_triggered"] and random.random() < 0.40:
+                    boss_stunned = True
+                if _t4["gif"] and not turn_image:
+                    turn_image = _t4["gif"]
+                if _t4["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
 
             round_player_dmg += card_dmg
             c["total_dmg"] += card_dmg
@@ -5127,7 +5357,7 @@ async def execute_event_raid(channel, raid_data):
                     t2_notif_str = f"🔱 **[Nhóm T] [#t2] Mahoraga** ({c['username']}) kích hoạt **The True Adapt**! Tự hồi +{heal_mahoraga:,} HP (Kháng ST {int(adapt_pct*100)}%)!"
                 t2_notif = (t2_notif + "\n" if t2_notif else "") + t2_notif_str
 
-            # KỸ NĂNG THẺ T3 KIZUNA
+            # KỸ NĂNG THẺ T3 KIZUNA & T4 FATERIA
             if str(ac["cid"]).lower() == "t3":
                 t3_st = c.setdefault("t3_state", {})
                 _t3 = t3_combat_turn(t3_st, ac, p1_rounds, p1_max_hp, "Boss Kizuna", is_ace2=ac.get("is_ace2"))
@@ -5137,6 +5367,21 @@ async def execute_event_raid(channel, raid_data):
                     card_dmg += actual_hp_dmg
                 if _t3["gif"] and not turn_image: turn_image = _t3["gif"]
                 t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(_t3["logs"])
+
+            if str(ac["cid"]).lower() == "t4":
+                t4_st = c.setdefault("t4_state", {})
+                _t4 = t4_combat_turn(t4_st, ac, "Boss Kizuna", heal_mult=1.0, enemy_fate_loop_turns=c.get("ev_fate_turns", 0))
+                card_dmg = int(card_dmg * _t4["multiplier"])
+                if _t4["save_loop_invul"]:
+                    c["seiki_invul_turn"] = p1_rounds
+                if _t4["fate_loop_triggered"]:
+                    c["ev_fate_turns"] = 2
+                    boss_skill_erased = "fate_locked"
+                if _t4["ice_spear_triggered"]:
+                    boss_freeze_debuff_turns = max(boss_freeze_debuff_turns, 2)
+                if _t4["gif"] and not turn_image: turn_image = _t4["gif"]
+                if _t4["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
 
             round_player_dmg += card_dmg
             c["total_dmg"] += card_dmg
@@ -5521,7 +5766,7 @@ async def execute_event_raid(channel, raid_data):
                     t2_notif_str = f"🔱 **[Nhóm T] [#t2] Mahoraga** ({c['username']}) kích hoạt **The True Adapt**! Tự hồi +{heal_mahoraga:,} HP (Kháng ST {int(adapt_pct*100)}%)!"
                 t2_notif = (t2_notif + "\n" if t2_notif else "") + t2_notif_str
 
-            # KỸ NĂNG THẺ T3 KIZUNA
+            # KỸ NĂNG THẺ T3 KIZUNA & T4 FATERIA
             if str(ac["cid"]).lower() == "t3":
                 t3_st = c.setdefault("t3_state", {})
                 _t3 = t3_combat_turn(t3_st, ac, p2_rounds, p2_max_hp, "Boss Kizuna Phase 2", is_ace2=ac.get("is_ace2"))
@@ -5531,6 +5776,22 @@ async def execute_event_raid(channel, raid_data):
                     card_dmg += actual_hp_dmg
                 if _t3["gif"] and not turn_image: turn_image = _t3["gif"]
                 t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(_t3["logs"])
+
+            if str(ac["cid"]).lower() == "t4":
+                t4_st = c.setdefault("t4_state", {})
+                _t4 = t4_combat_turn(t4_st, ac, "Boss Kizuna Phase 2", heal_mult=1.0, enemy_fate_loop_turns=c.get("ev2_fate_turns", 0))
+                card_dmg = int(card_dmg * _t4["multiplier"])
+                if _t4["save_loop_invul"]:
+                    c["seiki_invul_turn"] = p2_rounds
+                if _t4["fate_loop_triggered"]:
+                    c["ev2_fate_turns"] = 2
+                    wonder_guard_turns = 0
+                    boss_skill_erased = "fate_locked"
+                if _t4["ice_spear_triggered"]:
+                    boss_freeze_debuff_turns = max(boss_freeze_debuff_turns, 2)
+                if _t4["gif"] and not turn_image: turn_image = _t4["gif"]
+                if _t4["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
 
             round_player_dmg += card_dmg
             c["total_dmg"] += card_dmg
@@ -5977,6 +6238,8 @@ async def slash_admin_add_shard(interaction: discord.Interaction, loai_shard: st
         s_key = "mahoraga"
     elif s_key in ["kizuna", "t3", "vampire"]:
         s_key = "kizuna"
+    elif s_key in ["fateria", "t4", "sophan"]:
+        s_key = "fateria"
     elif s_key in ["thanh_loi", "thanhloi", "core", "loi"]:
         s_key = "thanh_loi"
     shards = target_player.setdefault("shards", {})
@@ -6010,6 +6273,8 @@ async def prefix_admin_add_shard(ctx, loai_shard: str = "seiki", quantity: int =
         s_key = "mahoraga"
     elif s_key in ["kizuna", "t3", "vampire"]:
         s_key = "kizuna"
+    elif s_key in ["fateria", "t4", "sophan"]:
+        s_key = "fateria"
     elif s_key in ["thanh_loi", "thanhloi", "core", "loi"]:
         s_key = "thanh_loi"
     shards = target_player.setdefault("shards", {})
@@ -6883,7 +7148,7 @@ async def handle_collection(ctx_or_interaction):
 
     t_lines = []
     shards_cnt = player.get("shards", {}).get("seiki", 0)
-    for t_cid in ["t1", "t2", "t3"]:
+    for t_cid in ["t1", "t2", "t3", "t4"]:
         if t_cid in CARDS_DATA:
             t_card = CARDS_DATA[t_cid]
             t_cnt = player["inventory"].get(t_cid, 0)
@@ -6908,6 +7173,11 @@ async def handle_collection(ctx_or_interaction):
                 t_shard_info = f"   └ 🩸 **Mảnh Kizuna:** `{kizuna_shards}/15` | 👑 **Thánh Lõi:** `{thanh_loi_shards}/1`"
                 if kizuna_shards >= 15:
                     t_shard_info += " ✨ *(Đủ 15 mảnh! Dùng `/t translate loai_shard:kizuna` để đổi ngay!)*"
+            elif t_cid == "t4":
+                fateria_shards = player.get("shards", {}).get("fateria", 0)
+                t_shard_info = f"   └ ⏳ **Mảnh Fateria:** `{fateria_shards}/20` mảnh"
+                if fateria_shards >= 20:
+                    t_shard_info += " ✨ *(Đủ 20 mảnh! Dùng `/t translate loai_shard:fateria` để đổi ngay!)*"
             t_lines.append(f"{t_status}\n{t_shard_info}")
 
     desc_text = "\n".join(lines)
@@ -6959,8 +7229,12 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
         shard_key = "kizuna"
         target_card_id = "t3"
         needed_shards = 15
+    elif shard_key in ["fateria", "t4", "fateria_shard", "sophan", "khuonmau"]:
+        shard_key = "fateria"
+        target_card_id = "t4"
+        needed_shards = 20
     else:
-        msg = f"❌ Loại mảnh `{loai_shard}` không tồn tại! Hiện tại có: `seiki` (đổi Thẻ T1 Seiki), `mahoraga` (đổi Thẻ T2 Mahoraga) và `kizuna` (đổi Thẻ T3 Kizuna)."
+        msg = f"❌ Loại mảnh `{loai_shard}` không tồn tại! Hiện tại có: `seiki` (10 mảnh), `mahoraga` (10 mảnh), `kizuna` (15 mảnh) và `fateria` (20 mảnh)."
         if isinstance(ctx_or_interaction, discord.Interaction):
             await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else:
@@ -6970,8 +7244,9 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
     cur_shards = shards_dict.get(shard_key, 0)
     card_info = CARDS_DATA[target_card_id]
 
-    if cur_shards < needed_shards:
-        shard_name_display = "Mảnh Seiki" if shard_key == "seiki" else "Mảnh Mahoraga"
+        if cur_shards < needed_shards:
+        shard_names = {"seiki": "Mảnh Seiki", "mahoraga": "Mảnh Mahoraga", "kizuna": "Mảnh Kizuna", "fateria": "Fateria Shards"}
+        shard_name_display = shard_names.get(shard_key, "Mảnh")
         hint_text = "Tham gia đánh Boss Raid (Seiki Dị Hình hoặc Reimu Dị Hình) để nhận tỉ lệ 2.5% rơi mảnh Seiki!" if shard_key == "seiki" else "Tham gia đánh Boss Raid Mahoraga 90K HP để nhận tỉ lệ 5% rơi mảnh Mahoraga!"
         msg = (
             f"❌ **Không đủ mảnh quy đổi!**\n"
@@ -6991,7 +7266,27 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
     player["inventory"][target_card_id] = player["inventory"].get(target_card_id, 0) + 1
     save_player(player)
 
-    if target_card_id == "t3":
+    if target_card_id == "t4":
+        embed = discord.Embed(
+            title="⏳ QUY ĐỔI THÀNH CÔNG: FATERIA – KHUÔN MẪU CỦA SỐ PHẬN!",
+            description=(
+                f"✨ **Chúc mừng {user.mention}!** Bạn đã dung hợp thành công **20 Fateria Shards**!\n\n"
+                f"🎴 **THẺ BÀI NHẬN ĐƯỢC:** **[T] #t4 Fateria – Khuôn mẫu của số phận**\n"
+                f"• **Chỉ số:** ⚔️ Power: **{card_info['power']:,}** | ❤️ HP: **{card_info['hp']:,}**\n"
+                f"• **Bộ kỹ năng thao túng số phận:**\n"
+                f"  - 🔄 **Passive - Save loop (15%):** Hồi 50% HP tối đa và miễn nhiễm sát thương turn đó\n"
+                f"  - ⛓️ **Skill 1 - Fate loop (20%):** Khiến đối thủ không dùng skill 2 turn liên tiếp (tối đa 2 lần/trận)\n"
+                f"  - 🪆 **Skill 2 - Clone attack (40%):** Random 1/3 chiêu con rối (tối đa 2 lần/trận):\n"
+                f"    • *Thunder blaze:* 2.3x DMG chia đều sát thương\n"
+                f"    • *The fallen hero:* 1.5x DMG + giảm 30% Heal\n"
+                f"    • *Ice spear:* 1.5x DMG + 40% không tấn công trong 2 lượt sau\n\n"
+                f"📦 **Kho mảnh còn lại:** `{shards_dict[shard_key]} Fateria Shards`"
+            ),
+            color=0x0EA5E9
+        )
+        embed.set_image(url=card_info["unlock_gif"])
+        embed.set_footer(text="Dùng /team add id_the:t4 để đưa Fateria vào đội hình chiến đấu!")
+    elif target_card_id == "t3":
         embed = discord.Embed(
             title="🩸 QUY ĐỔI THÀNH CÔNG: HOÀNG ĐẾ MA CÀ RỒNG KIZUNA!",
             description=(
@@ -7089,10 +7384,14 @@ async def handle_view_shards(ctx_or_interaction):
         inline=False
     )
     fateria_shards = shards_dict.get("fateria", 0)
+    has_fateria = player["inventory"].get("t4", 0)
     embed.add_field(
         name="⏳ Mảnh Fateria (Khuôn Mẫu Của Số Phận):",
         value=(
-            f"• Hiện có: **`{fateria_shards}` Fateria Shards**\n"
+            f"• Hiện có: **`{fateria_shards}/20` Fateria Shards**\n"
+            f"• Tiến độ: `{get_hp_bar(min(20, fateria_shards), 20)}` ({min(100, fateria_shards * 5)}%)\n"
+            f"• Thẻ quy đổi: **[T] #t4 Fateria – Khuôn mẫu của số phận** (Kho: {has_fateria} lá)\n"
+            f"• Thao tác: Gõ `/t translate loai_shard:fateria` khi đủ 20 mảnh để quy đổi ngay!\n"
             f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Fateria – Khuôn mẫu của số phận** (95K HP / 6K2 DMG)."
         ),
         inline=False
@@ -7117,7 +7416,10 @@ class ShardGroup(app_commands.Group, name="t", description="Quản lý kho mản
     @app_commands.command(name="translate", description="Quy đổi 10 mảnh đặc biệt (shards) sang thẻ bài chính thức (Seiki T1)")
     @app_commands.describe(loai_shard="Loại mảnh muốn quy đổi (mặc định: seiki)")
     @app_commands.choices(loai_shard=[
-        app_commands.Choice(name="Mảnh Seiki Đệ Pháp Toàn Năng (Đổi ra Thẻ [T] #t1 Seiki)", value="seiki")
+        app_commands.Choice(name="Mảnh Seiki (10 mảnh -> Thẻ [T] #t1 Seiki)", value="seiki"),
+        app_commands.Choice(name="Mảnh Mahoraga (10 mảnh -> Thẻ [T] #t2 Mahoraga)", value="mahoraga"),
+        app_commands.Choice(name="Mảnh Kizuna (15 mảnh -> Thẻ [T] #t3 Kizuna)", value="kizuna"),
+        app_commands.Choice(name="Mảnh Fateria (20 mảnh -> Thẻ [T] #t4 Fateria)", value="fateria")
     ])
     async def slash_t_translate(self, interaction: discord.Interaction, loai_shard: str = "seiki"):
         await handle_translate_shard(interaction, loai_shard)
@@ -7287,20 +7589,20 @@ async def prefix_quest(ctx):
 # TÍNH NĂNG CHECK NHÂN VẬT & SOI KỸ NĂNG (CHUẨN HÓA TOÀN DIỆN - KHÔNG BỊ KẸT T3)
 # ==============================================================================
 class CharacterCheckView(discord.ui.View):
-    def __init__(self, current_index: int = 0, user_id: int = None, show_ace: bool = False, show_t1: bool = False, show_t2: bool = False, show_t3: bool = False):
+    def __init__(self, current_index: int = 0, user_id: int = None, show_ace: bool = False, show_t1: bool = False, show_t2: bool = False, show_t3: bool = False, show_t4: bool = False):
         super().__init__(timeout=180)
-        self.current_index = max(0, min(current_index, 27)) # 28 nhân vật thường (0 -> 27)
+        self.current_index = max(0, min(current_index, 27))
         self.user_id = user_id
         self.show_ace = show_ace
         self.show_t1 = show_t1
         self.show_t2 = show_t2
         self.show_t3 = show_t3
+        self.show_t4 = show_t4
         self.rebuild_items()
 
     def rebuild_items(self):
         self.clear_items()
         cid = self.current_index + 1
-        # Danh sách đầy đủ 9 nhân vật có thể Ace 2 (Bao gồm ID 4 Yukari)
         has_ace = cid in (4, 9, 12, 13, 15, 18, 19, 21, 23)
 
         first_btn = discord.ui.Button(label="⏮️", style=discord.ButtonStyle.secondary, row=0)
@@ -7322,47 +7624,33 @@ class CharacterCheckView(discord.ui.View):
         last_btn.callback = self.last_page
         self.add_item(last_btn)
 
-        # Nút chuyển đổi Ace 2 cho nhân vật thường & T1 Seiki
-        if (has_ace and not (self.show_t1 or self.show_t2 or self.show_t3)) or self.show_t1:
+        if (has_ace and not (self.show_t1 or self.show_t2 or self.show_t3 or self.show_t4)) or self.show_t1:
             if self.show_ace:
-                ace_toggle = discord.ui.Button(label="⭐ Xem Bản Thường", style=discord.ButtonStyle.secondary, emoji="🔄", row=1)
+                ace_toggle = discord.ui.Button(label="⭐ Bản Thường", style=discord.ButtonStyle.secondary, emoji="🔄", row=1)
             else:
-                ace_toggle = discord.ui.Button(label="🌟 Xem Bản Ace 2 ⭐⭐", style=discord.ButtonStyle.success, emoji="✨", row=1)
+                ace_toggle = discord.ui.Button(label="🌟 Ace 2 ⭐⭐", style=discord.ButtonStyle.success, emoji="✨", row=1)
             ace_toggle.callback = self.toggle_ace
             self.add_item(ace_toggle)
         else:
-            no_ace_btn = discord.ui.Button(label="⭐ Nhân Vật Bản Chuẩn", style=discord.ButtonStyle.secondary, disabled=True, row=1)
+            no_ace_btn = discord.ui.Button(label="⭐ Bản Chuẩn", style=discord.ButtonStyle.secondary, disabled=True, row=1)
             self.add_item(no_ace_btn)
 
-        # Nút chuyển sang các thẻ nhóm [T]
-        t1_btn = discord.ui.Button(
-            label="🔮 [T] #t1 Seiki",
-            style=discord.ButtonStyle.success if self.show_t1 else discord.ButtonStyle.secondary,
-            emoji="🔮",
-            row=1
-        )
+        t1_btn = discord.ui.Button(label="#t1 Seiki", style=discord.ButtonStyle.success if self.show_t1 else discord.ButtonStyle.secondary, emoji="🔮", row=1)
         t1_btn.callback = self.show_t1_card
         self.add_item(t1_btn)
 
-        t2_btn = discord.ui.Button(
-            label="🔱 [T] #t2 Mahoraga",
-            style=discord.ButtonStyle.success if self.show_t2 else discord.ButtonStyle.secondary,
-            emoji="🔱",
-            row=1
-        )
+        t2_btn = discord.ui.Button(label="#t2 Mahoraga", style=discord.ButtonStyle.success if self.show_t2 else discord.ButtonStyle.secondary, emoji="🔱", row=1)
         t2_btn.callback = self.show_t2_card
         self.add_item(t2_btn)
 
-        t3_btn = discord.ui.Button(
-            label="🩸 [T] #t3 Kizuna",
-            style=discord.ButtonStyle.success if self.show_t3 else discord.ButtonStyle.secondary,
-            emoji="🩸",
-            row=1
-        )
+        t3_btn = discord.ui.Button(label="#t3 Kizuna", style=discord.ButtonStyle.success if self.show_t3 else discord.ButtonStyle.secondary, emoji="🩸", row=1)
         t3_btn.callback = self.show_t3_card
         self.add_item(t3_btn)
 
-        # Menu chọn nhanh #01 - #14
+        t4_btn = discord.ui.Button(label="#t4 Fateria", style=discord.ButtonStyle.success if self.show_t4 else discord.ButtonStyle.secondary, emoji="⏳", row=1)
+        t4_btn.callback = self.show_t4_card
+        self.add_item(t4_btn)
+
         opt_part1 = []
         for i in range(1, 15):
             c = CARDS_DATA[i]
@@ -7371,17 +7659,12 @@ class CharacterCheckView(discord.ui.View):
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
                 description=f"ATK {c['power']:,} | HP {c['hp']:,} • Rank {c['rank']}"[:100],
-                default=(i == cid and not (self.show_t1 or self.show_t2 or self.show_t3))
+                default=(i == cid and not (self.show_t1 or self.show_t2 or self.show_t3 or self.show_t4))
             ))
-        select1 = discord.ui.Select(
-            placeholder="🔽 Chọn nhanh #01 - #14 (Hecatia ➔ Ibaraki Arm)...",
-            options=opt_part1,
-            row=2
-        )
+        select1 = discord.ui.Select(placeholder="🔽 Chọn nhanh #01 - #14 (Hecatia ➔ Ibaraki Arm)...", options=opt_part1, row=2)
         select1.callback = self.select_callback
         self.add_item(select1)
 
-        # Menu chọn nhanh #15 - #28
         opt_part2 = []
         for i in range(15, 29):
             c = CARDS_DATA[i]
@@ -7390,17 +7673,15 @@ class CharacterCheckView(discord.ui.View):
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
                 description=f"ATK {c['power']:,} | HP {c['hp']:,} • Rank {c['rank']}"[:100],
-                default=(i == cid and not (self.show_t1 or self.show_t2 or self.show_t3))
+                default=(i == cid and not (self.show_t1 or self.show_t2 or self.show_t3 or self.show_t4))
             ))
-        select2 = discord.ui.Select(
-            placeholder="🔽 Chọn nhanh #15 - #28 (Reimu ➔ Tewi)...",
-            options=opt_part2,
-            row=3
-        )
+        select2 = discord.ui.Select(placeholder="🔽 Chọn nhanh #15 - #28 (Reimu ➔ Tewi)...", options=opt_part2, row=3)
         select2.callback = self.select_callback
         self.add_item(select2)
 
     def get_current_embed(self) -> discord.Embed:
+        if self.show_t4:
+            return self.get_t4_embed()
         if self.show_t3:
             return self.get_t3_embed()
         if self.show_t1:
@@ -7422,13 +7703,7 @@ class CharacterCheckView(discord.ui.View):
         is_user_ace = is_card_ace2(player, cid) if player else False
         is_locked = is_card_locked(player, cid) if player else False
 
-        rank_colors = {
-            "SS": 0xF59E0B,
-            "S": 0x8B5CF6,
-            "A": 0x3B82F6,
-            "B": 0x10B981,
-            "C": 0x6B7280
-        }
+        rank_colors = {"SS": 0xF59E0B, "S": 0x8B5CF6, "A": 0x3B82F6, "B": 0x10B981, "C": 0x6B7280}
 
         if is_ace_mode:
             cfg = EVOL_CONFIG[cid]
@@ -7450,16 +7725,12 @@ class CharacterCheckView(discord.ui.View):
             img_url = card["image"]
             mode_desc = f"*{details.get('title', 'Nhân Vật Touhou Project')}*"
             if has_ace:
-                mode_desc += "\n✨ **Nhân vật này có thể tiến hóa Ace 2 ⭐⭐!** *(Bấm nút 'Xem Bản Ace 2' bên dưới)*"
+                mode_desc += "\n✨ **Nhân vật này có thể tiến hóa Ace 2 ⭐⭐!** *(Bấm nút 'Ace 2' bên dưới)*"
 
         if is_locked:
             mode_desc += "\n🔒 **CẢNH BÁO: Thẻ này hiện đang bị ADMIN KHÓA!** Cần quay `/pull` ra lại để mở."
 
-        embed = discord.Embed(
-            title=title,
-            description=mode_desc,
-            color=color
-        )
+        embed = discord.Embed(title=title, description=mode_desc, color=color)
         embed.set_image(url=img_url)
 
         atk_team = power_val + lvl_atk_buff
@@ -7473,12 +7744,7 @@ class CharacterCheckView(discord.ui.View):
         if is_ace_mode:
             stats_text += "\n⭐ **Đặc quyền Ace 2:** `+300 ATK & +300 HP` cộng trực tiếp vĩnh viễn!"
         embed.add_field(name="⚔️ SỨC MẠNH & CHỈ SỐ:", value=stats_text, inline=False)
-
-        embed.add_field(
-            name=f"🔮 KỸ NĂNG & NĂNG LỰC: {skill_name}",
-            value=f"{skill_desc}",
-            inline=False
-        )
+        embed.add_field(name=f"🔮 KỸ NĂNG & NĂNG LỰC: {skill_name}", value=f"{skill_desc}", inline=False)
 
         if player:
             if is_locked:
@@ -7487,105 +7753,70 @@ class CharacterCheckView(discord.ui.View):
                 ace_badge = "🌟 ĐÃ THỨC TỈNH ACE 2 ⭐⭐"
             elif has_ace:
                 req = EVOL_CONFIG[cid]["required_cards"]
-                if owned_cnt >= req:
-                    ace_badge = f"🟢 Đủ điều kiện ({owned_cnt}/{req} thẻ) - Dùng `/evol`!"
-                else:
-                    ace_badge = f"🔴 Chưa đủ ({owned_cnt}/{req} thẻ) - Cần thêm {req - owned_cnt} thẻ"
+                ace_badge = f"🟢 Đủ điều kiện ({owned_cnt}/{req} thẻ) - Dùng `/evol`!" if owned_cnt >= req else f"🔴 Chưa đủ ({owned_cnt}/{req} thẻ)"
             else:
                 ace_badge = "Chưa có dạng thức tỉnh"
 
-            embed.add_field(
-                name="🎒 TÚI ĐỒ CỦA BẠN:",
-                value=f"• Sở hữu: **{owned_cnt}** lá\n• Cảnh giới: **{ace_badge}**",
-                inline=True
-            )
+            embed.add_field(name="🎒 TÚI ĐỒ CỦA BẠN:", value=f"• Sở hữu: **{owned_cnt}** lá\n• Cảnh giới: **{ace_badge}**", inline=True)
 
-        embed.add_field(
-            name="📊 HẠNG THẺ:",
-            value=f"• Thứ tự: **#{cid:02d} / 28**\n• Phẩm cấp: **Rank [{card['rank']}]**",
-            inline=True
-        )
-
-        embed.set_footer(
-            text=f"Trang {self.current_index + 1}/28 • Bấm ◀ / ▶ hoặc dùng Menu chọn nhanh nhân vật!"
-        )
+        embed.add_field(name="📊 HẠNG THẺ:", value=f"• Thứ tự: **#{cid:02d} / 28**\n• Phẩm cấp: **Rank [{card['rank']}]**", inline=True)
+        embed.set_footer(text=f"Trang {self.current_index + 1}/28 • Bấm ◀ / ▶ hoặc dùng Menu chọn nhanh nhân vật!")
         return embed
 
-    # ================= CALLBACKS CỦA VIEW (ĐÃ RESET TOÀN BỘ CỜ T1, T2, T3) =================
     async def first_page(self, interaction: discord.Interaction):
         self.current_index = 0
-        self.show_ace = False
-        self.show_t1 = False
-        self.show_t2 = False
-        self.show_t3 = False
+        self.show_ace = self.show_t1 = self.show_t2 = self.show_t3 = self.show_t4 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
     async def prev_page(self, interaction: discord.Interaction):
         self.current_index = (self.current_index - 1) % 28
-        self.show_ace = False
-        self.show_t1 = False
-        self.show_t2 = False
-        self.show_t3 = False
+        self.show_ace = self.show_t1 = self.show_t2 = self.show_t3 = self.show_t4 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
     async def next_page(self, interaction: discord.Interaction):
         self.current_index = (self.current_index + 1) % 28
-        self.show_ace = False
-        self.show_t1 = False
-        self.show_t2 = False
-        self.show_t3 = False
+        self.show_ace = self.show_t1 = self.show_t2 = self.show_t3 = self.show_t4 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
     async def last_page(self, interaction: discord.Interaction):
         self.current_index = 27
-        self.show_ace = False
-        self.show_t1 = False
-        self.show_t2 = False
-        self.show_t3 = False
+        self.show_ace = self.show_t1 = self.show_t2 = self.show_t3 = self.show_t4 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
     async def toggle_ace(self, interaction: discord.Interaction):
         self.show_ace = not self.show_ace
-        self.show_t2 = False
-        self.show_t3 = False
+        self.show_t2 = self.show_t3 = self.show_t4 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
     async def select_callback(self, interaction: discord.Interaction):
         selected_id = int(interaction.data["values"][0])
         self.current_index = selected_id - 1
-        self.show_ace = False
-        self.show_t1 = False
-        self.show_t2 = False
-        self.show_t3 = False
+        self.show_ace = self.show_t1 = self.show_t2 = self.show_t3 = self.show_t4 = False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
     async def show_t1_card(self, interaction: discord.Interaction):
-        self.show_t1 = True
-        self.show_t2 = False
-        self.show_t3 = False
-        self.show_ace = False
+        self.show_t1, self.show_t2, self.show_t3, self.show_t4, self.show_ace = True, False, False, False, False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
     async def show_t2_card(self, interaction: discord.Interaction):
-        self.show_t2 = True
-        self.show_t1 = False
-        self.show_t3 = False
-        self.show_ace = False
+        self.show_t1, self.show_t2, self.show_t3, self.show_t4, self.show_ace = False, True, False, False, False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
     async def show_t3_card(self, interaction: discord.Interaction):
-        self.show_t3 = True
-        self.show_t1 = False
-        self.show_t2 = False
-        self.show_ace = False
+        self.show_t1, self.show_t2, self.show_t3, self.show_t4, self.show_ace = False, False, True, False, False
+        self.rebuild_items()
+        await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+
+    async def show_t4_card(self, interaction: discord.Interaction):
+        self.show_t1, self.show_t2, self.show_t3, self.show_t4, self.show_ace = False, False, False, True, False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
 
@@ -7603,18 +7834,11 @@ class CharacterCheckView(discord.ui.View):
         is_seiki_ace = self.show_ace or user_has_seiki_ace
 
         embed = discord.Embed(
-            title=(
-                "🌟 [Ace 2 ⭐⭐] #t1 SEIKI ĐỆ NHẤT PHÁP SƯ (THỨC TỈNH)"
-                if is_seiki_ace else
-                "🔮 [THẺ ĐẶC BIỆT NHÓM T] #t1 SEIKI ĐỆ PHÁP TOÀN NĂNG"
-            ),
+            title="🌟 [Ace 2 ⭐⭐] #t1 SEIKI ĐỆ NHẤT PHÁP SƯ (THỨC TỈNH)" if is_seiki_ace else "🔮 [THẺ ĐẶC BIỆT NHÓM T] #t1 SEIKI ĐỆ PHÁP TOÀN NĂNG",
             description=(
                 "🔥 **Đang xem trạng thái: THỨC TỈNH ACE 2 ⭐⭐**\n*(Được cường hóa +300 Sức Mạnh & +300 Máu, khai mở Tứ Đại Tuyệt Kỹ!)*"
                 if is_seiki_ace else
-                f"*{details['title']}*\n"
-                "✨ Thẻ bài thần thoại chỉ có thể nhận bằng cách thu thập **10 Mảnh Seiki** "
-                "(tỉ lệ rơi 2.5% từ Boss Raid) rồi dùng lệnh `/t translate`.\n"
-                "✨ **Nhân vật này có thể tiến hóa Ace 2 ⭐⭐!** *(Bấm nút 'Xem Bản Ace 2' bên dưới)*"
+                f"*{details['title']}*\n✨ Thẻ bài thần thoại thu thập **10 Mảnh Seiki** rồi dùng `/t translate`.\n✨ **Nhân vật này có thể tiến hóa Ace 2 ⭐⭐!**"
             ),
             color=0xEF4444 if is_seiki_ace else 0x7C3AED
         )
@@ -7623,22 +7847,17 @@ class CharacterCheckView(discord.ui.View):
         power_val = card["power"] + (300 if is_seiki_ace else 0)
         hp_val = card["hp"] + (300 if is_seiki_ace else 0)
         stats_text = (
-            f"• ⚔️ **Sức Mạnh (Power / ATK):** `{power_val:,}`" + (" *(+300 Ace 2)*" if is_seiki_ace else "") + "\n"
-            f"• ❤️ **Máu (HP):** `{hp_val:,}`" + (" *(+300 Ace 2)*" if is_seiki_ace else "") + "\n"
-            f"• 🛡️ **Trong Đội Hình (Cấp {user_level}):** `{power_val + lvl_atk_buff:,}` ATK | `{hp_val + lvl_hp_buff:,}` HP\n"
-            f"*(Mỗi cấp người chơi tăng +20 ATK và +25 HP)*"
+            f"• ⚔️ **Sức Mạnh (ATK):** `{power_val:,}`\n"
+            f"• ❤️ **Máu (HP):** `{hp_val:,}`\n"
+            f"• 🛡️ **Trong Đội Hình (Cấp {user_level}):** `{power_val + lvl_atk_buff:,}` ATK | `{hp_val + lvl_hp_buff:,}` HP"
         )
         embed.add_field(name="⚔️ SỨC MẠNH & CHỈ SỐ:", value=stats_text, inline=False)
 
         sk = card["skills"]
         skills_text = (
             f"1️⃣ **{sk['fantasy_seal']['name']}** — {sk['fantasy_seal']['desc']}\n"
-            f"   🎬 Hoạt ảnh: {sk['fantasy_seal']['gif']}\n"
             f"2️⃣ **{sk['master_spark']['name']}** — {sk['master_spark']['desc']}\n"
-            f"   🎬 Hoạt ảnh: {sk['master_spark']['gif']}\n"
-            f"3️⃣ **{sk['medicine_sign']['name']}** — {sk['medicine_sign']['desc']}\n"
-            f"   🎬 Hoạt ảnh: {sk['medicine_sign']['gif']}\n"
-            "⚖️ *Nguyên tắc cân bằng: tối đa 1 chiêu mỗi lượt, mỗi chiêu kích hoạt 1 lần trong trận.*"
+            f"3️⃣ **{sk['medicine_sign']['name']}** — {sk['medicine_sign']['desc']}"
         )
         embed.add_field(name="🔮 TAM ĐẠI TUYỆT KỸ (BẢN CHUẨN):", value=skills_text, inline=False)
 
@@ -7648,30 +7867,14 @@ class CharacterCheckView(discord.ui.View):
                 value=(
                     "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường +**2% Máu Tối Đa** mục tiêu!\n"
                     "💚 **Medicine Sign (35%):** Hồi **40% Máu Tối Đa** bản thân, 1 lần/trận.\n"
-                    f"🎬 {T1_ACE2_CONFIG['medicine_sign']['gif']}\n"
-                    "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận.\n"
-                    f"🎬 {T1_ACE2_CONFIG['fantasy_seal']['gif']}\n"
-                    "🌑 **Bóng Khái Niệm (20%):** Gây **×1.5 Sát Thương** kèm **10% Máu Tối Đa** + **xóa kỹ năng đối phương**, 1 lần/trận.\n"
-                    f"🎬 {T1_ACE2_CONFIG['bong_khai_niem']['gif']}\n"
-                    "⚖️ *Tối đa 1 chiêu mỗi lượt. Hoạt động xuyên suốt Raid, Battle & PvP!*"
+                    "🛡️ **Fantasy Seal (50%):** **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp, 1 lần/trận.\n"
+                    "🌑 **Bóng Khái Niệm (20%):** Gây **×1.5 Sát Thương** + **10% Máu Tối Đa** + **xóa kỹ năng đối phương**, 1 lần/trận."
                 ),
                 inline=False
             )
 
         if player:
-            lock_str = "\n🔒 **CẢNH BÁO: Thẻ này hiện đang bị ADMIN KHÓA!** Cần quay `/pull` ra lại để mở." if is_locked else ""
-            shard_str = "\n✨ *Đã đủ 10 mảnh! Dùng `/t translate` để đổi thẻ ngay!*" if shards_cnt >= 10 else ""
-            ace_badge = "🌟 ĐÃ THỨC TỈNH ACE 2 ⭐⭐" if is_seiki_ace else "Bản chuẩn (Có thể tiến hóa Ace 2)"
-            embed.add_field(
-                name="🎒 TÚI ĐỒ CỦA BẠN:",
-                value=f"• Sở hữu: **{owned_cnt}** lá{lock_str}\n• 💎 Mảnh Seiki: **{shards_cnt}/10**{shard_str}\n• Cảnh giới: **{ace_badge}**",
-                inline=True
-            )
-        embed.add_field(
-            name="📊 HẠNG THẺ:",
-            value="• Phẩm cấp: **Rank [T] — Đặc Biệt**\n• Nguồn: Đổi từ **10 Mảnh Seiki** (Boss Raid)",
-            inline=True
-        )
+            embed.add_field(name="🎒 TÚI ĐỒ CỦA BẠN:", value=f"• Sở hữu: **{owned_cnt}** lá\n• 💎 Mảnh Seiki: **{shards_cnt}/10**", inline=True)
         embed.set_footer(text="Thẻ nhóm T đặc biệt • Bấm ◀ / ▶ hoặc menu để xem 28 nhân vật chuẩn!")
         return embed
 
@@ -7684,54 +7887,28 @@ class CharacterCheckView(discord.ui.View):
         lvl_hp_buff = (user_level - 1) * 25
         owned_cnt = player.get("inventory", {}).get("t2", 0) if player else 0
         shards_cnt = player.get("shards", {}).get("mahoraga", 0) if player else 0
-        is_locked = is_card_locked(player, "t2") if player else False
 
         embed = discord.Embed(
             title="🔱 [THẺ ĐẶC BIỆT NHÓM T] #t2 MAHORAGA BÁT ÁCH KIẾM THẦN TƯỚNG",
-            description=(
-                f"*{details.get('title', 'Bát Ách Kiếm Thần Tướng')}*\n"
-                "✨ Thần tướng thuật thức tối thượng - Thẻ bài thần thoại nhóm T chỉ có thể nhận bằng cách thu thập **10 Mảnh Mahoraga** "
-                "(tỉ lệ rơi 5% khi tham gia diệt Boss Mahoraga 90K HP) rồi dùng lệnh `/t translate loai_shard:mahoraga`."
-            ),
+            description=f"*{details.get('title', 'Bát Ách Kiếm Thần Tướng')}*\n✨ Mở khóa bằng **10 Mảnh Mahoraga** (`/t translate loai_shard:mahoraga`).",
             color=0xDC2626
         )
         embed.set_image(url=card["image"])
-
-        power_val = card["power"]
-        hp_val = card["hp"]
-        stats_text = (
-            f"• ⚔️ **Sức Mạnh (Power / ATK):** `{power_val:,}`\n"
-            f"• ❤️ **Máu (HP):** `{hp_val:,}`\n"
-            f"• 🛡️ **Trong Đội Hình (Cấp {user_level}):** `{power_val + lvl_atk_buff:,}` ATK | `{hp_val + lvl_hp_buff:,}` HP\n"
-            f"*(Mỗi cấp người chơi tăng +20 ATK và +25 HP)*"
+        power_val, hp_val = card["power"], card["hp"]
+        embed.add_field(
+            name="⚔️ SỨC MẠNH & CHỈ SỐ:",
+            value=f"• ⚔️ **ATK:** `{power_val:,}` | ❤️ **HP:** `{hp_val:,}`\n• 🛡️ **Trong Đội Hình (Lv.{user_level}):** `{power_val + lvl_atk_buff:,}` ATK | `{hp_val + lvl_hp_buff:,}` HP",
+            inline=False
         )
-        embed.add_field(name="⚔️ SỨC MẠNH & CHỈ SỐ:", value=stats_text, inline=False)
-
         pas = card.get("passive", {})
         sk = card.get("skills", {})
-        skills_text = (
-            f"🌀 **NỘI TẠI — {pas.get('name', 'The True adapt')} (100% Thụ Động):**\n"
-            f"• {pas.get('desc', 'Mỗi turn hồi 5% máu tối đa & mỗi turn giảm 5% sát thương phải nhận (cộng dồn)')}\n"
-            f"   🎬 Hoạt ảnh: {pas.get('gif', '')}\n\n"
-            f"⚔️ **TUYỆT KỸ — {sk.get('thoai_ma_kiem', {}).get('name', 'Thoái Ma kiếm')} (30% kích hoạt):**\n"
-            f"• {sk.get('thoai_ma_kiem', {}).get('desc', 'Gây ra 1.5x sát thương cho mục tiêu')}\n"
-            f"   🎬 Hoạt ảnh: {sk.get('thoai_ma_kiem', {}).get('gif', '')}\n"
-        )
-        embed.add_field(name="🔱 BỘ KỸ NĂNG BÁT ÁCH THẦN TƯỚNG:", value=skills_text, inline=False)
-
-        if player:
-            lock_str = "\n🔒 **CẢNH BÁO: Thẻ này hiện đang bị ADMIN KHÓA!**" if is_locked else ""
-            shard_str = "\n✨ *Đã đủ 10 mảnh! Dùng `/t translate loai_shard:mahoraga` để đổi thẻ ngay!*" if shards_cnt >= 10 else ""
-            embed.add_field(
-                name="🎒 TÚI ĐỒ CỦA BẠN:",
-                value=f"• Sở hữu: **{owned_cnt}** lá{lock_str}\n• 🔱 Mảnh Mahoraga: **{shards_cnt}/10**{shard_str}",
-                inline=True
-            )
         embed.add_field(
-            name="📊 HẠNG THẺ:",
-            value="• Phẩm cấp: **Rank [T] — Đặc Biệt**\n• Nguồn: Đổi từ **10 Mảnh Mahoraga** (Boss Mahoraga 90K HP)",
-            inline=True
+            name="🔱 BỘ KỸ NĂNG BÁT ÁCH THẦN TƯỚNG:",
+            value=f"🌀 **{pas.get('name', 'The True adapt')} (100%):** {pas.get('desc', '')}\n⚔️ **{sk.get('thoai_ma_kiem', {}).get('name', 'Thoái Ma kiếm')} (30%):** {sk.get('thoai_ma_kiem', {}).get('desc', '')}",
+            inline=False
         )
+        if player:
+            embed.add_field(name="🎒 TÚI ĐỒ CỦA BẠN:", value=f"• Sở hữu: **{owned_cnt}** lá\n• 🔱 Mảnh Mahoraga: **{shards_cnt}/10**", inline=True)
         embed.set_footer(text="Thẻ nhóm T đặc biệt • Bấm ◀ / ▶ hoặc menu để xem 28 nhân vật chuẩn!")
         return embed
 
@@ -7745,60 +7922,92 @@ class CharacterCheckView(discord.ui.View):
         owned_cnt = player.get("inventory", {}).get("t3", 0) if player else 0
         shards_cnt = player.get("shards", {}).get("kizuna", 0) if player else 0
         thanh_loi_cnt = player.get("shards", {}).get("thanh_loi", 0) if player else 0
-        is_locked = is_card_locked(player, "t3") if player else False
         is_kizuna_ace = is_card_ace2(player, "t3") if player else False
 
         embed = discord.Embed(
             title="🩸 [THẺ ĐẶC BIỆT NHÓM T] #t3 KIZUNA THE EMPEROR OF VAMPIRE" + (" - ACE 2 ⭐⭐" if is_kizuna_ace else ""),
-            description=(
-                f"*{details.get('title', 'Hoàng Đế Ma Cà Rồng')}*\n"
-                "✨ Thẻ bài thần thoại nhóm T có thể nhận bằng cách thu thập **15 Mảnh Kizuna** "
-                "rồi dùng lệnh `/t translate loai_shard:kizuna`. Tiến hóa Ace 2 yêu cầu **1 Thánh Lõi**."
-            ),
+            description=f"*{details.get('title', 'Hoàng Đế Ma Cà Rồng')}*\n✨ Mở khóa bằng **15 Mảnh Kizuna** (`/t translate loai_shard:kizuna`). Tiến hóa Ace 2 cần **1 Thánh Lõi**.",
             color=0x991B1B
         )
         embed.set_image(url=card["image"])
-
         power_val = card["power"] + (300 if is_kizuna_ace else 0)
         hp_val = card["hp"] + (300 if is_kizuna_ace else 0)
-        stats_text = (
-            f"• ⚔️ **Sức Mạnh (Power / ATK):** `{power_val:,}`" + (" *(+300 Ace 2)*" if is_kizuna_ace else "") + "\n"
-            f"• ❤️ **Máu (HP):** `{hp_val:,}`" + (" *(+300 Ace 2)*" if is_kizuna_ace else "") + "\n"
-            f"• 🛡️ **Trong Đội Hình (Cấp {user_level}):** `{power_val + lvl_atk_buff:,}` ATK | `{hp_val + lvl_hp_buff:,}` HP\n"
-            f"*(Mỗi cấp người chơi tăng +20 ATK và +25 HP)*"
+        embed.add_field(
+            name="⚔️ SỨC MẠNH & CHỈ SỐ:",
+            value=f"• ⚔️ **ATK:** `{power_val:,}` | ❤️ **HP:** `{hp_val:,}`\n• 🛡️ **Trong Đội Hình (Lv.{user_level}):** `{power_val + lvl_atk_buff:,}` ATK | `{hp_val + lvl_hp_buff:,}` HP",
+            inline=False
         )
-        embed.add_field(name="⚔️ SỨC MẠNH & CHỈ SỐ:", value=stats_text, inline=False)
-
         skills_text = (
-            "🩸 **True vampire (Nội tại 100%):** Hồi 5% máu tối đa mỗi lượt.\n"
+            "🩸 **True vampire (100%):** Hồi 5% máu tối đa mỗi lượt.\n"
             "💥 **Blood chain (30%):** Gây " + ("**2.0x sát thương** (Ace 2)" if is_kizuna_ace else "**1.5x sát thương**") + " (1 lần/trận).\n"
             "🌑 **Dark chain (" + ("30%" if is_kizuna_ace else "20%") + "):** Gây " + ("**1.5x sát thương**" if is_kizuna_ace else "**1.0x sát thương**") + " + **5% Máu Tối Đa mục tiêu** (tối đa 3 lần/trận)."
         )
         if is_kizuna_ace:
-            skills_text += "\n🛡️ **Wonder guard (20% - Kỹ năng Ace 2):** Miễn toàn bộ sát thương & **phản 60% sát thương lẫn hiệu ứng** trong **3 lượt** (1 lần/trận)!"
-
+            skills_text += "\n🛡️ **Wonder guard (20% - Ace 2):** Miễn thương & **phản 60% sát thương lẫn hiệu ứng** trong **3 lượt** (1 lần/trận)!"
         embed.add_field(name="🩸 BỘ KỸ NĂNG HOÀNG ĐẾ MA CÀ RỒNG:", value=skills_text, inline=False)
+        if player:
+            embed.add_field(name="🎒 TÚI ĐỒ CỦA BẠN:", value=f"• Sở hữu: **{owned_cnt}** lá\n• 🩸 Mảnh Kizuna: **{shards_cnt}/15** | 👑 Thánh Lõi: **{thanh_loi_cnt}/1**", inline=True)
+        embed.set_footer(text="Thẻ nhóm T đặc biệt • Bấm ◀ / ▶ hoặc menu để xem 28 nhân vật chuẩn!")
+        return embed
+
+    def get_t4_embed(self) -> discord.Embed:
+        card = CARDS_DATA["t4"]
+        details = CHARACTER_DETAILS.get("t4", {})
+        player = get_player(self.user_id) if self.user_id else None
+        user_level = player.get("level", 1) if player else 1
+        lvl_atk_buff = (user_level - 1) * 20
+        lvl_hp_buff = (user_level - 1) * 25
+        owned_cnt = player.get("inventory", {}).get("t4", 0) if player else 0
+        shards_cnt = player.get("shards", {}).get("fateria", 0) if player else 0
+
+        embed = discord.Embed(
+            title="⏳ [THẺ ĐẶC BIỆT NHÓM T] #t4 FATERIA – KHUÔN MẪU CỦA SỐ PHẬN",
+            description=(
+                f"*{details.get('title', 'Khuôn Mẫu Của Số Phận')}*\n"
+                "✨ Thẻ bài thần thoại nhóm T mở khóa bằng **20 Fateria Shards** "
+                "(dùng lệnh `/t translate loai_shard:fateria`)."
+            ),
+            color=0x0EA5E9
+        )
+        embed.set_thumbnail(url=card["image"])
+        embed.set_image(url=card["unlock_gif"])
+
+        power_val = card["power"]
+        hp_val = card["hp"]
+        stats_text = (
+            f"• ⚔️ **Sức Mạnh (ATK):** `{power_val:,}`\n"
+            f"• ❤️ **Máu (HP):** `{hp_val:,}`\n"
+            f"• 🛡️ **Trong Đội Hình (Cấp {user_level}):** `{power_val + lvl_atk_buff:,}` ATK | `{hp_val + lvl_hp_buff:,}` HP"
+        )
+        embed.add_field(name="⚔️ SỨC MẠNH & CHỈ SỐ:", value=stats_text, inline=False)
+
+        skills_text = (
+            "🔄 **Passive - Save loop (15%):** Hồi **50% HP tối đa** và **miễn nhiễm sát thương** trong turn đó.\n"
+            f"   🎬 GIF: {card['passive']['gif']}\n"
+            "⛓️ **Skill 1 - Fate loop (20%):** Khiến đối thủ **không thể dùng skill 2 turn liên tiếp** (tối đa 2 lần/trận).\n"
+            f"   🎬 GIF: {card['skills']['fate_loop']['gif']}\n"
+            "🪆 **Skill 2 - Clone attack (40% - tối đa 2 lần/trận):** Random 1/3 chiêu con rối:\n"
+            "  • ⚡ **Thunder blaze:** Ngọn lửa chớp điện gây **2.3x DMG** chia đều sát thương.\n"
+            "  • 🗡️ **The fallen hero:** Trảm kích ánh sáng **1.5x DMG** + **giảm 30% Heal**.\n"
+            "  • ❄️ **Ice spear:** Giáo băng **1.5x DMG** + khiến đối phương **40% không tấn công trong 2 lượt sau**."
+        )
+        embed.add_field(name="⏳ BỘ KỸ NĂNG KHUÔN MẪU SỐ PHẬN:", value=skills_text, inline=False)
 
         if player:
-            lock_str = "\n🔒 **CẢNH BÁO: Thẻ này hiện đang bị ADMIN KHÓA!**" if is_locked else ""
-            shard_str = "\n✨ *Đã đủ 15 mảnh! Dùng `/t translate loai_shard:kizuna` để đổi thẻ ngay!*" if shards_cnt >= 15 else ""
-            ace_str = "🌟 ĐÃ ĐẠT ACE 2 ⭐⭐" if is_kizuna_ace else (f"🟢 ĐỦ ĐIỀU KIỆN TIẾN HÓA (Có {thanh_loi_cnt} Thánh Lõi)!" if thanh_loi_cnt >= 1 and owned_cnt > 0 else f"🔴 Cần 1 Thánh Lõi (Hiện có: {thanh_loi_cnt}/1)")
+            shard_str = "\n✨ *Đã đủ 20 mảnh! Dùng `/t translate loai_shard:fateria` để đổi ngay!*" if shards_cnt >= 20 else ""
             embed.add_field(
                 name="🎒 TÚI ĐỒ CỦA BẠN:",
-                value=f"• Sở hữu: **{owned_cnt}** lá{lock_str}\n• 🩸 Mảnh Kizuna: **{shards_cnt}/15**{shard_str}\n• 👑 Thánh Lõi: **{thanh_loi_cnt}/1**\n• Trạng thái Ace 2: **{ace_str}**",
+                value=f"• Sở hữu: **{owned_cnt}** lá\n• ⏳ Fateria Shards: **{shards_cnt}/20**{shard_str}",
                 inline=True
             )
         embed.add_field(
             name="📊 HẠNG THẺ:",
-            value="• Phẩm cấp: **Rank [T] — Đặc Biệt**\n• Nguồn: Đổi từ **15 Mảnh Kizuna**\n• Tiến hóa Ace 2: Tiêu hao **1 Thánh Lõi**",
+            value="• Phẩm cấp: **Rank [T] — Đặc Biệt**\n• Nguồn: Đổi từ **20 Fateria Shards**",
             inline=True
         )
         embed.set_footer(text="Thẻ nhóm T đặc biệt • Bấm ◀ / ▶ hoặc menu để xem 28 nhân vật chuẩn!")
         return embed
 
-# ==============================================================================
-# HÀM XỬ LÝ LỆNH /CHECK VÀ /CARD_INFO (KHỞI TẠO ĐÚNG TRẠNG THÁI)
-# ==============================================================================
 async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     
@@ -7806,21 +8015,19 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
     show_t1_flag = False
     show_t2_flag = False
     show_t3_flag = False
+    show_t4_flag = False
 
     if nhan_vat:
         nv_clean = str(nhan_vat).strip().lower()
-        
-        # 1. Nhận diện Thẻ T3 Kizuna
-        if nv_clean in ("t3", "#t3", "kizuna", "vampire", "emperor", "huyetma", "huyetmade") or "kizuna" in nv_clean:
+        if nv_clean in ("t4", "#t4", "fateria", "sophan", "khuonmau") or "fateria" in nv_clean:
+            show_t4_flag = True
+        elif nv_clean in ("t3", "#t3", "kizuna", "vampire", "emperor", "huyetma", "huyetmade") or "kizuna" in nv_clean:
             show_t3_flag = True
-        # 2. Nhận diện Thẻ T1 Seiki
         elif nv_clean in ("t1", "#t1", "seiki", "dephap", "toannang") or "seiki" in nv_clean:
             show_t1_flag = True
-        # 3. Nhận diện Thẻ T2 Mahoraga
         elif nv_clean in ("t2", "#t2", "mahoraga", "batach", "thantuong", "kiemthantuong") or "mahoraga" in nv_clean:
             show_t2_flag = True
         else:
-            # 4. Nhận diện thẻ số (1-28) hoặc tên nhân vật
             clean_num = nv_clean.replace("#", "").strip()
             if clean_num.isdigit():
                 val = int(clean_num)
@@ -7834,16 +8041,11 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
                         if cid_s == "t1": show_t1_flag = True
                         elif cid_s == "t2": show_t2_flag = True
                         elif cid_s == "t3": show_t3_flag = True
+                        elif cid_s == "t4": show_t4_flag = True
                         elif isinstance(cid, int) and 1 <= cid <= 28:
                             target_idx = cid - 1
                         found = True
                         break
-                if not found:
-                    for cid, det in CHARACTER_DETAILS.items():
-                        if nv_clean in det.get("title", "").lower() or nv_clean in det.get("skill_name", "").lower():
-                            if isinstance(cid, int) and 1 <= cid <= 28:
-                                target_idx = cid - 1
-                                break
     else:
         player = get_player(user.id, user.display_name)
         if player and player.get("team"):
@@ -7852,6 +8054,7 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
             if lead_s == "t1": show_t1_flag = True
             elif lead_s == "t2": show_t2_flag = True
             elif lead_s == "t3": show_t3_flag = True
+            elif lead_s == "t4": show_t4_flag = True
             elif isinstance(lead_id, int) and 1 <= lead_id <= 28:
                 target_idx = lead_id - 1
 
@@ -7861,7 +8064,8 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
         show_ace=False,
         show_t1=show_t1_flag,
         show_t2=show_t2_flag,
-        show_t3=show_t3_flag
+        show_t3=show_t3_flag,
+        show_t4=show_t4_flag
     )
     embed = view.get_current_embed()
 
@@ -7870,14 +8074,13 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
     else:
         await ctx_or_interaction.send(embed=embed, view=view)
 
-
-@bot.tree.command(name="check", description="Kiểm tra thông số sức mạnh, máu và kỹ năng của 28 nhân vật Touhou (kèm Ace 2)")
-@app_commands.describe(nhan_vat="Nhập số ID (1-28) hoặc tên nhân vật muốn xem ngay (để trống để duyệt từ đầu)")
+@bot.tree.command(name="check", description="Kiểm tra thông số sức mạnh, máu và kỹ năng của 28 nhân vật Touhou + Nhóm T")
+@app_commands.describe(nhan_vat="Nhập số ID (1-28, t1-t4) hoặc tên nhân vật muốn xem ngay")
 async def slash_check(interaction: discord.Interaction, nhan_vat: str = None):
     await handle_check_character(interaction, nhan_vat)
 
-@bot.tree.command(name="card_info", description="Xem chi tiết sức mạnh, máu và chiêu thức thẻ bài Touhou (kèm Ace 2)")
-@app_commands.describe(nhan_vat="Nhập số ID (1-28) hoặc tên nhân vật muốn xem ngay")
+@bot.tree.command(name="card_info", description="Xem chi tiết sức mạnh, máu và chiêu thức thẻ bài Touhou + Nhóm T")
+@app_commands.describe(nhan_vat="Nhập số ID (1-28, t1-t4) hoặc tên nhân vật muốn xem ngay")
 async def slash_card_info(interaction: discord.Interaction, nhan_vat: str = None):
     await handle_check_character(interaction, nhan_vat)
 
@@ -8002,6 +8205,9 @@ async def handle_battle(ctx_or_interaction):
     p_mahoraga_turns = 0
     p_t3_state = {}
     o_t3_state = {}
+    p_t4_state = {}
+    o_fate_lock_turns = 0
+    o_ice_spear_turns = 0
     p_seiki_used_turn = -1
     p_cirno_freeze_used = False
     o_cirno_freeze_used = False
@@ -8252,6 +8458,35 @@ async def handle_battle(ctx_or_interaction):
                 turn_image = _t3["gif"]
             turn_actions.extend(_t3["logs"])
 
+        p_t4_save_invul = False
+        if o_fate_lock_turns > 0:
+            o_fate_lock_turns -= 1
+            o_sakuya = o_reimu = o_marisa = o_flandre = o_reisen_used = o_cirno_freeze_used = True
+            o_yukari_station = o_yukari_lastword = True
+            oc["erased_skill"] = "fate_locked"
+        if o_ice_spear_turns > 0:
+            o_ice_spear_turns -= 1
+            if random.random() < 0.40:
+                stunned_oc = True
+                turn_actions.append(f"❄️ **[Ice spear - #t4 Fateria]** **{oc['name']}** bị giáo băng cầm chân (40%), không thể tấn công trong lượt này!")
+
+        if str(pc["cid"]).lower() == "t4":
+            _t4 = t4_combat_turn(p_t4_state, pc, f"**{oc['name']}**", heal_mult=1.0, enemy_fate_loop_turns=o_fate_lock_turns)
+            curr_pc_power = int(curr_pc_power * _t4["multiplier"])
+            if _t4["save_loop_invul"]:
+                p_t4_save_invul = True
+            if _t4["fate_loop_triggered"]:
+                o_fate_lock_turns = 2
+                o_sakuya = o_reimu = o_marisa = o_flandre = o_reisen_used = o_cirno_freeze_used = True
+                o_yukari_station = o_yukari_lastword = True
+                oc["erased_skill"] = "fate_locked"
+            if _t4["ice_spear_triggered"]:
+                o_ice_spear_turns = 2
+            if _t4["gif"] and not turn_image:
+                turn_image = _t4["gif"]
+            battle_logs.extend(_t4["logs"])
+            turn_actions.extend(_t4["logs"])
+
 
         curr_oc_power = oc["power"]
         if oc["cid"] == 19 and oc.get("is_ace2") and not o_marisa:
@@ -8379,7 +8614,7 @@ async def handle_battle(ctx_or_interaction):
             p_t3_state["wonder_guard_turns"] -= 1
 
         if not stunned_oc:
-            pc_invul = False
+            pc_invul = p_t4_save_invul
             if p_wg_active:
                 pc_invul = True
                 ref_dmg = int(curr_oc_power * 0.60)
@@ -8649,6 +8884,14 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
     t_mahoraga_turns = 0
     c_t3_state = {}
     t_t3_state = {}
+    c_t4_state = {}
+    t_t4_state = {}
+    c_fate_locked_turns = 0
+    t_fate_locked_turns = 0
+    c_ice_spear_turns = 0
+    t_ice_spear_turns = 0
+    c_heal_mult = 1.0
+    t_heal_mult = 1.0
     c_cirno_freeze_used = False
     t_cirno_freeze_used = False
     c_freeze_debuff_turns = 0
@@ -8671,6 +8914,16 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
         turn_image = None
         turn_actions = []
         turn_trades = []
+        c_skills_locked = False
+        t_skills_locked = False
+        if c_fate_locked_turns > 0:
+            c_skills_locked = True
+            c_fate_locked_turns -= 1
+            turn_actions.append(f"⛓️ **[Fate loop]** **{cc['name']}** ({challenger.display_name}) đang bị khóa kỹ năng! (Còn {c_fate_locked_turns} lượt)")
+        if t_fate_locked_turns > 0:
+            t_skills_locked = True
+            t_fate_locked_turns -= 1
+            turn_actions.append(f"⛓️ **[Fate loop]** **{tc['name']}** ({target.display_name}) đang bị khóa kỹ năng! (Còn {t_fate_locked_turns} lượt)")
 
         if t_mind_turns > 0:
             t_mind_turns -= 1
@@ -8961,12 +9214,31 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_actions.append(msg_t2)
 
         
-        if str(cc["cid"]).lower() == "t3":
+        if str(cc["cid"]).lower() == "t3" and not c_skills_locked:
             _t3 = t3_combat_turn(c_t3_state, cc, r_cnt, tc["max_hp"], f"**{tc['name']}** ({target.display_name})", is_ace2=cc.get("is_ace2"))
             c_curr_power = int(c_curr_power * _t3["multiplier"]) + _t3["bonus_hp_dmg"]
             if _t3["gif"] and not turn_image:
                 turn_image = _t3["gif"]
             turn_actions.extend(_t3["logs"])
+
+        if str(cc["cid"]).lower() == "t4" and not c_skills_locked:
+            _t4 = t4_combat_turn(c_t4_state, cc, f"**{tc['name']}** ({target.display_name})", heal_mult=c_heal_mult, enemy_fate_loop_turns=t_fate_locked_turns)
+            c_curr_power = int(c_curr_power * _t4["multiplier"])
+            if _t4["save_loop_invul"]:
+                c_invul = True
+            if _t4["fate_loop_triggered"]:
+                t_fate_locked_turns = 2
+                t_skills_locked = True
+                t_invul = False
+                t_stunned = False
+            if _t4["heal_reduce_triggered"]:
+                t_heal_mult = 0.70
+            if _t4["ice_spear_triggered"]:
+                t_ice_spear_turns = 2
+            if _t4["gif"] and not turn_image:
+                turn_image = _t4["gif"]
+            pvp_logs.extend(_t4["logs"])
+            turn_actions.extend(_t4["logs"])
 
         if tc["cid"] == 19 and tc["is_ace2"] and not t_marisa:
             if random.random() < 0.30:
@@ -9133,12 +9405,42 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_actions.append(msg_t2)
 
         
-        if str(tc["cid"]).lower() == "t3":
+        if str(tc["cid"]).lower() == "t3" and not t_skills_locked:
             _t3 = t3_combat_turn(t_t3_state, tc, r_cnt, cc["max_hp"], f"**{cc['name']}** ({challenger.display_name})", is_ace2=tc.get("is_ace2"))
             t_curr_power = int(t_curr_power * _t3["multiplier"]) + _t3["bonus_hp_dmg"]
             if _t3["gif"] and not turn_image:
                 turn_image = _t3["gif"]
             turn_actions.extend(_t3["logs"])
+
+        if str(tc["cid"]).lower() == "t4" and not t_skills_locked:
+            _t4 = t4_combat_turn(t_t4_state, tc, f"**{cc['name']}** ({challenger.display_name})", heal_mult=t_heal_mult, enemy_fate_loop_turns=c_fate_locked_turns)
+            t_curr_power = int(t_curr_power * _t4["multiplier"])
+            if _t4["save_loop_invul"]:
+                t_invul = True
+            if _t4["fate_loop_triggered"]:
+                c_fate_locked_turns = 2
+                c_skills_locked = True
+                c_invul = False
+                c_stunned = False
+            if _t4["heal_reduce_triggered"]:
+                c_heal_mult = 0.70
+            if _t4["ice_spear_triggered"]:
+                c_ice_spear_turns = 2
+            if _t4["gif"] and not turn_image:
+                turn_image = _t4["gif"]
+            pvp_logs.extend(_t4["logs"])
+            turn_actions.extend(_t4["logs"])
+
+        if c_ice_spear_turns > 0:
+            c_ice_spear_turns -= 1
+            if not c_stunned and random.random() < 0.40:
+                c_stunned = True
+                turn_actions.append(f"❄️ **[Ice spear]** **{cc['name']}** ({challenger.display_name}) bị giáo băng cầm chân (40%), không thể tấn công lượt này!")
+        if t_ice_spear_turns > 0:
+            t_ice_spear_turns -= 1
+            if not t_stunned and random.random() < 0.40:
+                t_stunned = True
+                turn_actions.append(f"❄️ **[Ice spear]** **{tc['name']}** ({target.display_name}) bị giáo băng cầm chân (40%), không thể tấn công lượt này!")
 
         # [FIX WONDER GUARD KIZUNA ACE 2 TRONG PVP 3V3]
         c_wg_active = (str(cc["cid"]).lower() == "t3" and cc.get("is_ace2") and c_t3_state.get("wonder_guard_turns", 0) > 0)
@@ -9227,39 +9529,6 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_actions.append(f"🛡️ **[Wonder Guard]** **{cc['name']}** miễn thương hoàn toàn & **PHẢN LẠI {ref_dmg:,} DMG (60%)** vào **{tc['name']}**! *(Còn {c_t3_state['wonder_guard_turns']} lượt)*")
             else:
                 turn_actions.append(f"🛡️ **{cc['name']}** miễn nhiễm toàn bộ đòn đánh!")
-
-        if not t_stunned and not c_invul:
-            if str(cc["cid"]).lower() == "t2" and cc.get("erased_skill") != "t2_adapt":
-                c_adapt = min(0.90, c_mahoraga_turns * 0.05)
-                actual_dmg = int(t_curr_power * (1.0 - c_adapt))
-                cc["current_hp"] -= actual_dmg
-                turn_actions.append(f"⚔️ **{tc['name']}** giáng **{t_curr_power:,} DMG** nhưng **{cc['name']}** Thích Nghi (-{int(c_adapt*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!")
-            else:
-                cc["current_hp"] -= t_curr_power
-                turn_actions.append(f"⚔️ **{tc['name']}** giáng **{t_curr_power:,} DMG** lên **{cc['name']}**!")
-        elif t_stunned:
-            turn_actions.append(f"❄️ **{tc['name']}** bị đóng băng không thể tấn công!")
-        elif c_invul:
-            if c_wg_active and not t_stunned:
-                ref_dmg = int(t_curr_power * 0.60)
-                tc["current_hp"] = max(0, tc["current_hp"] - ref_dmg)
-                turn_actions.append(f"🛡️ **[Wonder Guard]** **{cc['name']}** miễn thương hoàn toàn & **PHẢN LẠI {ref_dmg:,} DMG (60%)** vào **{tc['name']}**! *(Còn {c_t3_state['wonder_guard_turns']} lượt)*")
-            else:
-                turn_actions.append(f"🛡️ **{cc['name']}** miễn nhiễm toàn bộ đòn đánh!")
-
-        if not t_stunned and not c_invul:
-            if str(cc["cid"]).lower() == "t2":
-                c_adapt = min(0.90, c_mahoraga_turns * 0.05)
-                actual_dmg = int(t_curr_power * (1.0 - c_adapt))
-                cc["current_hp"] -= actual_dmg
-                turn_actions.append(f"⚔️ **{tc['name']}** giáng **{t_curr_power:,} DMG** nhưng **{cc['name']}** Thích Nghi (-{int(c_adapt*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!")
-            else:
-                cc["current_hp"] -= t_curr_power
-                turn_actions.append(f"⚔️ **{tc['name']}** giáng **{t_curr_power:,} DMG** lên **{cc['name']}**!")
-        elif t_stunned:
-            turn_actions.append(f"❄️ **{tc['name']}** bị đóng băng không thể tấn công!")
-        elif c_invul:
-            turn_actions.append(f"🛡️ **{cc['name']}** miễn nhiễm toàn bộ đòn đánh!")
 
         if cc["current_hp"] <= 0:
             cc["current_hp"] = 0
@@ -10135,7 +10404,20 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
                 rip_dmg = int(rumia_hp * 0.50)
                 rumia_hp = max(0, rumia_hp - rip_dmg)
                 if not turn_image: turn_image = EVOL_CONFIG[9]["skill_gif"]
-                turn_logs.append(f"🦇 **[Ace 2] Flandre** tung **Ripples of 495 Years** (25%)! Xóa sổ **{rip_dmg:,} HP (50% HP Rumia)**!")      
+                turn_logs.append(f"🦇 **[Ace 2] Flandre** tung **Ripples of 495 Years** (25%)! Xóa sổ **{rip_dmg:,} HP (50% HP Rumia)**!")
+
+        t4_invul_story = False
+        if str(pc["cid"]).lower() == "t4":
+            t4_st = pc.setdefault("t4_state", {})
+            _t4 = t4_combat_turn(t4_st, pc, "Boss Rumia")
+            card_dmg = int(card_dmg * _t4["multiplier"])
+            if _t4["save_loop_invul"]:
+                t4_invul_story = True
+            if _t4["ice_spear_triggered"] and random.random() < 0.40:
+                sakuya_used = True
+            if _t4["gif"] and not turn_image:
+                turn_image = _t4["gif"]
+            turn_logs.extend(_t4["logs"])     
 
         rumia_hp = max(0, rumia_hp - card_dmg)
         turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Rumia!")
@@ -10146,7 +10428,7 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
             if sakuya_used and rounds == 1:
                 turn_logs.append("❄️ Rumia bị đóng băng không thể phản công!")
             else:
-                invul = False
+                invul = t4_invul_story
                 if pc["cid"] == 15 and pc["is_ace2"] and not reimu_used:
                     if random.random() < 0.40:
                         reimu_used = True
@@ -10460,6 +10742,19 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     cirno_hp = max(0, cirno_hp - rip_dmg)
                     if not turn_image: turn_image = EVOL_CONFIG[9]["skill_gif"]
                     turn_logs.append(f"🦇 **[Ace 2] Flandre** tung **Ripples of 495 Years**! Xóa sổ **{rip_dmg:,} HP (50% HP Cirno)**!")
+
+            if str(pc["cid"]).lower() == "t4":
+                t4_st = pc.setdefault("t4_state", {})
+                _t4 = t4_combat_turn(t4_st, pc, "Boss Cirno")
+                card_dmg = int(card_dmg * _t4["multiplier"])
+                if _t4["save_loop_invul"]:
+                    pc["current_hp"] += cirno_power
+                if _t4["fate_loop_triggered"]:
+                    boss_skill_erased = True
+                    cirno_freeze_turns = 0
+                if _t4["gif"] and not turn_image:
+                    turn_image = _t4["gif"]
+                turn_logs.extend(_t4["logs"])
 
             cirno_hp = max(0, cirno_hp - card_dmg)
             turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Cirno!")
