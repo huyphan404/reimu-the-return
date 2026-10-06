@@ -603,7 +603,7 @@ MAHORAGA_BOSS_CONFIG = {
     }
 }
 # ==============================================================================
-# BOSS FATERIA – KHUÔN MẪU CỦA SỐ PHẬN (50K HP / 6K2 DMG CHIA ĐỀU)
+# BOSS FATERIA – KHUÔN MẪU CỦA SỐ PHẬN (95K HP / 6K2 DMG CHIA ĐỀU)
 # ==============================================================================
 FATERIA_BOSS_CONFIG = {
     "id": "fateria",
@@ -611,7 +611,7 @@ FATERIA_BOSS_CONFIG = {
     "desc": "Thực thể thao túng dòng chảy thời gian và những con rối định mệnh!",
     "reimu_quote": "kẻ kiểm soát dòng chảy của thời gian, tất cả nghênh chiến!",
     "image": "https://media.discordapp.net/attachments/1549063334781911070/1556698641002004480/image.png?backend=b2&ex=6ac51c16&is=6ac3ca96&hm=3f8bb669aa03006bbd2fce5b687c6d81a036e8349764d9569f6bd412784446ab&=&format=webp&quality=lossless",
-    "hp": 50000,
+    "hp": 95000,
     "power": 6200,
     "max_players": 6,
     "cooldown_seconds": 15 * 60,
@@ -619,7 +619,7 @@ FATERIA_BOSS_CONFIG = {
         "name": "Save loop",
         "chance": 0.15,
         "heal_pct": 0.30,
-        "desc": "15% kích hoạt: Hồi 30% HP tối đa (15,000 HP) và miễn nhiễm toàn bộ sát thương trong turn đó!",
+        "desc": "15% kích hoạt: Hồi 30% HP tối đa (28,500 HP) và miễn nhiễm toàn bộ sát thương trong turn đó!",
         "gif": "https://static2.klipy.com/ii/e1b92bb53e0c9e442408bc677a56c789/3f/90/YA0o494Vr52yU7U.gif"
     },
     "skills": {
@@ -2451,7 +2451,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
         embed.add_field(
             name="⏳ Nội Tại & Kỹ Năng (Khuôn Mẫu Số Phận):",
             value=(
-                "• 🔄 **Passive - Save loop (15%):** Hồi **30% HP tối đa (15,000 HP)** và **MIỄN NHIỄM SÁT THƯƠNG** trong turn đó!\n"
+                "• 🔄 **Passive - Save loop (15%):** Hồi **30% HP tối đa (28,500 HP)** và **MIỄN NHIỄM SÁT THƯƠNG** trong turn đó!\n"
                 "• ⛓️ **Skill 1 - Fate loop (10%):** Khiến đối thủ **không thể dùng skill trong 2 turn liên tiếp** (không lặp lại cho đến khi hết 2 turn đó)!\n"
                 "• 🪆 **Skill 2 - Clone attack (20% kích hoạt - Random 1/3 chiêu con rối):**\n"
                 "  - ⚡ **Thunder blaze:** Ngọn lửa chớp điện phập phờn gây **2.3x DMG (14,260 DMG)** chia đều sát thương!\n"
@@ -2803,24 +2803,26 @@ async def execute_raid(channel, raid_data):
             player_heal_mult = max(0.0, 1.0 - fateria_heal_reduction)
 
         reisen_boss_log = None
+        boss_molten_log = None
         if boss_mind_turns > 0:
             boss_mind_turns -= 1
-            if random.random() < 0.20:
+            if not player_skills_locked and random.random() < 0.20:
                 _mind_dmg = p1_power
                 p1_hp = max(0, p1_hp - _mind_dmg)
                 reisen_boss_log = f"🌀 **[Red Eye Mind Explosion]** Boss mất kiểm soát tâm trí và **tự gây {_mind_dmg:,} DMG** lên bản thân! (Còn {boss_mind_turns} lượt ảo giác)"
 
         if boss_molten_ground_turns > 0:
             boss_molten_ground_turns -= 1
-            raw_burn = int(p1_max_hp * 0.02)
-            actual_burn, p1_true_dmg_accum, cap_burn_msg = apply_raid_true_damage(raw_burn, p1_true_dmg_accum, p1_true_cap, "Bỏng Mặt Đất (Utsuho)")
-            if actual_burn > 0:
-                p1_hp = max(0, p1_hp - actual_burn)
-                boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Dung nham hạt nhân thiêu đốt Boss gây **{actual_burn:,} DMG** (2% Máu Tối Đa)! (Còn {boss_molten_ground_turns} lượt)"
-            else:
-                boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Mặt đất vẫn sôi trào nhưng sát thương chuẩn đã bị triệt tiêu (0 DMG)! (Còn {boss_molten_ground_turns} lượt)"
-            if cap_burn_msg:
-                boss_molten_log += f"\n{cap_burn_msg}"
+            if not player_skills_locked:
+                raw_burn = int(p1_max_hp * 0.02)
+                actual_burn, p1_true_dmg_accum, cap_burn_msg = apply_raid_true_damage(raw_burn, p1_true_dmg_accum, p1_true_cap, "Bỏng Mặt Đất (Utsuho)")
+                if actual_burn > 0:
+                    p1_hp = max(0, p1_hp - actual_burn)
+                    boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Dung nham hạt nhân thiêu đốt Boss gây **{actual_burn:,} DMG** (2% Máu Tối Đa)! (Còn {boss_molten_ground_turns} lượt)"
+                else:
+                    boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Mặt đất vẫn sôi trào nhưng sát thương chuẩn đã bị triệt tiêu (0 DMG)! (Còn {boss_molten_ground_turns} lượt)"
+                if cap_burn_msg:
+                    boss_molten_log += f"\n{cap_burn_msg}"
 
         boss_stunned = False
         sakuya_stun_notif = None
@@ -2851,7 +2853,7 @@ async def execute_raid(channel, raid_data):
 
         if boss_freeze_debuff_turns > 0 and not boss_stunned:
             boss_freeze_debuff_turns -= 1
-            if random.random() < 0.45:
+            if not player_skills_locked and random.random() < 0.45:
                 boss_stunned = True
                 cirno_freeze_log = f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%), không thể hành động trong hiệp này! (Còn {boss_freeze_debuff_turns} lượt duy trì)"
 
@@ -3275,12 +3277,13 @@ async def execute_raid(channel, raid_data):
 
                 if can_cast_fate_loop and random.random() < fate_chance:
                     fateria_fate_loop_turns = 2
+                    player_skills_locked = True
                     fateria_skill_gif = FATERIA_BOSS_CONFIG["skills"]["fate_loop"]["gif"]
                     turn_image = fateria_skill_gif
                     dmg_per_card = max(100, p1_power // num_front)
                     boss_action_log = (
                         f"⛓️ **[SKILL 1] Fateria** kích hoạt **Fate loop ({int(fate_chance*100)}%)**! "
-                        f"Khiến đối thủ **không thể dùng skill 2 turn liên tiếp** (không lặp lại cho đến khi hết 2 turn)!\n"
+                        f"Khiến đối thủ **không thể dùng skill trong 2 turn liên tiếp** (không lặp lại cho đến khi hết 2 turn)!\n"
                         f"⚔️ Sát thương kèm theo: **{p1_power:,} DMG**, chia đều **{dmg_per_card:,} DMG** lên mỗi lá tiền tuyến ({num_front} lá)!"
                     )
                     is_normal_atk = False
@@ -7090,7 +7093,7 @@ async def handle_view_shards(ctx_or_interaction):
         name="⏳ Mảnh Fateria (Khuôn Mẫu Của Số Phận):",
         value=(
             f"• Hiện có: **`{fateria_shards}` Fateria Shards**\n"
-            f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Fateria – Khuôn mẫu của số phận** (50K HP / 6K2 DMG)."
+            f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Fateria – Khuôn mẫu của số phận** (95K HP / 6K2 DMG)."
         ),
         inline=False
     )
@@ -9967,7 +9970,7 @@ async def prefix_boss_status(ctx, *args):
     app_commands.Choice(name="spawn - Triệu hồi Boss ngay tại kênh này", value="spawn"),
     app_commands.Choice(name="reset - Giải phóng Boss kẹt và xóa hồi chiêu", value="reset")
 ], loai_boss=[
-    app_commands.Choice(name="Fateria – Khuôn mẫu của số phận (50k HP / 6k2 DMG)", value="fateria"),
+    app_commands.Choice(name="Fateria – Khuôn mẫu của số phận (95k HP / 6k2 DMG)", value="fateria"),
     app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (90k HP / The True Adapt)", value="mahoraga"),
     app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
     app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
@@ -9988,7 +9991,7 @@ async def slash_boss_admin(interaction: discord.Interaction, action: str, loai_b
 @bot.tree.command(name="admin_boss_spawn", description="[Admin] Triệu hồi ngay Boss Raid (Fateria, Mahoraga, Seiki, Reimu) tại kênh này")
 @app_commands.describe(loai_boss="Chọn Boss muốn triệu hồi")
 @app_commands.choices(loai_boss=[
-    app_commands.Choice(name="Fateria – Khuôn mẫu của số phận (50k HP / 6k2 DMG)", value="fateria"),
+    app_commands.Choice(name="Fateria – Khuôn mẫu của số phận (95k HP / 6k2 DMG)", value="fateria"),
     app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (90k HP / The True Adapt)", value="mahoraga"),
     app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
     app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
