@@ -3515,7 +3515,7 @@ async def execute_raid(channel, raid_data):
                             p1_hp = max(0, p1_hp - dmg_per_card)
                             c["total_dmg"] += dmg_per_card
                             boss_action_log += f"\n🌀 **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **Invisible Gap (10%)**! Miễn thương và phản lại **{dmg_per_card:,} DMG** đánh thường vào Boss!"
-                         elif ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
+                        elif ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
                             if random.random() < 0.40:
                                 c["reimu_invul_used"] = True
                                 invul = True
@@ -5866,7 +5866,7 @@ async def execute_event_raid(channel, raid_data):
                                 ac["current_hp"] -= int((dmg_base_each + extra_hp) * (1.0 - adapt_pct))
                             else:
                                 ac["current_hp"] -= (dmg_base_each + extra_hp)
-                     else: # Đánh thường 7,000 DMG chia đều
+                else: # Đánh thường 7,000 DMG chia đều
                     dmg_each = max(100, p2_power // len(frontline_cards))
                     boss_action_log = f"⚔️ Kizuna đánh thường chia đều **{dmg_each:,} DMG** lên {len(frontline_cards)} thẻ tiền tuyến!"
                     for c in active_combatants:
