@@ -2066,6 +2066,42 @@ def t4_combat_turn(t4_state: dict, card_data: dict, target_name: str, heal_mult:
 # ==============================================================================
 # HỆ THỐNG XEM CHI TIẾT TRẬN CHIẾN & HOẠT ẢNH GIF KỸ NĂNG (IN-DISCORD)
 # ==============================================================================
+def tick_wonder_guard(active_combatants):
+    for c in active_combatants:
+        st = c.get("t3_state") or {}
+        if st.get("wonder_guard_turns", 0) > 0:
+            st["wonder_guard_turns"] -= 1
+
+def story_t1_t2_skills(pc, round_no, flags, card_dmg, turn_logs):
+    """Skill Seiki Ace 1 (#t1) và Mahoraga (#t2) trong Story Mode. Trả về (card_dmg, seal, gif)."""
+    seal, gif = False, None
+    cid = str(pc["cid"]).lower()
+    if cid == "t1" and not pc.get("is_ace2"):
+        roll = random.random()
+        if not flags["spark"] and roll < 0.30:
+            flags["spark"] = True; flags["turn"] = round_no
+            card_dmg = int(card_dmg * 1.5); gif = T1_SPARK_GIF
+            turn_logs.append(f"🌟 **[Nhóm T] [#t1] Seiki** tung **Master Spark** (30%)! ×1.5 sát thương ({card_dmg:,} DMG)!")
+        elif not flags["heal"] and pc["current_hp"] < pc["max_hp"] and 0.30 <= roll < 0.50:
+            flags["heal"] = True; flags["turn"] = round_no
+            hv = int(pc["max_hp"] * 0.30)
+            pc["current_hp"] = min(pc["max_hp"], pc["current_hp"] + hv); gif = T1_HEAL_GIF
+            turn_logs.append(f"💚 **[Nhóm T] [#t1] Seiki** thi triển **Medicine Sign** (20%)! Hồi **+{hv:,} HP**!")
+        if flags["turn"] != round_no and not flags["seal"] and random.random() < 0.40:
+            flags["seal"] = True; flags["turn"] = round_no; seal = True; gif = gif or T1_SEAL_GIF
+            turn_logs.append("🛡️ **[Nhóm T] [#t1] Seiki** kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+    elif cid == "t2":
+        flags["maho"] += 1
+        hv = int(pc["max_hp"] * 0.05)
+        pc["current_hp"] = min(pc["max_hp"], pc["current_hp"] + hv)
+        if random.random() < 0.30:
+            card_dmg = int(card_dmg * 1.5); gif = T2_THOAI_MA_GIF
+            turn_logs.append(f"🔱 **[#t2] Mahoraga** The True Adapt (+{hv:,} HP, kháng {int(min(0.90, flags['maho']*0.05)*100)}%) & **Thoái Ma Kiếm** ×1.5 = **{card_dmg:,} DMG**!")
+        else:
+            gif = T2_PASSIVE_GIF
+            turn_logs.append(f"🔱 **[#t2] Mahoraga** The True Adapt: +{hv:,} HP, kháng sát thương {int(min(0.90, flags['maho']*0.05)*100)}%!")
+    return card_dmg, seal, gif
+    
 class BattleDetailsView(discord.ui.View):
     def __init__(self, turns_data):
         super().__init__(timeout=300)
@@ -2903,7 +2939,6 @@ async def execute_raid(channel, raid_data):
         reisen_notif = None
         cirno_notif = None
         utsuho_notif = None
-        boss_molten_log = None
         cirno_freeze_log = None
         yukari_notif = None
         t1_notif = None
@@ -2930,7 +2965,7 @@ async def execute_raid(channel, raid_data):
 
         seiki_invul = False
         seiki_action = "normal"
-        enemy_fate_loop_aif boss_type == "seiki" and not boss_stunned and not boss_skills_locked_this_turn:turns=boss_fate_locked_turns
+        if boss_type == "seiki" and not boss_stunned and not boss_skills_locked_this_turn:
             if boss_skill_erased == "multi_spark":
                 seiki_spark_turns = 0
             if seiki_spark_turns > 0:
@@ -3135,7 +3170,7 @@ async def execute_raid(channel, raid_data):
 
             if str(ac["cid"]).lower() == "t4":
                 t4_st = c.setdefault("t4_state", {})
-                _t4 = t4_combat_turn(t4_st, ac, f"Boss {boss_cfg['name']}", heal_mult=player_heal_mult, enemy_fate_loop_turns=boss_fate_locked_turns)
+                _t4 = t4_combat_turn(t4_st, ac, f"Boss {boss_cfg['name']}", heal_mult=player_heal_mult, enemy_fate_loop_turns=(1 if boss_skills_locked_this_turn else boss_fate_locked_turns))
                 card_dmg = int(card_dmg * _t4["multiplier"])
                 if _t4["save_loop_invul"]:
                     c["t4_invul_turn"] = p1_rounds
@@ -3180,6 +3215,7 @@ async def execute_raid(channel, raid_data):
         if not boss_stunned and boss_ice_spear_this_turn and random.random() < 0.40:
             boss_stunned = True
             cirno_freeze_log = (cirno_freeze_log + "\n" if cirno_freeze_log else "") + "❄️ **[Ice spear - #t4 Fateria]** Giáo băng cầm chân khiến Boss không thể tấn công trong lượt này (40%)!"
+        if boss_skills_locked_this_turn and boss_type == "seiki": seiki_spark_turns = 0
         if boss_skills_locked_this_turn:
             seiki_invul = False
             seiki_action = "normal"
@@ -3207,7 +3243,7 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
                             invul = True
@@ -3216,7 +3252,7 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                            c["t3_state"]["wonder_guard_turns"] -= 1
+                            pass
                             invul = True
                             ref_dmg = int(4000 * 0.60)
                             if not seiki_invul:
@@ -3249,7 +3285,7 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
                             invul = True
@@ -3258,7 +3294,7 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                            c["t3_state"]["wonder_guard_turns"] -= 1
+                            pass
                             invul = True
                             ref_dmg = int(dmg_per_card * 0.60)
                             if not seiki_invul:
@@ -3291,7 +3327,7 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
                             invul = True
@@ -3300,7 +3336,7 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                            c["t3_state"]["wonder_guard_turns"] -= 1
+                            pass
                             invul = True
                             ref_dmg = int(dmg_per_card * 0.60)
                             if not seiki_invul:
@@ -3336,7 +3372,7 @@ async def execute_raid(channel, raid_data):
                                 f"Trường kiếm khổng lồ giáng **{p1_power:,} DMG sát thương thuần** (không chia đều) thẳng vào **{ac['name']}** ({target_c['username']})!\n"
                                 f"🛡️ **[Ace 2] [#15] Reimu** ({target_c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                             )
-                    if not invul and str(ac["cid"]).lower() == "t1" and (target_c.get("seiki_invul_turn") == p1_rounds or (not target_c.get("seiki_seal_used") and target_c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                    if not invul and str(ac["cid"]).lower() == "t1" and (target_c.get("seiki_invul_turn") == p1_rounds or (not target_c.get("seiki_seal_used") and target_c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         target_c["seiki_seal_used"] = True
                         target_c["seiki_used_turn"] = p1_rounds
                         invul = True
@@ -3349,7 +3385,7 @@ async def execute_raid(channel, raid_data):
                             f"🛡️ **{title_t1}** ({target_c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         )
                     if not invul and str(ac["cid"]).lower() == "t3" and target_c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                        target_c["t3_state"]["wonder_guard_turns"] -= 1
+                        pass
                         invul = True
                         ref_maho = int(p1_power * 0.60 * (1.0 - mahoraga_adapt_red))
                         p1_hp = max(0, p1_hp - ref_maho)
@@ -3394,7 +3430,7 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
                             invul = True
@@ -3403,7 +3439,7 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                            c["t3_state"]["wonder_guard_turns"] -= 1
+                            pass
                             invul = True
                             ref_maho = int(dmg_per_card * 0.60 * (1.0 - mahoraga_adapt_red))
                             p1_hp = max(0, p1_hp - ref_maho)
@@ -3491,7 +3527,7 @@ async def execute_raid(channel, raid_data):
                                 if not fateria_skill_gif:
                                     turn_image = EVOL_CONFIG[15]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
                             invul = True
@@ -3501,7 +3537,7 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                            c["t3_state"]["wonder_guard_turns"] -= 1
+                            pass
                             invul = True
                             ref_dmg = int(dmg_per_card * 0.60)
                             if not fateria_save_loop_active:
@@ -3541,7 +3577,7 @@ async def execute_raid(channel, raid_data):
                                 if not turn_image or turn_image == BOSS_SKILL_CONFIG["gif"]:
                                     turn_image = EVOL_CONFIG[15]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
                             invul = True
@@ -3550,7 +3586,7 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                            c["t3_state"]["wonder_guard_turns"] -= 1
+                            pass
                             invul = True
                             ref_dmg = int(5000 * 0.60)
                             p1_hp = max(0, p1_hp - ref_dmg)
@@ -3582,7 +3618,7 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
                             invul = True
@@ -3591,7 +3627,7 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                            c["t3_state"]["wonder_guard_turns"] -= 1
+                            pass
                             invul = True
                             ref_dmg = int(dmg_per_card * 0.60)
                             p1_hp = max(0, p1_hp - ref_dmg)
@@ -3606,7 +3642,7 @@ async def execute_raid(channel, raid_data):
                             else:
                                 ac["current_hp"] -= dmg_per_card
 
-        push_logs = []
+        push_logs = []; tick_wonder_guard(active_combatants)
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if str(ac["cid"]).lower() == "t4" and c.get("t4_invul_turn") == p1_rounds:
@@ -3947,7 +3983,6 @@ async def execute_raid(channel, raid_data):
             reisen_notif = None
             cirno_notif = None
             utsuho_notif = None
-            boss_molten_log = None
             cirno_freeze_log = None
             t1_notif = None
             t2_notif = None
@@ -4135,7 +4170,7 @@ async def execute_raid(channel, raid_data):
 
                 if str(ac["cid"]).lower() == "t4":
                     t4_st = c.setdefault("t4_state", {})
-                    _t4 = t4_combat_turn(t4_st, ac, f"Boss {p2_cfg['name']}", heal_mult=1.0, enemy_fate_loop_turns=boss_fate_locked_turns)
+                    _t4 = t4_combat_turn(t4_st, ac, f"Boss {p2_cfg['name']}", heal_mult=1.0, enemy_fate_loop_turns=(1 if boss_skills_locked_this_turn else boss_fate_locked_turns))
                     card_dmg = int(card_dmg * _t4["multiplier"])
                     if _t4["save_loop_invul"]:
                         c["t4_invul_turn"] = p2_rounds
@@ -4143,7 +4178,7 @@ async def execute_raid(channel, raid_data):
                     if _t4["fate_loop_triggered"]:
                         boss_fate_locked_turns = 1; boss_skills_locked_this_turn = True
                     if _t4["ice_spear_triggered"]:
-                        boss_ice_spear_turns = 2
+                        boss_freeze_debuff_turns = max(boss_freeze_debuff_turns, 2)
                     if _t4["gif"] and not turn_image:
                         turn_image = _t4["gif"]
                     if _t4["logs"]:
@@ -4175,7 +4210,7 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p2_rounds
                             invul = True
@@ -4184,7 +4219,7 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                            c["t3_state"]["wonder_guard_turns"] -= 1
+                            pass
                             invul = True
                             ref_dmg = int(10000 * 0.60)
                             p2_hp = max(0, p2_hp - ref_dmg)
@@ -4221,7 +4256,7 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p2_rounds
                             invul = True
@@ -4230,7 +4265,7 @@ async def execute_raid(channel, raid_data):
                             pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                             boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                            c["t3_state"]["wonder_guard_turns"] -= 1
+                            pass
                             invul = True
                             ref_dmg = int((dmg_per_card + cleave_bonus) * 0.60)
                             p2_hp = max(0, p2_hp - ref_dmg)
@@ -4249,7 +4284,7 @@ async def execute_raid(channel, raid_data):
                     if not turn_image:
                         turn_image = p2_cfg["skills"]["cleave"]["gif"]
 
-            push_logs = []
+            push_logs = []; tick_wonder_guard(active_combatants)
             for c in active_combatants:
                 ac = c["team_cards"][c["current_card_index"]]
                 if str(ac["cid"]).lower() == "t4" and c.get("t4_invul_turn") == p2_rounds:
@@ -4511,7 +4546,6 @@ async def execute_raid(channel, raid_data):
         reisen_notif = None
         cirno_notif = None
         utsuho_notif = None
-        boss_molten_log = None
         cirno_freeze_log = None
         t1_notif = None
         t2_notif = None
@@ -4698,15 +4732,15 @@ async def execute_raid(channel, raid_data):
 
             if str(ac["cid"]).lower() == "t4":
                 t4_st = c.setdefault("t4_state", {})
-                _t4 = t4_combat_turn(t4_st, ac, f"Boss {BOSS_PHASE2_CONFIG['name']}", heal_mult=1.0, enemy_fate_loop_turns=boss_fate_locked_turns)
+                _t4 = t4_combat_turn(t4_st, ac, f"Boss {BOSS_PHASE2_CONFIG['name']}", heal_mult=1.0, enemy_fate_loop_turns=(1 if boss_skills_locked_this_turn else boss_fate_locked_turns))
                 card_dmg = int(card_dmg * _t4["multiplier"])
                 if _t4["save_loop_invul"]:
                     c["t4_invul_turn"] = p2_rounds
                     c["t4_saved_hp"] = ac["current_hp"]
                 if _t4["fate_loop_triggered"]:
                     boss_fate_locked_turns = 1; boss_skills_locked_this_turn = True
-                if _t4["ice_spear_triggered"] and random.random() < 0.40:
-                    boss_stunned = True
+                if _t4["ice_spear_triggered"]:
+                    boss_freeze_debuff_turns = max(boss_freeze_debuff_turns, 2)
                 if _t4["gif"] and not turn_image:
                     turn_image = _t4["gif"]
                 if _t4["logs"]:
@@ -4736,7 +4770,7 @@ async def execute_raid(channel, raid_data):
                             if not turn_image or turn_image == BOSS_SKILL_CONFIG["gif"]:
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
                             boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         c["seiki_seal_used"] = True
                         c["seiki_used_turn"] = p2_rounds
                         invul = True
@@ -4745,7 +4779,7 @@ async def execute_raid(channel, raid_data):
                         pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                         boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                        c["t3_state"]["wonder_guard_turns"] -= 1
+                        pass
                         invul = True
                         ref_dmg = int(5000 * 0.60)
                         p2_hp = max(0, p2_hp - ref_dmg)
@@ -4771,7 +4805,7 @@ async def execute_raid(channel, raid_data):
                             invul = True
                             turn_image = EVOL_CONFIG[15]["skill_gif"]
                             boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
-                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         c["seiki_seal_used"] = True
                         c["seiki_used_turn"] = p2_rounds
                         invul = True
@@ -4780,7 +4814,7 @@ async def execute_raid(channel, raid_data):
                         pct_t1 = "50%" if ac.get("is_ace2") else "40%"
                         boss_action_log += f"\n🛡️ **{title_t1}** ({c['username']}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                        c["t3_state"]["wonder_guard_turns"] -= 1
+                        pass
                         invul = True
                         ref_dmg = int(dmg_per_card * 0.60)
                         p2_hp = max(0, p2_hp - ref_dmg)
@@ -4789,7 +4823,7 @@ async def execute_raid(channel, raid_data):
                     if not invul:
                         ac["current_hp"] -= int(dmg_per_card * (1.0 - (min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05) if str(ac["cid"]).lower() == "t2" else 0.0)))
 
-        push_logs = []
+        push_logs = []; tick_wonder_guard(active_combatants)
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if str(ac["cid"]).lower() == "t4" and c.get("t4_invul_turn") == p2_rounds:
@@ -5245,7 +5279,7 @@ async def execute_event_raid(channel, raid_data):
         p1_rounds += 1
         frontline_cards = [c["team_cards"][c["current_card_index"]] for c in active_combatants]
 
-        heal_amt = int(p1_max_hp * 0.015)
+        heal_amt = int(p1_max_hp * 0.015 * (0.70 if raid_data.get("ev_heal_reduce") else 1.0))
         p1_hp = min(p1_max_hp, p1_hp + heal_amt)
         passive_log = f"🩸 **[True Vampire]** Huyết Ma Đế hấp thụ ma khí hồi **+{heal_amt:,} HP** (1,5% HP tối đa)!"
 
@@ -5434,9 +5468,9 @@ async def execute_event_raid(channel, raid_data):
                     c["t4_invul_turn"] = p1_rounds
                     c["t4_saved_hp"] = ac["current_hp"]
                 if _t4["fate_loop_triggered"]:
-                    c["ev_fate_turns"] = 2
+                    raid_data["ev_boss_locked"] = 2
                 if _t4["heal_reduce_triggered"]:
-                    c["ev_heal_reduce"] = True
+                    raid_data["ev_heal_reduce"] = True
                 if _t4["ice_spear_triggered"]:
                     boss_freeze_debuff_turns = max(boss_freeze_debuff_turns, 2)
                 if _t4["gif"] and not turn_image: turn_image = _t4["gif"]
@@ -5469,11 +5503,11 @@ async def execute_event_raid(channel, raid_data):
                         if random.random() < 0.40:
                             c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
                             boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
-                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                         boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                        c["t3_state"]["wonder_guard_turns"] -= 1
+                        pass
                         invul = True
                         ref_dmg = int(dmg_each * 0.60)
                         p1_hp = max(0, p1_hp - ref_dmg)
@@ -5496,11 +5530,11 @@ async def execute_event_raid(channel, raid_data):
                         if random.random() < 0.40:
                             c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
                             boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
-                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                         boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                        c["t3_state"]["wonder_guard_turns"] -= 1
+                        pass
                         invul = True
                         extra_hp = int(ac["max_hp"] * 0.15)
                         ref_dmg = int((dmg_base_each + extra_hp) * 0.60)
@@ -5529,11 +5563,11 @@ async def execute_event_raid(channel, raid_data):
                         if random.random() < 0.40:
                             c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
                             boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
-                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                         boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                        c["t3_state"]["wonder_guard_turns"] -= 1
+                        pass
                         invul = True
                         ref_dmg = int(dmg_each * 0.60)
                         p1_hp = max(0, p1_hp - ref_dmg)
@@ -5545,7 +5579,7 @@ async def execute_event_raid(channel, raid_data):
                             ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
                         else:
                             ac["current_hp"] -= dmg_each
-        push_logs = []; restore_t4_save_loop(active_combatants, p1_rounds)
+        push_logs = []; tick_wonder_guard(active_combatants); restore_t4_save_loop(active_combatants, p1_rounds)
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if ac["current_hp"] <= 0:
@@ -5681,7 +5715,7 @@ async def execute_event_raid(channel, raid_data):
         c["t4_state"] = {}
         for cd in c["team_cards"]: cd["current_hp"] = cd["max_hp"]
 
-    p2_emb_init = discord.Embed(
+    raid_data["ev_boss_locked"] = 0; p2_emb_init = discord.Embed(
         title="🩸 KIZUNA THỨC TỈNH - HUYẾT MA ĐẾ TỐI THƯỢNG (PHASE 2)",
         description=(
             f"⚡ **Huyết Nguyệt Giáng Lâm:** Toàn bộ thẻ bài dũng giả được hồi sinh và hồi phục 100% HP!\n"
@@ -5700,7 +5734,7 @@ async def execute_event_raid(channel, raid_data):
         p2_rounds += 1; boss_skills_locked_this_turn = boss_fate_locked_turns > 0; boss_fate_locked_turns -= 1 if boss_skills_locked_this_turn else 0
         frontline_cards = [c["team_cards"][c["current_card_index"]] for c in active_combatants]
 
-        heal_amt = int(p2_max_hp * 0.015)
+        heal_amt = int(p2_max_hp * 0.015 * (0.70 if raid_data.get("ev_heal_reduce") else 1.0))
         p2_hp = min(p2_max_hp, p2_hp + heal_amt)
         passive_log = f"🩸 **[True Vampire]** Tự hồi **+{heal_amt:,} HP** (1,5% HP tối đa)!"
 
@@ -5930,6 +5964,7 @@ async def execute_event_raid(channel, raid_data):
                     raid_data["ev_boss_locked"] = 2
                     wonder_guard_turns = 0
                     boss_wg_active = False
+                if _t4["heal_reduce_triggered"] and not boss_wg_active: raid_data["ev_heal_reduce"] = True
                 if _t4["ice_spear_triggered"] and not boss_wg_active:
                     boss_freeze_debuff_turns = max(boss_freeze_debuff_turns, 2)
                 if _t4["gif"] and not turn_image: turn_image = _t4["gif"]
@@ -5968,7 +6003,7 @@ async def execute_event_raid(channel, raid_data):
                     if ac["cid"] == 4 and ac.get("is_ace2") and random.random() < 0.10:
                         boss_action_log += f"\n🌀 **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **Invisible Gap (10%)**! Miễn thương đòn đánh thường!"
                     elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                        c["t3_state"]["wonder_guard_turns"] -= 1
+                        pass
                         boss_action_log += f"\n🛡️ **[Ace 2] [#t3] Kizuna** ({c['username']}) duy trì **Wonder Guard**! Miễn thương đòn đánh!"
                     elif str(ac["cid"]).lower() == "t2":
                         adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
@@ -5988,7 +6023,7 @@ async def execute_event_raid(channel, raid_data):
                     for c in active_combatants:
                         ac = c["team_cards"][c["current_card_index"]]
                         if str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                            c["t3_state"]["wonder_guard_turns"] -= 1
+                            pass
                             boss_action_log += f"\n🛡️ **[Ace 2] [#t3] Kizuna** ({c['username']}) duy trì **Wonder Guard**! Miễn thương đòn đánh!"
                         elif str(ac["cid"]).lower() == "t2":
                             adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
@@ -6007,11 +6042,11 @@ async def execute_event_raid(channel, raid_data):
                             if random.random() < 0.40:
                                 c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                             boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                            c["t3_state"]["wonder_guard_turns"] -= 1
+                            pass
                             invul = True
                             ref_dmg = int(dmg_each * 0.60)
                             p2_hp = max(0, p2_hp - ref_dmg)
@@ -6034,11 +6069,11 @@ async def execute_event_raid(channel, raid_data):
                             if random.random() < 0.40:
                                 c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                             boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                            c["t3_state"]["wonder_guard_turns"] -= 1
+                            pass
                             invul = True
                             extra_hp = int(ac["max_hp"] * 0.15)
                             ref_dmg = int((dmg_base_each + extra_hp) * 0.60)
@@ -6068,11 +6103,11 @@ async def execute_event_raid(channel, raid_data):
                             if random.random() < 0.40:
                                 c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
                                 boss_action_log += f"\n🛡️ **[Ace 2] [#15] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
-                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and random.random() < (0.50 if ac.get("is_ace2") else 0.40))):
+                        elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                             boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                            c["t3_state"]["wonder_guard_turns"] -= 1
+                            pass
                             invul = True
                             ref_dmg = int(dmg_each * 0.60)
                             if wonder_guard_turns <= 0:
@@ -6085,7 +6120,7 @@ async def execute_event_raid(channel, raid_data):
                                 ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
                             else:
                                 ac["current_hp"] -= dmg_each
-        push_logs = []; restore_t4_save_loop(active_combatants, p2_rounds)
+        push_logs = []; tick_wonder_guard(active_combatants); restore_t4_save_loop(active_combatants, p2_rounds)
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if ac["current_hp"] <= 0:
@@ -9351,7 +9386,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                     c_seiki_seal = True
                     c_seiki_used_turn = r_cnt
                 if _t1["heal"]:
-                    cc["current_hp"] = min(cc["max_hp"], cc["current_hp"] + _t1["heal"])
+                    cc["current_hp"] = min(cc["max_hp"], cc["current_hp"] + int(_t1["heal"] * c_heal_mult))
                 if _t1["disable"]:
                     erase_msg = apply_bong_khai_niem_card(tc)
                     _t1["logs"].append(erase_msg)
@@ -9391,7 +9426,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 elif not c_seiki_heal and cc["current_hp"] < cc["max_hp"] and roll_t1 < (0.50 if not c_seiki_spark else 0.20):
                     c_seiki_heal = True
                     c_seiki_used_turn = r_cnt
-                    heal_val = int(cc["max_hp"] * 0.30)
+                    heal_val = int(cc["max_hp"] * 0.30 * c_heal_mult)
                     cc["current_hp"] = min(cc["max_hp"], cc["current_hp"] + heal_val)
                     if not turn_image:
                         turn_image = T1_HEAL_GIF
@@ -9405,7 +9440,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
             adapt_pct = 0.0
             if erased_c != "t2_adapt":
                 c_mahoraga_turns += 1
-                heal_val = int(cc["max_hp"] * 0.05)
+                heal_val = int(cc["max_hp"] * 0.05 * c_heal_mult)
                 cc["current_hp"] = min(cc["max_hp"], cc["current_hp"] + heal_val)
                 adapt_pct = min(0.90, c_mahoraga_turns * 0.05)
             if erased_c != "t2_kiem" and random.random() < 0.30:
@@ -9430,7 +9465,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
 
         
         if str(cc["cid"]).lower() == "t3" and not c_skills_locked:
-            _t3 = t3_combat_turn(c_t3_state, cc, r_cnt, tc["max_hp"], f"**{tc['name']}** ({target.display_name})", is_ace2=cc.get("is_ace2"))
+            _t3 = t3_combat_turn(c_t3_state, cc, r_cnt, tc["max_hp"], f"**{tc['name']}** ({target.display_name})", is_ace2=cc.get("is_ace2"), heal_mult=c_heal_mult)
             c_curr_power = int(c_curr_power * _t3["multiplier"]) + _t3["bonus_hp_dmg"]
             if _t3["gif"] and not turn_image:
                 turn_image = _t3["gif"]
@@ -9555,7 +9590,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                     t_seiki_seal = True
                     t_seiki_used_turn = r_cnt
                 if _t1["heal"]:
-                    tc["current_hp"] = min(tc["max_hp"], tc["current_hp"] + _t1["heal"])
+                    tc["current_hp"] = min(tc["max_hp"], tc["current_hp"] + int(_t1["heal"] * t_heal_mult))
                 if _t1["disable"]:
                     erase_msg = apply_bong_khai_niem_card(cc)
                     _t1["logs"].append(erase_msg)
@@ -9595,7 +9630,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 elif not t_seiki_heal and tc["current_hp"] < tc["max_hp"] and roll_t1 < (0.50 if not t_seiki_spark else 0.20):
                     t_seiki_heal = True
                     t_seiki_used_turn = r_cnt
-                    heal_val = int(tc["max_hp"] * 0.30)
+                    heal_val = int(tc["max_hp"] * 0.30 * t_heal_mult)
                     tc["current_hp"] = min(tc["max_hp"], tc["current_hp"] + heal_val)
                     if not turn_image:
                         turn_image = T1_HEAL_GIF
@@ -9609,7 +9644,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
             adapt_pct = 0.0
             if erased_t != "t2_adapt":
                 t_mahoraga_turns += 1
-                heal_val = int(tc["max_hp"] * 0.05)
+                heal_val = int(tc["max_hp"] * 0.05 * t_heal_mult)
                 tc["current_hp"] = min(tc["max_hp"], tc["current_hp"] + heal_val)
                 adapt_pct = min(0.90, t_mahoraga_turns * 0.05)
             if erased_t != "t2_kiem" and random.random() < 0.30:
@@ -9634,7 +9669,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
 
         
         if str(tc["cid"]).lower() == "t3" and not t_skills_locked:
-            _t3 = t3_combat_turn(t_t3_state, tc, r_cnt, cc["max_hp"], f"**{cc['name']}** ({challenger.display_name})", is_ace2=tc.get("is_ace2"))
+            _t3 = t3_combat_turn(t_t3_state, tc, r_cnt, cc["max_hp"], f"**{cc['name']}** ({challenger.display_name})", is_ace2=tc.get("is_ace2"), heal_mult=t_heal_mult)
             t_curr_power = int(t_curr_power * _t3["multiplier"]) + _t3["bonus_hp_dmg"]
             if _t3["gif"] and not turn_image:
                 turn_image = _t3["gif"]
@@ -10611,10 +10646,10 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
     flandre_used, reisen_used = False, False
     yukari_station_used, yukari_lastword_used = False, False
     p_t1 = {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
-    boss_skill_erased = False
+    boss_skill_erased = False; story_flags = {"spark": False, "heal": False, "seal": False, "turn": -1, "maho": 0}
 
     while rumia_hp > 0 and p_idx < len(player_cards) and rounds < 25:
-        rounds += 1
+        rounds += 1; seiki_seal_story = False; boss_stun_story = False; yukari_stun_this_turn = False
         pc = player_cards[p_idx]
         turn_image = None
         turn_logs = []
@@ -10697,7 +10732,7 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
             if _t4["save_loop_invul"]:
                 t4_invul_story = True
             if _t4["ice_spear_triggered"] and random.random() < 0.40:
-                sakuya_used = True
+                boss_stun_story = True
             if _t4["gif"] and not turn_image:
                 turn_image = _t4["gif"]
             turn_logs.extend(_t4["logs"])     
@@ -10708,7 +10743,7 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
         if rumia_hp <= 0:
             turn_logs.append("💥 **Rumia đã bị đánh bay hoàn toàn!**")
         else:
-            if (sakuya_used and rounds == 1) or yukari_stun_this_turn:
+            if boss_stun_story or yukari_stun_this_turn:
                 turn_logs.append("❄️ Rumia bị đóng băng không thể phản công!")
             else:
                 invul = t4_invul_story
@@ -10974,10 +11009,10 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
     flandre_used, reisen_used = False, False
     yukari_station_used, yukari_lastword_used = False, False
     p_t1 = {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
-    boss_skill_erased = False
+    boss_skill_erased = False; story_flags = {"spark": False, "heal": False, "seal": False, "turn": -1, "maho": 0}
 
     while cirno_hp > 0 and p_idx < len(player_cards) and rounds < 25:
-        rounds += 1
+        rounds += 1; seiki_seal_story = False; boss_stun_story = False; yukari_stun_this_turn = False
         pc = player_cards[p_idx]
         turn_image = None
         turn_logs = []
@@ -11080,7 +11115,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
         if cirno_hp <= 0:
             turn_logs.append("💥 **Cirno đã bị đánh văng xuống làn nước băng giá!**")
         else:
-            if (sakuya_used and rounds == 1) or yukari_stun_this_turn:
+            if boss_stun_story or yukari_stun_this_turn:
                 turn_logs.append("❄️ Cirno bị đóng băng thời gian nên không thể phản công!")
             else:
                 cirno_used_skill_this_turn = False
