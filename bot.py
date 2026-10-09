@@ -1906,7 +1906,7 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
 # ==============================================================================
 # HÀM XỬ LÝ LƯỢT ĐÁNH THẺ [#t3] KIZUNA THE EMPEROR OF VAMPIRE (DÙNG CHO PVP, RAID, BATTLE)
 # ==============================================================================
-def t3_combat_turn(t3_state: dict, card_data: dict, round_no: int, target_max_hp: int, target_name: str, is_ace2: bool = False):
+def t3_combat_turn(t3_state: dict, card_data: dict, round_no: int, target_max_hp: int, target_name: str, is_ace2: bool = False, heal_mult: float = 1.0):
     """
     Xử lý lượt đánh và kỹ năng của thẻ T3 Kizuna trong PvP, Battle, Raid Boss.
     - True vampire (100%): Tự hồi 5% Max HP mỗi lượt.
@@ -1923,7 +1923,7 @@ def t3_combat_turn(t3_state: dict, card_data: dict, round_no: int, target_max_hp
     # 1. NỘI TẠI: TRUE VAMPIRE (100% kích hoạt mỗi lượt nếu không bị xóa)
     max_hp = card_data.get("max_hp", card_data.get("hp", 7700))
     if erased != "t3_vampire":
-        heal_amt = int(max_hp * 0.05)
+        heal_amt = int(max_hp * 0.05 * heal_mult)
         card_data["current_hp"] = min(max_hp, card_data.get("current_hp", max_hp) + heal_amt)
         logs.append(f"🩸 **[#t3] Kizuna** - **True Vampire (100%)**: Tự hồi **+{heal_amt:,} HP** ({card_data['current_hp']:,}/{max_hp:,} HP)!")
 
@@ -1955,7 +1955,7 @@ def t3_combat_turn(t3_state: dict, card_data: dict, round_no: int, target_max_hp
             f"Đòn đánh bộc phát ma lực **×{multiplier} Sát Thương** giáng vào {target_name}!"
         )
 
-    elif erased != "t3_dark" and dark_chain_uses < 3 and roll < (0.60 if is_ace2 else 0.50):
+    elif erased != "t3_dark" and dark_chain_uses < 3 and roll < ((0.30 if (erased != "t3_blood" and not blood_used) else 0.0) + (0.30 if is_ace2 else 0.20)):
         t3_state["dark_chain_uses"] = dark_chain_uses + 1
         multiplier = 1.5 if is_ace2 else 1.0
         bonus_hp_dmg = int(target_max_hp * 0.05)
@@ -1973,6 +1973,12 @@ def t3_combat_turn(t3_state: dict, card_data: dict, round_no: int, target_max_hp
         "gif": gif,
         "wonder_guard_active": t3_state.get("wonder_guard_turns", 0) > 0
     }
+def restore_t4_save_loop(active_combatants, round_no):
+    for c in active_combatants:
+        ac = c["team_cards"][c["current_card_index"]]
+        if str(ac["cid"]).lower() == "t4" and c.get("t4_invul_turn") == round_no:
+            ac["current_hp"] = c.get("t4_saved_hp", ac["max_hp"])
+            
 def t4_combat_turn(t4_state: dict, card_data: dict, target_name: str, heal_mult: float = 1.0, enemy_fate_loop_turns: int = 0):
     """
     Xử lý lượt đánh và kỹ năng của thẻ [#t4] Fateria – Khuôn mẫu của số phận:
@@ -3115,7 +3121,7 @@ async def execute_raid(channel, raid_data):
 
             if str(ac["cid"]).lower() == "t3":
                 t3_st = c.setdefault("t3_state", {})
-                _t3 = t3_combat_turn(t3_st, ac, p1_rounds, p1_max_hp, f"Boss {boss_cfg['name']}", is_ace2=ac.get("is_ace2"))
+                _t3 = t3_combat_turn(t3_st, ac, p1_rounds, p1_max_hp, f"Boss {boss_cfg['name']}", is_ace2=ac.get("is_ace2"), heal_mult=player_heal_mult)
                 card_dmg = int(card_dmg * _t3["multiplier"])
                 if _t3["bonus_hp_dmg"] > 0:
                     actual_hp_dmg, p1_true_dmg_accum, cap_hp_msg = apply_raid_true_damage(_t3["bonus_hp_dmg"], p1_true_dmg_accum, p1_true_cap, "Dark Chain (Kizuna)")
@@ -4746,7 +4752,7 @@ async def execute_raid(channel, raid_data):
                         c["total_dmg"] += ref_dmg
                         boss_action_log += f"\n🛡️ **[Ace 2] [#t3] Kizuna** ({c['username']}) duy trì **Wonder Guard**! Miễn thương và phản lại **{ref_dmg:,} DMG (60%)**!"
                     if not invul:
-                        ac["current_hp"] -= 5000
+                        ac["current_hp"] -= int(5000 * (1.0 - (min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05) if str(ac["cid"]).lower() == "t2" else 0.0)))
             else:
                 num_front = len(frontline_cards)
                 dmg_per_card = max(100, p2_power // num_front)
@@ -4781,7 +4787,7 @@ async def execute_raid(channel, raid_data):
                         c["total_dmg"] += ref_dmg
                         boss_action_log += f"\n🛡️ **[Ace 2] [#t3] Kizuna** ({c['username']}) duy trì **Wonder Guard**! Miễn thương và phản lại **{ref_dmg:,} DMG (60%)**!"
                     if not invul:
-                        ac["current_hp"] -= dmg_per_card
+                        ac["current_hp"] -= int(dmg_per_card * (1.0 - (min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05) if str(ac["cid"]).lower() == "t2" else 0.0)))
 
         push_logs = []
         for c in active_combatants:
@@ -5422,7 +5428,7 @@ async def execute_event_raid(channel, raid_data):
 
             if str(ac["cid"]).lower() == "t4":
                 t4_st = c.setdefault("t4_state", {})
-                _t4 = t4_combat_turn(t4_st, ac, "Boss Kizuna", heal_mult=1.0, enemy_fate_loop_turns=c.get("ev_fate_turns", 0))
+                _t4 = t4_combat_turn(t4_st, ac, "Boss Kizuna", heal_mult=1.0, enemy_fate_loop_turns=raid_data.get("ev_boss_locked", 0))
                 card_dmg = int(card_dmg * _t4["multiplier"])
                 if _t4["save_loop_invul"]:
                     c["t4_invul_turn"] = p1_rounds
@@ -5450,7 +5456,7 @@ async def execute_event_raid(channel, raid_data):
         elif boss_stunned:
             boss_action_log = "❄️ Boss bị đóng băng thời gian, không thể phát động đòn đánh!"
         else:
-            roll_b = random.random()
+            roll_b = 0.99 if raid_data.get("ev_boss_locked", 0) > 0 else random.random(); raid_data["ev_boss_locked"] = max(0, raid_data.get("ev_boss_locked", 0) - 1)
             if (boss_skill_erased != "blood_chain") and roll_b < 0.20:
                 turn_image = p1_cfg["skills"]["blood_chain"]["gif"]
                 dmg_total = int(p1_power * 1.5)
@@ -5539,7 +5545,7 @@ async def execute_event_raid(channel, raid_data):
                             ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
                         else:
                             ac["current_hp"] -= dmg_each
-        push_logs = []
+        push_logs = []; restore_t4_save_loop(active_combatants, p1_rounds)
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if ac["current_hp"] <= 0:
@@ -5916,15 +5922,14 @@ async def execute_event_raid(channel, raid_data):
 
             if str(ac["cid"]).lower() == "t4":
                 t4_st = c.setdefault("t4_state", {})
-                _t4 = t4_combat_turn(t4_st, ac, "Boss Kizuna Phase 2", heal_mult=1.0, enemy_fate_loop_turns=c.get("ev2_fate_turns", 0))
+                _t4 = t4_combat_turn(t4_st, ac, "Boss Kizuna Phase 2", heal_mult=1.0, enemy_fate_loop_turns=raid_data.get("ev_boss_locked", 0))
                 card_dmg = int(card_dmg * _t4["multiplier"])
                 if _t4["save_loop_invul"]:
-                    c["seiki_invul_turn"] = p2_rounds
+                    c["t4_invul_turn"] = p2_rounds; c["t4_saved_hp"] = ac["current_hp"]
                 if _t4["fate_loop_triggered"]:
-                    c["ev2_fate_turns"] = 2
+                    raid_data["ev_boss_locked"] = 2
                     wonder_guard_turns = 0
                     boss_wg_active = False
-                    boss_skill_erased = "fate_locked"
                 if _t4["ice_spear_triggered"] and not boss_wg_active:
                     boss_freeze_debuff_turns = max(boss_freeze_debuff_turns, 2)
                 if _t4["gif"] and not turn_image: turn_image = _t4["gif"]
@@ -5971,7 +5976,7 @@ async def execute_event_raid(channel, raid_data):
                     else:
                         ac["current_hp"] -= dmg_each
             else:
-                roll_b = random.random()
+                roll_b = 0.99 if raid_data.get("ev_boss_locked", 0) > 0 else random.random(); raid_data["ev_boss_locked"] = max(0, raid_data.get("ev_boss_locked", 0) - 1)
                 if (boss_skill_erased != "wonder_guard") and roll_b < 0.15: # 15% kích hoạt Wonder Guard 90%
                     wonder_guard_turns = 2
                     turn_image = p2_cfg["skills"]["wonder_guard"]["gif"]
@@ -6080,7 +6085,7 @@ async def execute_event_raid(channel, raid_data):
                                 ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
                             else:
                                 ac["current_hp"] -= dmg_each
-        push_logs = []
+        push_logs = []; restore_t4_save_loop(active_combatants, p2_rounds)
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if ac["current_hp"] <= 0:
@@ -8596,7 +8601,7 @@ async def handle_battle(ctx_or_interaction):
                     msg_m = f"🌟 **[Nhóm T] [#t1] Seiki** ({user.display_name}) tung **Master Spark** (30%)! Bộc phá ×1.5 sát thương ({curr_pc_power:,} DMG)!"
                     battle_logs.append(msg_m)
                     turn_actions.append(msg_m)
-                elif not p_seiki_heal and pc["current_hp"] < pc["hp"] and roll_t1 < 0.50:
+                elif not p_seiki_heal and pc["current_hp"] < pc["hp"] and roll_t1 < (0.50 if not p_seiki_spark else 0.20):
                     p_seiki_heal = True
                     p_seiki_used_turn = r_cnt
                     heal_val = int(pc["hp"] * 0.30)
@@ -9383,7 +9388,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                     msg_m = f"🌟 **[Nhóm T] [#t1] Seiki** ({challenger.display_name}) tung **Master Spark** (30%)! Bộc phá ×1.5 sát thương ({c_curr_power:,} DMG)!"
                     pvp_logs.append(msg_m)
                     turn_actions.append(msg_m)
-                elif not c_seiki_heal and cc["current_hp"] < cc["max_hp"] and roll_t1 < 0.50:
+                elif not c_seiki_heal and cc["current_hp"] < cc["max_hp"] and roll_t1 < (0.50 if not c_seiki_spark else 0.20):
                     c_seiki_heal = True
                     c_seiki_used_turn = r_cnt
                     heal_val = int(cc["max_hp"] * 0.30)
@@ -9440,7 +9445,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 t_fate_locked_turns = 2
                 t_skills_locked = True
                 t_invul = False
-                t_stunned = False
+                c_stunned = False
             if _t4["heal_reduce_triggered"]:
                 t_heal_mult = 0.70
             if _t4["ice_spear_triggered"]:
@@ -9587,7 +9592,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                     msg_m = f"🌟 **[Nhóm T] [#t1] Seiki** ({target.display_name}) tung **Master Spark** (30%)! Bộc phá ×1.5 sát thương ({t_curr_power:,} DMG)!"
                     pvp_logs.append(msg_m)
                     turn_actions.append(msg_m)
-                elif not t_seiki_heal and tc["current_hp"] < tc["max_hp"] and roll_t1 < 0.50:
+                elif not t_seiki_heal and tc["current_hp"] < tc["max_hp"] and roll_t1 < (0.50 if not t_seiki_spark else 0.20):
                     t_seiki_heal = True
                     t_seiki_used_turn = r_cnt
                     heal_val = int(tc["max_hp"] * 0.30)
@@ -9644,7 +9649,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 c_fate_locked_turns = 2
                 c_skills_locked = True
                 c_invul = False
-                c_stunned = False
+                t_stunned = False
             if _t4["heal_reduce_triggered"]:
                 c_heal_mult = 0.70
             if _t4["ice_spear_triggered"]:
@@ -10265,8 +10270,8 @@ async def handle_trade(ctx_or_interaction, user: Union[discord.Member, discord.U
         eligible_a_gives = [cid for cid, c in CARDS_DATA.items() if inv_a.get(str(cid), 0) >= 1 and (inv_b.get(str(cid), 0) >= 1 or is_card_ace2(p_b, cid)) and not is_card_locked(p_a, cid)]
         eligible_b_gives = [cid for cid, c in CARDS_DATA.items() if inv_b.get(str(cid), 0) >= 1 and (inv_a.get(str(cid), 0) >= 1 or is_card_ace2(p_a, cid)) and not is_card_locked(p_b, cid)]
 
-        a_cards_txt = ", ".join([f"#{c:02d} {CARDS_DATA[c]['name']}" for c in eligible_a_gives[:8]]) or "Chưa có thẻ chung hợp lệ"
-        b_cards_txt = ", ".join([f"#{c:02d} {CARDS_DATA[c]['name']}" for c in eligible_b_gives[:8]]) or "Chưa có thẻ chung hợp lệ"
+        a_cards_txt = ", ".join([f"{format_card_id(c)} {CARDS_DATA[c]['name']}" for c in eligible_a_gives[:8]]) or "Chưa có thẻ chung hợp lệ"
+        b_cards_txt = ", ".join([f"{format_card_id(c)} {CARDS_DATA[c]['name']}" for c in eligible_b_gives[:8]]) or "Chưa có thẻ chung hợp lệ"
 
         embed_guide = discord.Embed(
             title="🤝 HỆ THỐNG TRAO ĐỔI THẺ BÀI (TRADE CARDS)",
