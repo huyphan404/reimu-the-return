@@ -1863,8 +1863,14 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
     seal_chance = seal_cfg["chance"]
     bong_chance = T1_ACE2_CONFIG["bong_khai_niem"]["chance"]
     med_chance = T1_ACE2_CONFIG["medicine_sign"]["chance"]
+    _seal_ok = erased != "t1_seal" and not t1_flags.get("seal_used") and not t1_flags.get("seiki_seal_used")
+    _bong_ok = erased != "t1_bong" and not t1_flags.get("bong_used")
+    _med_ok = erased != "t1_med" and not t1_flags.get("med_used") and ac.get("current_hp", 1) < ac.get("max_hp", ac.get("hp", 1))
+    _seal_hi = seal_chance if _seal_ok else 0.0
+    _bong_hi = _seal_hi + (bong_chance if _bong_ok else 0.0)
+    _med_hi = _bong_hi + (med_chance if _med_ok else 0.0)
 
-    if erased != "t1_seal" and not t1_flags.get("seal_used") and not t1_flags.get("seiki_seal_used") and roll < seal_chance:
+    if _seal_ok and roll < _seal_hi:
         t1_flags["seal_used"] = True
         t1_flags["seiki_seal_used"] = True
         t1_flags["used_turn"] = round_no
@@ -1874,7 +1880,7 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
             f"🛡️ **[Ace 2] [#t1] Seiki** kích hoạt **FANTASY SEAL** (50%)! "
             f"Vận khởi kết giới phong ấn tuyệt đối — **MIỄN TOÀN BỘ SÁT THƯƠNG** trong hiệp này!"
         )
-    elif erased != "t1_bong" and not t1_flags.get("bong_used") and roll < seal_chance + bong_chance:
+    elif _bong_ok and roll < _bong_hi:
         t1_flags["bong_used"] = True
         t1_flags["used_turn"] = round_no
         out["multiplier"] = T1_ACE2_CONFIG["bong_khai_niem"].get("multiplier", 1.5)
@@ -1885,7 +1891,7 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
             f"🌑 **[Ace 2] [#t1] Seiki** kích hoạt **BÓNG KHÁI NIỆM** (20%)! "
             f"Cường hóa **×{out['multiplier']} Sát Thương** kèm **{out['direct']:,} DMG** (10% Máu Tối Đa {target_desc}) và **XÓA NGẪU NHIÊN 1 KỸ NĂNG của đối phương (Tối đa 1 chiêu)**!"
         )
-    elif erased != "t1_med" and not t1_flags.get("med_used") and ac.get("current_hp", 1) < ac.get("max_hp", ac.get("hp", 1)) and roll < seal_chance + bong_chance + med_chance:
+    elif _med_ok and roll < _med_hi:
         t1_flags["med_used"] = True
         t1_flags["used_turn"] = round_no
         out["heal"] = int(ac.get("max_hp", ac.get("hp", 1)) * T1_ACE2_CONFIG["medicine_sign"]["heal_pct"])
