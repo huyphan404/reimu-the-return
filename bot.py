@@ -6501,6 +6501,115 @@ async def prefix_admin_add_shard(ctx, loai_shard: str = "seiki", quantity: int =
     save_player(target_player)
     await ctx.send(f"🔮 Đã cấp **+{quantity} Mảnh `{s_key}`** cho {target.mention} (Tổng kho: {shards[s_key]}/10)! Dùng `/t translate` để đổi thẻ.")
 
+# ==============================================================================
+# LỆNH ADMIN: /admin_remove_shard - XOÁ MẢNH (SHARD) CỦA NGƯỜI CHƠI KHÁC
+# ==============================================================================
+SHARD_DISPLAY_NAMES = {
+    "seiki": "Mảnh Seiki",
+    "mahoraga": "Mảnh Mahoraga",
+    "kizuna": "Mảnh Kizuna",
+    "fateria": "Fateria Shards",
+    "thanh_loi": "Thánh Lõi"
+}
+
+def normalize_shard_key(raw: str):
+    s = (raw or "").lower().strip()
+    if s in ["seiki", "t1", "dephap", "toannang"]:
+        return "seiki"
+    if s in ["mahoraga", "t2", "batach"]:
+        return "mahoraga"
+    if s in ["kizuna", "t3", "vampire"]:
+        return "kizuna"
+    if s in ["fateria", "t4", "sophan"]:
+        return "fateria"
+    if s in ["thanh_loi", "thanhloi", "core", "loi"]:
+        return "thanh_loi"
+    return None
+
+def do_remove_shard(target_player: dict, s_key: str, so_luong: int):
+    """Trả về (số mảnh thực tế đã xoá, số mảnh còn lại)."""
+    shards = target_player.setdefault("shards", {})
+    cur = shards.get(s_key, 0)
+    removed = cur if (so_luong <= 0 or so_luong >= cur) else so_luong
+    shards[s_key] = cur - removed
+    if s_key == "thanh_loi":
+        items = target_player.setdefault("items", {})
+        items["thanh_loi"] = max(0, items.get("thanh_loi", 0) - removed)
+        shards["thanh_loi"] = items["thanh_loi"]
+    return removed, shards[s_key]
+
+@bot.tree.command(name="admin_remove_shard", description="[CHỦ BOT DUY NHẤT] Xoá mảnh đặc biệt (shards) của người chơi")
+@app_commands.describe(
+    nguoi_dung="Người chơi bị xoá mảnh",
+    loai_shard="Loại mảnh cần xoá",
+    so_luong="Số lượng cần xoá (0 = xoá toàn bộ, mặc định: 1)"
+)
+@app_commands.choices(loai_shard=[
+    app_commands.Choice(name="Mảnh Seiki (seiki)", value="seiki"),
+    app_commands.Choice(name="Mảnh Mahoraga (mahoraga)", value="mahoraga"),
+    app_commands.Choice(name="Mảnh Kizuna (kizuna)", value="kizuna"),
+    app_commands.Choice(name="Fateria Shards (fateria)", value="fateria"),
+    app_commands.Choice(name="Thánh Lõi (thanh_loi)", value="thanh_loi")
+])
+async def slash_admin_remove_shard(interaction: discord.Interaction, nguoi_dung: discord.Member, loai_shard: str, so_luong: int = 1):
+    if not is_authorized_admin(interaction.user.id):
+        await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Lệnh chỉ dành cho chủ sở hữu bot.", ephemeral=True)
+        return
+
+    s_key = normalize_shard_key(loai_shard)
+    if not s_key:
+        await interaction.response.send_message(f"❌ Loại mảnh `{loai_shard}` không hợp lệ!", ephemeral=True)
+        return
+
+    target_player = get_player(nguoi_dung.id, nguoi_dung.display_name)
+    cur = target_player.get("shards", {}).get(s_key, 0)
+    if cur <= 0:
+        await interaction.response.send_message(
+            f"⚠️ {nguoi_dung.display_name} hiện không có **{SHARD_DISPLAY_NAMES[s_key]}** nào để xoá!",
+            ephemeral=True
+        )
+        return
+
+    removed, remain = do_remove_shard(target_player, s_key, so_luong)
+    save_player(target_player)
+
+    embed = discord.Embed(
+        title="🗑️ [ADMIN] ĐÃ XOÁ MẢNH (SHARD) THÀNH CÔNG!",
+        description=(
+            f"👑 **Admin:** {interaction.user.mention}\n"
+            f"👤 **Đối tượng:** {nguoi_dung.mention}\n"
+            f"💎 **Loại mảnh:** `{s_key}` ({SHARD_DISPLAY_NAMES[s_key]})\n"
+            f"➖ **Đã xoá:** `-{removed}` mảnh (Trước đó: `{cur}`)\n"
+            f"📦 **Còn lại trong kho:** `{remain}` mảnh"
+        ),
+        color=0xDC2626
+    )
+    await interaction.response.send_message(embed=embed)
+
+@bot.command(name="removeshard", aliases=["admin_remove_shard", "delshard"])
+async def prefix_admin_remove_shard(ctx, member: discord.Member = None, loai_shard: str = "seiki", quantity: int = 1):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send("⛔ Từ chối quyền truy cập! Lệnh dành riêng cho chủ bot.")
+        return
+    if member is None:
+        await ctx.send("💡 Cú pháp: `!removeshard @User <seiki|mahoraga|kizuna|fateria|thanh_loi> [số_lượng, 0 = xoá hết]`")
+        return
+
+    s_key = normalize_shard_key(loai_shard)
+    if not s_key:
+        await ctx.send(f"❌ Loại mảnh `{loai_shard}` không hợp lệ! (Hợp lệ: seiki, mahoraga, kizuna, fateria, thanh_loi)")
+        return
+
+    target_player = get_player(member.id, member.display_name)
+    cur = target_player.get("shards", {}).get(s_key, 0)
+    if cur <= 0:
+        await ctx.send(f"⚠️ {member.display_name} không có **{SHARD_DISPLAY_NAMES[s_key]}** nào để xoá!")
+        return
+
+    removed, remain = do_remove_shard(target_player, s_key, quantity)
+    save_player(target_player)
+    await ctx.send(f"🗑️ Đã xoá **-{removed} {SHARD_DISPLAY_NAMES[s_key]}** của {member.mention} (Còn lại: `{remain}`).")
+
 @bot.tree.command(name="admin_lock", description="[CHỦ BOT DUY NHẤT] Khóa lá bài đã sở hữu của người chơi (chỉ mở khi pull ra lại)")
 @app_commands.describe(nguoi_dung="Người chơi bị khóa thẻ", id_the="ID lá bài từ 1-27")
 async def slash_admin_lock(interaction: discord.Interaction, nguoi_dung: discord.Member, id_the: int):
