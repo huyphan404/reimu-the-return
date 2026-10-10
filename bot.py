@@ -6229,10 +6229,10 @@ async def execute_event_raid(channel, raid_data):
 # ==============================================================================
 def execute_single_pull(player):
     roll = random.random()
-    if roll < 0.01: chosen = random.choice(CARDS_BY_RANK["SS"])
-    elif roll < 0.04: chosen = random.choice(CARDS_BY_RANK["S"])
-    elif roll < 0.24: chosen = random.choice(CARDS_BY_RANK["A"])
-    elif roll < 0.54: chosen = random.choice(CARDS_BY_RANK["B"])
+    if roll < 0.001: chosen = random.choice(CARDS_BY_RANK["SS"])
+    elif roll < 0.051: chosen = random.choice(CARDS_BY_RANK["S"])
+    elif roll < 0.231: chosen = random.choice(CARDS_BY_RANK["A"])
+    elif roll < 0.531: chosen = random.choice(CARDS_BY_RANK["B"])
     else: chosen = random.choice(CARDS_BY_RANK["C"])
 
     cid_str = str(chosen["id"])
