@@ -12334,6 +12334,9 @@ class EventShopButtonsView(discord.ui.View):
     @discord.ui.button(label="🎟️ 5 Vé Pull (50 Kẹo)", style=discord.ButtonStyle.primary)
     async def buy_tickets(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id: return
+        if not EVENT_CONFIG.get("active", True):
+            await interaction.response.send_message("🚫 **Sự kiện Halloween 2026 đã kết thúc!** Cửa hàng đã đóng cửa.", ephemeral=True)
+            return
         p_items = self.player.setdefault("items", {})
         candies = p_items.get("keo_halloween", 0)
         if candies < 50:
@@ -12347,6 +12350,9 @@ class EventShopButtonsView(discord.ui.View):
     @discord.ui.button(label="📦 Rương Ma Quái [E] (120 Kẹo)", style=discord.ButtonStyle.success)
     async def buy_chest(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id: return
+        if not EVENT_CONFIG.get("active", True):
+            await interaction.response.send_message("🚫 **Sự kiện Halloween 2026 đã kết thúc!** Cửa hàng đã đóng cửa.", ephemeral=True)
+            return
         p_items = self.player.setdefault("items", {})
         candies = p_items.get("keo_halloween", 0)
         if candies < 120:
@@ -12360,6 +12366,9 @@ class EventShopButtonsView(discord.ui.View):
     @discord.ui.button(label="🩸 1 Mảnh Kizuna (200 Kẹo)", style=discord.ButtonStyle.danger)
     async def buy_shard(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id: return
+        if not EVENT_CONFIG.get("active", True):
+            await interaction.response.send_message("🚫 **Sự kiện Halloween 2026 đã kết thúc!** Cửa hàng đã đóng cửa.", ephemeral=True)
+            return
         p_items = self.player.setdefault("items", {})
         candies = p_items.get("keo_halloween", 0)
         if candies < 200:
@@ -12371,8 +12380,24 @@ class EventShopButtonsView(discord.ui.View):
         save_player(self.player)
         await interaction.response.send_message(f"✅ Đã mua **+1 Mảnh Kizuna**! (Kho: {p_shards['kizuna']}/15 mảnh)")
 
+# --- HÀM KIỂM TRA SỰ KIỆN ĐANG MỞ HAY ĐÃ KẾT THÚC ---
+async def check_event_is_active(ctx_or_interaction) -> bool:
+    if not EVENT_CONFIG.get("active", True):
+        msg = "🚫 **Sự kiện Halloween Event 2026 hiện đã kết thúc hoặc đang đóng!** Hẹn gặp lại bạn ở sự kiện tiếp theo nhé!"
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            if ctx_or_interaction.response.is_done():
+                await ctx_or_interaction.followup.send(msg, ephemeral=True)
+            else:
+                await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else:
+            await ctx_or_interaction.send(msg)
+        return False
+    return True
+
 # --- HÀM XỬ LÝ /EVENT INFO (XEM NHIỆM VỤ & THÔNG TIN EVENT) ---
 async def handle_event_info(ctx_or_interaction):
+    if not await check_event_is_active(ctx_or_interaction):
+        return
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
     ep = player.setdefault("event_progress", {"battle": 0, "pvp": 0, "raid": 0, "event_raid": 0, "claimed": False})
@@ -12412,6 +12437,8 @@ async def handle_event_info(ctx_or_interaction):
 
 # --- HÀM XỬ LÝ /EVENT SHOP (ĐỔI KẸO LẤY VÉ, RƯƠNG [E], SHARD) ---
 async def handle_event_shop(ctx_or_interaction):
+    if not await check_event_is_active(ctx_or_interaction):
+        return
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
     candies = player.get("items", {}).get("keo_halloween", 0)
@@ -12440,6 +12467,8 @@ async def handle_event_shop(ctx_or_interaction):
 
 # --- HÀM XỬ LÝ /EVENT RAID (MỞ PHÒNG CHỜ 2 PHÚT CHO TẤT CẢ PLAYER) ---
 async def handle_event_raid_open(ctx_or_interaction):
+    if not await check_event_is_active(ctx_or_interaction):
+        return
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
     now = time.time()
@@ -12655,25 +12684,30 @@ class EventAdminGroup(app_commands.Group, name="event_admin", description="[Admi
             await interaction.response.send_message("⛔ Không có quyền!", ephemeral=True)
             return
         EVENT_CONFIG["active"] = True
-        await interaction.response.send_message("🎃 **Đã BẬT sự kiện Halloween Event 2026!**")
+        await interaction.response.send_message("🎃 **Đã BẬT sự kiện Halloween Event 2026!** Các lệnh `/event info`, `/event shop`, `/event raid` đã mở lại bình thường.")
 
     @app_commands.command(name="end", description="[Admin] Đóng sự kiện Halloween Event 2026")
     async def slash_admin_event_end(self, interaction: discord.Interaction):
+        global active_event_raid
         if not is_authorized_admin(interaction.user.id):
             await interaction.response.send_message("⛔ Không có quyền!", ephemeral=True)
             return
         EVENT_CONFIG["active"] = False
-        await interaction.response.send_message("🚫 **Đã ĐÓNG sự kiện Halloween Event 2026!**")
-
-bot.tree.add_command(EventAdminGroup())
-
-@bot.tree.command(name="admin_event_boss_spawn", description="[Admin] Cưỡng chế mở phòng triệu hồi Event Boss Kizuna ngay lập tức")
-async def slash_admin_event_boss_spawn(interaction: discord.Interaction):
-    if not is_authorized_admin(interaction.user.id):
-        await interaction.response.send_message("⛔ Không có quyền!", ephemeral=True)
-        return
-    await interaction.response.send_message("⚡ Đang cưỡng chế mở phòng triệu hồi Event Boss Kizuna...", ephemeral=True)
-    await spawn_event_boss_raid(interaction.channel, interaction.user, is_admin=True)
+        # Hủy ngay phòng chờ Event Raid nếu đang đếm ngược
+        if active_event_raid is not None:
+            active_event_raid["closed"] = True
+            if active_event_raid.get("task") and not active_event_raid["task"].done():
+                active_event_raid["task"].cancel()
+            if active_event_raid.get("view"):
+                for child in active_event_raid["view"].children:
+                    child.disabled = True
+                if active_event_raid.get("msg"):
+                    try:
+                        await active_event_raid["msg"].edit(view=active_event_raid["view"])
+                    except Exception:
+                        pass
+            active_event_raid = None
+        await interaction.response.send_message("🚫 **Đã ĐÓNG sự kiện Halloween Event 2026!** Toàn bộ lệnh `/event info`, `/event shop`, `/event raid` đã bị khóa.")
 
 # 4. HỖ TRỢ LỆNH PREFIX (!EVENT & !ITEM)
 @bot.group(name="event", invoke_without_command=True)
