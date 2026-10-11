@@ -573,7 +573,7 @@ SEIKI_BOSS_PHASE2_CONFIG = {
 EVENT_CONFIG = {
     "id": "halloween_2026",
     "name": "Halloween Event 2026 - Lễ Hội Kẹo Ma Quái",
-    "active": True,
+    "active": False,
     "start_date": "2026-10-02",
     "end_date": "2026-10-30",
     "banner": "https://media.discordapp.net/attachments/1527157582115111077/1555132294170419230/images.png?backend=b2&ex=6abf694f&is=6abe17cf&hm=0da7e8bf9d0062f5711ce6391b3216939b3b641e8743b8a6c707250d849e0bec&=&format=webp&quality=lossless&width=362&height=512",
@@ -12708,6 +12708,46 @@ class EventAdminGroup(app_commands.Group, name="event_admin", description="[Admi
                         pass
             active_event_raid = None
         await interaction.response.send_message("🚫 **Đã ĐÓNG sự kiện Halloween Event 2026!** Toàn bộ lệnh `/event info`, `/event shop`, `/event raid` đã bị khóa.")
+
+bot.tree.add_command(EventAdminGroup())
+
+# Hỗ trợ thêm cả lệnh chấm than !event_admin end và !event_admin start (không cần chờ sync)
+@bot.group(name="event_admin", invoke_without_command=True)
+async def prefix_event_admin_group(ctx):
+    if not is_authorized_admin(ctx.author.id):
+        return
+    status = "🟢 ĐANG BẬT" if EVENT_CONFIG.get("active", True) else "🔴 ĐÃ ĐÓNG"
+    await ctx.send(f"🎃 Trạng thái sự kiện hiện tại: **{status}**. Dùng `!event_admin end` hoặc `!event_admin start`.")
+
+@prefix_event_admin_group.command(name="start")
+async def prefix_admin_event_start(ctx):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send("⛔ Không có quyền!")
+        return
+    EVENT_CONFIG["active"] = True
+    await ctx.send("🎃 **Đã BẬT sự kiện Halloween Event 2026!** Các lệnh `/event info`, `/event shop`, `/event raid` đã mở lại bình thường.")
+
+@prefix_event_admin_group.command(name="end")
+async def prefix_admin_event_end(ctx):
+    global active_event_raid
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send("⛔ Không có quyền!")
+        return
+    EVENT_CONFIG["active"] = False
+    if active_event_raid is not None:
+        active_event_raid["closed"] = True
+        if active_event_raid.get("task") and not active_event_raid["task"].done():
+            active_event_raid["task"].cancel()
+        if active_event_raid.get("view"):
+            for child in active_event_raid["view"].children:
+                child.disabled = True
+            if active_event_raid.get("msg"):
+                try:
+                    await active_event_raid["msg"].edit(view=active_event_raid["view"])
+                except Exception:
+                    pass
+        active_event_raid = None
+    await ctx.send("🚫 **Đã ĐÓNG sự kiện Halloween Event 2026!** Toàn bộ lệnh `/event info`, `/event shop`, `/event raid` đã bị khóa.")
 
 # 4. HỖ TRỢ LỆNH PREFIX (!EVENT & !ITEM)
 @bot.group(name="event", invoke_without_command=True)
