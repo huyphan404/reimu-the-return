@@ -983,7 +983,7 @@ EVOL_CONFIG["t5"] = {
     "required_item": "dia_ky_uc_jotaro",
     "evol_gif": T5_GIF_EVOL,
     "skill_name": "Star Platinum: The World (Rage • ​Ngưỡng Máu Tử • Stand Barrage • Skull Breaker • Time Stop)",
-    "skill_desc": "Rage, Ngưỡng máu tử (máu <10% tự động Time Stop 2 turn), Stand Barrage (40%, x1.5), Skull Breaker (25%, x2.2), Time Stop (20%, đóng băng 2 turn).",
+    "skill_desc": "Rage, Ngưỡng máu tử (máu <30% tự động Time Stop 2 turn), Stand Barrage (40%, x1.5), Skull Breaker (25%, x2.2), Time Stop (20%, đóng băng 2 turn).",
     "bonus_power": 300,
     "bonus_hp": 300
 }
@@ -7299,7 +7299,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             f"• Trạng thái: **{_j_status}**\n"
             "• Điều kiện: đã có thẻ #t5 (Ace 1) + **10 Mảnh Jotaro** + **1 Đĩa Ký Ức Jotaro 💿**\n"
             "• Buff Ace: **+300 ATK** & **+300 HP**\n"
-            "• Kỹ năng: **Rage** • **Ngưỡng Máu Tử** (Time Stop khi <10% máu) • **Stand Barrage** • **Skull Breaker** • **Time Stop**"
+            "• Kỹ năng: **Rage** • **Ngưỡng Máu Tử** (Time Stop khi <30% máu) • **Stand Barrage** • **Skull Breaker** • **Time Stop**"
         ),
         inline=False
     )
@@ -12922,13 +12922,13 @@ def t5_combat_turn(t5_state: dict, card_data: dict, is_ace2: bool = False, skill
         gif = passive["gif"]
         logs.append(f"😡 **{tag}** - **Rage**: Máu dưới 50%! Kích hoạt buff **×{passive['multiplier']} sát thương đánh thường** trong **{passive['turns']} turn**!")
 
-    # 2. Ace 2: Ngưỡng máu tử (1 lần/trận): máu < 10% -> Time Stop 2 turn
-    if is_ace2 and erased != "t5_deathstop" and not t5_state.get("deathstop_used") and cur_hp < max_hp * 0.10:
+    # 2. Ace 2: Ngưỡng máu tử (1 lần/trận): máu < 30% -> Time Stop 2 turn
+    if is_ace2 and erased != "t5_deathstop" and not t5_state.get("deathstop_used") and cur_hp < max_hp * 0.30:
         t5_state["deathstop_used"] = True
         t5_state["stop_remaining"] = 1
         stun = True
         gif = T5_GIF_TIMESTOP
-        logs.append(f"⏳ **{tag}** - **Ngưỡng Máu Tử**: Máu dưới 10%! **STAR PLATINUM THE WORLD!** Đóng băng toàn bộ mục tiêu trong **2 turn**!")
+        logs.append(f"⏳ **{tag}** - **Ngưỡng Máu Tử**: Máu dưới 30%! **STAR PLATINUM THE WORLD!** Đóng băng toàn bộ mục tiêu trong **2 turn**!")
 
     # 3. Roll kỹ năng chủ động (tối đa 1 chiêu / lượt)
     used_skill = False
@@ -13013,7 +13013,7 @@ def execute_jotaro_ace2(player):
         description=(
             "⏱️ **STAR PLATINUM THE WORLD - BỘ KỸ NĂNG ACE 2:**\n\n"
             "😡 **Rage:** Máu dưới 50% ➜ ×1.2 sát thương đánh thường trong 2 turn\n"
-            "⏳ **Ngưỡng Máu Tử:** Máu dưới 10% ➜ Time Stop, đóng băng mọi mục tiêu 2 turn\n"
+            "⏳ **Ngưỡng Máu Tử:** Máu dưới 30% ➜ Time Stop, đóng băng mọi mục tiêu 2 turn\n"
             "👊 **Stand Barrage (40%):** ×1.5 DMG (tối đa 2 lần/trận)\n"
             "💀 **Skull Breaker (25%):** ×2.2 DMG (1 lần/trận)\n"
             "⏱️ **Time Stop (20%):** Đóng băng mục tiêu 2 turn (tối đa 2 lần/trận)\n\n"
@@ -13077,7 +13077,7 @@ class JotaroCardView(discord.ui.View):
         if ace:
             skills = (
                 "😡 **Rage (Passive):** Máu <50% ➜ ×1.2 sát thương đánh thường trong 2 turn.\n"
-                "⏳ **Ngưỡng Máu Tử (Passive):** Máu <10% ➜ Time Stop, đóng băng mọi mục tiêu 2 turn.\n"
+                "⏳ **Ngưỡng Máu Tử (Passive):** Máu <30% ➜ Time Stop, đóng băng mọi mục tiêu 2 turn.\n"
                 "👊 **Stand Barrage (40%):** ×1.5 DMG (2 lần/trận).\n"
                 "💀 **Skull Breaker (25%):** ×2.2 DMG (1 lần/trận).\n"
                 "⏱️ **Time Stop (20%):** Đóng băng mục tiêu 2 turn (tối đa 2 lần/trận)."
