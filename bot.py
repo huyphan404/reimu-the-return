@@ -619,7 +619,8 @@ ITEMS_DATABASE = {
         "usable": False,
         "tradeable": True,
         "desc": "Bảo vật quạt giấy cảnh giới của Yukari Yakumo, dùng để tiến hóa [#04] Yukari lên Ace 2 ⭐⭐."
-    },
+    }
+}
 ITEMS_DATABASE["dia_ky_uc_jotaro"] = {
     "id": "dia_ky_uc_jotaro",
     "name": "Đĩa Ký Ức Jotaro 💿",
@@ -1416,7 +1417,7 @@ CARD_ALIASES = {
     "seiki": "t1", "t1": "t1", "dephap": "t1", "toannang": "t1",
     "mahoraga": "t2", "t2": "t2", "batach": "t2",
     "kizuna": "t3", "t3": "t3", "vampire": "t3", "emperor": "t3",
-    "fateria": "t4", "t4": "t4", "khuonmau": "t4", "sophan": "t4"
+    "fateria": "t4", "t4": "t4", "khuonmau": "t4", "sophan": "t4",
     "jotaro": "t5", "t5": "t5", "kujo": "t5", "jotarokujo": "t5", "starplatinum": "t5"
 }
 def normalize_card_id(raw_id):
@@ -1858,6 +1859,8 @@ def apply_bong_khai_niem_boss(boss_type: str, phase: int, erased_skill_current: 
         pool = [("blood_chain", "Blood chain"), ("dark_chain", "Dark chain")]
     elif boss_type == "kizuna_event" and phase == 2:
         pool = [("wonder_guard", "Wonder guard"), ("blood_chain", "Blood chain"), ("dark_chain", "Dark chain")]
+    elif boss_type == "jotaro":
+        pool = [("stand_barrage", "Stand Barrage"), ("skull_breaker", "Skull Breaker"), ("time_stop", "Time Stop")]
     else:
         pool = [("di_hinh_bua_chu", "Dị Hình Bùa Chú")]
 
@@ -1914,8 +1917,6 @@ def apply_bong_khai_niem_card(target_card: dict):
         pool = [("cirno_freeze", "Perfect Freeze")]
     elif cid == 13 and is_ace:
         pool = [("utsuho_nuclear", "Nuclear Spell Card")]
-    elif boss_type == "jotaro":
-        pool = [("stand_barrage", "Stand Barrage"), ("skull_breaker", "Skull Breaker"), ("time_stop", "Time Stop")]
 
     if not pool:
         return f"🌑 **[Bóng Khái Niệm]** **{target_card['name']}** không sở hữu kỹ năng đặc biệt nào để xóa!"
@@ -2537,7 +2538,14 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
     is_seiki = (boss_type == "seiki")
     is_mahoraga = (boss_type == "mahoraga")
     is_fateria = (boss_type == "fateria")
-    cfg = SEIKI_BOSS_CONFIG if is_seiki else (MAHORAGA_BOSS_CONFIG if is_mahoraga else (FATERIA_BOSS_CONFIG if is_fateria else BOSS_CONFIG))
+    is_jotaro = (boss_type == "jotaro")
+    cfg = (
+        SEIKI_BOSS_CONFIG if is_seiki else
+        MAHORAGA_BOSS_CONFIG if is_mahoraga else
+        FATERIA_BOSS_CONFIG if is_fateria else
+        JOTARO_BOSS_CONFIG if is_jotaro else
+        BOSS_CONFIG
+    )
 
     start_event = asyncio.Event()
     raid_data = {
@@ -4287,11 +4295,12 @@ async def execute_raid(channel, raid_data):
                     if _t5["gif"] and not turn_image:
                         turn_image = _t5["gif"]
                     if _t5["logs"]:
-                        t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t5["logs"]])    
-                    if str(ac["cid"]).lower() == "t4":
-                        t4_st = c.setdefault("t4_state", {})
-                        _t4 = t4_combat_turn(t4_st, ac, f"Boss {p2_cfg['name']}", heal_mult=1.0, enemy_fate_loop_turns=(1 if boss_skills_locked_this_turn else boss_fate_locked_turns))
-                        card_dmg = int(card_dmg * _t4["multiplier"])
+                        t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t5["logs"]])
+
+                if str(ac["cid"]).lower() == "t4":
+                    t4_st = c.setdefault("t4_state", {})
+                    _t4 = t4_combat_turn(t4_st, ac, f"Boss {p2_cfg['name']}", heal_mult=1.0, enemy_fate_loop_turns=(1 if boss_skills_locked_this_turn else boss_fate_locked_turns))
+                    card_dmg = int(card_dmg * _t4["multiplier"])
                     if _t4["save_loop_invul"]:
                         c["t4_invul_turn"] = p2_rounds
                         c["t4_saved_hp"] = ac["current_hp"]
@@ -6639,7 +6648,7 @@ SHARD_DISPLAY_NAMES = {
     "kizuna": "Mảnh Kizuna",
     "fateria": "Fateria Shards",
     "thanh_loi": "Thánh Lõi",
-    "jotaro" = "Jotaro Shards"
+    "jotaro": "Jotaro Shards"
 }
 
 def normalize_shard_key(raw: str):
@@ -7274,7 +7283,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
         ),
         inline=False
     )
-     _j_ace = is_card_ace2(player, "t5")
+    _j_ace = is_card_ace2(player, "t5")
     _j_unl = is_card_unlocked(player, "t5") or player.get("inventory", {}).get("t5", 0) > 0
     _j_sh = player.get("shards", {}).get("jotaro", 0)
     _j_dk = player.get("items", {}).get("dia_ky_uc_jotaro", 0)
@@ -7665,7 +7674,7 @@ async def handle_collection(ctx_or_interaction):
                 t_shard_info = f"   └ 🩸 **Mảnh Kizuna:** `{kizuna_shards}/15` | 👑 **Thánh Lõi:** `{thanh_loi_shards}/1`"
                 if kizuna_shards >= 15:
                     t_shard_info += " ✨ *(Đủ 15 mảnh! Dùng `/t translate loai_shard:kizuna` để đổi ngay!)*"
-             elif t_cid == "t5":
+            elif t_cid == "t5":
                 j_shards = player.get("shards", {}).get("jotaro", 0)
                 t_shard_info = f"   └ ⏱️ **Jotaro Shards:** `{j_shards}/15` mảnh"
                 if j_shards >= 15:
