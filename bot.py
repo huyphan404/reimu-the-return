@@ -4273,48 +4273,48 @@ async def execute_raid(channel, raid_data):
                         )
                     t2_notif = (t2_notif + "\n" if t2_notif else "") + t2_notif_str
 
-                 if str(ac["cid"]).lower() == "t3":
-                     t3_st = c.setdefault("t3_state", {})
-                     _t3 = t3_combat_turn(t3_st, ac, p2_rounds, p2_max_hp, f"Boss {p2_cfg['name']}", is_ace2=ac.get("is_ace2"))
-                     card_dmg = int(card_dmg * _t3["multiplier"])
-                     if _t3["bonus_hp_dmg"] > 0:
-                         actual_hp_dmg, p2_true_dmg_accum, cap_hp_msg = apply_raid_true_damage(_t3["bonus_hp_dmg"], p2_true_dmg_accum, p2_true_cap, "Dark Chain (Kizuna)")
-                         card_dmg += actual_hp_dmg
-                         if cap_hp_msg:
-                             _t3["logs"].append(cap_hp_msg)
-                     if _t3["gif"] and not turn_image:
-                         turn_image = _t3["gif"]
-                     t3_notif_str = "\n".join(_t3["logs"])
-                     t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
+                if str(ac["cid"]).lower() == "t3":
+                    t3_st = c.setdefault("t3_state", {})
+                    _t3 = t3_combat_turn(t3_st, ac, p2_rounds, p2_max_hp, f"Boss {p2_cfg['name']}", is_ace2=ac.get("is_ace2"))
+                    card_dmg = int(card_dmg * _t3["multiplier"])
+                    if _t3["bonus_hp_dmg"] > 0:
+                        actual_hp_dmg, p2_true_dmg_accum, cap_hp_msg = apply_raid_true_damage(_t3["bonus_hp_dmg"], p2_true_dmg_accum, p2_true_cap, "Dark Chain (Kizuna)")
+                        card_dmg += actual_hp_dmg
+                        if cap_hp_msg:
+                            _t3["logs"].append(cap_hp_msg)
+                    if _t3["gif"] and not turn_image:
+                        turn_image = _t3["gif"]
+                    t3_notif_str = "\n".join(_t3["logs"])
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
 
-                  if str(ac["cid"]).lower() == "t5":
-                     _t5 = t5_combat_turn(c.setdefault("t5_state", {}), ac, is_ace2=ac.get("is_ace2", False))
-                     card_dmg = int(card_dmg * _t5["multiplier"])
-                     if _t5["stun"] or _t5["confuse"]:
+                if str(ac["cid"]).lower() == "t5":
+                    _t5 = t5_combat_turn(c.setdefault("t5_state", {}), ac, is_ace2=ac.get("is_ace2", False))
+                    card_dmg = int(card_dmg * _t5["multiplier"])
+                    if _t5["stun"] or _t5["confuse"]:
                         boss_stunned = True
-                     if _t5["gif"] and not turn_image:
-                         turn_image = _t5["gif"]
-                     if _t5["logs"]:
-                         t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t5["logs"]])
+                    if _t5["gif"] and not turn_image:
+                        turn_image = _t5["gif"]
+                    if _t5["logs"]:
+                        t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t5["logs"]])
 
-                 if str(ac["cid"]).lower() == "t4":
-                     t4_st = c.setdefault("t4_state", {})
-                     _t4 = t4_combat_turn(t4_st, ac, f"Boss {p2_cfg['name']}", heal_mult=1.0, enemy_fate_loop_turns=(1 if boss_skills_locked_this_turn else boss_fate_locked_turns))
-                     card_dmg = int(card_dmg * _t4["multiplier"])
-                     if _t4["save_loop_invul"]:
-                         c["t4_invul_turn"] = p2_rounds
-                         c["t4_saved_hp"] = ac["current_hp"]
-                     if _t4["fate_loop_triggered"]:
-                         boss_fate_locked_turns = 1; boss_skills_locked_this_turn = True
-                     if _t4["ice_spear_triggered"]:
-                         boss_freeze_debuff_turns = max(boss_freeze_debuff_turns, 2)
-                     if _t4["gif"] and not turn_image:
-                         turn_image = _t4["gif"]
-                     if _t4["logs"]:
-                         t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
+                if str(ac["cid"]).lower() == "t4":
+                    t4_st = c.setdefault("t4_state", {})
+                    _t4 = t4_combat_turn(t4_st, ac, f"Boss {p2_cfg['name']}", heal_mult=1.0, enemy_fate_loop_turns=(1 if boss_skills_locked_this_turn else boss_fate_locked_turns))
+                    card_dmg = int(card_dmg * _t4["multiplier"])
+                    if _t4["save_loop_invul"]:
+                        c["t4_invul_turn"] = p2_rounds
+                        c["t4_saved_hp"] = ac["current_hp"]
+                    if _t4["fate_loop_triggered"]:
+                        boss_fate_locked_turns = 1; boss_skills_locked_this_turn = True
+                    if _t4["ice_spear_triggered"]:
+                        boss_freeze_debuff_turns = max(boss_freeze_debuff_turns, 2)
+                    if _t4["gif"] and not turn_image:
+                        turn_image = _t4["gif"]
+                    if _t4["logs"]:
+                        t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
 
-                 round_player_dmg += card_dmg
-                 c["total_dmg"] += card_dmg
+                round_player_dmg += card_dmg
+                c["total_dmg"] += card_dmg
 
             p2_hp = max(0, p2_hp - round_player_dmg)
 
