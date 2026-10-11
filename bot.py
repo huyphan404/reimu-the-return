@@ -12292,8 +12292,13 @@ async def slash_sync_commands(interaction: discord.Interaction):
         return
     await interaction.response.defer(ephemeral=True)
     try:
-        synced = await bot.tree.sync()
-        await interaction.followup.send(f"✅ Đã đồng bộ {len(synced)} Slash Commands chuẩn!")
+        synced_global = await bot.tree.sync()
+        if interaction.guild:
+            bot.tree.copy_global_to(guild=interaction.guild)
+            synced_guild = await bot.tree.sync(guild=interaction.guild)
+            await interaction.followup.send(f"✅ Đã ép đồng bộ NGAY LẬP TỨC **{len(synced_guild)} lệnh Slash** vào Server này (và {len(synced_global)} lệnh toàn cục)! Hãy ấn `Ctrl + R` để thấy `/event_admin start` và `/event_admin end`!")
+        else:
+            await interaction.followup.send(f"✅ Đã đồng bộ {len(synced_global)} Slash Commands chuẩn!")
     except Exception as e:
         await interaction.followup.send(f"❌ Lỗi: {e}")
 
@@ -12303,8 +12308,13 @@ async def prefix_sync_commands(ctx):
         await ctx.send("⛔ Từ chối quyền truy cập! Lệnh dành riêng cho chủ bot.")
         return
     try:
-        synced = await bot.tree.sync()
-        await ctx.send(f"✅ Đã đồng bộ {len(synced)} lệnh Slash chuẩn!")
+        synced_global = await bot.tree.sync()
+        if ctx.guild:
+            bot.tree.copy_global_to(guild=ctx.guild)
+            synced_guild = await bot.tree.sync(guild=ctx.guild)
+            await ctx.send(f"✅ Đã ép đồng bộ NGAY LẬP TỨC **{len(synced_guild)} lệnh Slash** vào Server này! Hãy ấn **Ctrl + R** (hoặc thoát kênh vào lại) là thấy ngay `/event_admin start` và `/event_admin end`!")
+        else:
+            await ctx.send(f"✅ Đã đồng bộ {len(synced_global)} lệnh Slash chuẩn!")
     except Exception as e:
         await ctx.send(f"❌ Lỗi: {e}")
 
@@ -12676,10 +12686,10 @@ class ItemGroup(app_commands.Group, name="item", description="Quản lý kho v�
 
 bot.tree.add_command(ItemGroup())
 
-# 3. LỆNH ADMIN (OWNER EXCLUSIVE)
+# 3. LỆNH SLASH ADMIN: /event_admin start & /event_admin end
 class EventAdminGroup(app_commands.Group, name="event_admin", description="[Admin] Quản trị sự kiện Halloween Event"):
     @app_commands.command(name="start", description="[Admin] Bật sự kiện Halloween Event 2026")
-    async def slash_admin_event_start(self, interaction: discord.Interaction):
+    async def start(self, interaction: discord.Interaction):
         if not is_authorized_admin(interaction.user.id):
             await interaction.response.send_message("⛔ Không có quyền!", ephemeral=True)
             return
@@ -12687,13 +12697,12 @@ class EventAdminGroup(app_commands.Group, name="event_admin", description="[Admi
         await interaction.response.send_message("🎃 **Đã BẬT sự kiện Halloween Event 2026!** Các lệnh `/event info`, `/event shop`, `/event raid` đã mở lại bình thường.")
 
     @app_commands.command(name="end", description="[Admin] Đóng sự kiện Halloween Event 2026")
-    async def slash_admin_event_end(self, interaction: discord.Interaction):
+    async def end(self, interaction: discord.Interaction):
         global active_event_raid
         if not is_authorized_admin(interaction.user.id):
             await interaction.response.send_message("⛔ Không có quyền!", ephemeral=True)
             return
         EVENT_CONFIG["active"] = False
-        # Hủy ngay phòng chờ Event Raid nếu đang đếm ngược
         if active_event_raid is not None:
             active_event_raid["closed"] = True
             if active_event_raid.get("task") and not active_event_raid["task"].done():
