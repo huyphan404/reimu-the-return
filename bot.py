@@ -409,6 +409,64 @@ T3_BLOOD_GIF = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/2f
 T3_DARK_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/56/40/iq0ztIh38KLjZwtzI.gif"
 T3_WONDER_GUARD_GIF = "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/e5/ab/GDt4bKoq.gif"
 
+# ==============================================================================
+# [UPDATE JOTARO] THẺ T5 JOTARO KUJO + BOSS KUJO JOTARO (STONE OCEAN)
+# ==============================================================================
+T5_GIF_UNLOCK = "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/9e/ee/dyQjxovY.gif"
+T5_GIF_RAGE = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/1d/ce/TWdUY9cgbLHXbqkhk.gif"
+T5_GIF_BARRAGE_A1 = "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/33/2a/hhhmPm1W.gif"
+T5_GIF_IGGY = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/b0/9f/Io9bUGwPG8mD9a105Mi.gif"
+T5_GIF_EVOL = "https://static2.klipy.com/ii/a15b48460c436e1e92c85ffc680932cc/cf/1c/ECBJuybS.gif"
+T5_GIF_BARRAGE_A2 = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/d1/d1/9v7xs1hIgX3lDc7oM.gif"
+T5_GIF_SKULL = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/93/5c/7Hdi8Sq0fVaA0faaLJI.gif"
+T5_GIF_TIMESTOP = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/86/2e/Fe7VW0nb7iK6.gif"
+T5_GIF_BOSS = "https://static2.klipy.com/ii/8ce8357c78ea940b9c2015daf05ce1a5/9e/8a/ivNJLpfG.gif"
+T5_YUKARI_STATION_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
+T5_YUKARI_LASTWORD_GIF = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+
+CARDS_DATA["t5"] = {
+    "id": "t5",
+    "name": "Jotaro Kujo",
+    "rank": "T",
+    "power": 695,
+    "hp": 6200,
+    "image": T5_GIF_UNLOCK,
+    "unlock_gif": T5_GIF_UNLOCK,
+    "passive": {
+        "name": "Rage",
+        "hp_pct": 0.50,
+        "multiplier": 1.2,
+        "turns": 2,
+        "gif": T5_GIF_RAGE,
+        "desc": "Khi máu dưới 50%: buff 1.2x sát thương chỉ cho đánh thường trong 2 turn"
+    },
+    "skills": {
+        "stand_barrage": {"name": "Stand Barrage", "chance": 0.40, "multiplier": 1.5, "max_uses": 2, "gif": T5_GIF_BARRAGE_A1},
+        "iggy_throw": {"name": "Iggy Throw", "chance": 0.40, "max_uses": 1, "gif": T5_GIF_IGGY}
+    }
+}
+
+JOTARO_XP_DROP_MULT = 1.5   # Boss drop XP = 1.5 x XP hiện tại (đổi số này nếu muốn)
+
+JOTARO_BOSS_CONFIG = {
+    "id": "jotaro",
+    "name": "Kujo Jotaro - Stone Ocean",
+    "desc": "Kẻ điều khiển Star Platinum - The World. Thời gian nằm trong lòng bàn tay hắn!",
+    "reimu_quote": "Ánh mắt đó... hắn không phải dạng vừa đâu. Mọi người cẩn thận, hắn có thể dừng cả thời gian!",
+    "image": T5_GIF_BOSS,
+    "hp": 88000,
+    "power": 8000,
+    "max_players": 6,
+    "cooldown_seconds": 15 * 60,
+    "rage_mult": 1.1,
+    "rage_turns": 2,
+    "skills": {
+        "stand_barrage": {"name": "Stand Barrage", "chance": 0.25, "multiplier": 1.5, "gif": T5_GIF_BARRAGE_A2},
+        "skull_breaker": {"name": "Skull Breaker", "chance": 0.15, "multiplier": 2.2, "gif": T5_GIF_SKULL},
+        "time_stop": {"name": "Time Stop", "chance": 0.20, "turns": 2, "gif": T5_GIF_TIMESTOP}
+    }
+}    
+
 CARDS_BY_RANK = {
     "SS": [c for c in CARDS_DATA.values() if c["rank"] == "SS"],
     "S":  [c for c in CARDS_DATA.values() if c["rank"] == "S"],
@@ -561,7 +619,13 @@ ITEMS_DATABASE = {
         "usable": False,
         "tradeable": True,
         "desc": "Bảo vật quạt giấy cảnh giới của Yukari Yakumo, dùng để tiến hóa [#04] Yukari lên Ace 2 ⭐⭐."
-    }
+    },
+ITEMS_DATABASE["dia_ky_uc_jotaro"] = {
+    "id": "dia_ky_uc_jotaro",
+    "name": "Đĩa Ký Ức Jotaro 💿",
+    "usable": False,
+    "tradeable": True,
+    "desc": "Đĩa ký ức của Jotaro Kujo, dùng để tiến hóa [#t5] Jotaro lên Ace 2 ⭐⭐. Rơi từ Boss Kujo Jotaro (1%)."
 }
 
 EVENT_BOSS_CONFIG = {
@@ -903,6 +967,22 @@ EVOL_CONFIG["t1"] = {
         "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận. "
         "🌑 **Bóng Khái Niệm (20%):** Gây **×1.5 Sát Thương** kèm **10% Máu Tối Đa** mục tiêu và **lập tức xóa kỹ năng của đối phương**, 1 lần/trận."
     ),
+    "bonus_power": 300,
+    "bonus_hp": 300
+}
+EVOL_CONFIG["t5"] = {
+    "id": "t5",
+    "key": "jotaro",
+    "name": "Jotaro Kujo",
+    "title": "[#t5] Jotaro Kujo - Ace 2 ⭐⭐",
+    "ace_level": "Ace 2 ⭐⭐",
+    "required_cards": 0,
+    "required_pulls": 0,
+    "required_shards": 10,
+    "required_item": "dia_ky_uc_jotaro",
+    "evol_gif": T5_GIF_EVOL,
+    "skill_name": "Star Platinum: The World (Rage • ​Ngưỡng Máu Tử • Stand Barrage • Skull Breaker • Time Stop)",
+    "skill_desc": "Rage, Ngưỡng máu tử (máu <10% tự động Time Stop 2 turn), Stand Barrage (40%, x1.5), Skull Breaker (25%, x2.2), Time Stop (20%, đóng băng 2 turn).",
     "bonus_power": 300,
     "bonus_hp": 300
 }
@@ -1337,8 +1417,8 @@ CARD_ALIASES = {
     "mahoraga": "t2", "t2": "t2", "batach": "t2",
     "kizuna": "t3", "t3": "t3", "vampire": "t3", "emperor": "t3",
     "fateria": "t4", "t4": "t4", "khuonmau": "t4", "sophan": "t4"
+    "jotaro": "t5", "t5": "t5", "kujo": "t5", "jotarokujo": "t5", "starplatinum": "t5"
 }
-
 def normalize_card_id(raw_id):
     if raw_id is None:
         return None
@@ -1443,6 +1523,7 @@ def get_player(user_id, username="Visitor"):
         data["shards"].setdefault("kizuna", 0)
         data["shards"].setdefault("fateria", 0)
         data["shards"].setdefault("thanh_loi", 0)
+        data["shards"].setdefault("jotaro", 0)
 
     if "items" not in data or not isinstance(data.get("items"), dict):
         data["items"] = {"thanh_loi": 0, "keo_halloween": 0, "ruong_halloween_e": 0, "quat_giay": 0}
@@ -1451,6 +1532,7 @@ def get_player(user_id, username="Visitor"):
         data["items"].setdefault("keo_halloween", 0)
         data["items"].setdefault("ruong_halloween_e", 0)
         data["items"].setdefault("quat_giay", 0)
+        data["items"].setdefault("dia_ky_uc_jotaro", 0)
 
     if "event_progress" not in data or not isinstance(data.get("event_progress"), dict):
         data["event_progress"] = {"battle": 0, "pvp": 0, "raid": 0, "event_raid": 0, "claimed": False}
@@ -1811,6 +1893,11 @@ def apply_bong_khai_niem_card(target_card: dict):
             pool = [("t3_vampire", "True Vampire"), ("t3_blood", "Blood Chain"), ("t3_dark", "Dark Chain")]
     elif cid_str == "t4":
         pool = [("t4_save_loop", "Save loop"), ("t4_fate_loop", "Fate loop"), ("t4_clone_attack", "Clone attack")]
+    elif cid_str == "t5":
+        if is_ace:
+            pool = [("t5_rage", "Rage"), ("t5_deathstop", "Ngưỡng Máu Tử"), ("t5_barrage", "Stand Barrage"), ("t5_skull", "Skull Breaker"), ("t5_timestop", "Time Stop")]
+        else:
+            pool = [("t5_rage", "Rage"), ("t5_barrage", "Stand Barrage"), ("t5_iggy", "Iggy Throw")]
     elif cid == 18 and is_ace:
         pool = [("sakuya_stun", "Thời Gian Đóng Băng")]
     elif cid == 19 and is_ace:
@@ -1827,6 +1914,8 @@ def apply_bong_khai_niem_card(target_card: dict):
         pool = [("cirno_freeze", "Perfect Freeze")]
     elif cid == 13 and is_ace:
         pool = [("utsuho_nuclear", "Nuclear Spell Card")]
+    elif boss_type == "jotaro":
+        pool = [("stand_barrage", "Stand Barrage"), ("skull_breaker", "Skull Breaker"), ("time_stop", "Time Stop")]
 
     if not pool:
         return f"🌑 **[Bóng Khái Niệm]** **{target_card['name']}** không sở hữu kỹ năng đặc biệt nào để xóa!"
@@ -2428,7 +2517,10 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
             active_raid["task"].cancel()
         active_raid = None
 
-    if boss_type not in ["reimu", "seiki", "mahoraga", "fateria"]:
+    if boss_type not in ["reimu", "seiki", "mahoraga", "fateria", "jotaro"]:
+        boss_type = ["seiki", "reimu", "mahoraga", "fateria", "jotaro"][min(4, int(random.random() * 5))]
+        
+    if boss_type not in ["reimu", "seiki", "mahoraga", "fateria", "jotaro"]:
         boss_spawn_roll = random.random()
         if boss_spawn_roll < (1.0 / 4.0):
             boss_type = "seiki"
@@ -2439,6 +2531,9 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
         else:
             boss_type = "fateria"
 
+    if boss_type == "jotaro":
+        cfg = JOTARO_BOSS_CONFIG
+        
     is_seiki = (boss_type == "seiki")
     is_mahoraga = (boss_type == "mahoraga")
     is_fateria = (boss_type == "fateria")
@@ -2598,6 +2693,9 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
             ),
             inline=False
         )
+    if boss_type == "jotaro":
+        embed = build_jotaro_spawn_embed(cfg, author, is_admin, title)
+        
     embed.set_footer(text=f"Bấm 'Tham Gia' để xuất trận • Miễn phí • {'Admin Force Spawn' if is_admin else 'Boss Tự Nhiên'}")
     view = RaidJoinView(raid_data)
     raid_data["view"] = view
@@ -2711,6 +2809,10 @@ async def execute_raid(channel, raid_data):
         return
 
     boss_cooldown_until = max(boss_cooldown_until, time.time() + BOSS_CONFIG["cooldown_seconds"])
+    
+    if raid_data.get("boss_type") == "jotaro":
+        await execute_jotaro_raid(channel, raid_data)
+        return
 
     combatants = []
     for uid in participants:
@@ -3167,7 +3269,16 @@ async def execute_raid(channel, raid_data):
                     turn_image = _t3["gif"]
                 t3_notif_str = "\n".join(_t3["logs"])
                 t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
-
+                
+            if str(ac["cid"]).lower() == "t5":
+                _t5 = t5_combat_turn(c.setdefault("t5_state", {}), ac, is_ace2=ac.get("is_ace2", False))
+                card_dmg = int(card_dmg * _t5["multiplier"])
+                if _t5["stun"] or _t5["confuse"]:
+                    boss_stunned = True
+                if _t5["gif"] and not turn_image:
+                    turn_image = _t5["gif"]
+                if _t5["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t5["logs"]])
             if str(ac["cid"]).lower() == "t4":
                 t4_st = c.setdefault("t4_state", {})
                 _t4 = t4_combat_turn(t4_st, ac, f"Boss {boss_cfg['name']}", heal_mult=player_heal_mult, enemy_fate_loop_turns=(1 if boss_skills_locked_this_turn else boss_fate_locked_turns))
@@ -4168,10 +4279,19 @@ async def execute_raid(channel, raid_data):
                     t3_notif_str = "\n".join(_t3["logs"])
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
 
-                if str(ac["cid"]).lower() == "t4":
-                    t4_st = c.setdefault("t4_state", {})
-                    _t4 = t4_combat_turn(t4_st, ac, f"Boss {p2_cfg['name']}", heal_mult=1.0, enemy_fate_loop_turns=(1 if boss_skills_locked_this_turn else boss_fate_locked_turns))
-                    card_dmg = int(card_dmg * _t4["multiplier"])
+                    if str(ac["cid"]).lower() == "t5":
+                    _t5 = t5_combat_turn(c.setdefault("t5_state", {}), ac, is_ace2=ac.get("is_ace2", False))
+                    card_dmg = int(card_dmg * _t5["multiplier"])
+                    if _t5["stun"] or _t5["confuse"]:
+                        boss_stunned = True
+                    if _t5["gif"] and not turn_image:
+                        turn_image = _t5["gif"]
+                    if _t5["logs"]:
+                        t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t5["logs"]])    
+                    if str(ac["cid"]).lower() == "t4":
+                        t4_st = c.setdefault("t4_state", {})
+                        _t4 = t4_combat_turn(t4_st, ac, f"Boss {p2_cfg['name']}", heal_mult=1.0, enemy_fate_loop_turns=(1 if boss_skills_locked_this_turn else boss_fate_locked_turns))
+                        card_dmg = int(card_dmg * _t4["multiplier"])
                     if _t4["save_loop_invul"]:
                         c["t4_invul_turn"] = p2_rounds
                         c["t4_saved_hp"] = ac["current_hp"]
@@ -4730,6 +4850,15 @@ async def execute_raid(channel, raid_data):
                 t3_notif_str = "\n".join(_t3["logs"])
                 t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
 
+            if str(ac["cid"]).lower() == "t5":
+                _t5 = t5_combat_turn(c.setdefault("t5_state", {}), ac, is_ace2=ac.get("is_ace2", False))
+                card_dmg = int(card_dmg * _t5["multiplier"])
+                if _t5["stun"] or _t5["confuse"]:
+                    boss_stunned = True
+                if _t5["gif"] and not turn_image:
+                    turn_image = _t5["gif"]
+                if _t5["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t5["logs"]])
             if str(ac["cid"]).lower() == "t4":
                 t4_st = c.setdefault("t4_state", {})
                 _t4 = t4_combat_turn(t4_st, ac, f"Boss {BOSS_PHASE2_CONFIG['name']}", heal_mult=1.0, enemy_fate_loop_turns=(1 if boss_skills_locked_this_turn else boss_fate_locked_turns))
@@ -6509,7 +6638,8 @@ SHARD_DISPLAY_NAMES = {
     "mahoraga": "Mảnh Mahoraga",
     "kizuna": "Mảnh Kizuna",
     "fateria": "Fateria Shards",
-    "thanh_loi": "Thánh Lõi"
+    "thanh_loi": "Thánh Lõi",
+    "jotaro" = "Jotaro Shards"
 }
 
 def normalize_shard_key(raw: str):
@@ -6524,6 +6654,8 @@ def normalize_shard_key(raw: str):
         return "fateria"
     if s in ["thanh_loi", "thanhloi", "core", "loi"]:
         return "thanh_loi"
+    if s in ["jotaro", "t5", "kujo", "jotaro_shard"]:
+        return "jotaro"    
     return None
 
 def do_remove_shard(target_player: dict, s_key: str, so_luong: int):
@@ -6549,6 +6681,7 @@ def do_remove_shard(target_player: dict, s_key: str, so_luong: int):
     app_commands.Choice(name="Mảnh Mahoraga (mahoraga)", value="mahoraga"),
     app_commands.Choice(name="Mảnh Kizuna (kizuna)", value="kizuna"),
     app_commands.Choice(name="Fateria Shards (fateria)", value="fateria"),
+    app_commands.Choice(name="Jotaro Shards (jotaro)", value="jotaro"),
     app_commands.Choice(name="Thánh Lõi (thanh_loi)", value="thanh_loi")
 ])
 async def slash_admin_remove_shard(interaction: discord.Interaction, nguoi_dung: discord.Member, loai_shard: str, so_luong: int = 1):
@@ -6816,12 +6949,20 @@ class EvolSelectView(discord.ui.View):
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
         await do_evolve_interaction(interaction, self.player, "t1")
+    @discord.ui.button(label="⏱️ [#t5] Tiến Hóa Jotaro Ace 2 (10 Mảnh + Đĩa Ký Ức)", style=discord.ButtonStyle.primary, emoji="⭐", row=4)
+    async def button_evol_jotaro(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
+            return
+        await do_evolve_interaction(interaction, self.player, "t5") 
         
 def execute_card_evolution(player, cid: Union[int, str]):
     if str(cid).strip().lower() in ("t3", "kizuna", "vampire", "emperor"):
         return execute_kizuna_ace2(player)
     if str(cid).strip().lower() in ("t1", "seiki", "dephap", "toannang"):
         return execute_seiki_ace2(player)
+    if str(cid).strip().lower() in ("t5", "jotaro", "kujo"):
+        return execute_jotaro_ace2(player)  
 
     cfg = EVOL_CONFIG.get(cid)
     if not cfg:
@@ -6929,6 +7070,8 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             cid_target = "t3"
         elif nv_clean in ("t1", "#t1", "seiki", "dephap", "toannang"):
             cid_target = "t1"
+        elif nv_clean in ("t5", "#t5", "jotaro", "kujo"):
+            cid_target = "t5"
 
     if cid_target:
         success, err_msg, embed = execute_card_evolution(player, cid_target)
@@ -7131,6 +7274,26 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
         ),
         inline=False
     )
+     _j_ace = is_card_ace2(player, "t5")
+    _j_unl = is_card_unlocked(player, "t5") or player.get("inventory", {}).get("t5", 0) > 0
+    _j_sh = player.get("shards", {}).get("jotaro", 0)
+    _j_dk = player.get("items", {}).get("dia_ky_uc_jotaro", 0)
+    if _j_ace:
+        _j_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐"
+    elif _j_unl and _j_sh >= 10 and _j_dk >= 1:
+        _j_status = "🟢 SẴN SÀNG TIẾN HÓA!"
+    else:
+        _j_status = f"🔴 Chưa đủ (Mở thẻ #t5: {'✅' if _j_unl else '❌'} | Mảnh: {_j_sh}/10 | Đĩa Ký Ức: {_j_dk}/1)"
+    embed.add_field(
+        name="⏱️ [#t5] Jotaro Kujo (Ace 2 - Điều kiện đặc biệt):",
+        value=(
+            f"• Trạng thái: **{_j_status}**\n"
+            "• Điều kiện: đã có thẻ #t5 (Ace 1) + **10 Mảnh Jotaro** + **1 Đĩa Ký Ức Jotaro 💿**\n"
+            "• Buff Ace: **+300 ATK** & **+300 HP**\n"
+            "• Kỹ năng: **Rage** • **Ngưỡng Máu Tử** (Time Stop khi <10% máu) • **Stand Barrage** • **Skull Breaker** • **Time Stop**"
+        ),
+        inline=False
+    )
     embed.set_footer(text="Bấm nút chọn hoặc dùng /evol kèm ID nhân vật!")
 
     view = EvolSelectView(player, user.id)
@@ -7152,6 +7315,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     app_commands.Choice(name="[#23] Cirno (Ace 2 - Cần 60 thẻ, Perfect Freeze)", value="23"),
     app_commands.Choice(name="[#13] Utsuho Reiuji (Ace 2 - Cần 30 thẻ, Nuclear Spell Card)", value="13"),
     app_commands.Choice(name="[#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Cần Ace2 Marisa + Reimu + Sakuya & 10 Mảnh Seiki)", value="t1"),
+    app_commands.Choice(name="[#t5] Jotaro Kujo (Ace 2 - Cần Ace 1 + 10 Mảnh + Đĩa Ký Ức)", value="t5"),
     app_commands.Choice(name="[#t3] Kizuna the emperor of vampire (Ace 2 - Cần 1 Thánh Lõi)", value="t3")
 ])
 async def slash_evol(interaction: discord.Interaction, id_hoac_ten: str = None):
@@ -7476,7 +7640,7 @@ async def handle_collection(ctx_or_interaction):
 
     t_lines = []
     shards_cnt = player.get("shards", {}).get("seiki", 0)
-    for t_cid in ["t1", "t2", "t3", "t4"]:
+    for t_cid in ["t1", "t2", "t3", "t4", "t5"]:
         if t_cid in CARDS_DATA:
             t_card = CARDS_DATA[t_cid]
             t_cnt = player["inventory"].get(t_cid, 0)
@@ -7501,6 +7665,11 @@ async def handle_collection(ctx_or_interaction):
                 t_shard_info = f"   └ 🩸 **Mảnh Kizuna:** `{kizuna_shards}/15` | 👑 **Thánh Lõi:** `{thanh_loi_shards}/1`"
                 if kizuna_shards >= 15:
                     t_shard_info += " ✨ *(Đủ 15 mảnh! Dùng `/t translate loai_shard:kizuna` để đổi ngay!)*"
+             elif t_cid == "t5":
+                j_shards = player.get("shards", {}).get("jotaro", 0)
+                t_shard_info = f"   └ ⏱️ **Jotaro Shards:** `{j_shards}/15` mảnh"
+                if j_shards >= 15:
+                    t_shard_info += " ✨ *(Đủ 15 mảnh! Dùng `/t translate loai_shard:jotaro` để đổi ngay!)*"       
             elif t_cid == "t4":
                 fateria_shards = player.get("shards", {}).get("fateria", 0)
                 t_shard_info = f"   └ ⏳ **Mảnh Fateria:** `{fateria_shards}/20` mảnh"
@@ -7561,6 +7730,10 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
         shard_key = "fateria"
         target_card_id = "t4"
         needed_shards = 20
+    elif shard_key in ["jotaro", "t5", "kujo", "jotaro_shard", "jotarokujo"]:
+        shard_key = "jotaro"
+        target_card_id = "t5"
+        needed_shards = 15
     else:
         msg = f"❌ Loại mảnh `{loai_shard}` không tồn tại! Hiện tại có: `seiki` (10 mảnh), `mahoraga` (10 mảnh), `kizuna` (15 mảnh) và `fateria` (20 mảnh)."
         if isinstance(ctx_or_interaction, discord.Interaction):
@@ -7594,6 +7767,29 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
     player["inventory"][target_card_id] = player["inventory"].get(target_card_id, 0) + 1
     save_player(player)
 
+    if target_card_id == "t5":
+        embed = discord.Embed(
+            title="⏱️ QUY ĐỔI THÀNH CÔNG: JOTARO KUJO - STAR PLATINUM!",
+            description=(
+                f"✨ **Chúc mừng {user.mention}!** Bạn đã dung hợp thành công **15 Jotaro Shards**!\n\n"
+                f"🎴 **THẺ BÀI NHẬN ĐƯỢC:** **[T] #t5 Jotaro Kujo (Ace 1)**\n"
+                f"• **Chỉ số:** ⚔️ Power: **{card_info['power']:,}** | ❤️ HP: **{card_info['hp']:,}**\n"
+                f"• 😡 **Passive - Rage:** Máu dưới 50% ➜ ×1.2 sát thương đánh thường trong 2 turn\n"
+                f"• 👊 **Skill 1 - Stand Barrage (40%):** ×1.5 DMG (tối đa 2 lần/trận)\n"
+                f"• 🐕 **Skill 2 - Iggy Throw (40%):** đối phương bối rối, không đánh trả lượt đó (1 lần/trận)\n\n"
+                f"📦 **Kho mảnh còn lại:** `{shards_dict[shard_key]} Jotaro Shards`\n"
+                f"🎒 **Kho đồ hiện tại:** `{player['inventory'][target_card_id]} lá`"
+            ),
+            color=0x1D4ED8
+        )
+        embed.set_image(url=card_info["unlock_gif"])
+        embed.set_footer(text="Dùng /team add id_the:t5 để đưa Jotaro vào đội hình!")
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=embed)
+        else:
+            await ctx_or_interaction.send(embed=embed)
+        return
+        
     if target_card_id == "t4":
         embed = discord.Embed(
             title="⏳ QUY ĐỔI THÀNH CÔNG: FATERIA – KHUÔN MẪU CỦA SỐ PHẬN!",
@@ -7734,6 +7930,18 @@ async def handle_view_shards(ctx_or_interaction):
         ),
         inline=False
     )
+    jotaro_shards = shards_dict.get("jotaro", 0)
+    embed.add_field(
+        name="⏱️ Mảnh Jotaro Kujo (Star Platinum):",
+        value=(
+            f"• Hiện có: **`{jotaro_shards}/15` mảnh** (Kho thẻ #t5: {player['inventory'].get('t5', 0)} lá)\n"
+            f"• Tiến độ: `{get_hp_bar(min(15, jotaro_shards), 15)}`\n"
+            f"• Đổi thẻ: `/t translate loai_shard:jotaro` khi đủ 15 mảnh\n"
+            f"• Ace 2: cần thêm **10 mảnh** + **Đĩa Ký Ức Jotaro 💿**\n"
+            f"• Nguồn rơi: Boss **Kujo Jotaro** (5% mảnh, 1% Đĩa Ký Ức)"
+        ),
+        inline=False
+    )
     embed.set_thumbnail(url=card_info["image"])
     if isinstance(ctx_or_interaction, discord.Interaction):
         await ctx_or_interaction.response.send_message(embed=embed)
@@ -7747,6 +7955,7 @@ class ShardGroup(app_commands.Group, name="t", description="Quản lý kho mản
         app_commands.Choice(name="Mảnh Seiki (10 mảnh -> Thẻ [T] #t1 Seiki)", value="seiki"),
         app_commands.Choice(name="Mảnh Mahoraga (10 mảnh -> Thẻ [T] #t2 Mahoraga)", value="mahoraga"),
         app_commands.Choice(name="Mảnh Kizuna (15 mảnh -> Thẻ [T] #t3 Kizuna)", value="kizuna"),
+        app_commands.Choice(name="Mảnh Jotaro (15 mảnh -> Thẻ [T] #t5 Jotaro)", value="jotaro"),
         app_commands.Choice(name="Mảnh Fateria (20 mảnh -> Thẻ [T] #t4 Fateria)", value="fateria")
     ])
     async def slash_t_translate(self, interaction: discord.Interaction, loai_shard: str = "seiki"):
@@ -7978,6 +8187,9 @@ class CharacterCheckView(discord.ui.View):
         t4_btn = discord.ui.Button(label="#t4 Fateria", style=discord.ButtonStyle.success if self.show_t4 else discord.ButtonStyle.secondary, emoji="⏳", row=1)
         t4_btn.callback = self.show_t4_card
         self.add_item(t4_btn)
+        t5_btn = discord.ui.Button(label="#t5 Jotaro", style=discord.ButtonStyle.secondary, emoji="⏱️", row=4)
+        t5_btn.callback = self.show_t5_card
+        self.add_item(t5_btn)
 
         opt_part1 = []
         for i in range(1, 15):
@@ -8147,6 +8359,9 @@ class CharacterCheckView(discord.ui.View):
         self.show_t1, self.show_t2, self.show_t3, self.show_t4, self.show_ace = False, False, False, True, False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+    async def show_t5_card(self, interaction: discord.Interaction):
+        jv = JotaroCardView(self.user_id, self.current_index)
+        await interaction.response.edit_message(embed=jv.get_embed(), view=jv) 
 
     def get_t1_embed(self) -> discord.Embed:
         card = CARDS_DATA["t1"]
@@ -8345,6 +8560,14 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
     show_t3_flag = False
     show_t4_flag = False
 
+    if nhan_vat and str(nhan_vat).strip().lower().replace("#", "") in ("t5", "jotaro", "kujo", "jotarokujo", "jotaro kujo", "starplatinum"):
+        _jv = JotaroCardView(user.id, 0)
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=_jv.get_embed(), view=_jv)
+        else:
+            await ctx_or_interaction.send(embed=_jv.get_embed(), view=_jv)
+        return 
+
     if nhan_vat:
         nv_clean = str(nhan_vat).strip().lower()
         if nv_clean in ("t4", "#t4", "fateria", "sophan", "khuonmau") or "fateria" in nv_clean:
@@ -8534,6 +8757,7 @@ async def handle_battle(ctx_or_interaction):
     p_t3_state = {}
     o_t3_state = {}
     p_t4_state = {}
+    p_t5_state = {}        
     o_fate_lock_turns = 0
     o_ice_spear_turns = 0
     p_seiki_used_turn = -1
@@ -8786,6 +9010,16 @@ async def handle_battle(ctx_or_interaction):
                 turn_image = _t3["gif"]
             turn_actions.extend(_t3["logs"])
 
+        if str(pc["cid"]).lower() == "t5":
+            _t5 = t5_combat_turn(p_t5_state, pc, is_ace2=pc.get("is_ace2", False))
+            curr_pc_power = int(curr_pc_power * _t5["multiplier"])
+            if _t5["stun"] or _t5["confuse"]:
+                stunned_oc = True
+            if _t5["gif"] and not turn_image:
+                turn_image = _t5["gif"]
+            battle_logs.extend(_t5["logs"])
+            turn_actions.extend(_t5["logs"])
+            
         p_t4_save_invul = False
         o_fate_locked_now = False
         if o_fate_lock_turns > 0:
@@ -9228,6 +9462,8 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
     t_t3_state = {}
     c_t4_state = {}
     t_t4_state = {}
+    c_t5_state = {}
+    t_t5_state = {}    
     c_fate_locked_turns = 0
     t_fate_locked_turns = 0
     c_ice_spear_turns = 0
@@ -9580,6 +9816,16 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_image = _t3["gif"]
             turn_actions.extend(_t3["logs"])
 
+        if str(cc["cid"]).lower() == "t5" and not c_skills_locked:
+            _t5 = t5_combat_turn(c_t5_state, cc, is_ace2=cc.get("is_ace2", False))
+            c_curr_power = int(c_curr_power * _t5["multiplier"])
+            if _t5["stun"] or _t5["confuse"]:
+                t_stunned = True
+            if _t5["gif"] and not turn_image:
+                turn_image = _t5["gif"]
+            pvp_logs.extend(_t5["logs"])
+            turn_actions.extend(_t5["logs"])
+            
         if str(cc["cid"]).lower() == "t4" and not c_skills_locked:
             _t4 = t4_combat_turn(c_t4_state, cc, f"**{tc['name']}** ({target.display_name})", heal_mult=c_heal_mult, enemy_fate_loop_turns=t_fate_locked_turns)
             c_curr_power = int(c_curr_power * _t4["multiplier"])
@@ -9784,6 +10030,16 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_image = _t3["gif"]
             turn_actions.extend(_t3["logs"])
 
+        if str(tc["cid"]).lower() == "t5" and not t_skills_locked:
+            _t5 = t5_combat_turn(t_t5_state, tc, is_ace2=tc.get("is_ace2", False))
+            t_curr_power = int(t_curr_power * _t5["multiplier"])
+            if _t5["stun"] or _t5["confuse"]:
+                c_stunned = True
+            if _t5["gif"] and not turn_image:
+                turn_image = _t5["gif"]
+            pvp_logs.extend(_t5["logs"])
+            turn_actions.extend(_t5["logs"])
+            
         if str(tc["cid"]).lower() == "t4" and not t_skills_locked:
             _t4 = t4_combat_turn(t_t4_state, tc, f"**{cc['name']}** ({challenger.display_name})", heal_mult=t_heal_mult, enemy_fate_loop_turns=c_fate_locked_turns)
             t_curr_power = int(t_curr_power * _t4["multiplier"])
@@ -10612,6 +10868,8 @@ async def prefix_boss_status(ctx, *args):
                 b_type = "seiki"
             elif "reimu" in sub:
                 b_type = "reimu"
+            if "jotaro" in sub:
+                b_type = "jotaro"
             await admin_spawn_boss(ctx.channel, ctx.author, boss_type=b_type)
             return
         elif sub in ["admin reset", "reset"]:
@@ -10645,6 +10903,7 @@ async def prefix_boss_status(ctx, *args):
     app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (90k HP / The True Adapt)", value="mahoraga"),
     app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
     app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
+    app_commands.Choice(name="Kujo Jotaro - Stone Ocean (88k HP / 8k DMG)", value="jotaro"),
     app_commands.Choice(name="Ngẫu nhiên tỉ lệ 1/4 giữa 4 Boss", value="random")
 ])
 async def slash_boss_admin(interaction: discord.Interaction, action: str, loai_boss: str = "random"):
@@ -10666,6 +10925,7 @@ async def slash_boss_admin(interaction: discord.Interaction, action: str, loai_b
     app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (90k HP / The True Adapt)", value="mahoraga"),
     app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
     app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
+    app_commands.Choice(name="Kujo Jotaro - Stone Ocean (88k HP / 8k DMG)", value="jotaro"),
     app_commands.Choice(name="Ngẫu nhiên tỉ lệ 1/4 giữa 4 Boss", value="random")
 ])
 async def slash_admin_boss_spawn(interaction: discord.Interaction, loai_boss: str = "random"):
@@ -10833,6 +11093,15 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
                 turn_image = _t3["gif"]
             turn_logs.extend(_t3["logs"])
 
+        if str(pc["cid"]).lower() == "t5":
+            _t5 = t5_combat_turn(pc.setdefault("t5_state", {}), pc, is_ace2=pc.get("is_ace2", False))
+            card_dmg = int(card_dmg * _t5["multiplier"])
+            if _t5["stun"] or _t5["confuse"]:
+                boss_stun_story = True
+            if _t5["gif"] and not turn_image:
+                turn_image = _t5["gif"]
+            turn_logs.extend(_t5["logs"])
+            
         t4_invul_story = False
         if str(pc["cid"]).lower() == "t4":
             t4_st = pc.setdefault("t4_state", {})
@@ -11205,6 +11474,15 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     turn_image = _t3["gif"]
                 turn_logs.extend(_t3["logs"])
 
+            if str(pc["cid"]).lower() == "t5":
+                _t5 = t5_combat_turn(pc.setdefault("t5_state", {}), pc, is_ace2=pc.get("is_ace2", False))
+                card_dmg = int(card_dmg * _t5["multiplier"])
+                if _t5["stun"] or _t5["confuse"]:
+                    boss_stun_story = True
+                if _t5["gif"] and not turn_image:
+                    turn_image = _t5["gif"]
+                turn_logs.extend(_t5["logs"])
+                
             if str(pc["cid"]).lower() == "t4":
                 t4_st = pc.setdefault("t4_state", {})
                 _t4 = t4_combat_turn(t4_st, pc, "Boss Cirno")
@@ -12515,6 +12793,806 @@ async def prefix_admin_give_item(ctx, vat_pham: str = "thanh_loi", so_luong: int
     item_name = ITEMS_DATABASE[clean_vp]["name"]
     await ctx.send(f"🎁 Đã cấp **+{so_luong:,}x {item_name}** cho {target.mention}! (Tổng kho: `{p_items[clean_vp]:,}` cái)")
 
+
+# ==============================================================================
+# [UPDATE JOTARO] HÀM LÕI: KỸ NĂNG THẺ T5, TIẾN HÓA, GIAO DIỆN CHECK, BOSS RAID
+# ==============================================================================
+def _jt_cut(s, n=1000):
+    s = str(s)
+    return s if len(s) <= n else s[:n - 3] + "..."
+
+def t5_combat_turn(t5_state: dict, card_data: dict, is_ace2: bool = False, skills_locked: bool = False):
+    """Kỹ năng thẻ [#t5] Jotaro. Trả về dict: multiplier, stun (đóng băng đối thủ), confuse (đối thủ bối rối), gif, logs."""
+    logs = []
+    gif = None
+    multiplier = 1.0
+    stun = False
+    confuse = False
+    erased = card_data.get("erased_skill")
+    max_hp = card_data.get("max_hp", card_data.get("hp", 6200))
+    cur_hp = card_data.get("current_hp", max_hp)
+    passive = CARDS_DATA["t5"]["passive"]
+    tag = "[Ace 2] [#t5] Jotaro" if is_ace2 else "[Nhóm T] [#t5] Jotaro"
+
+    # 0. Time Stop đang duy trì từ turn trước
+    if t5_state.get("stop_remaining", 0) > 0:
+        t5_state["stop_remaining"] -= 1
+        stun = True
+        gif = T5_GIF_TIMESTOP
+        logs.append(f"⏱️ **{tag}** - **Time Stop** vẫn đang duy trì! Đối thủ bị **NGƯNG ĐỘNG** trong hiệp này!")
+
+    # 1. Passive Rage (1 lần/trận): máu < 50% -> x1.2 đánh thường trong 2 turn
+    if erased != "t5_rage" and not t5_state.get("rage_used") and cur_hp < max_hp * passive["hp_pct"]:
+        t5_state["rage_used"] = True
+        t5_state["rage_turns"] = passive["turns"]
+        gif = passive["gif"]
+        logs.append(f"😡 **{tag}** - **Rage**: Máu dưới 50%! Kích hoạt buff **×{passive['multiplier']} sát thương đánh thường** trong **{passive['turns']} turn**!")
+
+    # 2. Ace 2: Ngưỡng máu tử (1 lần/trận): máu < 10% -> Time Stop 2 turn
+    if is_ace2 and erased != "t5_deathstop" and not t5_state.get("deathstop_used") and cur_hp < max_hp * 0.10:
+        t5_state["deathstop_used"] = True
+        t5_state["stop_remaining"] = 1
+        stun = True
+        gif = T5_GIF_TIMESTOP
+        logs.append(f"⏳ **{tag}** - **Ngưỡng Máu Tử**: Máu dưới 10%! **STAR PLATINUM THE WORLD!** Đóng băng toàn bộ mục tiêu trong **2 turn**!")
+
+    # 3. Roll kỹ năng chủ động (tối đa 1 chiêu / lượt)
+    used_skill = False
+    if not skills_locked:
+        options = []
+        if erased != "t5_barrage" and t5_state.get("barrage_uses", 0) < 2:
+            options.append(("barrage", 0.40))
+        if not is_ace2:
+            if erased != "t5_iggy" and t5_state.get("iggy_uses", 0) < 1:
+                options.append(("iggy", 0.40))
+        else:
+            if erased != "t5_skull" and t5_state.get("skull_uses", 0) < 1:
+                options.append(("skull", 0.25))
+            if erased != "t5_timestop" and t5_state.get("stop_uses", 0) < 2:
+                options.append(("timestop", 0.20))
+        roll = random.random()
+        acc = 0.0
+        for key, chance in options:
+            acc += chance
+            if roll < acc:
+                used_skill = True
+                if key == "barrage":
+                    t5_state["barrage_uses"] = t5_state.get("barrage_uses", 0) + 1
+                    multiplier = 1.5
+                    gif = T5_GIF_BARRAGE_A2 if is_ace2 else T5_GIF_BARRAGE_A1
+                    logs.append(f"👊 **{tag}** tung **Stand Barrage** (40%)! Star Platinum đấm liên hoàn gây **×1.5 DMG**! *(Lần {t5_state['barrage_uses']}/2)*")
+                elif key == "iggy":
+                    t5_state["iggy_uses"] = t5_state.get("iggy_uses", 0) + 1
+                    confuse = True
+                    gif = T5_GIF_IGGY
+                    logs.append(f"🐕 **{tag}** thi triển **Iggy Throw** (40%)! Ném Iggy khiến đối phương **bối rối, không thể đánh trả** trong lượt này!")
+                elif key == "skull":
+                    t5_state["skull_uses"] = t5_state.get("skull_uses", 0) + 1
+                    multiplier = 2.2
+                    gif = T5_GIF_SKULL
+                    logs.append(f"💀 **{tag}** tung **Skull Breaker** (25%)! Star Platinum dừng thời gian rồi nghiền nát sọ đối phương, **×2.2 DMG**!")
+                else:
+                    t5_state["stop_uses"] = t5_state.get("stop_uses", 0) + 1
+                    t5_state["stop_remaining"] = 1
+                    stun = True
+                    gif = T5_GIF_TIMESTOP
+                    logs.append(f"⏱️ **{tag}** hô vang **STAR PLATINUM THE WORLD!** (20%) Đóng băng đối thủ trong **2 turn**! *(Lần {t5_state['stop_uses']}/2)*")
+                break
+
+    # 4. Rage chỉ buff ĐÁNH THƯỜNG (lượt không dùng chiêu)
+    if t5_state.get("rage_turns", 0) > 0:
+        if not used_skill:
+            multiplier = passive["multiplier"]
+            logs.append(f"😡 **{tag}** đang trong **Rage**: đòn đánh thường ×{passive['multiplier']} sát thương! (Còn {t5_state['rage_turns'] - 1} turn sau hiệp này)")
+        t5_state["rage_turns"] -= 1
+
+    return {"multiplier": multiplier, "stun": stun, "confuse": confuse, "gif": gif, "logs": logs}
+
+
+def execute_jotaro_ace2(player):
+    """Ace 2 [#t5] Jotaro: cần thẻ Ace 1 + 10 Jotaro shards + 1 Đĩa Ký Ức Jotaro."""
+    if is_card_ace2(player, "t5"):
+        return False, "⚠️ **[#t5] Jotaro Kujo** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
+    if not is_card_unlocked(player, "t5") and player.get("inventory", {}).get("t5", 0) <= 0:
+        return False, (
+            "❌ **Bạn chưa mở khóa thẻ [#t5] Jotaro Kujo (Ace 1)!**\n"
+            "• Thu thập **15 Jotaro Shards** rồi dùng `/t translate loai_shard:jotaro` để đổi thẻ gốc trước."
+        ), None
+    shards = player.setdefault("shards", {})
+    items = player.setdefault("items", {})
+    cur_sh = shards.get("jotaro", 0)
+    cur_dk = items.get("dia_ky_uc_jotaro", 0)
+    if cur_sh < 10 or cur_dk < 1:
+        return False, (
+            "❌ **Chưa đủ nguyên liệu tiến hóa Jotaro Ace 2!**\n"
+            f"• Jotaro Shards: **{cur_sh}/10**\n"
+            f"• Đĩa Ký Ức Jotaro 💿: **{cur_dk}/1**\n"
+            "💡 *Nguồn rơi: Boss Kujo Jotaro (5% mảnh, 1% Đĩa Ký Ức).*"
+        ), None
+    shards["jotaro"] = cur_sh - 10
+    items["dia_ky_uc_jotaro"] = cur_dk - 1
+    player.setdefault("evolutions", {})["t5"] = 2
+    save_player(player)
+
+    embed = discord.Embed(
+        title="🌟 TIẾN HÓA THÀNH CÔNG: [#t5] JOTARO KUJO - ACE 2 ⭐⭐!",
+        description=(
+            "⏱️ **STAR PLATINUM THE WORLD - BỘ KỸ NĂNG ACE 2:**\n\n"
+            "😡 **Rage:** Máu dưới 50% ➜ ×1.2 sát thương đánh thường trong 2 turn\n"
+            "⏳ **Ngưỡng Máu Tử:** Máu dưới 10% ➜ Time Stop, đóng băng mọi mục tiêu 2 turn\n"
+            "👊 **Stand Barrage (40%):** ×1.5 DMG (tối đa 2 lần/trận)\n"
+            "💀 **Skull Breaker (25%):** ×2.2 DMG (1 lần/trận)\n"
+            "⏱️ **Time Stop (20%):** Đóng băng mục tiêu 2 turn (tối đa 2 lần/trận)\n\n"
+            f"📉 **Chi phí:** 10 Jotaro Shards (còn `{shards['jotaro']}`) + 1 Đĩa Ký Ức (còn `{items['dia_ky_uc_jotaro']}`)\n"
+            "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn!"
+        ),
+        color=0x1D4ED8
+    )
+    embed.set_image(url=T5_GIF_EVOL)
+    embed.set_footer(text="Touhou Evolution System • Jotaro Ace 2 Activated • Card ID #t5")
+    return True, "", embed
+
+
+class JotaroCardView(discord.ui.View):
+    """Giao diện check/card_info cho thẻ #t5 (Ace 1 hiện GIF mở khóa, Ace 2 hiện GIF tiến hóa)."""
+    def __init__(self, user_id=None, back_index: int = 0, show_ace: bool = False):
+        super().__init__(timeout=180)
+        self.user_id = user_id
+        self.back_index = back_index
+        self.show_ace = show_ace
+        self._build()
+
+    def _build(self):
+        self.clear_items()
+        if self.show_ace:
+            toggle = discord.ui.Button(label="⭐ Xem Bản Ace 1", style=discord.ButtonStyle.secondary, emoji="🔄", row=0)
+        else:
+            toggle = discord.ui.Button(label="🌟 Xem Ace 2 ⭐⭐", style=discord.ButtonStyle.success, emoji="✨", row=0)
+        toggle.callback = self.on_toggle
+        self.add_item(toggle)
+        back = discord.ui.Button(label="📖 Quay lại danh sách nhân vật", style=discord.ButtonStyle.primary, row=0)
+        back.callback = self.on_back
+        self.add_item(back)
+
+    def get_embed(self):
+        card = CARDS_DATA["t5"]
+        player = get_player(self.user_id) if self.user_id else None
+        lvl = player.get("level", 1) if player else 1
+        owned = player.get("inventory", {}).get("t5", 0) if player else 0
+        shards = player.get("shards", {}).get("jotaro", 0) if player else 0
+        disks = player.get("items", {}).get("dia_ky_uc_jotaro", 0) if player else 0
+        user_ace = is_card_ace2(player, "t5") if player else False
+        ace = self.show_ace
+        pw = card["power"] + (ACE_POWER_BUFF if ace else 0)
+        hp = card["hp"] + (ACE_HP_BUFF if ace else 0)
+
+        embed = discord.Embed(
+            title="🌟 [Ace 2 ⭐⭐] #t5 JOTARO KUJO (THỨC TỈNH)" if ace else "⏱️ [THẺ ĐẶC BIỆT NHÓM T] #t5 JOTARO KUJO",
+            description=(
+                "🔥 **Đang xem: ACE 2 ⭐⭐** *(+300 ATK / +300 HP)*" if ace else
+                "✨ Mở khóa bằng **15 Jotaro Shards** (`/t translate loai_shard:jotaro`).\n✨ **Có thể tiến hóa Ace 2 ⭐⭐!**"
+            ),
+            color=0x1D4ED8
+        )
+        embed.set_image(url=T5_GIF_EVOL if ace else T5_GIF_UNLOCK)
+        embed.add_field(
+            name="⚔️ SỨC MẠNH & CHỈ SỐ:",
+            value=f"• ⚔️ **ATK:** `{pw:,}` | ❤️ **HP:** `{hp:,}`\n• 🛡️ **Trong đội hình (Lv.{lvl}):** `{pw + (lvl - 1) * 20:,}` ATK | `{hp + (lvl - 1) * 25:,}` HP",
+            inline=False
+        )
+        if ace:
+            skills = (
+                "😡 **Rage (Passive):** Máu <50% ➜ ×1.2 sát thương đánh thường trong 2 turn.\n"
+                "⏳ **Ngưỡng Máu Tử (Passive):** Máu <10% ➜ Time Stop, đóng băng mọi mục tiêu 2 turn.\n"
+                "👊 **Stand Barrage (40%):** ×1.5 DMG (2 lần/trận).\n"
+                "💀 **Skull Breaker (25%):** ×2.2 DMG (1 lần/trận).\n"
+                "⏱️ **Time Stop (20%):** Đóng băng mục tiêu 2 turn (tối đa 2 lần/trận)."
+            )
+        else:
+            skills = (
+                "😡 **Rage (Passive):** Máu <50% ➜ ×1.2 sát thương đánh thường trong 2 turn.\n"
+                "👊 **Stand Barrage (40%):** ×1.5 DMG (2 lần/trận).\n"
+                "🐕 **Iggy Throw (40%):** Đối phương bối rối, không đánh trả lượt đó (1 lần/trận)."
+            )
+        embed.add_field(name="🔮 KỸ NĂNG:", value=skills, inline=False)
+        if player:
+            ace_badge = "🌟 ĐÃ THỨC TỈNH ACE 2" if user_ace else (
+                "🟢 Đủ điều kiện! Dùng `/evol id_hoac_ten:t5`" if (owned > 0 and shards >= 10 and disks >= 1) else "🔴 Chưa đủ điều kiện Ace 2"
+            )
+            embed.add_field(
+                name="🎒 TÚI ĐỒ CỦA BẠN:",
+                value=f"• Sở hữu: **{owned}** lá\n• ⏱️ Jotaro Shards: **{shards}** (đổi thẻ: 15 | Ace 2: 10)\n• 💿 Đĩa Ký Ức: **{disks}**\n• Cảnh giới: **{ace_badge}**",
+                inline=False
+            )
+        embed.set_footer(text="Thẻ nhóm T đặc biệt • Bấm nút để chuyển Ace 1 / Ace 2")
+        return embed
+
+    async def on_toggle(self, interaction: discord.Interaction):
+        self.show_ace = not self.show_ace
+        self._build()
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    async def on_back(self, interaction: discord.Interaction):
+        v = CharacterCheckView(current_index=self.back_index, user_id=self.user_id)
+        await interaction.response.edit_message(embed=v.get_current_embed(), view=v)
+
+
+def build_jotaro_spawn_embed(cfg, author, is_admin, title):
+    reimu_line = f"🌸 **Reimu:** *\"{cfg['reimu_quote']}\"*\n\n"
+    admin_line = f"👑 **Được triệu hồi bởi Admin:** {author.mention}\n\n" if (is_admin and author is not None) else ""
+    embed = discord.Embed(title=title, description=f"{admin_line}{reimu_line}⏱️ **{cfg['name']}**\n*{cfg['desc']}*", color=0x1D4ED8)
+    embed.set_image(url=cfg["image"])
+    embed.add_field(name="❤️ Máu Boss (HP):", value=f"**{cfg['hp']:,} HP** *(Single Phase)*", inline=True)
+    embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"**{cfg['power']:,} DMG** *(chia đều tiền tuyến)*", inline=True)
+    embed.add_field(name=f"👥 Người Tham Gia (0/{cfg['max_players']}):", value="Chưa có ai", inline=False)
+    embed.add_field(
+        name="⏱️ Nội Tại & Kỹ Năng (Star Platinum: The World):",
+        value=(
+            "• 😡 **Rage (Passive):** Máu dưới 50% ➜ ×1.1 sát thương đánh thường trong 2 turn.\n"
+            "• ⏳ **Ngưỡng Máu Tử (Passive):** Máu dưới 10% ➜ Time Stop, đóng băng toàn bộ mục tiêu **1 turn**!\n"
+            "• 👊 **Stand Barrage (25%):** ×1.5 DMG chia đều lên tiền tuyến.\n"
+            "• 💀 **Skull Breaker (15% - 1 lần/trận):** ×2.2 DMG lên **MỘT** mục tiêu.\n"
+            "• ⏱️ **Time Stop (20%):** Đóng băng toàn bộ mục tiêu **2 turn**!"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="🎁 Phần Thưởng Hạ Gục Boss:",
+        value=(
+            "• 🎟️ **100%** nhận **10 Vé Pull**\n"
+            "• ⏱️ **5%** rơi **+1 Jotaro Shard**\n"
+            "• 💿 **1%** rơi **+1 Đĩa Ký Ức Jotaro**\n"
+            f"• ✨ **50%** nhận lượng XP = **×{JOTARO_XP_DROP_MULT} XP hiện tại** của bạn!"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
+        value="Có **2 phút (120 giây)** để bấm **'Tham Gia'**! Hết giờ sẽ tự khai màn nếu có người tham gia, không có ai thì Jotaro bỏ đi.",
+        inline=False
+    )
+    return embed
+
+
+def _jt_player_attack(c, ac, rnd, B, notes):
+    """Tính sát thương + kỹ năng của 1 thẻ người chơi lên Boss Jotaro (hỗ trợ toàn bộ thẻ cũ)."""
+    cid = ac["cid"]
+    cid_s = str(cid).lower()
+    is_ace = ac.get("is_ace2", False)
+    nm = f"**{ac['name']}** ({c['username']})"
+    boss_name = JOTARO_BOSS_CONFIG["name"]
+    dmg = ac["power"]
+
+    def setgif(u):
+        if u and not B.get("gif"):
+            B["gif"] = u
+
+    if cid == 18 and is_ace and not c.get("sakuya_stun_used") and random.random() < 0.40:
+        c["sakuya_stun_used"] = True
+        B["stunned"] = True
+        setgif(EVOL_CONFIG[18]["skill_gif"])
+        notes.append(f"⏳ **[Ace 2] Sakuya** {nm} kích hoạt **Thời Gian Đóng Băng** (40%)! Boss bị **STUN**!")
+
+    if cid == 19 and is_ace and not c.get("marisa_spark_used") and random.random() < 0.30:
+        c["marisa_spark_used"] = True
+        dmg = int(dmg * 2.0)
+        setgif(EVOL_CONFIG[19]["skill_gif"])
+        notes.append(f"🌟 **[Ace 2] Marisa** {nm} tung **Master Spark** ×2.0 giáng **{dmg:,} DMG**!")
+
+    if cid == 4 and is_ace:
+        if not c.get("yukari_station_used") and random.random() < 0.30:
+            c["yukari_station_used"] = True
+            dmg = int(dmg * 2.0)
+            setgif(T5_YUKARI_STATION_GIF)
+            notes.append(f"🌌 **[Ace 2] Yukari** {nm} tung **Trip To The Old Station** ×2.0 giáng **{dmg:,} DMG**!")
+        elif not c.get("yukari_lastword_used") and random.random() < 0.25:
+            c["yukari_lastword_used"] = True
+            dmg = int(dmg * 2.5)
+            B["stunned"] = True
+            setgif(T5_YUKARI_LASTWORD_GIF)
+            notes.append(f"👁️ **[Ace 2] Yukari** {nm} kích hoạt **Last Word!** ×2.5 giáng **{dmg:,} DMG** và **STUN Boss**!")
+
+    if cid == 9 and is_ace and not c.get("flandre_used") and random.random() < 0.25:
+        c["flandre_used"] = True
+        raw = int(B["hp"] * 0.30)
+        applied, B["true_accum"], cap_msg = apply_raid_true_damage(raw, B["true_accum"], B["true_cap"], "Ripples of 495 Years (Flandre)")
+        B["hp"] = max(0, B["hp"] - applied)
+        c["total_dmg"] += applied
+        setgif(EVOL_CONFIG[9]["skill_gif"])
+        notes.append(f"🦇 **[Ace 2] Flandre** {nm} kích hoạt **Ripples of 495 Years**! Gây **{applied:,} DMG** chuẩn!")
+        if cap_msg:
+            notes.append(cap_msg)
+
+    if cid == 12 and is_ace:
+        raw = int(B["max_hp"] * 0.03)
+        applied, B["true_accum"], cap_msg = apply_raid_true_damage(raw, B["true_accum"], B["true_cap"], "Thương Đỏ Gungnir (Remilia)")
+        dmg += applied
+        setgif(EVOL_CONFIG[12]["skill_gif"])
+        notes.append(f"🩸 **[Ace 2] Remilia** {nm} - **Gungnir** (thụ động): +**{applied:,} DMG**!")
+
+    if cid == 21 and is_ace and not c.get("reisen_used") and random.random() < 0.25:
+        c["reisen_used"] = True
+        B["mind"] = 4
+        setgif(EVOL_CONFIG[21]["skill_gif"])
+        notes.append(f"🔴 **[Ace 2] Reisen** {nm} kích hoạt **Red Eye Mind Explosion**! Boss ảo giác 4 lượt (20% tự gây sát thương)!")
+
+    if cid == 23 and is_ace and not c.get("cirno_freeze_used") and random.random() < 0.40:
+        c["cirno_freeze_used"] = True
+        B["freeze"] = 2
+        setgif(EVOL_CONFIG[23]["skill_gif"])
+        notes.append(f"❄️ **[Ace 2] Cirno** {nm} kích hoạt **Perfect Freeze**! 2 turn tới Boss có 45% không thể đánh trả!")
+
+    if cid == 13 and is_ace and random.random() < 0.30:
+        dmg = int(dmg * 3.0)
+        B["molten"] = 3
+        setgif(EVOL_CONFIG[13]["skill_gif"])
+        notes.append(f"☢️ **[Ace 2] Utsuho** {nm} tung **Nuclear Spell Card** ×3.0 giáng **{dmg:,} DMG** và nung chảy mặt đất 3 turn!")
+
+    if cid_s == "t1":
+        if is_ace:
+            _t1 = t1_ace2_attack(c, ac, rnd, B["max_hp"], f"Boss {boss_name}", is_boss=True)
+            if _t1.get("multiplier", 1.0) > 1.0:
+                dmg = int(dmg * _t1["multiplier"])
+            if _t1["bonus"]:
+                applied, B["true_accum"], cap_msg = apply_raid_true_damage(_t1["bonus"], B["true_accum"], B["true_cap"], "Cleave (Seiki Ace 2)")
+                dmg += applied
+                if cap_msg:
+                    _t1["logs"].append(cap_msg)
+            if _t1["direct"]:
+                applied, B["true_accum"], cap_msg = apply_raid_true_damage(_t1["direct"], B["true_accum"], B["true_cap"], "Bóng Khái Niệm (Seiki Ace 2)")
+                B["hp"] = max(0, B["hp"] - applied)
+                c["total_dmg"] += applied
+                if cap_msg:
+                    _t1["logs"].append(cap_msg)
+            if _t1.get("invul"):
+                c["seiki_seal_used"] = True
+                c["seiki_used_turn"] = rnd
+                c["seiki_invul_turn"] = rnd
+            if _t1["disable"]:
+                B["erased"], erase_msg = apply_bong_khai_niem_boss("jotaro", 1, B["erased"])
+                _t1["logs"].append(erase_msg)
+            if _t1["heal"]:
+                ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + _t1["heal"])
+            setgif(_t1["gif"])
+            notes.extend(_t1["logs"])
+        elif c.get("seiki_used_turn") != rnd:
+            roll = random.random()
+            if not c.get("seiki_spark_used") and roll < 0.30:
+                c["seiki_spark_used"] = True
+                c["seiki_used_turn"] = rnd
+                dmg = int(dmg * 1.5)
+                setgif(T1_SPARK_GIF)
+                notes.append(f"🌟 **[Nhóm T] Seiki** {nm} bộc phát **Master Spark** ×1.5 giáng **{dmg:,} DMG**!")
+            elif not c.get("seiki_heal_used") and ac["current_hp"] < ac["max_hp"] and random.random() < 0.20:
+                c["seiki_heal_used"] = True
+                c["seiki_used_turn"] = rnd
+                hv = int(ac["max_hp"] * 0.30)
+                ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + hv)
+                setgif(T1_HEAL_GIF)
+                notes.append(f"💚 **[Nhóm T] Seiki** {nm} thi triển **Medicine Sign**! Hồi **+{hv:,} HP**!")
+
+    if cid_s == "t2":
+        hv = int(ac["max_hp"] * 0.05)
+        ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + hv)
+        c["mahoraga_adapt_turns"] = c.get("mahoraga_adapt_turns", 0) + 1
+        adapt = int(min(0.90, c["mahoraga_adapt_turns"] * 0.05) * 100)
+        if random.random() < 0.30:
+            dmg = int(dmg * 1.5)
+            setgif(T2_THOAI_MA_GIF)
+            notes.append(f"🔱 **[Nhóm T] Mahoraga** {nm} Thích Nghi (+{hv:,} HP, kháng {adapt}%) & vung **Thoái Ma Kiếm** ×1.5 giáng **{dmg:,} DMG**!")
+        else:
+            setgif(T2_PASSIVE_GIF)
+            notes.append(f"🔱 **[Nhóm T] Mahoraga** {nm} The True Adapt: +{hv:,} HP, kháng sát thương {adapt}%!")
+
+    if cid_s == "t3":
+        _t3 = t3_combat_turn(c.setdefault("t3_state", {}), ac, rnd, B["max_hp"], f"Boss {boss_name}", is_ace2=is_ace)
+        dmg = int(dmg * _t3["multiplier"])
+        if _t3["bonus_hp_dmg"] > 0:
+            applied, B["true_accum"], cap_msg = apply_raid_true_damage(_t3["bonus_hp_dmg"], B["true_accum"], B["true_cap"], "Dark Chain (Kizuna)")
+            dmg += applied
+            if cap_msg:
+                _t3["logs"].append(cap_msg)
+        setgif(_t3["gif"])
+        notes.extend(_t3["logs"])
+
+    if cid_s == "t4":
+        _t4 = t4_combat_turn(c.setdefault("t4_state", {}), ac, f"Boss {boss_name}", heal_mult=1.0,
+                             enemy_fate_loop_turns=(1 if B["locked_now"] else B["fate"]))
+        dmg = int(dmg * _t4["multiplier"])
+        if _t4["save_loop_invul"]:
+            c["t4_invul_turn"] = rnd
+            c["t4_saved_hp"] = ac["current_hp"]
+        if _t4["fate_loop_triggered"]:
+            B["fate"] = 1
+            B["locked_now"] = True
+        if _t4["ice_spear_triggered"]:
+            B["ice"] = 2
+        setgif(_t4["gif"])
+        notes.extend([f"({c['username']}) {l}" for l in _t4["logs"]])
+
+    if cid_s == "t5":
+        _t5 = t5_combat_turn(c.setdefault("t5_state", {}), ac, is_ace2=is_ace)
+        dmg = int(dmg * _t5["multiplier"])
+        if _t5["stun"] or _t5["confuse"]:
+            B["stunned"] = True
+        setgif(_t5["gif"])
+        notes.extend([f"({c['username']}) {l}" for l in _t5["logs"]])
+
+    return dmg
+
+
+def _jt_boss_hit(c, ac, dmg, B, logs, rnd, normal=False):
+    """Boss đánh 1 thẻ: xử lý miễn thương / phản đòn / kháng sát thương của các thẻ cũ."""
+    cid = ac["cid"]
+    cid_s = str(cid).lower()
+    nm = f"**{ac['name']}** ({c['username']})"
+    if normal and cid == 4 and ac.get("is_ace2") and ac.get("erased_skill") != "yukari_gap" and random.random() < 0.10:
+        B["hp"] = max(0, B["hp"] - dmg)
+        c["total_dmg"] += dmg
+        logs.append(f"🌀 **[Ace 2] Yukari** {nm} kích hoạt **Invisible Gap**! Phản lại **{dmg:,} DMG** vào Boss!")
+        return
+    if cid == 15 and ac.get("is_ace2") and not c.get("reimu_invul_used") and random.random() < 0.40:
+        c["reimu_invul_used"] = True
+        if not B.get("gif"):
+            B["gif"] = EVOL_CONFIG[15]["skill_gif"]
+        logs.append(f"🛡️ **[Ace 2] Reimu** {nm} kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!")
+        return
+    if cid_s == "t1" and (c.get("seiki_invul_turn") == rnd or (not ac.get("is_ace2") and not c.get("seiki_seal_used") and c.get("seiki_used_turn") != rnd and random.random() < 0.40)):
+        c["seiki_seal_used"] = True
+        c["seiki_used_turn"] = rnd
+        if not B.get("gif"):
+            B["gif"] = T1_SEAL_GIF
+        logs.append(f"🛡️ **[#t1] Seiki** {nm} kích hoạt **Fantasy Seal**! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+        return
+    if cid_s == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
+        ref = int(dmg * 0.60)
+        B["hp"] = max(0, B["hp"] - ref)
+        c["total_dmg"] += ref
+        logs.append(f"🛡️ **[Ace 2] Kizuna** {nm} duy trì **Wonder Guard**! Miễn thương, phản lại **{ref:,} DMG (60%)**!")
+        return
+    if cid_s == "t2":
+        adapt = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
+        actual = int(dmg * (1.0 - adapt))
+        ac["current_hp"] -= actual
+        logs.append(f"🛡️ **[#t2] Mahoraga** {nm} Thích Nghi (-{int(adapt * 100)}%), chỉ nhận **{actual:,} DMG**!")
+        return
+    ac["current_hp"] -= dmg
+
+
+async def execute_jotaro_raid(channel, raid_data):
+    cfg = JOTARO_BOSS_CONFIG
+    participants = raid_data["participants"]
+    if not participants:
+        await channel.send("⏱️ Kujo Jotaro đã biến mất vì không có ai nghênh chiến...")
+        return
+
+    # ---------- DỰNG ĐỘI HÌNH ----------
+    combatants = []
+    for uid in participants:
+        p = get_player(uid)
+        lvl_pwr = get_level_atk_buff(p["level"])
+        lvl_hp = get_level_hp_buff(p["level"])
+        team_cids = [cid for cid in p.get("team", []) if cid in CARDS_DATA and not is_card_locked(p, cid)]
+        if len(team_cids) < 3:
+            owned_ids = get_owned_card_ids(p)
+            owned_ids.sort(key=lambda x: CARDS_DATA[x]["power"], reverse=True)
+            for cid in owned_ids:
+                if cid not in team_cids:
+                    team_cids.append(cid)
+                if len(team_cids) >= 3:
+                    break
+            p["team"] = team_cids
+            save_player(p)
+        team_cards = []
+        for cid in team_cids[:3]:
+            card = CARDS_DATA.get(cid)
+            if card:
+                is_ace = is_card_ace2(p, cid)
+                cp = card["power"] + lvl_pwr + (ACE_POWER_BUFF if is_ace else 0)
+                ch = card["hp"] + lvl_hp + (ACE_HP_BUFF if is_ace else 0)
+                team_cards.append({
+                    "cid": cid,
+                    "name": f"[Ace 2 ⭐⭐] #{card['id']} {card['name']}" if is_ace else f"{format_card_id(card['id'])} {card['name']}",
+                    "base_name": card["name"], "rank": card["rank"],
+                    "power": cp, "max_hp": ch, "current_hp": ch, "is_ace2": is_ace
+                })
+        combatants.append({
+            "uid": uid, "username": p["username"], "level": p["level"],
+            "team_cards": team_cards, "current_card_index": 0,
+            "is_alive": len(team_cards) > 0, "total_dmg": 0,
+            "yukari_station_used": False, "yukari_lastword_used": False,
+            "sakuya_stun_used": False, "reimu_invul_used": False, "marisa_spark_used": False,
+            "flandre_used": False, "reisen_used": False, "cirno_freeze_used": False,
+            "seiki_seal_used": False, "seiki_spark_used": False, "seiki_heal_used": False,
+            "seiki_used_turn": -1, "seiki_invul_turn": -1, "t4_invul_turn": -1, "used_turn": -1,
+            "seal_used": False, "bong_used": False, "med_used": False,
+            "mahoraga_adapt_turns": 0, "t3_state": {}, "t4_state": {}, "t5_state": {}
+        })
+
+    max_hp = cfg["hp"]
+    power = cfg["power"]
+    sk = cfg["skills"]
+    B = {
+        "hp": max_hp, "max_hp": max_hp, "stunned": False, "mind": 0, "freeze": 0, "molten": 0,
+        "erased": None, "fate": 0, "locked_now": False, "ice": 0, "gif": None,
+        "true_cap": int(max_hp * 0.50), "true_accum": 0
+    }
+
+    init_embed = discord.Embed(
+        title="⚔️ ĐẠI CHIẾN BẮT ĐẦU: KUJO JOTARO - STONE OCEAN",
+        description=(
+            f"🌸 **Reimu:** *\"{cfg['reimu_quote']}\"*\n\n"
+            f"🔥 **{len(combatants)} Dũng Giả** đã dàn trận nghênh chiến! Theo dõi từng hiệp trực tiếp bên dưới!"
+        ),
+        color=0x1D4ED8
+    )
+    init_embed.set_thumbnail(url=cfg["image"])
+    init_embed.add_field(name=f"❤️ Máu {cfg['name']}:", value=f"`{get_hp_bar(B['hp'], max_hp)}` **{B['hp']:,}/{max_hp:,} HP**", inline=False)
+    battle_msg = await channel.send(embed=init_embed)
+    await asyncio.sleep(2.0)
+
+    rounds = 0
+    max_rounds = 35
+    boss_rage_used = False
+    boss_rage_turns = 0
+    boss_death_used = False
+    boss_skull_used = False
+    players_freeze = 0
+    all_turns = []
+
+    while B["hp"] > 0 and rounds < max_rounds:
+        active = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
+        if not active:
+            break
+        rounds += 1
+        front = [c["team_cards"][c["current_card_index"]] for c in active]
+        B["stunned"] = False
+        B["gif"] = None
+        B["locked_now"] = B["fate"] > 0
+        if B["fate"] > 0:
+            B["fate"] -= 1
+        notes = []
+        boss_fx = []
+
+        # ---------- Hiệu ứng debuff đang đè lên Boss ----------
+        if B["mind"] > 0:
+            B["mind"] -= 1
+            if random.random() < 0.20:
+                B["hp"] = max(0, B["hp"] - power)
+                boss_fx.append(f"🌀 **[Red Eye Mind]** Boss mất kiểm soát, tự gây **{power:,} DMG** lên bản thân! (Còn {B['mind']} lượt)")
+        if B["molten"] > 0:
+            B["molten"] -= 1
+            applied, B["true_accum"], cap_msg = apply_raid_true_damage(int(max_hp * 0.02), B["true_accum"], B["true_cap"], "Bỏng Mặt Đất (Utsuho)")
+            if applied > 0:
+                B["hp"] = max(0, B["hp"] - applied)
+                boss_fx.append(f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Boss **{applied:,} DMG**! (Còn {B['molten']} lượt)")
+        if B["freeze"] > 0:
+            B["freeze"] -= 1
+            if random.random() < 0.45:
+                B["stunned"] = True
+                boss_fx.append(f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%)! (Còn {B['freeze']} lượt duy trì)")
+
+        frozen_now = players_freeze > 0
+        if frozen_now:
+            players_freeze -= 1
+
+        # ---------- Lượt đánh của người chơi ----------
+        round_dmg = 0
+        for c in active:
+            ac = c["team_cards"][c["current_card_index"]]
+            if frozen_now:
+                has_wg = str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0
+                if not has_wg:
+                    notes.append(f"⏱️ **{ac['name']}** ({c['username']}) bị **NGƯNG ĐỘNG** bởi Time Stop, không thể ra đòn!")
+                    continue
+                B["stunned"] = True
+                notes.append(f"🛡️ **[Wonder Guard]** **{ac['name']}** ({c['username']}) miễn nhiễm Time Stop và **PHẢN NGƯỢC** làm Boss bị ngưng động!")
+            d = _jt_player_attack(c, ac, rounds, B, notes)
+            round_dmg += d
+            c["total_dmg"] += d
+
+        B["hp"] = max(0, B["hp"] - round_dmg)
+        player_atk_str = f"Toàn quân gây **{round_dmg:,} DMG** lên Jotaro!" if not frozen_now else f"Toàn quân bị ngưng động! Chỉ gây **{round_dmg:,} DMG**."
+
+        # ---------- Passive của Boss ----------
+        if B["hp"] > 0 and not boss_rage_used and B["hp"] < max_hp * 0.50:
+            boss_rage_used = True
+            boss_rage_turns = cfg["rage_turns"]
+            if not B["gif"]:
+                B["gif"] = T5_GIF_RAGE
+            boss_fx.append(f"😡 **[Rage]** Máu Boss dưới 50%! Buff **×{cfg['rage_mult']} sát thương đánh thường** trong **{cfg['rage_turns']} turn**!")
+        if B["hp"] > 0 and not boss_death_used and B["hp"] < max_hp * 0.10:
+            boss_death_used = True
+            players_freeze = max(players_freeze, 1)
+            B["gif"] = T5_GIF_TIMESTOP
+            boss_fx.append("⏳ **[Ngưỡng Máu Tử]** Máu Boss dưới 10%! **STAR PLATINUM THE WORLD!** Đóng băng toàn bộ mục tiêu **1 turn**!")
+
+        # ---------- Hành động của Boss ----------
+        action_log = ""
+        hit_logs = []
+        if B["hp"] <= 0:
+            action_log = "💥 **Kujo Jotaro đã bị đánh bại! Dòng thời gian trở lại bình thường!**"
+        elif B["stunned"]:
+            action_log = "❄️ Jotaro bị ngưng động/bối rối, không thể ra đòn trong hiệp này!"
+        else:
+            ice_block = False
+            if B["ice"] > 0:
+                B["ice"] -= 1
+                if random.random() < 0.40:
+                    ice_block = True
+            if ice_block:
+                action_log = "❄️ **[Ice spear]** Giáo băng cầm chân Jotaro, Boss không thể tấn công lượt này!"
+            else:
+                n = len(front)
+                chosen = None
+                if not B["locked_now"]:
+                    opts = []
+                    if B["erased"] != "stand_barrage":
+                        opts.append(("barrage", sk["stand_barrage"]["chance"]))
+                    if B["erased"] != "skull_breaker" and not boss_skull_used:
+                        opts.append(("skull", sk["skull_breaker"]["chance"]))
+                    if B["erased"] != "time_stop":
+                        opts.append(("timestop", sk["time_stop"]["chance"]))
+                    roll = random.random()
+                    acc = 0.0
+                    for key, ch in opts:
+                        acc += ch
+                        if roll < acc:
+                            chosen = key
+                            break
+                elif B["locked_now"]:
+                    action_log = "⛓️ **[Fate loop]** Kỹ năng của Jotaro đang bị khóa, chỉ có thể đánh thường!\n"
+                if chosen == "barrage":
+                    B["gif"] = sk["stand_barrage"]["gif"]
+                    total = int(power * sk["stand_barrage"]["multiplier"])
+                    each = max(100, total // n)
+                    action_log += f"👊 **[KỸ NĂNG] Jotaro** tung **Stand Barrage (25%)**! Star Platinum đấm liên hoàn **{total:,} DMG**, chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!"
+                    for c in active:
+                        _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds)
+                elif chosen == "skull":
+                    boss_skull_used = True
+                    B["gif"] = sk["skull_breaker"]["gif"]
+                    total = int(power * sk["skull_breaker"]["multiplier"])
+                    tc = random.choice(active)
+                    tac = tc["team_cards"][tc["current_card_index"]]
+                    action_log += f"💀 **[KỸ NĂNG] Jotaro** tung **Skull Breaker (15%)**! Dừng thời gian rồi nghiền nát **{tac['name']}** ({tc['username']}) với **{total:,} DMG**!"
+                    _jt_boss_hit(tc, tac, total, B, hit_logs, rounds)
+                elif chosen == "timestop":
+                    B["gif"] = sk["time_stop"]["gif"]
+                    players_freeze = sk["time_stop"]["turns"]
+                    action_log += f"⏱️ **[KỸ NĂNG] Jotaro** hô vang **STAR PLATINUM THE WORLD! (20%)** Toàn bộ mục tiêu bị **NGƯNG ĐỘNG {players_freeze} turn**!"
+                else:
+                    mult = cfg["rage_mult"] if boss_rage_turns > 0 else 1.0
+                    total = int(power * mult)
+                    each = max(100, total // n)
+                    rage_txt = f" *(Rage ×{cfg['rage_mult']})*" if boss_rage_turns > 0 else ""
+                    action_log += f"⚔️ Jotaro đánh thường tổng **{total:,} DMG**{rage_txt}, chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!"
+                    for c in active:
+                        _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds, normal=True)
+        if hit_logs:
+            action_log += "\n" + "\n".join(hit_logs)
+        if boss_rage_turns > 0:
+            boss_rage_turns -= 1
+
+        # ---------- Thay thẻ / đổi sát thương ----------
+        tick_wonder_guard(active)
+        restore_t4_save_loop(active, rounds)
+        push_logs = []
+        for c in active:
+            ac = c["team_cards"][c["current_card_index"]]
+            if ac["current_hp"] <= 0:
+                ac["current_hp"] = 0
+                trade = ac["power"]
+                B["hp"] = max(0, B["hp"] - trade)
+                c["total_dmg"] += trade
+                push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{ac['name']}** ({c['username']}) trước khi gục đã đổi **{trade:,} DMG** lên Boss!")
+                c["current_card_index"] += 1
+                if c["current_card_index"] < len(c["team_cards"]):
+                    push_logs.append(f"💀 **{ac['name']}** gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
+                else:
+                    c["is_alive"] = False
+                    push_logs.append(f"☠️ **{c['username']}** đã hết thẻ bài và tử trận!")
+
+        status = []
+        for c in combatants:
+            if c["current_card_index"] < len(c["team_cards"]):
+                cur = c["team_cards"][c["current_card_index"]]
+                status.append(f"• **{c['username']}**: {cur['name']} (❤️ {max(0, cur['current_hp']):,}/{cur['max_hp']:,} HP)")
+            else:
+                status.append(f"• **{c['username']}**: ☠️ Đã tử trận")
+
+        status_str = "\n".join(status)
+        fields = [("💥 Tiền Tuyến Tấn Công:", _jt_cut(player_atk_str), False)]
+        if notes:
+            fields.append(("✨ Kỹ Năng Thẻ Bài:", _jt_cut("\n".join(notes)), False))
+        if boss_fx:
+            fields.append(("🌀 Hiệu Ứng / Passive Boss:", _jt_cut("\n".join(boss_fx)), False))
+        fields.append(("👺 Phản Kích Của Boss:", _jt_cut(action_log), False))
+        if push_logs:
+            fields.append(("🔄 Thay Đổi Tiền Tuyến:", _jt_cut("\n".join(push_logs)), False))
+        fields.append(("🛡️ Tình Trạng Tiền Tuyến:", _jt_cut(status_str), False))
+
+        round_embed = discord.Embed(
+            title=f"⏱️ HIỆP {rounds} - KUJO JOTARO (STONE OCEAN)",
+            description=f"❤️ **Máu Boss:** `{get_hp_bar(B['hp'], max_hp)}` **{B['hp']:,}/{max_hp:,} HP**",
+            color=0x1D4ED8
+        )
+        for fname, fval, finl in fields:
+            round_embed.add_field(name=fname, value=fval, inline=finl)
+        if B["gif"]:
+            round_embed.set_image(url=B["gif"])
+        else:
+            round_embed.set_thumbnail(url=cfg["image"])
+
+        all_turns.append({
+            "round": rounds, "phase": 1,
+            "title": f"Hiệp {rounds}: {cfg['name']}",
+            "short_label": f"H{rounds} - Jotaro",
+            "short_desc": f"Boss còn {B['hp']:,} HP",
+            "desc": f"⏱️ **{cfg['name']}**\n❤️ Máu Boss: `{get_hp_bar(B['hp'], max_hp)}` **{B['hp']:,}/{max_hp:,} HP**",
+            "color": 0x1D4ED8,
+            "image": B["gif"],
+            "fields": fields
+        })
+        try:
+            await battle_msg.edit(embed=round_embed)
+        except Exception:
+            pass
+        if B["hp"] <= 0:
+            break
+        await asyncio.sleep(3.0)
+
+    # ---------- KẾT QUẢ ----------
+    if B["hp"] > 0:
+        fail = discord.Embed(
+            title="❌ QUÂN ĐOÀN THẤT THỦ TRƯỚC KUJO JOTARO!",
+            description=f"Dòng thời gian đã bị Jotaro làm chủ sau {rounds} hiệp!\nBoss còn **{B['hp']:,} HP**.\n⏳ Hồi chiêu **15 phút** đã kích hoạt!",
+            color=0xEF4444
+        )
+        fail.set_thumbnail(url=cfg["image"])
+        await channel.send(embed=fail, view=OpenDetailsView(all_turns))
+        return
+
+    total_raid_dmg = sum(c["total_dmg"] for c in combatants)
+    lines = []
+    for uid in participants:
+        p = get_player(uid)
+        old_lvl = p.get("level", 1)
+        p["pull_tickets"] += 10.0
+        got = ["🎟️ **+10 Vé Pull** (100%)"]
+        p_shards = p.setdefault("shards", {})
+        p_items = p.setdefault("items", {})
+        if random.random() < 0.05:
+            p_shards["jotaro"] = p_shards.get("jotaro", 0) + 1
+            got.append(f"⏱️ **+1 Jotaro Shard** (5%! Kho: {p_shards['jotaro']}/15)")
+        if random.random() < 0.01:
+            p_items["dia_ky_uc_jotaro"] = p_items.get("dia_ky_uc_jotaro", 0) + 1
+            got.append(f"💿 **+1 Đĩa Ký Ức Jotaro** (1% Cực Hiếm! Kho: {p_items['dia_ky_uc_jotaro']})")
+        if random.random() < 0.50:
+            gain_xp = int(p.get("xp", 0) * JOTARO_XP_DROP_MULT)
+            if gain_xp > 0:
+                p["xp"] += gain_xp
+                got.append(f"✨ **+{gain_xp:,} XP** (50% - ×{JOTARO_XP_DROP_MULT} XP hiện tại)")
+        for n_ in update_daily_quest_progress(p, "raid", 1) + update_event_quest_progress(p, "raid", 1):
+            got.append(n_)
+        save_player(p)
+        new_lvl = p.get("level", 1)
+        lvl_txt = f" 🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+        lines.append(f"🏆 **{p['username']}**:{lvl_txt}\n   └ " + "\n   └ ".join(got))
+
+    final = discord.Embed(
+        title="⚔️ KẾT QUẢ ĐẠI CHIẾN: KUJO JOTARO - STONE OCEAN!",
+        description=(
+            "🌸 **Reimu thở phào:** *\"Phù... cuối cùng cũng khiến hắn ngừng lại. Thời gian trôi trở lại rồi!\"*\n\n"
+            f"🎉 Đội quân đã hạ gục **Kujo Jotaro** sau **{rounds} hiệp**!\n"
+            f"💥 **Tổng Sát Thương:** **{total_raid_dmg:,} DMG**\n"
+            "⏳ **Hồi chiêu Boss tiếp theo:** **15 phút**"
+        ),
+        color=0x10B981
+    )
+    final.set_thumbnail(url=cfg["image"])
+    final.add_field(name="🎁 Phần Thưởng:", value=_jt_cut("\n".join(lines)), inline=False)
+    await channel.send(embed=final, view=OpenDetailsView(all_turns))
 
 import sys
 
