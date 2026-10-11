@@ -13578,10 +13578,11 @@ async def execute_jotaro_raid(channel, raid_data):
             p_items["dia_ky_uc_jotaro"] = p_items.get("dia_ky_uc_jotaro", 0) + 1
             got.append(f"💿 **+1 Đĩa Ký Ức Jotaro** (1% Cực Hiếm! Kho: {p_items['dia_ky_uc_jotaro']})")
         if random.random() < 0.50:
-            gain_xp = int(p.get("xp", 0) * JOTARO_XP_DROP_MULT)
+            _, xp_in_lvl, needed_xp, _ = get_level_progress(p.get("xp", 0), p.get("prestige", 0))
+            gain_xp = int(xp_in_lvl * JOTARO_XP_DROP_MULT)
             if gain_xp > 0:
                 p["xp"] += gain_xp
-                got.append(f"✨ **+{gain_xp:,} XP** (50% - ×{JOTARO_XP_DROP_MULT} XP hiện tại)")
+                got.append(f"✨ **+{gain_xp:,} XP** (50% - ×{JOTARO_XP_DROP_MULT} XP cấp hiện tại [{xp_in_lvl:,}/{needed_xp:,}])")
         for n_ in update_daily_quest_progress(p, "raid", 1) + update_event_quest_progress(p, "raid", 1):
             got.append(n_)
         save_player(p)
