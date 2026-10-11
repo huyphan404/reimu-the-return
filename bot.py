@@ -12639,6 +12639,7 @@ class ItemGroup(app_commands.Group, name="item", description="Quản lý kho v�
         app_commands.Choice(name="Thánh Lõi", value="thanh_loi"),
         app_commands.Choice(name="Kẹo Halloween", value="keo_halloween"),
         app_commands.Choice(name="Rương Halloween [E]", value="ruong_halloween_e"),
+        app_commands.Choice(name="Đĩa Ký Ức Jotaro 💿 (dia_ky_uc_jotaro)", value="dia_ky_uc_jotaro"),
         app_commands.Choice(name="Quạt Giấy 🪭 (quat_giay)", value="quat_giay")
     ])
     async def slash_item_trade_cmd(self, interaction: discord.Interaction, user: discord.Member, vat_pham: str, so_luong: int = 1):
@@ -12724,7 +12725,8 @@ class AdminGiveGroup(app_commands.Group, name="admin_give", description="[CHỦ 
         app_commands.Choice(name="Thánh Lõi (thanh_loi)", value="thanh_loi"),
         app_commands.Choice(name="Kẹo Halloween 🍬 (keo_halloween)", value="keo_halloween"),
         app_commands.Choice(name="Rương Halloween Ma Quái [E] (ruong_halloween_e)", value="ruong_halloween_e"),
-        app_commands.Choice(name="Quạt Giấy 🪭", value="quat_giay")
+        app_commands.Choice(name="Quạt Giấy 🪭 (quat_giay)", value="quat_giay"),
+        app_commands.Choice(name="Đĩa Ký Ức Jotaro 💿 (dia_ky_uc_jotaro)", value="dia_ky_uc_jotaro")
     ])
     async def slash_admin_give_item(self, interaction: discord.Interaction, vat_pham: str, so_luong: int = 1, nguoi_dung: Optional[discord.Member] = None):
         if not is_authorized_admin(interaction.user.id):
