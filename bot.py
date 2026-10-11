@@ -4285,19 +4285,19 @@ async def execute_raid(channel, raid_data):
                     if _t3["gif"] and not turn_image:
                         turn_image = _t3["gif"]
                     t3_notif_str = "\n".join(_t3["logs"])
-                    t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
+                t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
 
-                    if str(ac["cid"]).lower() == "t5":
-                    _t5 = t5_combat_turn(c.setdefault("t5_state", {}), ac, is_ace2=ac.get("is_ace2", False))
-                    card_dmg = int(card_dmg * _t5["multiplier"])
-                    if _t5["stun"] or _t5["confuse"]:
-                        boss_stunned = True
-                    if _t5["gif"] and not turn_image:
-                        turn_image = _t5["gif"]
-                    if _t5["logs"]:
-                        t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t5["logs"]])
+            if str(ac["cid"]).lower() == "t5":
+                _t5 = t5_combat_turn(c.setdefault("t5_state", {}), ac, is_ace2=ac.get("is_ace2", False))
+                card_dmg = int(card_dmg * _t5["multiplier"])
+                if _t5["stun"] or _t5["confuse"]:
+                    boss_stunned = True
+                if _t5["gif"] and not turn_image:
+                    turn_image = _t5["gif"]
+                if _t5["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t5["logs"]])
 
-                if str(ac["cid"]).lower() == "t4":
+            if str(ac["cid"]).lower() == "t4":
                     t4_st = c.setdefault("t4_state", {})
                     _t4 = t4_combat_turn(t4_st, ac, f"Boss {p2_cfg['name']}", heal_mult=1.0, enemy_fate_loop_turns=(1 if boss_skills_locked_this_turn else boss_fate_locked_turns))
                     card_dmg = int(card_dmg * _t4["multiplier"])
