@@ -3851,7 +3851,7 @@ async def execute_raid(channel, raid_data):
                 if _g:
                     turn_image = _g
                     continue
-                                c["current_card_index"] += 1
+                c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     next_card = c["team_cards"][c["current_card_index"]]
                     push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục! ➡️ Đẩy **{next_card['name']}** (❤️{next_card['current_hp']:,} HP) lên!")
@@ -4516,7 +4516,7 @@ async def execute_raid(channel, raid_data):
                     if _g:
                         turn_image = _g
                         continue
-                                        c["current_card_index"] += 1
+                    c["current_card_index"] += 1
                     if c["current_card_index"] < len(c["team_cards"]):
                         next_card = c["team_cards"][c["current_card_index"]]
                         push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục! ➡️ Đẩy **{next_card['name']}** (❤️{next_card['current_hp']:,} HP) lên!")
@@ -5087,7 +5087,7 @@ async def execute_raid(channel, raid_data):
                 if _g:
                     turn_image = _g
                     continue
-                                c["current_card_index"] += 1
+                c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     next_card = c["team_cards"][c["current_card_index"]]
                     push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục! ➡️ Đẩy **{next_card['name']}** (❤️{next_card['current_hp']:,} HP) lên!")
@@ -5856,7 +5856,7 @@ async def execute_event_raid(channel, raid_data):
                 if _g:
                     turn_image = _g
                     continue
-                                c["current_card_index"] += 1
+                c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
                 else:
@@ -6421,7 +6421,7 @@ async def execute_event_raid(channel, raid_data):
                 if _g:
                     turn_image = _g
                     continue
-                                c["current_card_index"] += 1
+                c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
                 else:
@@ -13976,7 +13976,7 @@ async def execute_jotaro_raid(channel, raid_data):
                 if _g:
                     B["gif"] = _g
                     continue
-                                c["current_card_index"] += 1
+                c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     push_logs.append(f"💀 **{ac['name']}** gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
                 else:
