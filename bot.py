@@ -14088,8 +14088,8 @@ async def execute_jotaro_raid(channel, raid_data):
 # ==============================================================================
 # [UPDATE SAKUYA ACE 3] HẰNG SỐ, ĐIỀU KIỆN, KỸ NĂNG, TIẾN HÓA, GIAO DIỆN CHECK
 # ==============================================================================
-SAKUYA3_EVOL_GIF = "https://media1.tenor.com/m/pN8SUcv_QrQAAAAd/izayoi-izakuya.gif"
-SAKUYA3_PASSIVE_GIF = "https://media1.tenor.com/m/YBRgPOEcvEkAAAAd/touhou.gif"
+SAKUYA3_EVOL_GIF = "https://c.tenor.com/pN8SUcv_QrQAAAAC/izayoi-izakuya.gif"
+SAKUYA3_PASSIVE_GIF = "https://c.tenor.com/YBRgPOEcvEkAAAAC/touhou.gif"
 SAKUYA3_KNIVES_GIF = "https://static2.klipy.com/ii/f87f46a2c5aeaeed4c68910815f73eaf/1a/a7/3AuiLczA.gif"
 SAKUYA3_TIMESTOP_GIF = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/3c/04/e3hpa5f5JKxCgx.gif"
 
