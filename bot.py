@@ -3367,25 +3367,25 @@ async def execute_raid(channel, raid_data):
                     t4_str = "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + t4_str
 
-                if ac["cid"] == 18 and ac.get("is_ace3"):
-                    _s3 = sakuya3_combat_turn(c.setdefault("s3_state", {}), ac, "Boss")
-                    card_dmg = int(card_dmg * _s3["multiplier"])
-                    if _s3["stun"]:
-                        boss_stunned = True
-                    if _s3["gif"] and not turn_image:
-                        turn_image = _s3["gif"]
-                    if _s3["logs"]:
-                        t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
+            if ac["cid"] == 18 and ac.get("is_ace3"):
+                _s3 = sakuya3_combat_turn(c.setdefault("s3_state", {}), ac, "Boss")
+                card_dmg = int(card_dmg * _s3["multiplier"])
+                if _s3["stun"]:
+                    boss_stunned = True
+                if _s3["gif"] and not turn_image:
+                    turn_image = _s3["gif"]
+                if _s3["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
 
-                _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
-                if _ml_log:
-                    card_dmg = int(card_dmg * _ml_mult)
-                    if _ml_gif and not turn_image:
-                        turn_image = _ml_gif
-                    t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
+            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            if _ml_log:
+                card_dmg = int(card_dmg * _ml_mult)
+                if _ml_gif and not turn_image:
+                    turn_image = _ml_gif
+                t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
 
-                round_player_dmg += card_dmg
-                c["total_dmg"] += card_dmg
+            round_player_dmg += card_dmg
+            c["total_dmg"] += card_dmg
 
         if boss_type == "seiki" and seiki_invul and not boss_stunned:
             player_atk_str = f"🛡️ Toàn quân dồn **{round_player_dmg:,} DMG** nhưng **Seiki Dị Hình** đã kích hoạt **Fantasy Seal**, MIỄN TOÀN BỘ SÁT THƯƠNG trong hiệp này!"
@@ -3848,10 +3848,10 @@ async def execute_raid(channel, raid_data):
                 c["total_dmg"] += trade_dmg
                 push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{dead_name}** ({c['username']}) trước khi gục ngã đã thành công đổi **{trade_dmg:,} DMG** lên Boss!")
                 _g = sakuya3_raid_revive(c, push_logs)
-if _g:
-    turn_image = _g
-    continue
-                c["current_card_index"] += 1
+                if _g:
+                    turn_image = _g
+                    continue
+                                c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     next_card = c["team_cards"][c["current_card_index"]]
                     push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục! ➡️ Đẩy **{next_card['name']}** (❤️{next_card['current_hp']:,} HP) lên!")
@@ -4130,7 +4130,7 @@ if _g:
             c["t3_state"] = {}
             c["t4_state"] = {}
             c["t4_state"] = {}
-        reset_sakuya3_phase(c)
+            reset_sakuya3_phase(c)
             for card in c["team_cards"]:
                 card["current_hp"] = card["max_hp"]
 
@@ -4393,12 +4393,12 @@ if _g:
                     if _t4["logs"]:
                         t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
 
-            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
-            if _ml_log:
-                card_dmg = int(card_dmg * _ml_mult)
-                if _ml_gif and not turn_image:
-                    turn_image = _ml_gif
-                t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
+                _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+                if _ml_log:
+                    card_dmg = int(card_dmg * _ml_mult)
+                    if _ml_gif and not turn_image:
+                        turn_image = _ml_gif
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
                 
                 round_player_dmg += card_dmg
                 c["total_dmg"] += card_dmg
@@ -4513,10 +4513,10 @@ if _g:
                     c["total_dmg"] += trade_dmg
                     push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{dead_name}** ({c['username']}) trước khi gục ngã đã thành công đổi **{trade_dmg:,} DMG** lên Boss Phase 2!")
                     _g = sakuya3_raid_revive(c, push_logs)
-if _g:
-    turn_image = _g
-    continue
-                    c["current_card_index"] += 1
+                    if _g:
+                        turn_image = _g
+                        continue
+                                        c["current_card_index"] += 1
                     if c["current_card_index"] < len(c["team_cards"]):
                         next_card = c["team_cards"][c["current_card_index"]]
                         push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục! ➡️ Đẩy **{next_card['name']}** (❤️{next_card['current_hp']:,} HP) lên!")
@@ -5084,10 +5084,10 @@ if _g:
                 push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{dead_name}** ({c['username']}) trước khi gục ngã đã thành công đổi **{trade_dmg:,} DMG** lên Boss Phase 2!")
 
                 _g = sakuya3_raid_revive(c, push_logs)
-if _g:
-    turn_image = _g
-    continue
-                c["current_card_index"] += 1
+                if _g:
+                    turn_image = _g
+                    continue
+                                c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     next_card = c["team_cards"][c["current_card_index"]]
                     push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục! ➡️ Đẩy **{next_card['name']}** (❤️{next_card['current_hp']:,} HP) lên!")
@@ -5853,10 +5853,10 @@ async def execute_event_raid(channel, raid_data):
             if ac["current_hp"] <= 0:
                 dead_name = ac["name"]
                 _g = sakuya3_raid_revive(c, push_logs)
-if _g:
-    turn_image = _g
-    continue
-                c["current_card_index"] += 1
+                if _g:
+                    turn_image = _g
+                    continue
+                                c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
                 else:
@@ -6418,10 +6418,10 @@ if _g:
             if ac["current_hp"] <= 0:
                 dead_name = ac["name"]
                 _g = sakuya3_raid_revive(c, push_logs)
-if _g:
-    turn_image = _g
-    continue
-                c["current_card_index"] += 1
+                if _g:
+                    turn_image = _g
+                    continue
+                                c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
                 else:
@@ -8782,7 +8782,7 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
         else:
             await ctx_or_interaction.send(embed=_sv.get_embed(), view=_sv)
         return
-     if nhan_vat:
+    if nhan_vat:
         nv_clean = str(nhan_vat).strip().lower()
         if nv_clean in ("t4", "#t4", "fateria", "sophan", "khuonmau") or "fateria" in nv_clean:
             show_t4_flag = True
@@ -13690,13 +13690,13 @@ def _jt_player_attack(c, ac, rnd, B, notes):
                     turn_image = _s3["gif"]
                 if _s3["logs"]:
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
-                if cid == 18 and ac.get("is_ace3"):
+    if cid == 18 and ac.get("is_ace3"):
         _s3 = sakuya3_combat_turn(c.setdefault("s3_state", {}), ac, "Boss")
         dmg = int(dmg * _s3["multiplier"])
         if _s3["stun"]:
             B["stunned"] = True
         setgif(_s3["gif"])
-        notes.extend([f"({c['username']}) {l}" for l in _s3["logs"]])    
+        notes.extend([f"({c['username']}) {l}" for l in _s3["logs"]])   
     _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
     if _ml_log:
         dmg = int(dmg * _ml_mult)
@@ -13973,10 +13973,10 @@ async def execute_jotaro_raid(channel, raid_data):
                 c["total_dmg"] += trade
                 push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{ac['name']}** ({c['username']}) trước khi gục đã đổi **{trade:,} DMG** lên Boss!")
                 _g = sakuya3_raid_revive(c, push_logs)
-if _g:
-    B["gif"] = _g
-    continue
-                c["current_card_index"] += 1
+                if _g:
+                    B["gif"] = _g
+                    continue
+                                c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     push_logs.append(f"💀 **{ac['name']}** gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
                 else:
