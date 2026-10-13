@@ -454,8 +454,8 @@ JOTARO_BOSS_CONFIG = {
     "desc": "Kẻ điều khiển Star Platinum - The World. Thời gian nằm trong lòng bàn tay hắn!",
     "reimu_quote": "Ánh mắt đó... hắn không phải dạng vừa đâu. Mọi người cẩn thận, hắn có thể dừng cả thời gian!",
     "image": T5_GIF_BOSS,
-    "hp": 88000,
-    "power": 8000,
+    "hp": 110000,
+    "power": 9500,
     "max_players": 6,
     "cooldown_seconds": 15 * 60,
     "rage_mult": 1.1,
@@ -10912,7 +10912,7 @@ async def prefix_boss_status(ctx, *args):
     app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (90k HP / The True Adapt)", value="mahoraga"),
     app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
     app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
-    app_commands.Choice(name="Kujo Jotaro - Stone Ocean (88k HP / 8k DMG)", value="jotaro"),
+    app_commands.Choice(name="Kujo Jotaro - Stone Ocean (110k HP / 9k5 DMG)", value="jotaro"),
     app_commands.Choice(name="Ngẫu nhiên tỉ lệ 1/4 giữa 4 Boss", value="random")
 ])
 async def slash_boss_admin(interaction: discord.Interaction, action: str, loai_boss: str = "random"):
@@ -10934,7 +10934,7 @@ async def slash_boss_admin(interaction: discord.Interaction, action: str, loai_b
     app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (90k HP / The True Adapt)", value="mahoraga"),
     app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
     app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
-    app_commands.Choice(name="Kujo Jotaro - Stone Ocean (88k HP / 8k DMG)", value="jotaro"),
+    app_commands.Choice(name="Kujo Jotaro - Stone Ocean (110k HP / 9k5 DMG)", value="jotaro"),
     app_commands.Choice(name="Ngẫu nhiên tỉ lệ 1/4 giữa 4 Boss", value="random")
 ])
 async def slash_admin_boss_spawn(interaction: discord.Interaction, loai_boss: str = "random"):
