@@ -3365,15 +3365,25 @@ async def execute_raid(channel, raid_data):
                     t4_str = "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + t4_str
 
-            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
-            if _ml_log:
-                card_dmg = int(card_dmg * _ml_mult)
-                if _ml_gif and not turn_image:
-                    turn_image = _ml_gif
-                t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
-            
-            round_player_dmg += card_dmg
-            c["total_dmg"] += card_dmg
+                if ac["cid"] == 18 and ac.get("is_ace3"):
+                    _s3 = sakuya3_combat_turn(c.setdefault("s3_state", {}), ac, "Boss")
+                    card_dmg = int(card_dmg * _s3["multiplier"])
+                    if _s3["stun"]:
+                        boss_stunned = True
+                    if _s3["gif"] and not turn_image:
+                        turn_image = _s3["gif"]
+                    if _s3["logs"]:
+                        t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
+
+                _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+                if _ml_log:
+                    card_dmg = int(card_dmg * _ml_mult)
+                    if _ml_gif and not turn_image:
+                        turn_image = _ml_gif
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
+
+                round_player_dmg += card_dmg
+                c["total_dmg"] += card_dmg
 
         if boss_type == "seiki" and seiki_invul and not boss_stunned:
             player_atk_str = f"🛡️ Toàn quân dồn **{round_player_dmg:,} DMG** nhưng **Seiki Dị Hình** đã kích hoạt **Fantasy Seal**, MIỄN TOÀN BỘ SÁT THƯƠNG trong hiệp này!"
@@ -4953,6 +4963,15 @@ async def execute_raid(channel, raid_data):
                 if _t4["logs"]:
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
 
+            if ac["cid"] == 18 and ac.get("is_ace3"):
+                _s3 = sakuya3_combat_turn(c.setdefault("s3_state", {}), ac, "Boss")
+                card_dmg = int(card_dmg * _s3["multiplier"])
+                if _s3["stun"]:
+                    boss_stunned = True
+                if _s3["gif"] and not turn_image:
+                    turn_image = _s3["gif"]
+                if _s3["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
             _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
             if _ml_log:
                 card_dmg = int(card_dmg * _ml_mult)
@@ -5692,6 +5711,15 @@ async def execute_event_raid(channel, raid_data):
                 if _t4["logs"]:
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
 
+            if ac["cid"] == 18 and ac.get("is_ace3"):
+                _s3 = sakuya3_combat_turn(c.setdefault("s3_state", {}), ac, "Boss")
+                card_dmg = int(card_dmg * _s3["multiplier"])
+                if _s3["stun"]:
+                    boss_stunned = True
+                if _s3["gif"] and not turn_image:
+                    turn_image = _s3["gif"]
+                if _s3["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
             _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
             if _ml_log:
                 card_dmg = int(card_dmg * _ml_mult)
@@ -6193,6 +6221,17 @@ async def execute_event_raid(channel, raid_data):
                 if _t4["logs"]:
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
 
+            if ac["cid"] == 18 and ac.get("is_ace3"):
+                _s3 = sakuya3_combat_turn(c.setdefault("s3_state", {}), ac, "Boss")
+                card_dmg = int(card_dmg * _s3["multiplier"])
+                if _s3["stun"]:
+                    boss_stunned = True
+                if _s3["gif"] and not turn_image:
+                    turn_image = _s3["gif"]
+                if _s3["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
+                if _s3["stun"] and not boss_wg_active:
+                    boss_stunned = True    
             _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
             if _ml_log:
                 card_dmg = int(card_dmg * _ml_mult)
@@ -8867,7 +8906,8 @@ async def handle_battle(ctx_or_interaction):
     p_t3_state = {}
     o_t3_state = {}
     p_t4_state = {}
-    p_t5_state = {}        
+    p_t5_state = {}
+    p_s3_state = {}
     o_fate_lock_turns = 0
     o_ice_spear_turns = 0
     p_seiki_used_turn = -1
@@ -9131,7 +9171,20 @@ async def handle_battle(ctx_or_interaction):
                 turn_image = _t5["gif"]
             battle_logs.extend(_t5["logs"])
             turn_actions.extend(_t5["logs"])
-            
+        if pc["cid"] == 18 and pc.get("is_ace3"):
+            _s3 = sakuya3_combat_turn(p_s3_state, pc, f"**{oc['name']}**")
+            curr_pc_power = int(curr_pc_power * _s3["multiplier"])
+            if _s3["stun"]:
+                stunned_oc = True
+            if _s3["gif"] and not turn_image:
+                turn_image = _s3["gif"]
+            battle_logs.extend(_s3["logs"])
+            turn_actions.extend(_s3["logs"])
+
+        p_t4_save_invul = False
+
+        p_t4_save_invul = False    
+        
         p_t4_save_invul = False
         o_fate_locked_now = False
         if o_fate_lock_turns > 0:
@@ -9605,7 +9658,9 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
     c_t4_state = {}
     t_t4_state = {}
     c_t5_state = {}
-    t_t5_state = {}    
+    t_t5_state = {} 
+    c_s3_state = {}
+    t_s3_state = {}        
     c_fate_locked_turns = 0
     t_fate_locked_turns = 0
     c_ice_spear_turns = 0
@@ -9969,6 +10024,15 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_image = _t5["gif"]
             pvp_logs.extend(_t5["logs"])
             turn_actions.extend(_t5["logs"])
+        if cc["cid"] == 18 and cc.get("is_ace3") and not c_skills_locked:
+            _s3 = sakuya3_combat_turn(c_s3_state, cc, f"**{tc['name']}**")
+            c_curr_power = int(c_curr_power * _s3["multiplier"])
+            if _s3["stun"]:
+                t_stunned = True
+            if _s3["gif"] and not turn_image:
+                turn_image = _s3["gif"]
+            pvp_logs.extend(_s3["logs"])
+            turn_actions.extend(_s3["logs"])    
             
         if str(cc["cid"]).lower() == "t4" and not c_skills_locked:
             _t4 = t4_combat_turn(c_t4_state, cc, f"**{tc['name']}** ({target.display_name})", heal_mult=c_heal_mult, enemy_fate_loop_turns=t_fate_locked_turns)
@@ -10184,6 +10248,15 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
             pvp_logs.extend(_t5["logs"])
             turn_actions.extend(_t5["logs"])
             
+        if tc["cid"] == 18 and tc.get("is_ace3") and not t_skills_locked:
+            _s3 = sakuya3_combat_turn(t_s3_state, tc, f"**{cc['name']}**")
+            t_curr_power = int(t_curr_power * _s3["multiplier"])
+            if _s3["stun"]:
+                c_stunned = True
+            if _s3["gif"] and not turn_image:
+                turn_image = _s3["gif"]
+            pvp_logs.extend(_s3["logs"])
+            turn_actions.extend(_s3["logs"])
         if str(tc["cid"]).lower() == "t4" and not t_skills_locked:
             _t4 = t4_combat_turn(t_t4_state, tc, f"**{cc['name']}** ({challenger.display_name})", heal_mult=t_heal_mult, enemy_fate_loop_turns=c_fate_locked_turns)
             t_curr_power = int(t_curr_power * _t4["multiplier"])
@@ -11276,7 +11349,15 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
             if _t5["gif"] and not turn_image:
                 turn_image = _t5["gif"]
             turn_logs.extend(_t5["logs"])
-            
+        if pc["cid"] == 18 and pc.get("is_ace3"):
+            _s3 = sakuya3_combat_turn(pc.setdefault("s3_state", {}), pc, "Rumia")
+            card_dmg = int(card_dmg * _s3["multiplier"])
+            if _s3["stun"]:
+                boss_stun_story = True
+            if _s3["gif"] and not turn_image:
+                turn_image = _s3["gif"]
+            turn_logs.extend(_s3["logs"])    
+        
         t4_invul_story = False
         if str(pc["cid"]).lower() == "t4":
             t4_st = pc.setdefault("t4_state", {})
@@ -11668,6 +11749,14 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     turn_image = _t5["gif"]
                 turn_logs.extend(_t5["logs"])
                 
+            if pc["cid"] == 18 and pc.get("is_ace3"):
+                _s3 = sakuya3_combat_turn(pc.setdefault("s3_state", {}), pc, "Cirno")
+                card_dmg = int(card_dmg * _s3["multiplier"])
+                if _s3["stun"]:
+                    boss_stun_story = True
+                if _s3["gif"] and not turn_image:
+                    turn_image = _s3["gif"]
+                turn_logs.extend(_s3["logs"])
             if str(pc["cid"]).lower() == "t4":
                 t4_st = pc.setdefault("t4_state", {})
                 _t4 = t4_combat_turn(t4_st, pc, "Boss Cirno")
@@ -13496,6 +13585,22 @@ def _jt_player_attack(c, ac, rnd, B, notes):
         setgif(_t5["gif"])
         notes.extend([f"({c['username']}) {l}" for l in _t5["logs"]])
 
+    if ac["cid"] == 18 and ac.get("is_ace3"):
+                _s3 = sakuya3_combat_turn(c.setdefault("s3_state", {}), ac, "Boss")
+                card_dmg = int(card_dmg * _s3["multiplier"])
+                if _s3["stun"]:
+                    boss_stunned = True
+                if _s3["gif"] and not turn_image:
+                    turn_image = _s3["gif"]
+                if _s3["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
+                if cid == 18 and ac.get("is_ace3"):
+        _s3 = sakuya3_combat_turn(c.setdefault("s3_state", {}), ac, "Boss")
+        dmg = int(dmg * _s3["multiplier"])
+        if _s3["stun"]:
+            B["stunned"] = True
+        setgif(_s3["gif"])
+        notes.extend([f"({c['username']}) {l}" for l in _s3["logs"]])    
     _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
     if _ml_log:
         dmg = int(dmg * _ml_mult)
