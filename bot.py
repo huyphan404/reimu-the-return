@@ -12294,7 +12294,7 @@ async def slash_sync_commands(interaction: discord.Interaction):
     try:
         synced_global = await bot.tree.sync()
         if interaction.guild:
-            bot.tree.copy_global_to(guild=interaction.guild)
+            bot.tree.clear_commands(guild=interaction.guild)
             synced_guild = await bot.tree.sync(guild=interaction.guild)
             await interaction.followup.send(f"✅ Đã ép đồng bộ NGAY LẬP TỨC **{len(synced_guild)} lệnh Slash** vào Server này (và {len(synced_global)} lệnh toàn cục)! Hãy ấn `Ctrl + R` để thấy `/event_admin start` và `/event_admin end`!")
         else:
@@ -12310,7 +12310,7 @@ async def prefix_sync_commands(ctx):
     try:
         synced_global = await bot.tree.sync()
         if ctx.guild:
-            bot.tree.copy_global_to(guild=ctx.guild)
+            bot.tree.clear_commands(guild=ctx.guild)
             synced_guild = await bot.tree.sync(guild=ctx.guild)
             await ctx.send(f"✅ Đã ép đồng bộ NGAY LẬP TỨC **{len(synced_guild)} lệnh Slash** vào Server này! Hãy ấn **Ctrl + R** (hoặc thoát kênh vào lại) là thấy ngay `/event_admin start` và `/event_admin end`!")
         else:
