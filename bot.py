@@ -2914,6 +2914,7 @@ async def execute_raid(channel, raid_data):
                     "is_ace2": is_ace2
                 })
 
+        apply_sakuya_ace3_to_cards(p, team_cards)
         combatants.append({
             "uid": uid,
             "username": p["username"],
@@ -5432,6 +5433,7 @@ async def execute_event_raid(channel, raid_data):
                     "is_ace2": is_ace2
                 })
 
+        apply_sakuya_ace3_to_cards(p, team_cards)
         combatants.append({
             "uid": uid,
             "username": p["username"],
@@ -8814,6 +8816,7 @@ async def handle_battle(ctx_or_interaction):
                 "image": c.get("image", "")
             })
 
+    apply_sakuya_ace3_to_cards(player, player_cards)
     ace_supported_cids = list({int(k) for k in EVOL_CONFIG.keys() if str(k).isdigit() and int(k) in CARDS_DATA})
     npc_has_ace = (random.random() < 0.25) and len(ace_supported_cids) > 0
     npc_ace_idx = -1
@@ -9582,6 +9585,8 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 "max_hp": c["hp"] + t_buff_hp + ace_hp, "is_ace2": is_ace
             })
 
+    apply_sakuya_ace3_to_cards(c_player, c_cards)
+    apply_sakuya_ace3_to_cards(t_player, t_cards)
     c_idx, t_idx, r_cnt = 0, 0, 0
     c_sakuya, c_reimu, c_marisa = False, False, False
     c_flandre = False
@@ -11153,6 +11158,7 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
             "is_ace2": is_ace
         })
 
+    apply_sakuya_ace3_to_cards(player, player_cards)
     embed_init = discord.Embed(
         title="⚔️ [LIVE BATTLE] STAGE 1: HỒ SƯƠNG MÙ - ĐẠI CHIẾN RUMIA!",
         description=(
@@ -11531,6 +11537,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
             "is_ace2": is_ace
         })
 
+    apply_sakuya_ace3_to_cards(player, player_cards)
     embed_init = discord.Embed(
         title="⚔️ [LIVE BATTLE] STAGE 2: BỀ MẶT HỒ SƯƠNG MÙ - CIRNO ACE 2!",
         description=(
@@ -13573,6 +13580,7 @@ async def execute_jotaro_raid(channel, raid_data):
                     "base_name": card["name"], "rank": card["rank"],
                     "power": cp, "max_hp": ch, "current_hp": ch, "is_ace2": is_ace
                 })
+        apply_sakuya_ace3_to_cards(p, team_cards)
         combatants.append({
             "uid": uid, "username": p["username"], "level": p["level"],
             "team_cards": team_cards, "current_card_index": 0,
