@@ -4393,6 +4393,15 @@ async def execute_raid(channel, raid_data):
                     if _t4["logs"]:
                         t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
 
+                if ac["cid"] == 18 and ac.get("is_ace3"):
+                    _s3 = sakuya3_combat_turn(c.setdefault("s3_state", {}), ac, "Boss")
+                    card_dmg = int(card_dmg * _s3["multiplier"])
+                    if _s3["stun"]:
+                        boss_stunned = True
+                    if _s3["gif"] and not turn_image:
+                        turn_image = _s3["gif"]
+                    if _s3["logs"]:
+                        t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])    
                 _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
                 if _ml_log:
                     card_dmg = int(card_dmg * _ml_mult)
@@ -6248,8 +6257,6 @@ async def execute_event_raid(channel, raid_data):
             if ac["cid"] == 18 and ac.get("is_ace3"):
                 _s3 = sakuya3_combat_turn(c.setdefault("s3_state", {}), ac, "Boss")
                 card_dmg = int(card_dmg * _s3["multiplier"])
-                if _s3["stun"]:
-                    boss_stunned = True
                 if _s3["gif"] and not turn_image:
                     turn_image = _s3["gif"]
                 if _s3["logs"]:
@@ -9535,6 +9542,7 @@ async def handle_battle(ctx_or_interaction):
                     battle_logs.append(push_msg[-1])
                 else:
                     push_msg.append(f"☠️ Toàn bộ thẻ bài của **{user.display_name}** đã bị tiêu diệt!")
+        if oc["current_hp"] <= 0:
             o_idx += 1
             if o_idx < len(opp_cards):
                 push_msg.append(f"💥 Hạ gục **{oc['name']}**! ➡️ Đối thủ đưa **{opp_cards[o_idx]['name']}** lên nghênh chiến!")
@@ -13691,15 +13699,6 @@ def _jt_player_attack(c, ac, rnd, B, notes):
         setgif(_t5["gif"])
         notes.extend([f"({c['username']}) {l}" for l in _t5["logs"]])
 
-    if ac["cid"] == 18 and ac.get("is_ace3"):
-                _s3 = sakuya3_combat_turn(c.setdefault("s3_state", {}), ac, "Boss")
-                card_dmg = int(card_dmg * _s3["multiplier"])
-                if _s3["stun"]:
-                    boss_stunned = True
-                if _s3["gif"] and not turn_image:
-                    turn_image = _s3["gif"]
-                if _s3["logs"]:
-                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
     if cid == 18 and ac.get("is_ace3"):
         _s3 = sakuya3_combat_turn(c.setdefault("s3_state", {}), ac, "Boss")
         dmg = int(dmg * _s3["multiplier"])
