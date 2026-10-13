@@ -1750,12 +1750,12 @@ async def on_message(message: discord.Message):
     # 2. Xử lý các lệnh prefix (!pull, !daily, !battle, !boss,...)
     await bot.process_commands(message)
 
-    # 3. TỶ LỆ 3% XUẤT HIỆN BOSS TỰ NHIÊN CHO MỌI TIN NHẮN TRONG SERVER (NẾU HẾT HỒI CHIÊU 15P)
+    # 3. TỶ LỆ 10% XUẤT HIỆN BOSS TỰ NHIÊN CHO MỌI TIN NHẮN TRONG SERVER (NẾU HẾT HỒI CHIÊU 15P)
     global boss_cooldown_until, active_raid
     now = time.time()
     if active_raid is None and now >= boss_cooldown_until:
-        # Tỉ lệ 3% khi có bất kỳ ai chat (0.03)
-        if random.random() < 0.03:
+        # Tỉ lệ 10% khi có bất kỳ ai chat (0.10)
+        if random.random() < 0.10:
             print(f"🚨 [BOSS EVENT] Kích hoạt xuất hiện Boss ngẫu nhiên tại #{message.channel.name} do {message.author.display_name} chat!", flush=True)
             await spawn_boss_raid(message.channel)
             return
