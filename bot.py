@@ -929,6 +929,28 @@ EVOL_CONFIG["21"] = EVOL_CONFIG[21]
 EVOL_CONFIG["23"] = EVOL_CONFIG[23]
 EVOL_CONFIG["13"] = EVOL_CONFIG[13]
 
+# ===== ACE 2: [#24] HONG MEILING =====
+
+MEILING_EVOL_GIF = "https://static2.klipy.com/ii/2f34308bfc69e8c858753b83566e3ab4/85/03/sCmjZv9yGXNs8eUbqSo.gif"
+MEILING_SKILL_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/4c/fb/3nGGTKnzNfnGFTmp6.gif"
+
+EVOL_CONFIG[24] = {
+    "id": 24,
+    "key": "meiling",
+    "name": "Hong Meiling",
+    "title": "[#24] Hong Meiling - Ace 2 ⭐⭐",
+    "ace_level": "Ace 2 ⭐⭐",
+    "required_cards": 100,
+    "required_pulls": 100,
+    "evol_gif": MEILING_EVOL_GIF,
+    "skill_name": "Rainbow Taijiquan (Thái Cực Quyền Cầu Vồng)",
+    "skill_desc": "Kích hoạt 1 lần duy nhất trong trận (Tỷ lệ 30%): Gây **×1.2 sát thương** và **giảm 15% sát thương phải nhận** trong lượt đó, kèm GIF chiêu thức trực tiếp! Hoạt động trong Raid Boss, Battle, PvP và Story.",
+    "skill_gif": MEILING_SKILL_GIF,
+    "bonus_power": 300,
+    "bonus_hp": 300
+}
+EVOL_CONFIG["24"] = EVOL_CONFIG[24]    
+
 # ==============================================================================
 # ACE 2 MỚI: [#t1] SEIKI ĐỆ NHẤT PHÁP SƯ (BỘ KỸ NĂNG THAY ĐỔI HOÀN TOÀN)
 # ==============================================================================
@@ -1917,6 +1939,8 @@ def apply_bong_khai_niem_card(target_card: dict):
         pool = [("cirno_freeze", "Perfect Freeze")]
     elif cid == 13 and is_ace:
         pool = [("utsuho_nuclear", "Nuclear Spell Card")]
+    elif cid == 24 and is_ace:
+        pool = [("meiling_taijiquan", "Rainbow Taijiquan")]    
 
     if not pool:
         return f"🌑 **[Bóng Khái Niệm]** **{target_card['name']}** không sở hữu kỹ năng đặc biệt nào để xóa!"
@@ -2156,11 +2180,39 @@ def t4_combat_turn(t4_state: dict, card_data: dict, target_name: str, heal_mult:
 # ==============================================================================
 # HỆ THỐNG XEM CHI TIẾT TRẬN CHIẾN & HOẠT ẢNH GIF KỸ NĂNG (IN-DISCORD)
 # ==============================================================================
+def meiling_raid_turn(c, ac):
+    """[Ace 2] Hong Meiling - Rainbow Taijiquan (Raid). Trả về (hệ số sát thương, gif, log)."""
+    if ac.get("cid") != 24 or not ac.get("is_ace2"):
+        return 1.0, None, None
+    st = c.setdefault("t3_state", {})   # state này tự reset khi sang Phase 2
+    if st.get("meiling_used"):
+        return 1.0, None, None
+    if random.random() >= 0.30:
+        return 1.0, None, None
+    st["meiling_used"] = True
+    ac["meiling_guard"] = True
+    ac["meiling_hp_snap"] = ac["current_hp"]
+    log = (
+        f"🌈 **[Ace 2] [#24] Hong Meiling** ({c['username']}) thi triển **Rainbow Taijiquan** (30%)! "
+        f"Gây **×1.2 sát thương** và **giảm 15% sát thương phải nhận** trong lượt này!"
+    )
+    return 1.2, MEILING_SKILL_GIF, log
+
 def tick_wonder_guard(active_combatants):
     for c in active_combatants:
         st = c.get("t3_state") or {}
         if st.get("wonder_guard_turns", 0) > 0:
             st["wonder_guard_turns"] -= 1
+        # Rainbow Taijiquan: hoàn lại 15% sát thương đã nhận trong lượt
+        idx = c.get("current_card_index", 0)
+        cards = c.get("team_cards", [])
+        if idx < len(cards):
+            ac = cards[idx]
+            if ac.get("meiling_guard"):
+                ac["meiling_guard"] = False
+                lost = ac.pop("meiling_hp_snap", ac["current_hp"]) - ac["current_hp"]
+                if lost > 0:
+                    ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + int(lost * 0.15))
 
 def story_t1_t2_skills(pc, round_no, flags, card_dmg, turn_logs):
     """Skill Seiki Ace 1 (#t1) và Mahoraga (#t2) trong Story Mode. Trả về (card_dmg, seal, gif)."""
@@ -2345,7 +2397,7 @@ class OpponentTeamView(discord.ui.View):
         )
 
         skill_text = c.get("skill") or "Tấn công Danmaku cơ bản"
-        if is_ace and c["cid"] in [4, 9, 12, 13, 15, 18, 19, 21, 23]:
+        if is_ace and c["cid"] in [4, 9, 12, 13, 15, 18, 19, 21, 23, 24]:
             if c["cid"] == 4:
                 skill_text += (
                     "\n🌌 **[Ace 2 Hiệu Ứng]** 30% *Trip To The Old Station* (×2.0 DMG, 1 lần/trận) • "
@@ -2368,6 +2420,8 @@ class OpponentTeamView(discord.ui.View):
                 skill_text += "\n❄️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Perfect Freeze* (1 lần/trận): đóng băng đối thủ, trong 2 turn tiếp theo có 45% không thể đánh trả."
             elif c["cid"] == 13:
                 skill_text += "\n☢️ **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Nuclear Spell Card* bộc phá ×3.0 sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn."
+            elif c["cid"] == 24:
+                skill_text += "\n🌈 **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Rainbow Taijiquan* (1 lần/trận): ×1.2 sát thương và giảm 15% sát thương phải nhận trong lượt đó."    
         if is_ace and str(c["cid"]).lower() == "t1":
             skill_text += "\n♾️ **[Ace 2 Hiệu Ứng]** *Cleave* (thụ động, +2% Máu tối đa mỗi đòn) • *Medicine Sign* (35% hồi 40% máu) • *Fantasy Seal* (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • *Bóng Khái Niệm* (20%: 1.5x sát thương + 10% máu tối đa + xóa kỹ năng đối phương — mỗi chiêu 1 lần/trận)."
         if str(c["cid"]).lower() == "t2":
@@ -3310,6 +3364,13 @@ async def execute_raid(channel, raid_data):
                     t4_str = "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + t4_str
 
+            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            if _ml_log:
+                card_dmg = int(card_dmg * _ml_mult)
+                if _ml_gif and not turn_image:
+                    turn_image = _ml_gif
+                t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
+            
             round_player_dmg += card_dmg
             c["total_dmg"] += card_dmg
 
@@ -4313,6 +4374,13 @@ async def execute_raid(channel, raid_data):
                     if _t4["logs"]:
                         t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
 
+            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            if _ml_log:
+                card_dmg = int(card_dmg * _ml_mult)
+                if _ml_gif and not turn_image:
+                    turn_image = _ml_gif
+                t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
+                
                 round_player_dmg += card_dmg
                 c["total_dmg"] += card_dmg
 
@@ -4884,6 +4952,13 @@ async def execute_raid(channel, raid_data):
                 if _t4["logs"]:
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
 
+            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            if _ml_log:
+                card_dmg = int(card_dmg * _ml_mult)
+                if _ml_gif and not turn_image:
+                    turn_image = _ml_gif
+                t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log 
+            
             round_player_dmg += card_dmg
             c["total_dmg"] += card_dmg
 
@@ -5615,6 +5690,13 @@ async def execute_event_raid(channel, raid_data):
                 if _t4["logs"]:
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
 
+            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            if _ml_log:
+                card_dmg = int(card_dmg * _ml_mult)
+                if _ml_gif and not turn_image:
+                    turn_image = _ml_gif
+                t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
+            
             round_player_dmg += card_dmg
             c["total_dmg"] += card_dmg
 
@@ -6109,6 +6191,13 @@ async def execute_event_raid(channel, raid_data):
                 if _t4["logs"]:
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join([f"({c['username']}) {l}" for l in _t4["logs"]])
 
+            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            if _ml_log:
+                card_dmg = int(card_dmg * _ml_mult)
+                if _ml_gif and not turn_image:
+                    turn_image = _ml_gif
+                t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
+            
             round_player_dmg += card_dmg
             c["total_dmg"] += card_dmg
 
@@ -6931,6 +7020,12 @@ class EvolSelectView(discord.ui.View):
             return
         await do_evolve_interaction(interaction, self.player, 21)
 
+    @discord.ui.button(label="🌈 [#24] Tiến Hóa Hong Meiling Ace 2 (100 Thẻ)", style=discord.ButtonStyle.success, emoji="🥋", row=1)
+    async def button_evol_meiling(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
+            return
+        await do_evolve_interaction(interaction, self.player, 24)
     @discord.ui.button(label="❄️ [#23] Tiến Hóa Cirno Ace 2 (60 Thẻ)", style=discord.ButtonStyle.primary, emoji="🧊", row=2)
     async def button_evol_cirno(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
@@ -7075,6 +7170,8 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             cid_target = 23
         elif nv_clean in ("13", "#13") or "utsuho" in nv_clean or "okuu" in nv_clean or "reiuji" in nv_clean:
             cid_target = 13
+        elif nv_clean in ("24", "#24") or "meiling" in nv_clean or "hong" in nv_clean:
+            cid_target = 24
         elif nv_clean in ("t3", "#t3", "kizuna", "vampire", "emperor"):
             cid_target = "t3"
         elif nv_clean in ("t1", "#t1", "seiki", "dephap", "toannang"):
@@ -7322,6 +7419,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     app_commands.Choice(name="[#12] Remilia Scarlet (Ace 2 - Cần 25 thẻ, Gungnir thụ động +3% Max HP)", value="12"),
     app_commands.Choice(name="[#21] Reisen Udongein Inaba (Ace 2 - Cần 40 thẻ, Red Eye Mind Explosion)", value="21"),
     app_commands.Choice(name="[#23] Cirno (Ace 2 - Cần 60 thẻ, Perfect Freeze)", value="23"),
+    app_commands.Choice(name="[#24] Hong Meiling (Ace 2 - Cần 100 thẻ, Rainbow Taijiquan)", value="24"),
     app_commands.Choice(name="[#13] Utsuho Reiuji (Ace 2 - Cần 30 thẻ, Nuclear Spell Card)", value="13"),
     app_commands.Choice(name="[#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Cần Ace2 Marisa + Reimu + Sakuya & 10 Mảnh Seiki)", value="t1"),
     app_commands.Choice(name="[#t5] Jotaro Kujo (Ace 2 - Cần Ace 1 + 10 Mảnh + Đĩa Ký Ức)", value="t5"),
@@ -8149,7 +8247,7 @@ class CharacterCheckView(discord.ui.View):
     def rebuild_items(self):
         self.clear_items()
         cid = self.current_index + 1
-        has_ace = cid in (4, 9, 12, 13, 15, 18, 19, 21, 23)
+        has_ace = cid in (4, 9, 12, 13, 15, 18, 19, 21, 23, 24)
 
         first_btn = discord.ui.Button(label="⏮️", style=discord.ButtonStyle.secondary, row=0)
         first_btn.callback = self.first_page
@@ -8203,7 +8301,7 @@ class CharacterCheckView(discord.ui.View):
         opt_part1 = []
         for i in range(1, 15):
             c = CARDS_DATA[i]
-            star = " ⭐⭐" if i in (4, 9, 12, 13, 15, 18, 19, 21, 23) else ""
+            star = " ⭐⭐" if i in (4, 9, 12, 13, 15, 18, 19, 21, 23, 24) else ""
             opt_part1.append(discord.SelectOption(
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
@@ -8217,7 +8315,7 @@ class CharacterCheckView(discord.ui.View):
         opt_part2 = []
         for i in range(15, 29):
             c = CARDS_DATA[i]
-            star = " ⭐⭐" if i in (4, 9, 12, 13, 15, 18, 19, 21, 23) else ""
+            star = " ⭐⭐" if i in (4, 9, 12, 13, 15, 18, 19, 21, 23, 24) else ""
             opt_part2.append(discord.SelectOption(
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
@@ -8241,7 +8339,7 @@ class CharacterCheckView(discord.ui.View):
         cid = self.current_index + 1
         card = CARDS_DATA[cid]
         details = CHARACTER_DETAILS.get(cid, {})
-        has_ace = cid in (4, 9, 12, 13, 15, 18, 19, 21, 23)
+        has_ace = cid in (4, 9, 12, 13, 15, 18, 19, 21, 23, 24)
         is_ace_mode = self.show_ace and has_ace
 
         player = get_player(self.user_id) if self.user_id else None
@@ -8780,6 +8878,8 @@ async def handle_battle(ctx_or_interaction):
     battle_turns = []
     p_yukari_station, p_yukari_lastword = False, False
     o_yukari_station, o_yukari_lastword = False, False
+    p_meiling_used = False
+    o_meiling_used = False
 
     while p_idx < len(player_cards) and o_idx < len(opp_cards) and r_cnt < 30:
         r_cnt += 1
@@ -9142,6 +9242,34 @@ async def handle_battle(ctx_or_interaction):
                     battle_logs.append(msg_u)
                     turn_actions.append(msg_u)
 
+        # ===== [ACE 2] HONG MEILING - RAINBOW TAIJIQUAN (BATTLE) =====
+        pc_meiling_guard = False
+        oc_meiling_guard = False
+        if (pc["cid"] == 24 and pc.get("is_ace2") and pc.get("erased_skill") != "meiling_taijiquan"
+                and not p_meiling_used and not stunned_pc and random.random() < 0.30):
+            p_meiling_used = True
+            pc_meiling_guard = True
+            curr_pc_power = int(curr_pc_power * 1.2)
+            if not turn_image:
+                turn_image = MEILING_SKILL_GIF
+            msg_ml = f"🌈 **[Ace 2] [#24] Hong Meiling** ({user.display_name}) thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({curr_pc_power:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!"
+            battle_logs.append(msg_ml)
+            turn_actions.append(msg_ml)
+        if (oc["cid"] == 24 and oc.get("is_ace2") and oc.get("erased_skill") != "meiling_taijiquan"
+                and not o_meiling_used and not stunned_oc and not o_fate_locked_now and random.random() < 0.30):
+            o_meiling_used = True
+            oc_meiling_guard = True
+            curr_oc_power = int(curr_oc_power * 1.2)
+            if not turn_image:
+                turn_image = MEILING_SKILL_GIF
+            msg_ml = f"🌈 **Đối thủ [Ace 2] [#24] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({curr_oc_power:,} DMG)** và **giảm 15% sát thương phải nhận**!"
+            battle_logs.append(msg_ml)
+            turn_actions.append(msg_ml)
+        if pc_meiling_guard:
+            curr_oc_power = int(curr_oc_power * 0.85)
+        if oc_meiling_guard:
+            curr_pc_power = int(curr_pc_power * 0.85)
+            
         # [FIX WONDER GUARD KIZUNA ACE 2 - CHẶN & PHẢN HIỆU ỨNG NGAY LẬP TỨC]
         p_wg_active = (str(pc["cid"]).lower() == "t3" and pc.get("is_ace2") and p_t3_state.get("wonder_guard_turns", 0) > 0)
         if p_wg_active:
@@ -9493,6 +9621,8 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
     pvp_logs = []
     p_yukari_station, p_yukari_lastword = False, False
     o_yukari_station, o_yukari_lastword = False, False
+    c_meiling_used = False
+    t_meiling_used = False
 
     while c_idx < len(c_cards) and t_idx < len(t_cards) and r_cnt < 30:
         r_cnt += 1
@@ -10079,6 +10209,34 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 t_stunned = True
                 turn_actions.append(f"❄️ **[Ice spear]** **{tc['name']}** ({target.display_name}) bị giáo băng cầm chân (40%), không thể tấn công lượt này!")
 
+        # ===== [ACE 2] HONG MEILING - RAINBOW TAIJIQUAN (PVP) =====
+        c_meiling_guard = False
+        t_meiling_guard = False
+        if (cc["cid"] == 24 and cc.get("is_ace2") and cc.get("erased_skill") != "meiling_taijiquan"
+                and not c_meiling_used and not c_stunned and random.random() < 0.30):
+            c_meiling_used = True
+            c_meiling_guard = True
+            c_curr_power = int(c_curr_power * 1.2)
+            if not turn_image:
+                turn_image = MEILING_SKILL_GIF
+            msg_ml = f"🌈 **[Ace 2] [#24] Hong Meiling** ({challenger.display_name}) thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({c_curr_power:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!"
+            pvp_logs.append(msg_ml)
+            turn_actions.append(msg_ml)
+        if (tc["cid"] == 24 and tc.get("is_ace2") and tc.get("erased_skill") != "meiling_taijiquan"
+                and not t_meiling_used and not t_stunned and random.random() < 0.30):
+            t_meiling_used = True
+            t_meiling_guard = True
+            t_curr_power = int(t_curr_power * 1.2)
+            if not turn_image:
+                turn_image = MEILING_SKILL_GIF
+            msg_ml = f"🌈 **[Ace 2] [#24] Hong Meiling** ({target.display_name}) thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({t_curr_power:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!"
+            pvp_logs.append(msg_ml)
+            turn_actions.append(msg_ml)
+        if c_meiling_guard:
+            t_curr_power = int(t_curr_power * 0.85)
+        if t_meiling_guard:
+            c_curr_power = int(c_curr_power * 0.85)
+        
         # [FIX WONDER GUARD KIZUNA ACE 2 TRONG PVP 3V3 - BAO GỒM CẢ FATERIA #T4]
         c_wg_active = (str(cc["cid"]).lower() == "t3" and cc.get("is_ace2") and c_t3_state.get("wonder_guard_turns", 0) > 0)
         t_wg_active = (str(tc["cid"]).lower() == "t3" and tc.get("is_ace2") and t_t3_state.get("wonder_guard_turns", 0) > 0)
@@ -11022,6 +11180,8 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
     rounds = 0
     sakuya_used, reimu_used, marisa_used = False, False, False
     flandre_used, reisen_used = False, False
+    meiling_used = False
+    meiling_guard_round = -1
     yukari_station_used, yukari_lastword_used = False, False
     p_t1 = {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
     boss_skill_erased = False; story_flags = {"spark": False, "heal": False, "seal": False, "turn": -1, "maho": 0}
@@ -11123,7 +11283,14 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
             if _t4["gif"] and not turn_image:
                 turn_image = _t4["gif"]
             turn_logs.extend(_t4["logs"])     
-
+        if pc["cid"] == 24 and pc.get("is_ace2") and not meiling_used and random.random() < 0.30:
+            meiling_used = True
+            meiling_guard_round = rounds
+            card_dmg = int(card_dmg * 1.2)
+            if not turn_image:
+                turn_image = MEILING_SKILL_GIF
+            turn_logs.append(f"🌈 **[Ace 2] [#24] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({card_dmg:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!")
+        
         rumia_hp = max(0, rumia_hp - card_dmg)
         turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Rumia!")
 
@@ -11151,7 +11318,7 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
                     rumia_hp = max(0, rumia_hp - ref_dmg)
                     turn_logs.append(f"🛡️ **[Ace 2] [#t3] Kizuna** duy trì **Wonder Guard**! Miễn thương và phản lại **{ref_dmg:,} DMG (60%)** vào Rumia!")
                 if not invul:
-                    pc["current_hp"] -= rumia_power
+                    pc["current_hp"] -= int(rumia_power * (0.85 if meiling_guard_round == rounds else 1.0))
                     turn_logs.append(f"🌑 **Rumia** phản kích bằng **Dạ Tối Kết Giới** gây **{rumia_power:,} DMG** lên {pc['name']}!")
 
         if pc["current_hp"] <= 0:
@@ -11394,6 +11561,8 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
     cirno_skill_used = False
     sakuya_used, reimu_used, marisa_used = False, False, False
     flandre_used, reisen_used = False, False
+    meiling_used = False
+    meiling_guard_round = -1
     yukari_station_used, yukari_lastword_used = False, False
     p_t1 = {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1}
     boss_skill_erased = False; story_flags = {"spark": False, "heal": False, "seal": False, "turn": -1, "maho": 0}
@@ -11505,6 +11674,14 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     turn_image = _t4["gif"]
                 turn_logs.extend(_t4["logs"])
 
+            if pc["cid"] == 24 and pc.get("is_ace2") and not meiling_used and random.random() < 0.30:
+                meiling_used = True
+                meiling_guard_round = rounds
+                card_dmg = int(card_dmg * 1.2)
+                if not turn_image:
+                    turn_image = MEILING_SKILL_GIF
+                turn_logs.append(f"🌈 **[Ace 2] [#24] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({card_dmg:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!")
+            
             cirno_hp = max(0, cirno_hp - card_dmg)
             turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Cirno!")
 
@@ -11543,7 +11720,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     cirno_hp = max(0, cirno_hp - ref_dmg)
                     turn_logs.append(f"🛡️ **[Ace 2] [#t3] Kizuna** duy trì **Wonder Guard**! Miễn thương và phản lại **{ref_dmg:,} DMG (60%)** vào Cirno!")
                 if not invul:
-                    pc["current_hp"] -= cirno_power
+                    pc["current_hp"] -= int(cirno_power * (0.85 if meiling_guard_round == rounds else 1.0))
                     turn_logs.append(f"🧊 **Cirno Ace 2** phóng bão băng cực mạnh gây **{cirno_power:,} DMG** lên {pc['name']}!")
 
         if pc["current_hp"] <= 0:
@@ -13311,6 +13488,12 @@ def _jt_player_attack(c, ac, rnd, B, notes):
             B["stunned"] = True
         setgif(_t5["gif"])
         notes.extend([f"({c['username']}) {l}" for l in _t5["logs"]])
+
+    _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+    if _ml_log:
+        dmg = int(dmg * _ml_mult)
+        setgif(_ml_gif)
+        notes.append(_ml_log)
 
     return dmg
 
