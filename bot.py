@@ -13872,6 +13872,237 @@ async def execute_jotaro_raid(channel, raid_data):
     final.add_field(name="🎁 Phần Thưởng:", value=_jt_cut("\n".join(lines)), inline=False)
     await channel.send(embed=final, view=OpenDetailsView(all_turns))
 
+# ==============================================================================
+# [UPDATE SAKUYA ACE 3] HẰNG SỐ, ĐIỀU KIỆN, KỸ NĂNG, TIẾN HÓA, GIAO DIỆN CHECK
+# ==============================================================================
+SAKUYA3_EVOL_GIF = "https://media1.tenor.com/m/pN8SUcv_QrQAAAAd/izayoi-izakuya.gif"
+SAKUYA3_PASSIVE_GIF = "https://media1.tenor.com/m/YBRgPOEcvEkAAAAd/touhou.gif"
+SAKUYA3_KNIVES_GIF = "https://static2.klipy.com/ii/f87f46a2c5aeaeed4c68910815f73eaf/1a/a7/3AuiLczA.gif"
+SAKUYA3_TIMESTOP_GIF = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/3c/04/e3hpa5f5JKxCgx.gif"
+
+SAKUYA3_BONUS_ATK = 150          # cộng thêm trên Ace 2
+SAKUYA3_BONUS_HP = 550
+SAKUYA3_REQ_CARDS = 100          # khấu trừ 100 lá Sakuya
+SAKUYA3_REQ_PRESTIGE = 3
+SAKUYA3_REVIVE_HP_PCT = 1.0      # % máu tối đa của đồng đội được kéo về hiện tại
+SAKUYA3_REQ_ACE2 = [
+    ("t1", "Seiki Đệ Nhất Pháp Sư"), (15, "Reimu"), (19, "Marisa"),
+    (12, "Remilia"), (9, "Flandre"), (24, "Hong Meiling")
+]
+
+
+def is_card_ace3(player: dict, card_id: Union[int, str]) -> bool:
+    return player.get("evolutions", {}).get(str(card_id), 0) >= 3
+
+
+def sakuya3_requirements(player: dict) -> dict:
+    return {
+        "cards": player.get("inventory", {}).get("18", 0),
+        "prestige": player.get("prestige", 0),
+        "sakuya_ace2": is_card_ace2(player, 18),
+        "missing": [(c, n) for c, n in SAKUYA3_REQ_ACE2 if not is_card_ace2(player, c)],
+    }
+
+
+def apply_sakuya_ace3_to_cards(player: dict, cards: list):
+    """Gọi sau khi dựng team_cards/player_cards: cộng chỉ số Ace 3, tắt cờ Ace 2 (để skill Ace 2 cũ không chạy)."""
+    if not is_card_ace3(player, 18):
+        return
+    for card in cards:
+        if str(card.get("cid")) == "18":
+            card["is_ace3"] = True
+            card["is_ace2"] = False
+            card["power"] += SAKUYA3_BONUS_ATK
+            for k in ("hp", "max_hp", "current_hp"):
+                if k in card:
+                    card[k] += SAKUYA3_BONUS_HP
+            if isinstance(card.get("name"), str):
+                card["name"] = card["name"].replace("[Ace 2 ⭐⭐]", "[Ace 3 🌠]").replace("[Ace 2]", "[Ace 3 🌠]")
+
+
+def sakuya3_combat_turn(state: dict, card: dict, target_name: str):
+    """Skill chủ động Sakuya Ace 3 (dùng chung Raid/Battle/PvP/Story).
+    Knives Throw 25% x1.5 (3 lần/trận) | Time Stop 40% stun 2 turn (2 lần/trận, không lặp khi đang hiệu lực).
+    Trả về dict: multiplier, stun, gif, logs."""
+    logs, gif, mult, stun = [], None, 1.0, False
+    erased = card.get("erased_skill")
+    tag = "[Ace 3] [#18] Sakuya Izayoi"
+
+    was_active = state.get("stop_remaining", 0) > 0
+    if was_active:
+        state["stop_remaining"] -= 1
+        stun = True
+        gif = SAKUYA3_TIMESTOP_GIF
+        logs.append(f"⏱️ **{tag}** - **Time Stop** vẫn đang duy trì! **{target_name}** bị **NGƯNG ĐỘNG** trong hiệp này!")
+
+    options = []
+    if erased != "sakuya3_knives" and state.get("knives_uses", 0) < 3:
+        options.append(("knives", 0.25))
+    if erased != "sakuya3_timestop" and state.get("stop_uses", 0) < 2 and not was_active:
+        options.append(("timestop", 0.40))
+
+    roll, acc = random.random(), 0.0
+    for key, chance in options:   # tối đa 1 chiêu / lượt
+        acc += chance
+        if roll < acc:
+            if key == "knives":
+                state["knives_uses"] = state.get("knives_uses", 0) + 1
+                mult = 1.5
+                gif = SAKUYA3_KNIVES_GIF
+                logs.append(f"🔪 **{tag}** tung **Knives Throw** (25%)! Mưa dao bạc ×1.5 DMG lên **{target_name}**! *(Lần {state['knives_uses']}/3)*")
+            else:
+                state["stop_uses"] = state.get("stop_uses", 0) + 1
+                state["stop_remaining"] = 1
+                stun = True
+                gif = SAKUYA3_TIMESTOP_GIF
+                logs.append(f"⏱️ **{tag}** kích hoạt **Time Stop** (40%)! Dừng thời gian **2 turn**, **{target_name}** bị STUN! *(Lần {state['stop_uses']}/2)*")
+            break
+    return {"multiplier": mult, "stun": stun, "gif": gif, "logs": logs}
+
+
+def sakuya3_try_revive(cards: list, idx: int):
+    """Passive Time Manipulation (100%): khi Sakuya Ace 3 chết, kéo ngẫu nhiên 1 đồng đội đã chết của CHÍNH MÌNH về hiện tại.
+    cards[idx] = Sakuya vừa chết. Trả về (đã_hồi_sinh, log|None). Không hồi sinh được Sakuya; vô dụng nếu chết đầu tiên."""
+    if idx < 0 or idx >= len(cards):
+        return False, None
+    sk = cards[idx]
+    if str(sk.get("cid")) != "18" or not sk.get("is_ace3") or sk.get("s3_passive_used"):
+        return False, None
+    sk["s3_passive_used"] = True
+    if sk.get("erased_skill") == "sakuya3_passive":
+        return False, "🌑 **[Time Manipulation]** của Sakuya đã bị **Bóng Khái Niệm** xóa, không thể kích hoạt!"
+    dead = [i for i in range(idx) if cards[i].get("current_hp", 1) <= 0 and str(cards[i].get("cid")) != "18"]
+    if not dead:
+        return False, "⏳ **[Time Manipulation]** kích hoạt nhưng **không có đồng đội nào đã chết** để mang về — passive vô dụng!"
+    j = random.choice(dead)
+    ally = cards[j]
+    max_hp = ally.get("max_hp", ally.get("hp", 1))
+    ally["current_hp"] = max(1, int(max_hp * SAKUYA3_REVIVE_HP_PCT))
+    cards[idx], cards[j] = cards[j], cards[idx]   # đồng đội vào đúng vị trí tiền tuyến của Sakuya
+    return True, (
+        f"⏳ **[Ace 3] [#18] Sakuya - Time Manipulation (100%)**: Trước khi gục, Sakuya bẻ cong thời gian, "
+        f"kéo **{ally['name']}** từ quá khứ về hiện tại với **{ally['current_hp']:,} HP**!"
+    )
+
+
+def sakuya3_raid_revive(c: dict, push_logs: list):
+    """Dùng trong các vòng lặp raid. Trả về GIF nếu đã hồi sinh (caller gán turn_image và `continue`)."""
+    ok, log = sakuya3_try_revive(c["team_cards"], c["current_card_index"])
+    if log:
+        push_logs.append(log)
+    return SAKUYA3_PASSIVE_GIF if ok else None
+
+
+def reset_sakuya3_phase(c: dict):
+    """Gọi khi sang Phase 2 của raid (hồi sinh toàn đội)."""
+    c["s3_state"] = {}
+    for card in c.get("team_cards", []):
+        card["s3_passive_used"] = False
+
+
+def sakuya3_skill_text() -> str:
+    return (
+        "⏳ **Time Manipulation (Passive - 100%):** Khi Sakuya chết, mang ngẫu nhiên **1 đồng đội đã chết của đội mình** "
+        "về hiện tại (không thể hồi sinh Sakuya; vô dụng nếu Sakuya chết đầu tiên).\n"
+        "🔪 **Knives Throw (25%):** ×1.5 DMG (tối đa 3 lần/trận).\n"
+        "⏱️ **Time Stop (40%):** Dừng thời gian **2 turn**, đối thủ bị STUN (tối đa 2 lần/trận)."
+    )
+
+
+def execute_sakuya_ace3(player):
+    if is_card_ace3(player, 18):
+        return False, "⚠️ **[#18] Sakuya Izayoi** đã đạt **Ace 3 🌠** từ trước rồi!", None
+    req = sakuya3_requirements(player)
+    problems = []
+    if not req["sakuya_ace2"]:
+        problems.append("• **[#18] Sakuya** phải đạt **Ace 2 ⭐⭐** trước (`/evol id_hoac_ten:18`).")
+    if req["prestige"] < SAKUYA3_REQ_PRESTIGE:
+        problems.append(f"• Cần **Prestige {SAKUYA3_REQ_PRESTIGE}+** (hiện tại: P{req['prestige']}).")
+    if req["missing"]:
+        problems.append("• Còn thiếu Ace 2: **" + ", ".join(f"[#{c}] {n}" for c, n in req["missing"]) + "**")
+    if req["cards"] < SAKUYA3_REQ_CARDS:
+        problems.append(f"• Thẻ Sakuya: **{req['cards']}/{SAKUYA3_REQ_CARDS}** lá (khấu trừ {SAKUYA3_REQ_CARDS} lá).")
+    if problems:
+        return False, "❌ **Chưa đủ điều kiện tiến hóa Sakuya Ace 3 🌠!**\n" + "\n".join(problems), None
+
+    player["inventory"]["18"] = req["cards"] - SAKUYA3_REQ_CARDS
+    player.setdefault("evolutions", {})["18"] = 3
+    save_player(player)
+
+    embed = discord.Embed(
+        title="🌠 TIẾN HÓA THÀNH CÔNG: [#18] SAKUYA IZAYOI - ACE 3!",
+        description=(
+            "🕰️ **THỜI GIAN CHỈ CÒN LÀ ĐỒ CHƠI TRONG TAY HẦU GÁI TRƯỞNG:**\n\n"
+            f"{sakuya3_skill_text()}\n\n"
+            f"📉 **Chi phí:** Đã tiêu hao **{SAKUYA3_REQ_CARDS}** lá (Còn lại: **{player['inventory']['18']}** lá)\n"
+            f"💪 **Buff Ace 3:** +{SAKUYA3_BONUS_ATK} ATK & +{SAKUYA3_BONUS_HP} HP (cộng dồn Ace 2: +300/+300)"
+        ),
+        color=0x60A5FA
+    )
+    embed.set_image(url=SAKUYA3_EVOL_GIF)
+    embed.set_footer(text="Touhou Evolution System • Sakuya Ace 3 Activated • Card ID #18")
+    return True, "", embed
+
+
+class SakuyaAce3CardView(discord.ui.View):
+    """Giao diện /check, /card_info cho [#18] Sakuya Ace 3."""
+    def __init__(self, user_id=None, back_index: int = 17):
+        super().__init__(timeout=180)
+        self.user_id = user_id
+        self.back_index = back_index
+        back = discord.ui.Button(label="📖 Quay lại danh sách nhân vật", style=discord.ButtonStyle.primary, row=0)
+        back.callback = self.on_back
+        self.add_item(back)
+
+    def get_embed(self):
+        card = CARDS_DATA[18]
+        player = get_player(self.user_id) if self.user_id else None
+        lvl = player.get("level", 1) if player else 1
+        pw = card["power"] + ACE_POWER_BUFF + SAKUYA3_BONUS_ATK
+        hp = card["hp"] + ACE_HP_BUFF + SAKUYA3_BONUS_HP
+
+        embed = discord.Embed(
+            title="🌠 [Ace 3] #18 SAKUYA IZAYOI (THỨC TỈNH TỐI THƯỢNG)",
+            description="🕰️ *Hầu Gái Trưởng Hoàn Hảo - Chúa tể thời gian của Hồng Ma Quán*",
+            color=0x60A5FA
+        )
+        embed.set_image(url=SAKUYA3_EVOL_GIF)
+        embed.add_field(
+            name="⚔️ SỨC MẠNH & CHỈ SỐ:",
+            value=(
+                f"• ⚔️ **ATK:** `{pw:,}` | ❤️ **HP:** `{hp:,}`\n"
+                f"• 🛡️ **Trong đội hình (Lv.{lvl}):** `{pw + (lvl - 1) * 20:,}` ATK | `{hp + (lvl - 1) * 25:,}` HP\n"
+                f"*(Gốc {card['power']}/{card['hp']} + Ace 2 +300/+300 + Ace 3 +{SAKUYA3_BONUS_ATK}/+{SAKUYA3_BONUS_HP})*"
+            ),
+            inline=False
+        )
+        embed.add_field(name="🔮 KỸ NĂNG ACE 3:", value=sakuya3_skill_text(), inline=False)
+        embed.add_field(
+            name="📌 ĐIỀU KIỆN TIẾN HÓA:",
+            value=(
+                f"• **{SAKUYA3_REQ_CARDS} lá Sakuya** (khấu trừ)\n"
+                "• Ace 2: **Sakuya, Seiki, Reimu, Marisa, Remilia, Flandre, Hong Meiling**\n"
+                f"• **Prestige {SAKUYA3_REQ_PRESTIGE}+**"
+            ),
+            inline=False
+        )
+        if player:
+            req = sakuya3_requirements(player)
+            if is_card_ace3(player, 18):
+                badge = "🌠 ĐÃ THỨC TỈNH ACE 3"
+            elif not req["missing"] and req["sakuya_ace2"] and req["cards"] >= SAKUYA3_REQ_CARDS and req["prestige"] >= SAKUYA3_REQ_PRESTIGE:
+                badge = "🟢 Đủ điều kiện! Dùng `/evol id_hoac_ten:18a3`"
+            else:
+                badge = (f"🔴 Chưa đủ (Thẻ {req['cards']}/{SAKUYA3_REQ_CARDS} | Prestige P{req['prestige']}/{SAKUYA3_REQ_PRESTIGE} | "
+                         f"Thiếu Ace 2: {len(req['missing']) + (0 if req['sakuya_ace2'] else 1)} nhân vật)")
+            embed.add_field(name="🎒 TRẠNG THÁI CỦA BẠN:", value=badge, inline=False)
+        embed.set_footer(text="Sakuya Ace 3 • Hoạt động trong Raid, Battle, PvP, Story")
+        return embed
+
+    async def on_back(self, interaction: discord.Interaction):
+        v = CharacterCheckView(current_index=self.back_index, user_id=self.user_id)
+        await interaction.response.edit_message(embed=v.get_current_embed(), view=v)
+
 import sys
 
 def start_bot_safely():
