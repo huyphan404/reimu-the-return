@@ -1923,6 +1923,8 @@ def apply_bong_khai_niem_card(target_card: dict):
             pool = [("t5_rage", "Rage"), ("t5_deathstop", "Ngưỡng Máu Tử"), ("t5_barrage", "Stand Barrage"), ("t5_skull", "Skull Breaker"), ("t5_timestop", "Time Stop")]
         else:
             pool = [("t5_rage", "Rage"), ("t5_barrage", "Stand Barrage"), ("t5_iggy", "Iggy Throw")]
+    elif cid == 18 and target_card.get("is_ace3"):
+        pool = [("sakuya3_knives", "Knives Throw"), ("sakuya3_timestop", "Time Stop"), ("sakuya3_passive", "Time Manipulation")]
     elif cid == 18 and is_ace:
         pool = [("sakuya_stun", "Thời Gian Đóng Băng")]
     elif cid == 19 and is_ace:
@@ -3845,6 +3847,10 @@ async def execute_raid(channel, raid_data):
                 p1_hp = max(0, p1_hp - trade_dmg)
                 c["total_dmg"] += trade_dmg
                 push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{dead_name}** ({c['username']}) trước khi gục ngã đã thành công đổi **{trade_dmg:,} DMG** lên Boss!")
+                _g = sakuya3_raid_revive(c, push_logs)
+if _g:
+    turn_image = _g
+    continue
                 c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     next_card = c["team_cards"][c["current_card_index"]]
@@ -4123,6 +4129,8 @@ async def execute_raid(channel, raid_data):
             c["med_used"] = False
             c["t3_state"] = {}
             c["t4_state"] = {}
+            c["t4_state"] = {}
+        reset_sakuya3_phase(c)
             for card in c["team_cards"]:
                 card["current_hp"] = card["max_hp"]
 
@@ -4504,6 +4512,10 @@ async def execute_raid(channel, raid_data):
                     p2_hp = max(0, p2_hp - trade_dmg)
                     c["total_dmg"] += trade_dmg
                     push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{dead_name}** ({c['username']}) trước khi gục ngã đã thành công đổi **{trade_dmg:,} DMG** lên Boss Phase 2!")
+                    _g = sakuya3_raid_revive(c, push_logs)
+if _g:
+    turn_image = _g
+    continue
                     c["current_card_index"] += 1
                     if c["current_card_index"] < len(c["team_cards"]):
                         next_card = c["team_cards"][c["current_card_index"]]
@@ -4702,6 +4714,8 @@ async def execute_raid(channel, raid_data):
         c["med_used"] = False
         c["t3_state"] = {}
         c["t4_state"] = {}
+        c["t4_state"] = {}
+        reset_sakuya3_phase(c)
         for card in c["team_cards"]:
             card["current_hp"] = card["max_hp"]
 
@@ -5069,6 +5083,10 @@ async def execute_raid(channel, raid_data):
                 c["total_dmg"] += trade_dmg
                 push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{dead_name}** ({c['username']}) trước khi gục ngã đã thành công đổi **{trade_dmg:,} DMG** lên Boss Phase 2!")
 
+                _g = sakuya3_raid_revive(c, push_logs)
+if _g:
+    turn_image = _g
+    continue
                 c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     next_card = c["team_cards"][c["current_card_index"]]
@@ -5834,6 +5852,10 @@ async def execute_event_raid(channel, raid_data):
             ac = c["team_cards"][c["current_card_index"]]
             if ac["current_hp"] <= 0:
                 dead_name = ac["name"]
+                _g = sakuya3_raid_revive(c, push_logs)
+if _g:
+    turn_image = _g
+    continue
                 c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
@@ -5963,6 +5985,8 @@ async def execute_event_raid(channel, raid_data):
         c["med_used"] = False
         c["t3_state"] = {}
         c["t4_state"] = {}
+        c["t4_state"] = {}
+        reset_sakuya3_phase(c)
         for cd in c["team_cards"]: cd["current_hp"] = cd["max_hp"]
 
     raid_data["ev_boss_locked"] = 0; p2_emb_init = discord.Embed(
@@ -6393,6 +6417,10 @@ async def execute_event_raid(channel, raid_data):
             ac = c["team_cards"][c["current_card_index"]]
             if ac["current_hp"] <= 0:
                 dead_name = ac["name"]
+                _g = sakuya3_raid_revive(c, push_logs)
+if _g:
+    turn_image = _g
+    continue
                 c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     push_logs.append(f"💀 **{dead_name}** ({c['username']}) gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
@@ -7100,8 +7128,16 @@ class EvolSelectView(discord.ui.View):
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
         await do_evolve_interaction(interaction, self.player, "t5") 
+    @discord.ui.button(label="🌠 [#18] Sakuya Ace 3 (100 Thẻ + 6 Ace2 + Prestige 3)", style=discord.ButtonStyle.primary, emoji="🕰️", row=4)
+    async def button_evol_sakuya3(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
+            return
+        await do_evolve_interaction(interaction, self.player, "18a3")    
         
 def execute_card_evolution(player, cid: Union[int, str]):
+    if str(cid).strip().lower() in ("18a3", "sakuya3", "ace3"):
+        return execute_sakuya_ace3(player)
     if str(cid).strip().lower() in ("t3", "kizuna", "vampire", "emperor"):
         return execute_kizuna_ace2(player)
     if str(cid).strip().lower() in ("t1", "seiki", "dephap", "toannang"):
@@ -7193,7 +7229,9 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     cid_target = None
     if nhan_vat_hoac_id:
         nv_clean = str(nhan_vat_hoac_id).lower().strip()
-        if nv_clean in ("4", "#4", "04", "#04") or "yukari" in nv_clean:
+        if nv_clean in ("18a3", "sakuya3", "ace3", "sakuya_ace3") or ("sakuya" in nv_clean and ("ace3" in nv_clean or "ace 3" in nv_clean)):
+            cid_target = "18a3"
+        elif nv_clean in ("4", "#4", "04", "#04") or "yukari" in nv_clean:
             cid_target = 4
         elif "15" in nv_clean or "reimu" in nv_clean:
             cid_target = 15
@@ -7441,6 +7479,16 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
         ),
         inline=False
     )
+    _r3 = sakuya3_requirements(player)
+    _s3_status = "✅ ĐÃ ĐẠT ACE 3 🌠" if is_card_ace3(player, 18) else (
+        "🟢 SẴN SÀNG!" if (_r3["sakuya_ace2"] and not _r3["missing"] and _r3["cards"] >= 100 and _r3["prestige"] >= 3)
+        else f"🔴 Thẻ {_r3['cards']}/100 | P{_r3['prestige']}/3 | Thiếu Ace2: {len(_r3['missing']) + (0 if _r3['sakuya_ace2'] else 1)}"
+    )
+    embed.add_field(
+        name="🌠 [#18] Sakuya Izayoi (Ace 3):",
+        value=f"• {_s3_status}\n• Cần Ace 2: Sakuya, Seiki, Reimu, Marisa, Remilia, Flandre, Meiling\n• +150 ATK / +550 HP • Time Manipulation, Knives Throw, Time Stop",
+        inline=False
+    )
     embed.set_footer(text="Bấm nút chọn hoặc dùng /evol kèm ID nhân vật!")
 
     view = EvolSelectView(player, user.id)
@@ -7455,6 +7503,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     app_commands.Choice(name="[#04] Yukari Yakumo (Ace 2 - Cần 10 thẻ + 1 Quạt Giấy 🪭)", value="4"),
     app_commands.Choice(name="[#15] Reimu Hakurei (Ace 2 - Cần 20 thẻ, trừ 20 khi Ace)", value="15"),
     app_commands.Choice(name="[#18] Sakuya Izayoi (Ace 2 - Cần 30 thẻ, trừ 30 khi Ace)", value="18"),
+    app_commands.Choice(name="[#18] Sakuya Izayoi (Ace 3 - 100 thẻ + 6 Ace2 + Prestige 3)", value="18a3"),
     app_commands.Choice(name="[#19] Marisa Kirisame (Ace 2 - Cần 25 thẻ, Master Spark x2.0)", value="19"),
     app_commands.Choice(name="[#09] Flandre Scarlet (Ace 2 - Cần 30 thẻ, Ripples of 495 Years)", value="9"),
     app_commands.Choice(name="[#12] Remilia Scarlet (Ace 2 - Cần 25 thẻ, Gungnir thụ động +3% Max HP)", value="12"),
@@ -7730,6 +7779,9 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
                 is_ace = is_card_ace2(player, cid)
                 ace_pwr = ACE_POWER_BUFF if is_ace else 0
                 ace_hp = ACE_HP_BUFF if is_ace else 0
+                if str(cid) == "18" and is_card_ace3(player, 18):
+                    ace_pwr += SAKUYA3_BONUS_ATK
+                    ace_hp += SAKUYA3_BONUS_HP
                 pwr = c["power"] + lvl_buff_pwr + ace_pwr
                 hp = c["hp"] + lvl_buff_hp + ace_hp
                 tot_pwr += pwr
@@ -8338,6 +8390,10 @@ class CharacterCheckView(discord.ui.View):
         t5_btn = discord.ui.Button(label="#t5 Jotaro", style=discord.ButtonStyle.secondary, emoji="⏱️", row=4)
         t5_btn.callback = self.show_t5_card
         self.add_item(t5_btn)
+        if cid == 18 and not (self.show_t1 or self.show_t2 or self.show_t3 or self.show_t4):
+            s3_btn = discord.ui.Button(label="#18 Sakuya Ace 3", style=discord.ButtonStyle.primary, emoji="🌠", row=4)
+            s3_btn.callback = self.show_s3_card
+            self.add_item(s3_btn)
 
         opt_part1 = []
         for i in range(1, 15):
@@ -8509,7 +8565,10 @@ class CharacterCheckView(discord.ui.View):
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
     async def show_t5_card(self, interaction: discord.Interaction):
         jv = JotaroCardView(self.user_id, self.current_index)
-        await interaction.response.edit_message(embed=jv.get_embed(), view=jv) 
+        await interaction.response.edit_message(embed=jv.get_embed(), view=jv)
+    async def show_s3_card(self, interaction: discord.Interaction):
+        sv = SakuyaAce3CardView(self.user_id, self.current_index)
+        await interaction.response.edit_message(embed=sv.get_embed(), view=sv)    
 
     def get_t1_embed(self) -> discord.Embed:
         card = CARDS_DATA["t1"]
@@ -8716,7 +8775,14 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
             await ctx_or_interaction.send(embed=_jv.get_embed(), view=_jv)
         return 
 
-    if nhan_vat:
+    if nhan_vat and str(nhan_vat).strip().lower().replace("#", "").replace(" ", "") in ("sakuya3", "ace3", "18a3", "sakuyaace3"):
+        _sv = SakuyaAce3CardView(user.id)
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=_sv.get_embed(), view=_sv)
+        else:
+            await ctx_or_interaction.send(embed=_sv.get_embed(), view=_sv)
+        return
+     if nhan_vat:
         nv_clean = str(nhan_vat).strip().lower()
         if nv_clean in ("t4", "#t4", "fateria", "sophan", "khuonmau") or "fateria" in nv_clean:
             show_t4_flag = True
@@ -9446,13 +9512,19 @@ async def handle_battle(ctx_or_interaction):
 
         push_msg = []
         if pc["current_hp"] <= 0:
-            p_idx += 1
-            if p_idx < len(player_cards):
-                push_msg.append(f"💀 **{pc['name']}** gục! ➡️ Đẩy **{player_cards[p_idx]['name']}** lên tiền tuyến!")
-                battle_logs.append(push_msg[-1])
+            _rv, _rv_log = sakuya3_try_revive(player_cards, p_idx)
+            if _rv_log:
+                push_msg.append(_rv_log)
+                battle_logs.append(_rv_log)
+            if _rv:
+                turn_image = SAKUYA3_PASSIVE_GIF
             else:
-                push_msg.append(f"☠️ Toàn bộ thẻ bài của **{user.display_name}** đã bị tiêu diệt!")
-        if oc["current_hp"] <= 0:
+                p_idx += 1
+                if p_idx < len(player_cards):
+                    push_msg.append(f"💀 **{pc['name']}** gục! ➡️ Đẩy **{player_cards[p_idx]['name']}** lên tiền tuyến!")
+                    battle_logs.append(push_msg[-1])
+                else:
+                    push_msg.append(f"☠️ Toàn bộ thẻ bài của **{user.display_name}** đã bị tiêu diệt!")
             o_idx += 1
             if o_idx < len(opp_cards):
                 push_msg.append(f"💥 Hạ gục **{oc['name']}**! ➡️ Đối thủ đưa **{opp_cards[o_idx]['name']}** lên nghênh chiến!")
@@ -10447,19 +10519,31 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
 
         push_msg = []
         if cc["current_hp"] <= 0:
-            c_idx += 1
-            if c_idx < len(c_cards):
-                push_msg.append(f"💀 **{cc['name']}** gục ngã! ➡️ {challenger.display_name} đưa **{c_cards[c_idx]['name']}** lên!")
-                pvp_logs.append(push_msg[-1])
+            _rv, _rv_log = sakuya3_try_revive(c_cards, c_idx)
+            if _rv_log:
+                push_msg.append(_rv_log); pvp_logs.append(_rv_log)
+            if _rv:
+                turn_image = SAKUYA3_PASSIVE_GIF
             else:
-                push_msg.append(f"☠️ Toàn bộ thẻ bài của **{challenger.display_name}** đã bị tiêu diệt!")
+                c_idx += 1
+                if c_idx < len(c_cards):
+                    push_msg.append(f"💀 **{cc['name']}** gục ngã! ➡️ {challenger.display_name} đưa **{c_cards[c_idx]['name']}** lên!")
+                    pvp_logs.append(push_msg[-1])
+                else:
+                    push_msg.append(f"☠️ Toàn bộ thẻ bài của **{challenger.display_name}** đã bị tiêu diệt!")
         if tc["current_hp"] <= 0:
-            t_idx += 1
-            if t_idx < len(t_cards):
-                push_msg.append(f"💀 **{tc['name']}** gục ngã! ➡️ {target.display_name} đưa **{t_cards[t_idx]['name']}** lên!")
-                pvp_logs.append(push_msg[-1])
+            _rv, _rv_log = sakuya3_try_revive(t_cards, t_idx)
+            if _rv_log:
+                push_msg.append(_rv_log); pvp_logs.append(_rv_log)
+            if _rv:
+                turn_image = SAKUYA3_PASSIVE_GIF
             else:
-                push_msg.append(f"☠️ Toàn bộ thẻ bài của **{target.display_name}** đã bị tiêu diệt!")
+                t_idx += 1
+                if t_idx < len(t_cards):
+                    push_msg.append(f"💀 **{tc['name']}** gục ngã! ➡️ {target.display_name} đưa **{t_cards[t_idx]['name']}** lên!")
+                    pvp_logs.append(push_msg[-1])
+                else:
+                    push_msg.append(f"☠️ Toàn bộ thẻ bài của **{target.display_name}** đã bị tiêu diệt!")
 
         pvp_turns.append({
             "round": r_cnt,
@@ -11413,9 +11497,15 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
             trade = pc["power"]
             rumia_hp = max(0, rumia_hp - trade)
             turn_logs.append(f"💥 [Đổi Sát Thương] {pc['name']} trước khi gục đã đổi **{trade:,} DMG** vào Rumia!")
-            p_idx += 1
-            if p_idx < len(player_cards):
-                turn_logs.append(f"💀 Đẩy **{player_cards[p_idx]['name']}** lên tiền tuyến!")
+            _rv, _rv_log = sakuya3_try_revive(player_cards, p_idx)
+            if _rv_log:
+                turn_logs.append(_rv_log)
+            if _rv:
+                turn_image = SAKUYA3_PASSIVE_GIF
+            else:
+                p_idx += 1
+                if p_idx < len(player_cards):
+                    turn_logs.append(f"💀 Đẩy **{player_cards[p_idx]['name']}** lên tiền tuyến!")
 
         r_embed = discord.Embed(
             title=f"⚔️ HIỆP {rounds} - QUYẾT ĐẤU RUMIA (STAGE 1)",
@@ -11824,9 +11914,15 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
             trade = pc["power"]
             cirno_hp = max(0, cirno_hp - trade)
             turn_logs.append(f"💥 [Đổi Sát Thương] {pc['name']} trước khi gục đã đổi **{trade:,} DMG** vào Cirno!")
-            p_idx += 1
-            if p_idx < len(player_cards):
-                turn_logs.append(f"💀 Đẩy **{player_cards[p_idx]['name']}** lên nghênh chiến!")
+            _rv, _rv_log = sakuya3_try_revive(player_cards, p_idx)
+            if _rv_log:
+                turn_logs.append(_rv_log)
+            if _rv:
+                turn_image = SAKUYA3_PASSIVE_GIF
+            else:
+                p_idx += 1
+                if p_idx < len(player_cards):
+                    turn_logs.append(f"💀 Đẩy **{player_cards[p_idx]['name']}** lên tiền tuyến!")
 
         r_embed = discord.Embed(
             title=f"⚔️ HIỆP {rounds} - QUYẾT ĐẤU CIRNO ACE 2 (STAGE 2)",
@@ -13876,6 +13972,10 @@ async def execute_jotaro_raid(channel, raid_data):
                 B["hp"] = max(0, B["hp"] - trade)
                 c["total_dmg"] += trade
                 push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{ac['name']}** ({c['username']}) trước khi gục đã đổi **{trade:,} DMG** lên Boss!")
+                _g = sakuya3_raid_revive(c, push_logs)
+if _g:
+    B["gif"] = _g
+    continue
                 c["current_card_index"] += 1
                 if c["current_card_index"] < len(c["team_cards"]):
                     push_logs.append(f"💀 **{ac['name']}** gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
