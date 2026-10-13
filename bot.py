@@ -7721,9 +7721,14 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
         save_player(player)
         card = CARDS_DATA[card_id]
         is_ace = is_card_ace2(player, card_id)
+        is_a3 = (str(card_id) == "18" and is_card_ace3(player, 18))
         ace_pwr = ACE_POWER_BUFF if is_ace else 0
         ace_hp = ACE_HP_BUFF if is_ace else 0
-        msg = f"✅ Đã thêm **{format_card_id(card['id'])} [{card['rank']}] {card['name']}** vào đội hình! (Lực chiến: ⚔️{card['power'] + lvl_buff_pwr + ace_pwr:,} | ❤️{card['hp'] + lvl_buff_hp + ace_hp:,})"
+        if is_a3:
+            ace_pwr += SAKUYA3_BONUS_ATK
+            ace_hp += SAKUYA3_BONUS_HP
+        tag_name = " [Ace 3 🌠]" if is_a3 else (" [Ace 2 ⭐]" if is_ace else "")
+        msg = f"✅ Đã thêm **{format_card_id(card['id'])} [{card['rank']}] {card['name']}{tag_name}** vào đội hình! (Lực chiến: ⚔️{card['power'] + lvl_buff_pwr + ace_pwr:,} | ❤️{card['hp'] + lvl_buff_hp + ace_hp:,})"
 
         tut = player.get("tutorial", {})
         if tut.get("active") and tut.get("step") == "team":
@@ -7786,7 +7791,12 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
                 hp = c["hp"] + lvl_buff_hp + ace_hp
                 tot_pwr += pwr
                 tot_hp += hp
-                ace_tag = f" ⭐ [Ace 2: +{ACE_POWER_BUFF} ATK, +{ACE_HP_BUFF} HP]" if is_ace else ""
+                if str(cid) == "18" and is_card_ace3(player, 18):
+                    ace_tag = f" 🌠 [Ace 3: +{ace_pwr} ATK, +{ace_hp} HP]"
+                elif is_ace:
+                    ace_tag = f" ⭐ [Ace 2: +{ACE_POWER_BUFF} ATK, +{ACE_HP_BUFF} HP]"
+                else:
+                    ace_tag = ""
                 embed.add_field(name=f"Vị trí #{idx}: [{format_card_id(c['id'])}] [{c['rank']}] {c['name']}{ace_tag}", value=f"⚔️ Power: **{pwr:,}** | ❤️ HP: **{hp:,}**", inline=False)
             else:
                 embed.add_field(name=f"Vị trí #{idx}: 🔲 [Trống]", value="Dùng `/team add` để xếp thêm thẻ.", inline=False)
