@@ -7135,7 +7135,7 @@ class EvolSelectView(discord.ui.View):
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
         await do_evolve_interaction(interaction, self.player, "t5") 
-    @discord.ui.button(label="🌠 [#18] Sakuya Ace 3 (100 Thẻ + 6 Ace2 + Prestige 3)", style=discord.ButtonStyle.primary, emoji="🕰️", row=4)
+    @discord.ui.button(label="🌠 [#18] Sakuya Ace 3 (100 Thẻ + 6 Ace2 + Prestige 4)", style=discord.ButtonStyle.primary, emoji="🕰️", row=4)
     async def button_evol_sakuya3(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
@@ -7488,8 +7488,8 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     )
     _r3 = sakuya3_requirements(player)
     _s3_status = "✅ ĐÃ ĐẠT ACE 3 🌠" if is_card_ace3(player, 18) else (
-        "🟢 SẴN SÀNG!" if (_r3["sakuya_ace2"] and not _r3["missing"] and _r3["cards"] >= 100 and _r3["prestige"] >= 3)
-        else f"🔴 Thẻ {_r3['cards']}/100 | P{_r3['prestige']}/3 | Thiếu Ace2: {len(_r3['missing']) + (0 if _r3['sakuya_ace2'] else 1)}"
+        "🟢 SẴN SÀNG!" if (_r3["sakuya_ace2"] and not _r3["missing"] and _r3["cards"] >= 100 and _r3["prestige"] >= SAKUYA3_REQ_PRESTIGE)
+        else f"🔴 Thẻ {_r3['cards']}/100 | P{_r3['prestige']}/{SAKUYA3_REQ_PRESTIGE} || Thiếu Ace2: {len(_r3['missing']) + (0 if _r3['sakuya_ace2'] else 1)}"
     )
     embed.add_field(
         name="🌠 [#18] Sakuya Izayoi (Ace 3):",
@@ -7510,7 +7510,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     app_commands.Choice(name="[#04] Yukari Yakumo (Ace 2 - Cần 10 thẻ + 1 Quạt Giấy 🪭)", value="4"),
     app_commands.Choice(name="[#15] Reimu Hakurei (Ace 2 - Cần 20 thẻ, trừ 20 khi Ace)", value="15"),
     app_commands.Choice(name="[#18] Sakuya Izayoi (Ace 2 - Cần 30 thẻ, trừ 30 khi Ace)", value="18"),
-    app_commands.Choice(name="[#18] Sakuya Izayoi (Ace 3 - 100 thẻ + 6 Ace2 + Prestige 3)", value="18a3"),
+    app_commands.Choice(name="[#18] Sakuya Izayoi (Ace 3 - 100 thẻ + 6 Ace2 + Prestige 4)", value="18a3"),
     app_commands.Choice(name="[#19] Marisa Kirisame (Ace 2 - Cần 25 thẻ, Master Spark x2.0)", value="19"),
     app_commands.Choice(name="[#09] Flandre Scarlet (Ace 2 - Cần 30 thẻ, Ripples of 495 Years)", value="9"),
     app_commands.Choice(name="[#12] Remilia Scarlet (Ace 2 - Cần 25 thẻ, Gungnir thụ động +3% Max HP)", value="12"),
@@ -14105,7 +14105,7 @@ SAKUYA3_TIMESTOP_GIF = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93
 SAKUYA3_BONUS_ATK = 150          # cộng thêm trên Ace 2
 SAKUYA3_BONUS_HP = 550
 SAKUYA3_REQ_CARDS = 100          # khấu trừ 100 lá Sakuya
-SAKUYA3_REQ_PRESTIGE = 3
+SAKUYA3_REQ_PRESTIGE = 4
 SAKUYA3_REVIVE_HP_PCT = 1.0      # % máu tối đa của đồng đội được kéo về hiện tại
 SAKUYA3_REQ_ACE2 = [
     ("t1", "Seiki Đệ Nhất Pháp Sư"), (15, "Reimu"), (19, "Marisa"),
