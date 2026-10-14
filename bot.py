@@ -728,8 +728,8 @@ FATERIA_BOSS_CONFIG = {
     "desc": "Thực thể thao túng dòng chảy thời gian và những con rối định mệnh!",
     "reimu_quote": "kẻ kiểm soát dòng chảy của thời gian, tất cả nghênh chiến!",
     "image": "https://media.discordapp.net/attachments/1549063334781911070/1556698641002004480/image.png?backend=b2&ex=6ac51c16&is=6ac3ca96&hm=3f8bb669aa03006bbd2fce5b687c6d81a036e8349764d9569f6bd412784446ab&=&format=webp&quality=lossless",
-    "hp": 95000,
-    "power": 8500,
+    "hp": 100000,
+    "power": 9000,
     "max_players": 6,
     "cooldown_seconds": 15 * 60,
     "passive": {
@@ -2704,12 +2704,12 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
         embed.add_field(
             name="⏳ Nội Tại & Kỹ Năng (Khuôn Mẫu Số Phận):",
             value=(
-                "• 🔄 **Passive - Save loop (15%):** Hồi **30% HP tối đa (28,500 HP)** và **MIỄN NHIỄM SÁT THƯƠNG** trong turn đó!\n"
+                "• 🔄 **Passive - Save loop (15%):** Hồi **30% HP tối đa (30,000 HP)** và **MIỄN NHIỄM SÁT THƯƠNG** trong turn đó!\n"
                 "• ⛓️ **Skill 1 - Fate loop (10%):** Khiến đối thủ **không thể dùng skill trong 2 turn liên tiếp** (không lặp lại cho đến khi hết 2 turn đó)!\n"
                 "• 🪆 **Skill 2 - Clone attack (20% kích hoạt - Random 1/3 chiêu con rối):**\n"
-                "  - ⚡ **Thunder blaze:** Ngọn lửa chớp điện phập phờn gây **2.3x DMG (19,550 DMG)** chia đều sát thương!\n"
-                "  - 🗡️ **The fallen hero:** Trảm kích ánh sáng **1.5x DMG (12,750 DMG)** chia đều & **giảm 30% Heal** của đối phương!\n"
-                "  - ❄️ **Ice spear:** Ngọn giáo băng **1.5x DMG (12,750 DMG)** chia đều & khiến đối phương **40% không thể tấn công** trong **2 lượt sau**!"
+                "  - ⚡ **Thunder blaze:** Ngọn lửa chớp điện phập phờn gây **2.3x DMG (20,700 DMG)** chia đều sát thương!\n"
+                "  - 🗡️ **The fallen hero:** Trảm kích ánh sáng **1.5x DMG (13,500 DMG)** chia đều & **giảm 30% Heal** của đối phương!\n"
+                "  - ❄️ **Ice spear:** Ngọn giáo băng **1.5x DMG (13,500 DMG)** chia đều & khiến đối phương **40% không thể tấn công** trong **2 lượt sau**!"
             ),
             inline=False
         )
@@ -8133,7 +8133,7 @@ async def handle_view_shards(ctx_or_interaction):
             f"• Tiến độ: `{get_hp_bar(min(20, fateria_shards), 20)}` ({min(100, fateria_shards * 5)}%)\n"
             f"• Thẻ quy đổi: **[T] #t4 Fateria – Khuôn mẫu của số phận** (Kho: {has_fateria} lá)\n"
             f"• Thao tác: Gõ `/t translate loai_shard:fateria` khi đủ 20 mảnh để quy đổi ngay!\n"
-            f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Fateria – Khuôn mẫu của số phận** (95K HP / 8K5 DMG)."
+            f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Fateria – Khuôn mẫu của số phận** (100K HP / 9k DMG)."
         ),
         inline=False
     )
@@ -11246,7 +11246,7 @@ async def prefix_boss_status(ctx, *args):
     app_commands.Choice(name="spawn - Triệu hồi Boss ngay tại kênh này", value="spawn"),
     app_commands.Choice(name="reset - Giải phóng Boss kẹt và xóa hồi chiêu", value="reset")
 ], loai_boss=[
-    app_commands.Choice(name="Fateria – Khuôn mẫu của số phận (95k HP / 8k5 DMG)", value="fateria"),
+    app_commands.Choice(name="Fateria – Khuôn mẫu của số phận (100k HP / 9k DMG)", value="fateria"),
     app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (90k HP / The True Adapt)", value="mahoraga"),
     app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
     app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
@@ -11268,7 +11268,7 @@ async def slash_boss_admin(interaction: discord.Interaction, action: str, loai_b
 @bot.tree.command(name="admin_boss_spawn", description="[Admin] Triệu hồi ngay Boss Raid (Fateria, Mahoraga, Seiki, Reimu) tại kênh này")
 @app_commands.describe(loai_boss="Chọn Boss muốn triệu hồi")
 @app_commands.choices(loai_boss=[
-    app_commands.Choice(name="Fateria – Khuôn mẫu của số phận (95k HP / 8k5 DMG)", value="fateria"),
+    app_commands.Choice(name="Fateria – Khuôn mẫu của số phận (100k HP / 9k DMG)", value="fateria"),
     app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (90k HP / The True Adapt)", value="mahoraga"),
     app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
     app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
