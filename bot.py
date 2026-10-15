@@ -6559,13 +6559,6 @@ def execute_single_pull(player):
         unlocked_from_lock = True
 
     converted_pulls = 0.0
-    if is_duplicate:
-        if chosen["rank"] == "SS": converted_pulls = 4.0
-        elif chosen["rank"] == "S": converted_pulls = 2.0
-        elif chosen["rank"] == "A": converted_pulls = 0.5
-        elif chosen["rank"] == "B": converted_pulls = 1.0 / 3.0
-        elif chosen["rank"] == "C": converted_pulls = 0.2
-        player["pull_tickets"] += converted_pulls
 
     return chosen, is_duplicate, converted_pulls, unlocked_from_lock
 
@@ -7599,7 +7592,7 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
     card = None
     for _ in range(count):
         card, is_dup, conv, unlocked_from_lock = execute_single_pull(player)
-        dup_text = f" *(Trùng! +{conv:.2f} vé pull)*" if is_dup else " ✨ **[MỚI]**"
+        dup_text = " *(Trùng!)*" if is_dup else " ✨ **[MỚI]**"
         if unlocked_from_lock:
             dup_text += " 🔓 **[ĐÃ MỞ KHÓA BỞI ADMIN!]**"
             unlocked_notifs.append(f"🔓 Chúc mừng! Bạn đã quay trúng lại **#{card['id']:02d} {card['name']}**, thẻ bài đã được giải phóng khỏi trạng thái khóa Admin!")
@@ -12444,7 +12437,7 @@ class TokenRandomModal(discord.ui.Modal):
         for _ in range(qty):
             card, is_dup, conv, unlocked_from_lock = execute_single_pull(self.player)
             last_card = card
-            dup_txt = f" *(Trùng! +{conv:.1f} vé)*" if is_dup else " ✨ **[MỚI]**"
+            dup_txt = " *(Trùng!)*" if is_dup else " ✨ **[MỚI]**"
             results.append(f"• `[#{card['id']:02d}]` **[{card['rank']}] {card['name']}**{dup_txt}")
 
         save_player(self.player)
