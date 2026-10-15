@@ -951,6 +951,85 @@ EVOL_CONFIG[24] = {
 }
 EVOL_CONFIG["24"] = EVOL_CONFIG[24]    
 
+# ===== ACE 2: [#17] KASEN IBARAKI =====
+KASEN_EVOL_GIF = "https://media1.tenor.com/m/u0C6J8DJiOUAAAAd/kasen-ibaraki-touhou.gif"
+KASEN_SKILL_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/e5/d7/EjDux8NLQl7SA0ly.gif"
+KASEN_SUMMON_CHANCE = 0.35
+KASEN_SUMMON_ATK_MULT = 0.8
+
+EVOL_CONFIG[17] = {
+    "id": 17,
+    "key": "kasen",
+    "name": "Kasen Ibaraki",
+    "title": "[#17] Kasen Ibaraki - Ace 2 ⭐⭐",
+    "ace_level": "Ace 2 ⭐⭐",
+    "required_cards": 25,
+    "required_pulls": 25,
+    "required_owned_card": 14,   # phải SỞ HỮU [#14] Ibaraki-Douji's Arm (không bị khấu trừ)
+    "evol_gif": KASEN_EVOL_GIF,
+    "skill_name": "Triệu Hoán Vong Cốt",
+    "skill_desc": "Gọi lên những kẻ đã bị cánh tay này ăn sống. Giúp cả đội miễn 100% sát thương trong turn và gây thêm ×0.8 ATK (35% kích hoạt, chỉ kích hoạt 1 lần trong trận). Hoạt động trong Raid (Seiki, Reimu, Mahoraga, Fateria, Jotaro), Battle, PvP và Story!",
+    "skill_gif": KASEN_SKILL_GIF,
+    "bonus_power": 300,
+    "bonus_hp": 300
+}
+EVOL_CONFIG["17"] = EVOL_CONFIG[17]
+
+
+def kasen_duel_apply(card, power, stunned, log_lists):
+    """Battle / PvP / Story. Trả về (sát thương mới, cả đội miễn thương lượt này?, gif)."""
+    if (card.get("cid") != 17 or not card.get("is_ace2") or card.get("kasen_used")
+            or card.get("erased_skill") == "kasen_summon" or stunned):
+        return power, False, None
+    if random.random() >= KASEN_SUMMON_CHANCE:
+        return power, False, None
+    card["kasen_used"] = True
+    bonus = int(card.get("power", 0) * KASEN_SUMMON_ATK_MULT)
+    msg = (
+        f"🦴 **[Ace 2] [#17] Kasen Ibaraki** kích hoạt **Triệu Hoán Vong Cốt** (35%)! "
+        f"Vong cốt ùa lên che chắn: **CẢ ĐỘI MIỄN 100% SÁT THƯƠNG** trong lượt này và gây thêm **+{bonus:,} DMG** (×0.8 ATK)!"
+    )
+    for lst in log_lists:
+        lst.append(msg)
+    return power + bonus, True, KASEN_SKILL_GIF
+
+
+def kasen_raid_turn(c, ac, active_combatants):
+    """Raid. Trả về (sát thương cộng thêm, gif, log). Dùng t3_state nên tự reset khi sang Phase 2."""
+    if ac.get("cid") != 17 or not ac.get("is_ace2") or ac.get("erased_skill") == "kasen_summon":
+        return 0, None, None
+    st = c.setdefault("t3_state", {})
+    if st.get("kasen_used"):
+        return 0, None, None
+    if random.random() >= KASEN_SUMMON_CHANCE:
+        return 0, None, None
+    st["kasen_used"] = True
+    # Chụp máu hiện tại của toàn bộ tiền tuyến; cuối hiệp sẽ khôi phục => miễn 100% sát thương hiệp này
+    for c2 in active_combatants:
+        idx = c2.get("current_card_index", 0)
+        cards = c2.get("team_cards", [])
+        if idx < len(cards):
+            c2["kasen_guard"] = {"idx": idx, "hp": cards[idx]["current_hp"]}
+    bonus = int(ac["power"] * KASEN_SUMMON_ATK_MULT)
+    log = (
+        f"🦴 **[Ace 2] [#17] Kasen Ibaraki** ({c['username']}) kích hoạt **Triệu Hoán Vong Cốt** (35%)! "
+        f"**TOÀN BỘ TIỀN TUYẾN MIỄN 100% SÁT THƯƠNG** trong hiệp này (mọi sát thương Boss gây ra sẽ bị vô hiệu) "
+        f"và gây thêm **+{bonus:,} DMG** (×0.8 ATK)!"
+    )
+    return bonus, KASEN_SKILL_GIF, log
+
+
+def kasen_restore_guard(active_combatants):
+    """Gọi cuối hiệp Raid (sau khi Boss ra đòn) để hoàn lại máu cho tiền tuyến đang được Kasen bảo hộ."""
+    for c in active_combatants:
+        g = c.pop("kasen_guard", None)
+        if not g:
+            continue
+        cards = c.get("team_cards", [])
+        idx = g["idx"]
+        if idx == c.get("current_card_index") and idx < len(cards):
+            cards[idx]["current_hp"] = max(cards[idx]["current_hp"], g["hp"])
+            
 # ==============================================================================
 # ACE 2 MỚI: [#t1] SEIKI ĐỆ NHẤT PHÁP SƯ (BỘ KỸ NĂNG THAY ĐỔI HOÀN TOÀN)
 # ==============================================================================
@@ -1076,7 +1155,7 @@ CHARACTER_DETAILS = {
     14: {"title": "Cánh Tay Quỷ Bị Phong Ấn", "skill_name": "Quỷ Khí Trảm Thiết", "skill_desc": "Cánh tay phải bị chém đứt của Đại Quỷ Ibaraki-Douji, ẩn chứa ma lực quỷ giới cuồng bạo và sức công phá kinh thiên động địa (500 ATK / 4,800 HP)."},
     15: {"title": "Vu Nữ Đền Hakurei", "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh", "skill_desc": "Bay lượn khỏi thực tại và trừ tà ma thuật. [Ace 2 ⭐⭐]: Miễn toàn bộ sát thương 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
     16: {"title": "Phượng Hoàng Bất Tử", "skill_name": "Phượng Hoàng Bất Diệt", "skill_desc": "Cơ thể bất tử do uống tiên dược Hourai, triệu hồi ngọn lửa phượng hoàng thiêu đốt kẻ địch mà không hề sợ chết (490 ATK / 5,200 HP)."},
-    17: {"title": "Tiên Nhân Một Tay", "skill_name": "Thần Thú Giáng Lâm", "skill_desc": "Một trong Tứ Thiên Vương ẩn mình dưới thân phận tiên nhân dạy dỗ yêu quái và điều khiển muôn loài linh thú (480 ATK / 4,900 HP)."},
+    17: {"title": "Tiên Nhân Một Tay", "skill_name": "Thần Thú Giáng Lâm", "skill_desc": "Một trong Tứ Thiên Vương ẩn mình dưới thân phận tiên nhân dạy dỗ yêu quái và điều khiển muôn loài linh thú (480 ATK / 4,900 HP). [Ace 2 ⭐⭐]: Triệu Hoán Vong Cốt (35%, 1 lần/trận) — cả đội miễn 100% sát thương trong turn đó và gây thêm ×0.8 ATK!"},
     18: {"title": "Hầu Gái Trưởng Hoàn Hảo", "skill_name": "Thời Gian Đóng Băng", "skill_desc": "Bậc thầy phi dao bạc và không-thời gian. [Ace 2 ⭐⭐]: Đóng băng thời gian làm đối thủ/boss bị STUN mất lượt 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
     19: {"title": "Phù Thủy Bình Thường", "skill_name": "Bát Quái Lô - Master Spark", "skill_desc": "Ma thuật ánh sáng và nhiệt độ cao. [Ace 2 ⭐⭐]: Bắn đại bác ma thuật Master Spark gây sát thương ×2.0 lần sát thương gốc (Tỷ lệ 30% 1 lần trong trận)!"},
     20: {"title": "Kiếm Sĩ Nửa Người Nửa Ma", "skill_name": "Song Kiếm Lâu Quan & Bạch Lâu", "skill_desc": "Thần tốc kiếm đạo: Lâu Quan Kiếm chém vạn vật và Bạch Lâu Kiếm chém tan ảo tưởng mê muội (410 ATK / 4,100 HP)."},
@@ -1943,7 +2022,9 @@ def apply_bong_khai_niem_card(target_card: dict):
         pool = [("utsuho_nuclear", "Nuclear Spell Card")]
     elif cid == 24 and is_ace:
         pool = [("meiling_taijiquan", "Rainbow Taijiquan")]    
-
+    elif cid == 17 and is_ace:
+        pool = [("kasen_summon", "Triệu Hoán Vong Cốt")]
+    
     if not pool:
         return f"🌑 **[Bóng Khái Niệm]** **{target_card['name']}** không sở hữu kỹ năng đặc biệt nào để xóa!"
 
@@ -3377,7 +3458,8 @@ async def execute_raid(channel, raid_data):
                 if _s3["logs"]:
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
 
-            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants); card_dmg += _ks_bonus; turn_image = turn_image or _ks_gif; t3_notif = ((t3_notif + "
+" if t3_notif else "") + _ks_log) if _ks_log else t3_notif; _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
             if _ml_log:
                 card_dmg = int(card_dmg * _ml_mult)
                 if _ml_gif and not turn_image:
@@ -3835,7 +3917,7 @@ async def execute_raid(channel, raid_data):
                             else:
                                 ac["current_hp"] -= dmg_per_card
 
-        push_logs = []; tick_wonder_guard(active_combatants)
+        kasen_restore_guard(active_combatants); push_logs = []; tick_wonder_guard(active_combatants)
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if str(ac["cid"]).lower() == "t4" and c.get("t4_invul_turn") == p1_rounds:
@@ -4402,7 +4484,8 @@ async def execute_raid(channel, raid_data):
                         turn_image = _s3["gif"]
                     if _s3["logs"]:
                         t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])    
-                _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+                _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants); card_dmg += _ks_bonus; turn_image = turn_image or _ks_gif; t3_notif = ((t3_notif + "
+" if t3_notif else "") + _ks_log) if _ks_log else t3_notif; _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
                 if _ml_log:
                     card_dmg = int(card_dmg * _ml_mult)
                     if _ml_gif and not turn_image:
@@ -4509,7 +4592,7 @@ async def execute_raid(channel, raid_data):
                     if not turn_image:
                         turn_image = p2_cfg["skills"]["cleave"]["gif"]
 
-            push_logs = []; tick_wonder_guard(active_combatants)
+            kasen_restore_guard(active_combatants); push_logs = []; tick_wonder_guard(active_combatants)
             for c in active_combatants:
                 ac = c["team_cards"][c["current_card_index"]]
                 if str(ac["cid"]).lower() == "t4" and c.get("t4_invul_turn") == p2_rounds:
@@ -4995,7 +5078,8 @@ async def execute_raid(channel, raid_data):
                     turn_image = _s3["gif"]
                 if _s3["logs"]:
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
-            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants); card_dmg += _ks_bonus; turn_image = turn_image or _ks_gif; t3_notif = ((t3_notif + "
+" if t3_notif else "") + _ks_log) if _ks_log else t3_notif; _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
             if _ml_log:
                 card_dmg = int(card_dmg * _ml_mult)
                 if _ml_gif and not turn_image:
@@ -5079,7 +5163,7 @@ async def execute_raid(channel, raid_data):
                     if not invul:
                         ac["current_hp"] -= int(dmg_per_card * (1.0 - (min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05) if str(ac["cid"]).lower() == "t2" else 0.0)))
 
-        push_logs = []; tick_wonder_guard(active_combatants)
+        kasen_restore_guard(active_combatants); push_logs = []; tick_wonder_guard(active_combatants)
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if str(ac["cid"]).lower() == "t4" and c.get("t4_invul_turn") == p2_rounds:
@@ -5747,7 +5831,8 @@ async def execute_event_raid(channel, raid_data):
                     turn_image = _s3["gif"]
                 if _s3["logs"]:
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
-            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants); card_dmg += _ks_bonus; turn_image = turn_image or _ks_gif; t3_notif = ((t3_notif + "
+" if t3_notif else "") + _ks_log) if _ks_log else t3_notif; _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
             if _ml_log:
                 card_dmg = int(card_dmg * _ml_mult)
                 if _ml_gif and not turn_image:
@@ -5856,7 +5941,7 @@ async def execute_event_raid(channel, raid_data):
                             ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
                         else:
                             ac["current_hp"] -= dmg_each
-        push_logs = []; tick_wonder_guard(active_combatants); restore_t4_save_loop(active_combatants, p1_rounds)
+        kasen_restore_guard(active_combatants); push_logs = []; tick_wonder_guard(active_combatants); restore_t4_save_loop(active_combatants, p1_rounds)
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if ac["current_hp"] <= 0:
@@ -6263,7 +6348,8 @@ async def execute_event_raid(channel, raid_data):
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
                 if _s3["stun"] and not boss_wg_active:
                     boss_stunned = True    
-            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants); card_dmg += _ks_bonus; turn_image = turn_image or _ks_gif; t3_notif = ((t3_notif + "
+" if t3_notif else "") + _ks_log) if _ks_log else t3_notif; _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
             if _ml_log:
                 card_dmg = int(card_dmg * _ml_mult)
                 if _ml_gif and not turn_image:
@@ -6419,7 +6505,7 @@ async def execute_event_raid(channel, raid_data):
                                 ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
                             else:
                                 ac["current_hp"] -= dmg_each
-        push_logs = []; tick_wonder_guard(active_combatants); restore_t4_save_loop(active_combatants, p2_rounds)
+        kasen_restore_guard(active_combatants); push_logs = []; tick_wonder_guard(active_combatants); restore_t4_save_loop(active_combatants, p2_rounds)
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if ac["current_hp"] <= 0:
@@ -7109,6 +7195,12 @@ class EvolSelectView(discord.ui.View):
             return
         await do_evolve_interaction(interaction, self.player, 13)
 
+    @discord.ui.button(label="🦴 [#17] Tiến Hóa Kasen Ace 2 (25 Thẻ + có #14)", style=discord.ButtonStyle.danger, emoji="🦴", row=2)
+    async def button_evol_kasen(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
+            return
+        await do_evolve_interaction(interaction, self.player, 17)
     @discord.ui.button(label="🩸 [#t3] Tiến Hóa Kizuna Ace 2 (1 Thánh Lõi)", style=discord.ButtonStyle.danger, emoji="👑", row=3)
     async def button_evol_kizuna(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
@@ -7167,6 +7259,19 @@ def execute_card_evolution(player, cid: Union[int, str]):
             None
         )
 
+    # 1.5 Kiểm tra phải sở hữu thẻ yêu cầu (ví dụ Kasen cần [#14] Ibaraki-Douji's Arm, không bị khấu trừ)
+    req_own = cfg.get("required_owned_card")
+    if req_own is not None:
+        own_info = CARDS_DATA.get(req_own, {})
+        if player.get("inventory", {}).get(str(req_own), 0) < 1 or is_card_locked(player, req_own):
+            return (
+                False,
+                f"❌ Bạn cần **sở hữu thẻ [#{int(req_own):02d}] {own_info.get('name', req_own)}** để tiến hóa "
+                f"**[#{cfg['id']:02d}] {cfg['name']}** lên Ace 2!\n"
+                f"💡 *Thẻ này chỉ cần có trong túi đồ, KHÔNG bị khấu trừ. Quay `/pull` để tìm nhé!*",
+                None
+            )
+            
     # 2. Kiểm tra vật phẩm đặc biệt (Quạt Giấy nếu là Yukari)
     req_item = cfg.get("required_item")
     if req_item:
@@ -7233,6 +7338,8 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             cid_target = "18a3"
         elif nv_clean in ("4", "#4", "04", "#04") or "yukari" in nv_clean:
             cid_target = 4
+        elif nv_clean in ("17", "#17") or "kasen" in nv_clean:
+            cid_target = 17
         elif "15" in nv_clean or "reimu" in nv_clean:
             cid_target = 15
         elif "18" in nv_clean or "sakuya" in nv_clean:
@@ -7489,6 +7596,23 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
         value=f"• {_s3_status}\n• Cần Ace 2: Sakuya, Seiki, Reimu, Marisa, Remilia, Flandre, Meiling\n• +150 ATK / +550 HP • Time Manipulation, Knives Throw, Time Stop",
         inline=False
     )
+    _k_cnt = player.get("inventory", {}).get("17", 0)
+    _k_arm = player.get("inventory", {}).get("14", 0)
+    if is_card_ace2(player, 17):
+        _k_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐"
+    elif _k_cnt >= 25 and _k_arm >= 1:
+        _k_status = "🟢 SẴN SÀNG TIẾN HÓA!"
+    else:
+        _k_status = f"🔴 Chưa đủ (Kasen: {_k_cnt}/25 | Ibaraki-Douji's Arm #14: {'✅' if _k_arm >= 1 else '❌'})"
+    embed.add_field(
+        name="🦴 [#17] Kasen Ibaraki (Yêu cầu: 25 thẻ + sở hữu [#14] Ibaraki-Douji's Arm):",
+        value=(
+            f"• Trạng thái: **{_k_status}**\n"
+            "• Buff Ace: **+300 ATK** & **+300 HP** (khấu trừ 25 thẻ Kasen, KHÔNG khấu trừ thẻ #14)\n"
+            "• Kỹ năng: **Triệu Hoán Vong Cốt** (35%, 1 lần/trận): cả đội miễn 100% sát thương trong turn + gây thêm ×0.8 ATK"
+        ),
+        inline=False
+    )
     embed.set_footer(text="Bấm nút chọn hoặc dùng /evol kèm ID nhân vật!")
 
     view = EvolSelectView(player, user.id)
@@ -7510,6 +7634,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     app_commands.Choice(name="[#21] Reisen Udongein Inaba (Ace 2 - Cần 40 thẻ, Red Eye Mind Explosion)", value="21"),
     app_commands.Choice(name="[#23] Cirno (Ace 2 - Cần 60 thẻ, Perfect Freeze)", value="23"),
     app_commands.Choice(name="[#24] Hong Meiling (Ace 2 - Cần 100 thẻ, Rainbow Taijiquan)", value="24"),
+    app_commands.Choice(name="[#17] Kasen Ibaraki (Ace 2 - 25 thẻ + sở hữu #14 Ibaraki-Douji's Arm)", value="17"),
     app_commands.Choice(name="[#13] Utsuho Reiuji (Ace 2 - Cần 30 thẻ, Nuclear Spell Card)", value="13"),
     app_commands.Choice(name="[#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Cần Ace2 Marisa + Reimu + Sakuya & 10 Mảnh Seiki)", value="t1"),
     app_commands.Choice(name="[#t5] Jotaro Kujo (Ace 2 - Cần Ace 1 + 10 Mảnh + Đĩa Ký Ức)", value="t5"),
@@ -8350,7 +8475,7 @@ class CharacterCheckView(discord.ui.View):
     def rebuild_items(self):
         self.clear_items()
         cid = self.current_index + 1
-        has_ace = cid in (4, 9, 12, 13, 15, 18, 19, 21, 23, 24)
+        has_ace = cid in (4, 9, 12, 13, 15, 17, 18, 19, 21, 23, 24)
 
         first_btn = discord.ui.Button(label="⏮️", style=discord.ButtonStyle.secondary, row=0)
         first_btn.callback = self.first_page
@@ -8408,7 +8533,7 @@ class CharacterCheckView(discord.ui.View):
         opt_part1 = []
         for i in range(1, 15):
             c = CARDS_DATA[i]
-            star = " ⭐⭐" if i in (4, 9, 12, 13, 15, 18, 19, 21, 23, 24) else ""
+            star = " ⭐⭐" if i in (4, 9, 12, 13, 15, 17, 18, 19, 21, 23, 24) else ""
             opt_part1.append(discord.SelectOption(
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
@@ -8422,7 +8547,7 @@ class CharacterCheckView(discord.ui.View):
         opt_part2 = []
         for i in range(15, 29):
             c = CARDS_DATA[i]
-            star = " ⭐⭐" if i in (4, 9, 12, 13, 15, 18, 19, 21, 23, 24) else ""
+            star = " ⭐⭐" if i in (4, 9, 12, 13, 15, 17, 18, 19, 21, 23, 24) else ""
             opt_part2.append(discord.SelectOption(
                 label=f"#{c['id']:02d} [{c['rank']}] {c['name']}{star}"[:100],
                 value=str(i),
@@ -8446,7 +8571,7 @@ class CharacterCheckView(discord.ui.View):
         cid = self.current_index + 1
         card = CARDS_DATA[cid]
         details = CHARACTER_DETAILS.get(cid, {})
-        has_ace = cid in (4, 9, 12, 13, 15, 18, 19, 21, 23, 24)
+        has_ace = cid in (4, 9, 12, 13, 15, 17, 18, 19, 21, 23, 24)
         is_ace_mode = self.show_ace and has_ace
 
         player = get_player(self.user_id) if self.user_id else None
@@ -9375,7 +9500,7 @@ async def handle_battle(ctx_or_interaction):
                     turn_actions.append(msg_u)
 
         # ===== [ACE 2] HONG MEILING - RAINBOW TAIJIQUAN (BATTLE) =====
-        pc_meiling_guard = False
+        pc_meiling_guard = False; curr_pc_power, p_kasen_guard, _kg = kasen_duel_apply(pc, curr_pc_power, stunned_pc, [turn_actions, battle_logs]); turn_image = turn_image or _kg
         oc_meiling_guard = False
         if (pc["cid"] == 24 and pc.get("is_ace2") and pc.get("erased_skill") != "meiling_taijiquan"
                 and not p_meiling_used and not stunned_pc and random.random() < 0.30):
@@ -9454,7 +9579,7 @@ async def handle_battle(ctx_or_interaction):
             p_t3_state["wonder_guard_turns"] -= 1
 
         if not stunned_oc:
-            pc_invul = p_t4_save_invul or (str(pc["cid"]).lower() == "t1" and bool(pc.get("is_ace2")) and bool(_t1.get("invul", False)))
+            pc_invul = p_t4_save_invul or p_kasen_guard or (str(pc["cid"]).lower() == "t1" and bool(pc.get("is_ace2")) and bool(_t1.get("invul", False)))
             if p_wg_active:
                 pc_invul = True
                 ref_dmg = int(curr_oc_power * 0.60)
@@ -10372,7 +10497,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
 
         # ===== [ACE 2] HONG MEILING - RAINBOW TAIJIQUAN (PVP) =====
         c_meiling_guard = False
-        t_meiling_guard = False
+        t_meiling_guard = False; c_curr_power, _kc, _kcg = kasen_duel_apply(cc, c_curr_power, c_stunned, [turn_actions, pvp_logs]); c_invul = c_invul or _kc; turn_image = turn_image or _kcg; t_curr_power, _kt, _ktg = kasen_duel_apply(tc, t_curr_power, t_stunned, [turn_actions, pvp_logs]); t_invul = t_invul or _kt; turn_image = turn_image or _ktg
         if (cc["cid"] == 24 and cc.get("is_ace2") and cc.get("erased_skill") != "meiling_taijiquan"
                 and not c_meiling_used and not c_stunned and random.random() < 0.30):
             c_meiling_used = True
@@ -11361,7 +11486,7 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
     boss_skill_erased = False; story_flags = {"spark": False, "heal": False, "seal": False, "turn": -1, "maho": 0}
 
     while rumia_hp > 0 and p_idx < len(player_cards) and rounds < 25:
-        rounds += 1; seiki_seal_story = False; boss_stun_story = False; yukari_stun_this_turn = False
+        rounds += 1; seiki_seal_story = False; boss_stun_story = False; yukari_stun_this_turn = False; kasen_guard_story = False
         pc = player_cards[p_idx]
         turn_image = None
         turn_logs = []
@@ -11473,7 +11598,7 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
                 turn_image = MEILING_SKILL_GIF
             turn_logs.append(f"🌈 **[Ace 2] [#24] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({card_dmg:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!")
         
-        rumia_hp = max(0, rumia_hp - card_dmg)
+        card_dmg, kasen_guard_story, _kg = kasen_duel_apply(pc, card_dmg, False, [turn_logs]); turn_image = turn_image or _kg; rumia_hp = max(0, rumia_hp - card_dmg)
         turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Rumia!")
 
         if rumia_hp <= 0:
@@ -11482,7 +11607,7 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
             if boss_stun_story or yukari_stun_this_turn:
                 turn_logs.append("❄️ Rumia bị đóng băng không thể phản công!")
             else:
-                invul = t4_invul_story
+                invul = t4_invul_story or kasen_guard_story
                 if pc["cid"] == 4 and pc.get("is_ace2") and random.random() < 0.10:
                     invul = True
                     rumia_hp = max(0, rumia_hp - rumia_power)
@@ -11879,7 +12004,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     turn_image = MEILING_SKILL_GIF
                 turn_logs.append(f"🌈 **[Ace 2] [#24] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({card_dmg:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!")
             
-            cirno_hp = max(0, cirno_hp - card_dmg)
+            card_dmg, kasen_guard_story, _kg = kasen_duel_apply(pc, card_dmg, False, [turn_logs]); turn_image = turn_image or _kg; cirno_hp = max(0, cirno_hp - card_dmg)
             turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Cirno!")
 
         if cirno_hp <= 0:
@@ -11897,7 +12022,9 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     turn_logs.append("❄️ **[Ace 2] Cirno** tung tuyệt kỹ **PERFECT FREEZE** (40%)! Đóng băng người chơi: trong 2 turn tiếp có 45% không thể đánh trả!")
 
                 invul = False
-                if not cirno_used_skill_this_turn and pc["cid"] == 4 and pc.get("is_ace2") and random.random() < 0.10:
+                if kasen_guard_story:
+                    invul = True
+                elif not cirno_used_skill_this_turn and pc["cid"] == 4 and pc.get("is_ace2") and random.random() < 0.10:
                     invul = True
                     cirno_hp = max(0, cirno_hp - cirno_power)
                     turn_logs.append(f"🌀 **[Ace 2] [#04] Yukari** kích hoạt **Invisible Gap (10%)**! Miễn thương và phản lại **{cirno_power:,} DMG** đánh thường vào Cirno!")
@@ -13699,11 +13826,16 @@ def _jt_player_attack(c, ac, rnd, B, notes):
             B["stunned"] = True
         setgif(_s3["gif"])
         notes.extend([f"({c['username']}) {l}" for l in _s3["logs"]])   
-    _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
-    if _ml_log:
-        dmg = int(dmg * _ml_mult)
-        setgif(_ml_gif)
-        notes.append(_ml_log)
+    _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, B.get("active", []))
+    if _ks_log:
+        dmg += _ks_bonus
+        setgif(_ks_gif)
+        notes.append(_ks_log)
+    _jm_mult, _jm_gif, _jm_log = meiling_raid_turn(c, ac)
+    if _jm_log:
+        dmg = int(dmg * _jm_mult)
+        setgif(_jm_gif)
+        notes.append(_jm_log)
 
     return dmg
 
@@ -13836,7 +13968,7 @@ async def execute_jotaro_raid(channel, raid_data):
         front = [c["team_cards"][c["current_card_index"]] for c in active]
         B["stunned"] = False
         B["gif"] = None
-        B["locked_now"] = B["fate"] > 0
+         B["locked_now"] = B["fate"] > 0; B["active"] = active
         if B["fate"] > 0:
             B["fate"] -= 1
         notes = []
@@ -13963,7 +14095,7 @@ async def execute_jotaro_raid(channel, raid_data):
             boss_rage_turns -= 1
 
         # ---------- Thay thẻ / đổi sát thương ----------
-        tick_wonder_guard(active)
+        kasen_restore_guard(active); tick_wonder_guard(active)
         restore_t4_save_loop(active, rounds)
         push_logs = []
         for c in active:
