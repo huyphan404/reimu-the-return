@@ -4315,7 +4315,7 @@ async def execute_raid(channel, raid_data):
                         card_dmg = int(card_dmg * 2.5)
                         boss_stunned = True
                         if not turn_image:
-                            turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+                            turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
                         yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{card_dmg:,} DMG** và **STUN Boss Phase 2**!"
 
                 if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
@@ -4916,7 +4916,7 @@ async def execute_raid(channel, raid_data):
                     card_dmg = int(card_dmg * 2.5)
                     boss_stunned = True
                     if not turn_image:
-                        turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+                        turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
                     yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{card_dmg:,} DMG** và **STUN đối thủ**!"
 
             if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
@@ -5716,7 +5716,7 @@ async def execute_event_raid(channel, raid_data):
                     card_dmg = int(card_dmg * 2.5)
                     boss_stunned = True
                     if not turn_image:
-                        turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+                        turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
                     yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{card_dmg:,} DMG** và **STUN Boss Kizuna**!"
 
             if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
@@ -6213,7 +6213,7 @@ async def execute_event_raid(channel, raid_data):
                     c["yukari_lastword_used"] = True
                     card_dmg = int(card_dmg * 2.5)
                     if not turn_image:
-                        turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+                        turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
                     if boss_wg_active:
                         yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** nhưng bị **Wonder Guard Boss** chặn đứng STUN & phản đòn!"
                     else:
@@ -9254,7 +9254,7 @@ async def handle_battle(ctx_or_interaction):
                 curr_pc_power = int(curr_pc_power * 2.5)
                 stunned_oc = True
                 if not turn_image:
-                    turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+                    turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
                 msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({user.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{curr_pc_power:,} DMG** và **STUN đối thủ**!"
                 battle_logs.append(msg_y)
                 turn_actions.append(msg_y)
@@ -9466,7 +9466,7 @@ async def handle_battle(ctx_or_interaction):
                     curr_oc_power = int(curr_oc_power * 2.5)
                     stunned_pc = True
                     if not turn_image:
-                        turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+                        turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
                     msg_y = f"👁️ **Đối thủ [Ace 2] [#04] Yukari** kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{curr_oc_power:,} DMG** và **STUN bạn 1 lượt**!"
                     battle_logs.append(msg_y)
                     turn_actions.append(msg_y)
@@ -10087,7 +10087,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 c_curr_power = int(c_curr_power * 2.5)
                 t_stunned = True
                 if not turn_image:
-                    turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+                    turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
                 msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({challenger.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{c_curr_power:,} DMG** và **STUN đối thủ**!"
                 pvp_logs.append(msg_y)
                 turn_actions.append(msg_y)
@@ -10310,7 +10310,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 t_curr_power = int(t_curr_power * 2.5)
                 c_stunned = True
                 if not turn_image:
-                    turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+                    turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
                 msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({target.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{t_curr_power:,} DMG** và **STUN đối thủ**!"
                 pvp_logs.append(msg_y)
                 turn_actions.append(msg_y)
@@ -11536,7 +11536,7 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
                 card_dmg = int(card_dmg * 2.5)
                 yukari_stun_this_turn = True
                 if not turn_image:
-                    turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+                    turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
                 turn_logs.append(f"👁️ **[Ace 2] [#04] Yukari** kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{card_dmg:,} DMG** và **STUN Rumia 1 lượt**!")
 
         if pc["cid"] == 19 and pc["is_ace2"] and not marisa_used:
@@ -11940,7 +11940,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     card_dmg = int(card_dmg * 2.5)
                     yukari_stun_this_turn = True
                     if not turn_image:
-                        turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
+                        turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
                     turn_logs.append(f"👁️ **[Ace 2] [#04] Yukari** kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{card_dmg:,} DMG** và **STUN Cirno 1 lượt**!")
 
             if pc["cid"] == 19 and pc["is_ace2"] and not marisa_used:
