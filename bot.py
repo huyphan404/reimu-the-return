@@ -952,7 +952,7 @@ EVOL_CONFIG[24] = {
 EVOL_CONFIG["24"] = EVOL_CONFIG[24]    
 
 # ===== ACE 2: [#17] KASEN IBARAKI =====
-KASEN_EVOL_GIF = ""https://static2.klipy.com/ii/cfb42878805dcb270f51b28683e7455a/77/1b/jRgxwqNPasGjhJha9XL.gif""
+KASEN_EVOL_GIF = "https://c.tenor.com/u0C6J8DJiOUAAAAd/kasen-ibaraki-touhou.gif"
 KASEN_SKILL_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/e5/d7/EjDux8NLQl7SA0ly.gif"
 KASEN_SUMMON_CHANCE = 0.35
 KASEN_SUMMON_ATK_MULT = 0.8
