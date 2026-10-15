@@ -4496,14 +4496,14 @@ async def execute_raid(channel, raid_data):
                 t3_notif = ((t3_notif + "\n") if t3_notif else "") + _ks_log
 
             _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
-                if _ml_log:
-                    card_dmg = int(card_dmg * _ml_mult)
-                    if _ml_gif and not turn_image:
-                        turn_image = _ml_gif
-                    t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
-                
-                round_player_dmg += card_dmg
-                c["total_dmg"] += card_dmg
+            if _ml_log:
+                card_dmg = int(card_dmg * _ml_mult)
+                if _ml_gif and not turn_image:
+                    turn_image = _ml_gif
+                t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
+            
+            round_player_dmg += card_dmg
+            c["total_dmg"] += card_dmg
 
             p2_hp = max(0, p2_hp - round_player_dmg)
 
@@ -13993,7 +13993,7 @@ async def execute_jotaro_raid(channel, raid_data):
         front = [c["team_cards"][c["current_card_index"]] for c in active]
         B["stunned"] = False
         B["gif"] = None
-         B["locked_now"] = B["fate"] > 0; B["active"] = active
+        B["locked_now"] = B["fate"] > 0; B["active"] = active
         if B["fate"] > 0:
             B["fate"] -= 1
         notes = []
