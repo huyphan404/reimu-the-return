@@ -3458,8 +3458,13 @@ async def execute_raid(channel, raid_data):
                 if _s3["logs"]:
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
 
-            _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants); card_dmg += _ks_bonus; turn_image = turn_image or _ks_gif; t3_notif = ((t3_notif + "
-" if t3_notif else "") + _ks_log) if _ks_log else t3_notif; _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants)
+            if _ks_log:
+                card_dmg += _ks_bonus
+                turn_image = turn_image or _ks_gif
+                t3_notif = ((t3_notif + "\n") if t3_notif else "") + _ks_log
+
+            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
             if _ml_log:
                 card_dmg = int(card_dmg * _ml_mult)
                 if _ml_gif and not turn_image:
@@ -4484,8 +4489,13 @@ async def execute_raid(channel, raid_data):
                         turn_image = _s3["gif"]
                     if _s3["logs"]:
                         t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])    
-                _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants); card_dmg += _ks_bonus; turn_image = turn_image or _ks_gif; t3_notif = ((t3_notif + "
-" if t3_notif else "") + _ks_log) if _ks_log else t3_notif; _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants)
+            if _ks_log:
+                card_dmg += _ks_bonus
+                turn_image = turn_image or _ks_gif
+                t3_notif = ((t3_notif + "\n") if t3_notif else "") + _ks_log
+
+            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
                 if _ml_log:
                     card_dmg = int(card_dmg * _ml_mult)
                     if _ml_gif and not turn_image:
@@ -5078,8 +5088,13 @@ async def execute_raid(channel, raid_data):
                     turn_image = _s3["gif"]
                 if _s3["logs"]:
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
-            _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants); card_dmg += _ks_bonus; turn_image = turn_image or _ks_gif; t3_notif = ((t3_notif + "
-" if t3_notif else "") + _ks_log) if _ks_log else t3_notif; _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants)
+            if _ks_log:
+                card_dmg += _ks_bonus
+                turn_image = turn_image or _ks_gif
+                t3_notif = ((t3_notif + "\n") if t3_notif else "") + _ks_log
+
+            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
             if _ml_log:
                 card_dmg = int(card_dmg * _ml_mult)
                 if _ml_gif and not turn_image:
@@ -5831,8 +5846,13 @@ async def execute_event_raid(channel, raid_data):
                     turn_image = _s3["gif"]
                 if _s3["logs"]:
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
-            _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants); card_dmg += _ks_bonus; turn_image = turn_image or _ks_gif; t3_notif = ((t3_notif + "
-" if t3_notif else "") + _ks_log) if _ks_log else t3_notif; _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants)
+            if _ks_log:
+                card_dmg += _ks_bonus
+                turn_image = turn_image or _ks_gif
+                t3_notif = ((t3_notif + "\n") if t3_notif else "") + _ks_log
+
+            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
             if _ml_log:
                 card_dmg = int(card_dmg * _ml_mult)
                 if _ml_gif and not turn_image:
@@ -6348,8 +6368,13 @@ async def execute_event_raid(channel, raid_data):
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
                 if _s3["stun"] and not boss_wg_active:
                     boss_stunned = True    
-            _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants); card_dmg += _ks_bonus; turn_image = turn_image or _ks_gif; t3_notif = ((t3_notif + "
-" if t3_notif else "") + _ks_log) if _ks_log else t3_notif; _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants)
+            if _ks_log:
+                card_dmg += _ks_bonus
+                turn_image = turn_image or _ks_gif
+                t3_notif = ((t3_notif + "\n") if t3_notif else "") + _ks_log
+
+            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
             if _ml_log:
                 card_dmg = int(card_dmg * _ml_mult)
                 if _ml_gif and not turn_image:
