@@ -1556,7 +1556,8 @@ CARD_ALIASES = {
     "mahoraga": "t2", "t2": "t2", "batach": "t2",
     "kizuna": "t3", "t3": "t3", "vampire": "t3", "emperor": "t3",
     "fateria": "t4", "t4": "t4", "khuonmau": "t4", "sophan": "t4",
-    "jotaro": "t5", "t5": "t5", "kujo": "t5", "jotarokujo": "t5", "starplatinum": "t5"
+    "jotaro": "t5", "t5": "t5", "kujo": "t5", "jotarokujo": "t5", "starplatinum": "t5",     
+    "kanae": "t6", "t6": "t6", "wasuko": "t6", "kanaewasuko": "t6", "anhdao": "t6"
 }
 def normalize_card_id(raw_id):
     if raw_id is None:
@@ -1663,6 +1664,7 @@ def get_player(user_id, username="Visitor"):
         data["shards"].setdefault("fateria", 0)
         data["shards"].setdefault("thanh_loi", 0)
         data["shards"].setdefault("jotaro", 0)
+        data["shards"].setdefault("kanae", 0)
 
     if "items" not in data or not isinstance(data.get("items"), dict):
         data["items"] = {"thanh_loi": 0, "keo_halloween": 0, "ruong_halloween_e": 0, "quat_giay": 0}
@@ -2034,6 +2036,8 @@ def apply_bong_khai_niem_card(target_card: dict):
             pool = [("t3_vampire", "True Vampire"), ("t3_blood", "Blood Chain"), ("t3_dark", "Dark Chain")]
     elif cid_str == "t4":
         pool = [("t4_save_loop", "Save loop"), ("t4_fate_loop", "Fate loop"), ("t4_clone_attack", "Clone attack")]
+    elif cid_str == "t6":
+        pool = [("t6_mark", "Dấu Ấn Anh Đào"), ("t6_burst", "Bộc Phát Ấn Điểm")]
     elif cid_str == "t5":
         if is_ace:
             pool = [("t5_rage", "Rage"), ("t5_deathstop", "Ngưỡng Máu Tử"), ("t5_barrage", "Stand Barrage"), ("t5_skull", "Skull Breaker"), ("t5_timestop", "Time Stop")]
@@ -3453,6 +3457,13 @@ async def execute_raid(channel, raid_data):
                 t3_notif_str = "\n".join(_t3["logs"])
                 t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
                 
+            if str(ac["cid"]).lower() == "t6":
+                _t6 = t6_combat_turn(c.setdefault("t6_state", {}), ac, card_dmg)
+                card_dmg = _t6["damage"]
+                if _t6["gif"] and not turn_image:
+                    turn_image = _t6["gif"]
+                if _t6["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _t6["logs"])
             if str(ac["cid"]).lower() == "t5":
                 _t5 = t5_combat_turn(c.setdefault("t5_state", {}), ac, is_ace2=ac.get("is_ace2", False))
                 card_dmg = int(card_dmg * _t5["multiplier"])
@@ -4491,6 +4502,13 @@ async def execute_raid(channel, raid_data):
                     t3_notif_str = "\n".join(_t3["logs"])
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
 
+                if str(ac["cid"]).lower() == "t6":
+                    _t6 = t6_combat_turn(c.setdefault("t6_state", {}), ac, card_dmg)
+                    card_dmg = _t6["damage"]
+                    if _t6["gif"] and not turn_image:
+                        turn_image = _t6["gif"]
+                    if _t6["logs"]:
+                        t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _t6["logs"])
                 if str(ac["cid"]).lower() == "t5":
                     _t5 = t5_combat_turn(c.setdefault("t5_state", {}), ac, is_ace2=ac.get("is_ace2", False))
                     card_dmg = int(card_dmg * _t5["multiplier"])
@@ -5091,6 +5109,13 @@ async def execute_raid(channel, raid_data):
                 t3_notif_str = "\n".join(_t3["logs"])
                 t3_notif = (t3_notif + "\n" if t3_notif else "") + t3_notif_str
 
+            if str(ac["cid"]).lower() == "t6":
+                _t6 = t6_combat_turn(c.setdefault("t6_state", {}), ac, card_dmg)
+                card_dmg = _t6["damage"]
+                if _t6["gif"] and not turn_image:
+                    turn_image = _t6["gif"]
+                if _t6["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _t6["logs"])
             if str(ac["cid"]).lower() == "t5":
                 _t5 = t5_combat_turn(c.setdefault("t5_state", {}), ac, is_ace2=ac.get("is_ace2", False))
                 card_dmg = int(card_dmg * _t5["multiplier"])
@@ -6903,6 +6928,8 @@ async def slash_admin_add_shard(interaction: discord.Interaction, loai_shard: st
         s_key = "kizuna"
     elif s_key in ["fateria", "t4", "sophan"]:
         s_key = "fateria"
+    elif s_key in ["kanae", "t6", "wasuko", "kanae_shard"]:
+        s_key = "kanae"
     elif s_key in ["thanh_loi", "thanhloi", "core", "loi"]:
         s_key = "thanh_loi"
     shards = target_player.setdefault("shards", {})
@@ -6938,6 +6965,10 @@ async def prefix_admin_add_shard(ctx, loai_shard: str = "seiki", quantity: int =
         s_key = "kizuna"
     elif s_key in ["fateria", "t4", "sophan"]:
         s_key = "fateria"
+    elif s_key in ["kanae", "t6", "wasuko", "kanae_shard"]:
+        s_key = "kanae"
+    elif s_key in ["jotaro", "t5", "kujo"]:
+        s_key = "jotaro"
     elif s_key in ["thanh_loi", "thanhloi", "core", "loi"]:
         s_key = "thanh_loi"
     shards = target_player.setdefault("shards", {})
@@ -6954,7 +6985,8 @@ SHARD_DISPLAY_NAMES = {
     "kizuna": "Mảnh Kizuna",
     "fateria": "Fateria Shards",
     "thanh_loi": "Thánh Lõi",
-    "jotaro": "Jotaro Shards"
+    "jotaro": "Jotaro Shards",
+    "kanae": "Kanae Shards"
 }
 
 def normalize_shard_key(raw: str):
@@ -6969,6 +7001,8 @@ def normalize_shard_key(raw: str):
         return "fateria"
     if s in ["thanh_loi", "thanhloi", "core", "loi"]:
         return "thanh_loi"
+    if s in ["kanae", "t6", "wasuko", "kanae_shard"]:
+        return "kanae"
     if s in ["jotaro", "t5", "kujo", "jotaro_shard"]:
         return "jotaro"    
     return None
@@ -6997,6 +7031,7 @@ def do_remove_shard(target_player: dict, s_key: str, so_luong: int):
     app_commands.Choice(name="Mảnh Kizuna (kizuna)", value="kizuna"),
     app_commands.Choice(name="Fateria Shards (fateria)", value="fateria"),
     app_commands.Choice(name="Jotaro Shards (jotaro)", value="jotaro"),
+    app_commands.Choice(name="Kanae Shards (kanae)", value="kanae"),
     app_commands.Choice(name="Thánh Lõi (thanh_loi)", value="thanh_loi")
 ])
 async def slash_admin_remove_shard(interaction: discord.Interaction, nguoi_dung: discord.Member, loai_shard: str, so_luong: int = 1):
@@ -8288,7 +8323,7 @@ async def handle_collection(ctx_or_interaction):
 
     t_lines = []
     shards_cnt = player.get("shards", {}).get("seiki", 0)
-    for t_cid in ["t1", "t2", "t3", "t4", "t5"]:
+    for t_cid in ["t1", "t2", "t3", "t4", "t5", "t6"]:
         if t_cid in CARDS_DATA:
             t_card = CARDS_DATA[t_cid]
             t_cnt = player["inventory"].get(t_cid, 0)
@@ -8318,6 +8353,11 @@ async def handle_collection(ctx_or_interaction):
                 t_shard_info = f"   └ ⏱️ **Jotaro Shards:** `{j_shards}/15` mảnh"
                 if j_shards >= 15:
                     t_shard_info += " ✨ *(Đủ 15 mảnh! Dùng `/t translate loai_shard:jotaro` để đổi ngay!)*"       
+            elif t_cid == "t6":
+                k_shards = player.get("shards", {}).get("kanae", 0)
+                t_shard_info = f"   └ 🌸 **Kanae Shards:** `{k_shards}/10` mảnh"
+                if k_shards >= 10:
+                    t_shard_info += " ✨ *(Đủ 10 mảnh! Dùng `/t translate loai_shard:kanae` để đổi ngay!)*"
             elif t_cid == "t4":
                 fateria_shards = player.get("shards", {}).get("fateria", 0)
                 t_shard_info = f"   └ ⏳ **Mảnh Fateria:** `{fateria_shards}/20` mảnh"
@@ -8378,6 +8418,10 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
         shard_key = "fateria"
         target_card_id = "t4"
         needed_shards = 20
+    elif shard_key in ["kanae", "t6", "wasuko", "kanae_shard"]:
+        shard_key = "kanae"
+        target_card_id = "t6"
+        needed_shards = 10
     elif shard_key in ["jotaro", "t5", "kujo", "jotaro_shard", "jotarokujo"]:
         shard_key = "jotaro"
         target_card_id = "t5"
@@ -8438,6 +8482,28 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
             await ctx_or_interaction.send(embed=embed)
         return
         
+    if target_card_id == "t6":
+        embed = discord.Embed(
+            title="🌸 QUY ĐỔI THÀNH CÔNG: KANAE WASUKO – BOM ANH ĐÀO!",
+            description=(
+                f"✨ **Chúc mừng {user.mention}!** Bạn đã dung hợp thành công **10 Kanae Shards**!\n\n"
+                f"🎴 **THẺ BÀI NHẬN ĐƯỢC:** **[T] #t6 Kanae Wasuko – Bom Anh Đào**\n"
+                f"• **Chỉ số:** ⚔️ Power: **{card_info['power']:,}** | ❤️ HP: **{card_info['hp']:,}**\n"
+                f"• 🌸 **Passive - Dấu Ấn Anh Đào:** Mỗi lượt đánh thường tích 1 ấn, cộng dồn\n"
+                f"• 💥 **Skill - Bộc Phát Ấn Điểm:** ×1.5 sát thương + 15%/tầng ấn, reset ấn (tối đa 3 lần/trận)\n\n"
+                f"📦 **Kho mảnh còn lại:** `{shards_dict[shard_key]} Kanae Shards`\n"
+                f"🎒 **Kho đồ hiện tại:** `{player['inventory'][target_card_id]} lá`"
+            ),
+            color=0xF472B6
+        )
+        embed.set_image(url=card_info["unlock_gif"])
+        embed.set_footer(text="Dùng /team add id_the:t6 để đưa Kanae vào đội hình!")
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=embed)
+        else:
+            await ctx_or_interaction.send(embed=embed)
+        return  
+    
     if target_card_id == "t4":
         embed = discord.Embed(
             title="⏳ QUY ĐỔI THÀNH CÔNG: FATERIA – KHUÔN MẪU CỦA SỐ PHẬN!",
@@ -8590,6 +8656,16 @@ async def handle_view_shards(ctx_or_interaction):
         ),
         inline=False
     )
+    kanae_shards = shards_dict.get("kanae", 0)
+    embed.add_field(
+        name="🌸 Mảnh Kanae Wasuko (Bom Anh Đào):",
+        value=(
+            f"• Hiện có: **`{kanae_shards}/10` mảnh** (Kho thẻ #t6: {player['inventory'].get('t6', 0)} lá)\n"
+            f"• Tiến độ: `{get_hp_bar(min(10, kanae_shards), 10)}`\n"
+            f"• Đổi thẻ: `/t translate loai_shard:kanae` khi đủ 10 mảnh"
+        ),
+        inline=False
+    )
     embed.set_thumbnail(url=card_info["image"])
     if isinstance(ctx_or_interaction, discord.Interaction):
         await ctx_or_interaction.response.send_message(embed=embed)
@@ -8604,6 +8680,7 @@ class ShardGroup(app_commands.Group, name="t", description="Quản lý kho mản
         app_commands.Choice(name="Mảnh Mahoraga (10 mảnh -> Thẻ [T] #t2 Mahoraga)", value="mahoraga"),
         app_commands.Choice(name="Mảnh Kizuna (15 mảnh -> Thẻ [T] #t3 Kizuna)", value="kizuna"),
         app_commands.Choice(name="Mảnh Jotaro (15 mảnh -> Thẻ [T] #t5 Jotaro)", value="jotaro"),
+        app_commands.Choice(name="Kanae Shards (10 mảnh -> Thẻ [T] #6 Kanae)", value="kanae"),
         app_commands.Choice(name="Mảnh Fateria (20 mảnh -> Thẻ [T] #t4 Fateria)", value="fateria")
     ])
     async def slash_t_translate(self, interaction: discord.Interaction, loai_shard: str = "seiki"):
@@ -8838,6 +8915,9 @@ class CharacterCheckView(discord.ui.View):
         t5_btn = discord.ui.Button(label="#t5 Jotaro", style=discord.ButtonStyle.secondary, emoji="⏱️", row=4)
         t5_btn.callback = self.show_t5_card
         self.add_item(t5_btn)
+        t6_btn = discord.ui.Button(label="#t6 Kanae", style=discord.ButtonStyle.secondary, emoji="🌸", row=4)
+        t6_btn.callback = self.show_t6_card
+        self.add_item(t6_btn)
         if cid == 18 and not (self.show_t1 or self.show_t2 or self.show_t3 or self.show_t4):
             s3_btn = discord.ui.Button(label="#18 Sakuya Ace 3", style=discord.ButtonStyle.primary, emoji="🌠", row=4)
             s3_btn.callback = self.show_s3_card
@@ -9011,6 +9091,9 @@ class CharacterCheckView(discord.ui.View):
         self.show_t1, self.show_t2, self.show_t3, self.show_t4, self.show_ace = False, False, False, True, False
         self.rebuild_items()
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
+    async def show_t6_card(self, interaction: discord.Interaction):
+        kv = KanaeCardView(self.user_id, self.current_index)
+        await interaction.response.edit_message(embed=kv.get_embed(), view=kv)
     async def show_t5_card(self, interaction: discord.Interaction):
         jv = JotaroCardView(self.user_id, self.current_index)
         await interaction.response.edit_message(embed=jv.get_embed(), view=jv)
@@ -9215,6 +9298,13 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
     show_t3_flag = False
     show_t4_flag = False
 
+    if nhan_vat and str(nhan_vat).strip().lower().replace("#", "").replace(" ", "") in ("t6", "kanae", "wasuko", "kanaewasuko"):
+        _kv = KanaeCardView(user.id, 0)
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=_kv.get_embed(), view=_kv)
+        else:
+            await ctx_or_interaction.send(embed=_kv.get_embed(), view=_kv)
+        return
     if nhan_vat and str(nhan_vat).strip().lower().replace("#", "") in ("t5", "jotaro", "kujo", "jotarokujo", "jotaro kujo", "starplatinum"):
         _jv = JotaroCardView(user.id, 0)
         if isinstance(ctx_or_interaction, discord.Interaction):
@@ -9421,6 +9511,7 @@ async def handle_battle(ctx_or_interaction):
     o_t3_state = {}
     p_t4_state = {}
     p_t5_state = {}
+    p_t6_state = {}
     p_s3_state = {}
     o_fate_lock_turns = 0
     o_ice_spear_turns = 0
@@ -9685,6 +9776,13 @@ async def handle_battle(ctx_or_interaction):
                 turn_image = _t5["gif"]
             battle_logs.extend(_t5["logs"])
             turn_actions.extend(_t5["logs"])
+        if str(pc["cid"]).lower() == "t6":
+            _t6 = t6_combat_turn(p_t6_state, pc, curr_pc_power)
+            curr_pc_power = _t6["damage"]
+            if _t6["gif"] and not turn_image:
+                turn_image = _t6["gif"]
+            battle_logs.extend(_t6["logs"])
+            turn_actions.extend(_t6["logs"])
         if pc["cid"] == 18 and pc.get("is_ace3"):
             _s3 = sakuya3_combat_turn(p_s3_state, pc, f"**{oc['name']}**")
             curr_pc_power = int(curr_pc_power * _s3["multiplier"])
@@ -10179,6 +10277,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
     c_t4_state = {}
     t_t4_state = {}
     c_t5_state = {}
+    t_t6_state = {}
     t_t5_state = {} 
     c_s3_state = {}
     t_s3_state = {}        
@@ -10536,6 +10635,14 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_image = _t3["gif"]
             turn_actions.extend(_t3["logs"])
 
+        
+        if str(cc["cid"]).lower() == "t6" and not c_skills_locked:
+            _t6 = t6_combat_turn(c_t6_state, cc, c_curr_power)
+            c_curr_power = _t6["damage"]
+            if _t6["gif"] and not turn_image:
+                turn_image = _t6["gif"]
+            pvp_logs.extend(_t6["logs"])
+            turn_actions.extend(_t6["logs"])
         if str(cc["cid"]).lower() == "t5" and not c_skills_locked:
             _t5 = t5_combat_turn(c_t5_state, cc, is_ace2=cc.get("is_ace2", False))
             c_curr_power = int(c_curr_power * _t5["multiplier"])
@@ -10750,7 +10857,14 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 )
                 pvp_logs.append(msg_t2)
                 turn_actions.append(msg_t2)
-
+                
+        if str(tc["cid"]).lower() == "t6" and not t_skills_locked:
+            _t6 = t6_combat_turn(t_t6_state, tc, t_curr_power)
+            t_curr_power = _t6["damage"]
+            if _t6["gif"] and not turn_image:
+                turn_image = _t6["gif"]
+            pvp_logs.extend(_t6["logs"])
+            turn_actions.extend(_t6["logs"])
         
         if str(tc["cid"]).lower() == "t3" and not t_skills_locked:
             _t3 = t3_combat_turn(t_t3_state, tc, r_cnt, cc["max_hp"], f"**{cc['name']}** ({challenger.display_name})", is_ace2=tc.get("is_ace2"), heal_mult=t_heal_mult)
@@ -11889,7 +12003,14 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
                 boss_stun_story = True
             if _s3["gif"] and not turn_image:
                 turn_image = _s3["gif"]
-            turn_logs.extend(_s3["logs"])    
+            turn_logs.extend(_s3["logs"])  
+            
+        if str(pc["cid"]).lower() == "t6":
+            _t6 = t6_combat_turn(pc.setdefault("t6_state", {}), pc, card_dmg)
+            card_dmg = _t6["damage"]
+            if _t6["gif"] and not turn_image:
+                turn_image = _t6["gif"]
+            turn_logs.extend(_t6["logs"])
         
         t4_invul_story = False
         if str(pc["cid"]).lower() == "t4":
@@ -12296,6 +12417,12 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                 if _s3["gif"] and not turn_image:
                     turn_image = _s3["gif"]
                 turn_logs.extend(_s3["logs"])
+            if str(pc["cid"]).lower() == "t6":
+                _t6 = t6_combat_turn(pc.setdefault("t6_state", {}), pc, card_dmg)
+                card_dmg = _t6["damage"]
+                if _t6["gif"] and not turn_image:
+                    turn_image = _t6["gif"]
+                turn_logs.extend(_t6["logs"])
             if str(pc["cid"]).lower() == "t4":
                 t4_st = pc.setdefault("t4_state", {})
                 _t4 = t4_combat_turn(t4_st, pc, "Boss Cirno")
@@ -14141,6 +14268,11 @@ def _jt_player_attack(c, ac, rnd, B, notes):
         setgif(_t4["gif"])
         notes.extend([f"({c['username']}) {l}" for l in _t4["logs"]])
 
+    if cid_s == "t6":
+        _t6 = t6_combat_turn(c.setdefault("t6_state", {}), ac, dmg)
+        dmg = _t6["damage"]
+        setgif(_t6["gif"])
+        notes.extend([f"({c['username']}) {l}" for l in _t6["logs"]])
     if cid_s == "t5":
         _t5 = t5_combat_turn(c.setdefault("t5_state", {}), ac, is_ace2=is_ace)
         dmg = int(dmg * _t5["multiplier"])
