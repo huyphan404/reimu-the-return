@@ -453,6 +453,35 @@ CARDS_DATA["t5"] = {
         "iggy_throw": {"name": "Iggy Throw", "chance": 0.40, "max_uses": 1, "gif": T5_GIF_IGGY}
     }
 }
+# ===== [UPDATE KANAE] THẺ T6 KANAE WASUKO - BOM ANH ĐÀO =====
+KANAE_IMG = "https://media.discordapp.net/attachments/1533870485249589331/1560667860924370944/image.png?ex=6ad38cb5&is=6ad23b35&hm=bd2b58571c74dd2e995dc53b6a3f0807145f5ed3fcb11bc9091027fc4298f70e&=&format=webp&quality=lossless&width=399&height=512"
+KANAE_SKILL_GIF = "https://static2.klipy.com/ii/8ce8357c78ea940b9c2015daf05ce1a5/cc/d1/yJC95QJo.gif"
+KANAE_BURST_CHANCE = 0.35   # tỉ lệ kích hoạt Bộc Phát Ấn Điểm
+KANAE_BURST_MULT = 1.5
+KANAE_STACK_BONUS = 0.15    # +15% sát thương đánh thường mỗi tầng ấn
+KANAE_MAX_BURST = 3         # tối đa 3 lần/trận
+
+CARDS_DATA["t6"] = {
+    "id": "t6",
+    "name": "Kanae Wasuko – Bom Anh Đào",
+    "rank": "T",
+    "power": 680,
+    "hp": 6800,
+    "image": KANAE_IMG,
+    "unlock_gif": KANAE_SKILL_GIF,
+    "passive": {
+        "name": "Dấu Ấn Anh Đào",
+        "desc": "Mỗi lượt đánh thường tích 1 ấn nội tại, cộng dồn."
+    },
+    "skills": {
+        "bung_phat": {
+            "name": "Bộc Phát Ấn Điểm",
+            "chance": KANAE_BURST_CHANCE,
+            "gif": KANAE_SKILL_GIF,
+            "desc": "Gây 1.5x sát thương, thêm 15% sát thương đánh thường cho mỗi tầng ấn rồi reset ấn (tối đa 3 lần/trận)."
+        }
+    }
+}
 
 JOTARO_XP_DROP_MULT = 1.5   # Boss drop XP = 1.5 x XP hiện tại (đổi số này nếu muốn)
 
@@ -14644,6 +14673,7 @@ def sakuya3_raid_revive(c: dict, push_logs: list):
 def reset_sakuya3_phase(c: dict):
     """Gọi khi sang Phase 2 của raid (hồi sinh toàn đội)."""
     c["s3_state"] = {}
+    c["t6_state"] = {}
     for card in c.get("team_cards", []):
         card["s3_passive_used"] = False
 
@@ -14745,6 +14775,84 @@ class SakuyaAce3CardView(discord.ui.View):
                          f"Thiếu Ace 2: {len(req['missing']) + (0 if req['sakuya_ace2'] else 1)} nhân vật)")
             embed.add_field(name="🎒 TRẠNG THÁI CỦA BẠN:", value=badge, inline=False)
         embed.set_footer(text="Sakuya Ace 3 • Hoạt động trong Raid, Battle, PvP, Story")
+        return embed
+
+    async def on_back(self, interaction: discord.Interaction):
+        v = CharacterCheckView(current_index=self.back_index, user_id=self.user_id)
+        await interaction.response.edit_message(embed=v.get_current_embed(), view=v)
+
+# ==============================================================================
+# [UPDATE KANAE] KỸ NĂNG THẺ T6 + GIAO DIỆN CHECK
+# ==============================================================================
+def t6_combat_turn(t6_state: dict, card_data: dict, base_dmg: int, skills_locked: bool = False):
+    """Kanae: mỗi lượt đánh thường +1 ấn. Bộc phát: x1.5 + 15%/tầng, reset ấn, tối đa 3 lần/trận.
+    Trả về dict: damage (sát thương cuối), gif, logs."""
+    logs, gif = [], None
+    damage = base_dmg
+    erased = card_data.get("erased_skill")
+    stacks = t6_state.get("stacks", 0)
+    uses = t6_state.get("burst_uses", 0)
+    tag = "[Nhóm T] [#t6] Kanae Wasuko"
+
+    can_burst = (not skills_locked and erased != "t6_burst"
+                 and stacks > 0 and uses < KANAE_MAX_BURST)
+    if can_burst and random.random() < KANAE_BURST_CHANCE:
+        bonus = int(base_dmg * KANAE_STACK_BONUS * stacks)
+        damage = int(base_dmg * KANAE_BURST_MULT) + bonus
+        t6_state["burst_uses"] = uses + 1
+        t6_state["stacks"] = 0
+        gif = KANAE_SKILL_GIF
+        logs.append(
+            f"🌸 **{tag}** kích nổ **Bộc Phát Ấn Điểm** ({int(KANAE_BURST_CHANCE*100)}%)! "
+            f"×{KANAE_BURST_MULT} sát thương + **{bonus:,} DMG** từ **{stacks} tầng ấn** "
+            f"(15%/tầng) = **{damage:,} DMG**! Ấn đã reset. *(Lần {uses + 1}/{KANAE_MAX_BURST})*"
+        )
+    elif erased != "t6_mark":
+        t6_state["stacks"] = stacks + 1
+        logs.append(f"🌸 **{tag}** - **Dấu Ấn Anh Đào**: tích thêm 1 ấn (hiện có **{stacks + 1} tầng**)!")
+    return {"damage": damage, "gif": gif, "logs": logs}
+
+
+class KanaeCardView(discord.ui.View):
+    """Giao diện /check, /card_info cho thẻ #t6 Kanae."""
+    def __init__(self, user_id=None, back_index: int = 0):
+        super().__init__(timeout=180)
+        self.user_id = user_id
+        self.back_index = back_index
+        back = discord.ui.Button(label="📖 Quay lại danh sách nhân vật", style=discord.ButtonStyle.primary, row=0)
+        back.callback = self.on_back
+        self.add_item(back)
+
+    def get_embed(self):
+        card = CARDS_DATA["t6"]
+        player = get_player(self.user_id) if self.user_id else None
+        lvl = player.get("level", 1) if player else 1
+        owned = player.get("inventory", {}).get("t6", 0) if player else 0
+        shards = player.get("shards", {}).get("kanae", 0) if player else 0
+        embed = discord.Embed(
+            title="🌸 [THẺ ĐẶC BIỆT NHÓM T] #t6 KANAE WASUKO – BOM ANH ĐÀO",
+            description="✨ Mở khóa bằng **10 Kanae Shards** (`/t translate loai_shard:kanae`).",
+            color=0xF472B6
+        )
+        embed.set_image(url=card["image"])
+        embed.add_field(
+            name="⚔️ SỨC MẠNH & CHỈ SỐ:",
+            value=(f"• ⚔️ **ATK:** `{card['power']:,}` | ❤️ **HP:** `{card['hp']:,}`\n"
+                   f"• 🛡️ **Trong đội hình (Lv.{lvl}):** `{card['power'] + (lvl - 1) * 20:,}` ATK | `{card['hp'] + (lvl - 1) * 25:,}` HP"),
+            inline=False
+        )
+        embed.add_field(
+            name="🔮 KỸ NĂNG:",
+            value=(
+                "🌸 **Dấu Ấn Anh Đào (Passive):** Mỗi lượt đánh thường tích **1 ấn** nội tại, cộng dồn.\n"
+                f"💥 **Bộc Phát Ấn Điểm ({int(KANAE_BURST_CHANCE*100)}%):** Gây **×1.5 sát thương** và thêm "
+                "**15% sát thương đánh thường cho mỗi tầng ấn**. Sau khi kích chiêu sẽ **reset ấn** (tối đa **3 lần/trận**)."
+            ),
+            inline=False
+        )
+        if player:
+            embed.add_field(name="🎒 TÚI ĐỒ CỦA BẠN:", value=f"• Sở hữu: **{owned}** lá\n• 🌸 Kanae Shards: **{shards}/10**", inline=False)
+        embed.set_footer(text="Thẻ nhóm T đặc biệt • Hoạt động trong Raid, Battle, PvP, Story")
         return embed
 
     async def on_back(self, interaction: discord.Interaction):
