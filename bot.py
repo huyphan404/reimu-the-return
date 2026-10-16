@@ -43,6 +43,14 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
+import io
+import aiohttp
+try:
+    from PIL import Image, ImageDraw, ImageFont, ImageOps
+    PIL_OK = True
+except Exception:
+    PIL_OK = False
+    print("⚠️ Chưa cài Pillow, /pull sẽ dùng giao diện chữ dự phòng.", flush=True)
 
 load_dotenv()
 
@@ -7672,13 +7680,287 @@ async def slash_evol(interaction: discord.Interaction, id_hoac_ten: str = None):
 async def prefix_evol(ctx, id_hoac_ten: str = None):
     await handle_evol(ctx, id_hoac_ten)
 # ==============================================================================
-# 11. CÁC LỆNH GAME: PULL, DAILY, TEAM, COLLECTION, TUTORIAL, QUEST
+# TOUHOU PULL GALLERY: BẢNG ẢNH 5x2 (10 THẺ/TRANG), NÚT CHUYỂN TRANG, TỐI ĐA 40 PULL
 # ==============================================================================
+PULL_RANK_COLORS = {
+    "SS": (245, 158, 11), "S": (139, 92, 246), "A": (59, 130, 246),
+    "B": (16, 185, 129), "C": (156, 163, 175), "T": (239, 68, 68)
+}
+PULL_RANK_ORDER = ["SS", "S", "T", "A", "B", "C"]
+PULL_TILE_W, PULL_TILE_H = 200, 300
+PULL_GAP, PULL_PAD = 12, 14
+PULL_HEADER_H, PULL_FOOTER_H, PULL_BORDER = 40, 30, 4
+PULL_COLS = 5
+PULL_PER_PAGE = 10
+PULL_ART_W = PULL_TILE_W - 2 * PULL_BORDER
+PULL_ART_H = PULL_TILE_H - 2 * PULL_BORDER - PULL_HEADER_H - PULL_FOOTER_H
+_PULL_IMG_CACHE = {}
+_PULL_FONT_CACHE = {}
+
+def _pull_font(size: int):
+    if not PIL_OK:
+        return None
+    if size in _PULL_FONT_CACHE:
+        return _PULL_FONT_CACHE[size]
+    font = None
+    for path in (
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",
+        "DejaVuSans-Bold.ttf", "arialbd.ttf", "Arial Bold.ttf"
+    ):
+        try:
+            font = ImageFont.truetype(path, size)
+            break
+        except Exception:
+            continue
+    if font is None:
+        try:
+            font = ImageFont.load_default(size)
+        except Exception:
+            font = ImageFont.load_default()
+    _PULL_FONT_CACHE[size] = font
+    return font
+
+def _decode_pull_art(data: bytes):
+    img = Image.open(io.BytesIO(data))
+    try:
+        img.seek(0)  # GIF -> lấy khung hình đầu
+    except Exception:
+        pass
+    img = img.convert("RGBA")
+    resample = getattr(Image, "Resampling", Image).LANCZOS
+    return ImageOps.fit(img, (PULL_ART_W, PULL_ART_H), resample)
+
+async def _fetch_pull_art(card: dict):
+    key = str(card.get("id"))
+    if key in _PULL_IMG_CACHE:
+        return _PULL_IMG_CACHE[key]
+    url = card.get("image")
+    if not url:
+        return None
+    try:
+        timeout = aiohttp.ClientTimeout(total=8)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(url) as resp:
+                if resp.status != 200:
+                    return None
+                data = await resp.read()
+        loop = asyncio.get_running_loop()
+        img = await loop.run_in_executor(None, _decode_pull_art, data)
+        _PULL_IMG_CACHE[key] = img
+        return img
+    except Exception as e:
+        print(f"⚠️ [PULL] Không tải được ảnh thẻ #{key}: {e}", flush=True)
+        return None
+
+def _pull_text_center(d, box, text, font, fill):
+    x0, y0, x1, y1 = box
+    bb = d.textbbox((0, 0), text, font=font)
+    tw, th = bb[2] - bb[0], bb[3] - bb[1]
+    d.text((x0 + (x1 - x0 - tw) / 2 - bb[0], y0 + (y1 - y0 - th) / 2 - bb[1]), text, font=font, fill=fill)
+
+def _pull_truncate(d, text, font, max_w):
+    if d.textlength(text, font=font) <= max_w:
+        return text
+    while len(text) > 1 and d.textlength(text + "…", font=font) > max_w:
+        text = text[:-1]
+    return text + "…"
+
+def _compose_pull_page(entries, art_map):
+    n = len(entries)
+    ncols = min(PULL_COLS, n)
+    nrows = (n + PULL_COLS - 1) // PULL_COLS
+    W = PULL_PAD * 2 + ncols * PULL_TILE_W + (ncols - 1) * PULL_GAP
+    H = PULL_PAD * 2 + nrows * PULL_TILE_H + (nrows - 1) * PULL_GAP
+    canvas = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(canvas)
+    f_name, f_rank, f_stat, f_new = _pull_font(15), _pull_font(22), _pull_font(14), _pull_font(12)
+    B = PULL_BORDER
+
+    for i, e in enumerate(entries):
+        card = e["card"]
+        col, row = i % PULL_COLS, i // PULL_COLS
+        x = PULL_PAD + col * (PULL_TILE_W + PULL_GAP)
+        y = PULL_PAD + row * (PULL_TILE_H + PULL_GAP)
+        rk = str(card.get("rank", "C"))
+        color = PULL_RANK_COLORS.get(rk, (150, 150, 150))
+
+        d.rounded_rectangle([x, y, x + PULL_TILE_W - 1, y + PULL_TILE_H - 1], radius=12,
+                            fill=(18, 18, 24, 255), outline=color + (255,), width=B)
+
+        # Thanh tiêu đề: tên nhân vật + RANK to bên cạnh
+        hx0, hy0 = x + B, y + B
+        hx1, hy1 = x + PULL_TILE_W - B - 1, y + B + PULL_HEADER_H
+        d.rectangle([hx0, hy0, hx1, hy1], fill=(8, 8, 12, 255))
+        bw = int(max(36, d.textlength(rk, font=f_rank) + 16))
+        bx1 = hx1 - 6
+        bx0 = bx1 - bw
+        by0, by1 = hy0 + 6, hy1 - 6
+        d.rounded_rectangle([bx0, by0, bx1, by1], radius=7, fill=color + (255,))
+        _pull_text_center(d, (bx0, by0, bx1, by1), rk, f_rank, (255, 255, 255, 255))
+        name = _pull_truncate(d, str(card.get("name", "?")), f_name, (bx0 - 6) - (hx0 + 8))
+        nb = d.textbbox((0, 0), name, font=f_name)
+        d.text((hx0 + 8 - nb[0], hy0 + (PULL_HEADER_H - (nb[3] - nb[1])) / 2 - nb[1]),
+               name, font=f_name, fill=(240, 240, 245, 255))
+
+        # Ảnh nhân vật
+        ax, ay = x + B, hy1 + 1
+        art = art_map.get(str(card.get("id")))
+        if art is not None:
+            canvas.paste(art, (ax, ay), art)
+        else:
+            d.rectangle([ax, ay, ax + PULL_ART_W - 1, ay + PULL_ART_H - 1], fill=(40, 40, 50, 255))
+            _pull_text_center(d, (ax, ay, ax + PULL_ART_W, ay + PULL_ART_H), "NO IMAGE", f_stat, (150, 150, 160, 255))
+
+        # Nhãn NEW
+        if not e.get("is_dup"):
+            d.rounded_rectangle([ax + 6, ay + 6, ax + 46, ay + 24], radius=5, fill=(16, 185, 129, 255))
+            _pull_text_center(d, (ax + 6, ay + 6, ax + 46, ay + 24), "NEW", f_new, (255, 255, 255, 255))
+
+        # Thanh chỉ số
+        fy0 = ay + PULL_ART_H
+        fy1 = y + PULL_TILE_H - B - 1
+        d.rectangle([ax, fy0, x + PULL_TILE_W - B - 1, fy1], fill=(8, 8, 12, 255))
+        _pull_text_center(d, (ax, fy0, x + PULL_TILE_W - B, fy1 + 1),
+                          f"ATK {card.get('power', 0):,}  HP {card.get('hp', 0):,}", f_stat, (220, 220, 230, 255))
+
+    buf = io.BytesIO()
+    canvas.save(buf, format="PNG")
+    return buf.getvalue()
+
+async def render_pull_page(entries):
+    if not PIL_OK:
+        return None
+    cards = {}
+    for e in entries:
+        cards[str(e["card"]["id"])] = e["card"]
+    arts = await asyncio.gather(*[_fetch_pull_art(c) for c in cards.values()])
+    art_map = dict(zip(cards.keys(), arts))
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, _compose_pull_page, entries, art_map)
+
+class PullGalleryView(discord.ui.View):
+    def __init__(self, user_id, pages, page_bytes, total, footer_text):
+        super().__init__(timeout=300)
+        self.user_id = user_id
+        self.pages = pages
+        self.page_bytes = page_bytes
+        self.total = total
+        self.footer_text = footer_text
+        self.idx = 0
+        self.message = None
+        self._sync_buttons()
+
+    def _sync_buttons(self):
+        self.prev_btn.disabled = self.idx <= 0
+        self.next_btn.disabled = self.idx >= len(self.pages) - 1
+        self.page_btn.label = f"Trang {self.idx + 1}/{len(self.pages)}"
+
+    def build(self):
+        entries = self.pages[self.idx]
+        best = min((PULL_RANK_ORDER.index(e["card"].get("rank", "C")) if e["card"].get("rank", "C") in PULL_RANK_ORDER else 99) for e in entries)
+        best_rank = PULL_RANK_ORDER[best] if best < len(PULL_RANK_ORDER) else "C"
+        r, g, b = PULL_RANK_COLORS.get(best_rank, (59, 130, 246))
+        embed = discord.Embed(
+            title="🌸 Touhou Pull",
+            description=f"🎴 **{self.total} lượt quay** • Trang {self.idx + 1}/{len(self.pages)}",
+            color=(r << 16) + (g << 8) + b
+        )
+        files = []
+        data = self.page_bytes[self.idx]
+        if data:
+            fname = f"touhou_pull_{self.idx + 1}.png"
+            files.append(discord.File(io.BytesIO(data), filename=fname))
+            embed.set_image(url=f"attachment://{fname}")
+        else:
+            lines = []
+            for e in entries:
+                c = e["card"]
+                tag = "" if e.get("is_dup") else " ✨ **[MỚI]**"
+                lines.append(f"• `[#{str(c['id']).upper()}]` **[{c['rank']}] {c['name']}** (⚔️{c['power']} | ❤️{c['hp']}){tag}")
+            embed.add_field(name="Danh sách thẻ:", value="\n".join(lines), inline=False)
+        embed.set_footer(text=self.footer_text)
+        return embed, files
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải kết quả pull của bạn!", ephemeral=True)
+            return False
+        return True
+
+    async def _go(self, interaction: discord.Interaction):
+        self._sync_buttons()
+        embed, files = self.build()
+        await interaction.response.edit_message(embed=embed, attachments=files, view=self)
+
+    @discord.ui.button(label="◀ Trước", style=discord.ButtonStyle.primary, row=0)
+    async def prev_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.idx > 0:
+            self.idx -= 1
+        await self._go(interaction)
+
+    @discord.ui.button(label="Trang 1/1", style=discord.ButtonStyle.secondary, disabled=True, row=0)
+    async def page_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        pass
+
+    @discord.ui.button(label="Sau ▶", style=discord.ButtonStyle.primary, row=0)
+    async def next_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.idx < len(self.pages) - 1:
+            self.idx += 1
+        await self._go(interaction)
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+            except Exception:
+                pass
+
+async def send_pull_gallery(ctx_or_interaction, user, entries, footer_text: str, notes: list = None):
+    is_inter = isinstance(ctx_or_interaction, discord.Interaction)
+    if is_inter and not ctx_or_interaction.response.is_done():
+        await ctx_or_interaction.response.defer()  # chống quá 3 giây khi đang vẽ ảnh
+
+    pages = [entries[i:i + PULL_PER_PAGE] for i in range(0, len(entries), PULL_PER_PAGE)]
+    page_bytes = []
+    for pg in pages:
+        try:
+            page_bytes.append(await render_pull_page(pg))
+        except Exception as e:
+            print(f"⚠️ [PULL] Lỗi vẽ bảng ảnh, dùng chữ dự phòng: {e}", flush=True)
+            page_bytes.append(None)
+
+    view = PullGalleryView(user.id, pages, page_bytes, len(entries), footer_text)
+    embed, files = view.build()
+    kwargs = {"embed": embed}
+    if files:
+        kwargs["files"] = files
+    if len(pages) > 1:
+        kwargs["view"] = view
+
+    if is_inter:
+        msg = await ctx_or_interaction.followup.send(wait=True, **kwargs)
+    else:
+        msg = await ctx_or_interaction.send(**kwargs)
+    view.message = msg
+
+    if notes:
+        text = "\n\n".join(notes)
+        if len(text) > 1900:
+            text = text[:1900] + "..."
+        if is_inter:
+            await ctx_or_interaction.followup.send(text)
+        else:
+            await ctx_or_interaction.send(text)
+
 async def handle_pull(ctx_or_interaction, count: int = 1):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
     tut = player.get("tutorial", {})
 
+    # ---------- PULL TÂN THỦ (3 lá không trùng, không SS) ----------
     if tut.get("active") and tut.get("step") == "pull" and not tut.get("pull_used", False):
         available_ids = [cid for cid, card in CARDS_DATA.items() if card.get("rank") != "SS" and isinstance(cid, int)]
         unowned = [cid for cid in available_ids if not is_card_unlocked(player, cid)]
@@ -7687,41 +7969,30 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
         else:
             chosen_ids = random.sample(available_ids, min(3, len(available_ids)))
 
-        results = []
-        last_card = None
+        entries = []
         for cid in chosen_ids:
             card = CARDS_DATA[cid]
-            last_card = card
             cid_str = str(cid)
             player["inventory"][cid_str] = player["inventory"].get(cid_str, 0) + 1
             player.setdefault("pull_stats", {})[cid_str] = player.get("pull_stats", {}).get(cid_str, 0) + 1
             unlocked = player.setdefault("unlocked_cards", [])
             if cid not in unlocked:
                 unlocked.append(cid)
-            results.append(f"• `[#{card['id']:02d}]` **[{card['rank']}] {card['name']}** (⚔️{card['power']} | ❤️{card['hp']}) ✨ **[MỚI]**")
+            entries.append({"card": card, "is_dup": False, "unlocked": False})
 
         tut["quest_pulls_remaining"] = 0
         tut["pull_used"] = True
         tut["step"] = "collection"
         save_player(player)
 
-        embed = discord.Embed(
-            title="🌸 KẾT QUẢ PULL TÂN THỦ (3 LƯỢT 100% KHÔNG TRÙNG - KHÔNG RA BẬC SS)",
-            description="\n".join(results),
-            color=0x10B981
+        await send_pull_gallery(
+            ctx_or_interaction, user, entries,
+            footer_text="Nhiệm vụ tân thủ: Dùng lệnh /collection để tiếp tục!",
+            notes=[f"🔔 {user.mention} ⛩️ **Reimu:** *\"Có vẻ ngươi đã đủ đội hình rồi đấy, giờ hãy kiểm tra đội ngũ mình nào `/collection`\"*"]
         )
-        if last_card:
-            embed.set_thumbnail(url=last_card["image"])
-        embed.add_field(
-            name="⛩️ BƯỚC TIẾP THEO (TIẾN TRÌNH 1 CHIỀU):",
-            value=f"🔔 {user.mention} **Reimu:** *\"Có vẻ ngươi đã đủ đội hình rồi đấy, giờ hãy kiểm tra đội ngũ mình nào `/collection`\"*",
-            inline=False
-        )
-        embed.set_footer(text="Nhiệm vụ tân thủ: Dùng lệnh /collection để tiếp tục!")
-        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
-        else: await ctx_or_interaction.send(embed=embed)
         return
 
+    # ---------- PULL THƯỜNG ----------
     count = max(1, min(40, count))
     total_avail = player.get("free_pulls_remaining", 0) + int(player.get("pull_tickets", 0))
 
@@ -7737,36 +8008,24 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
     needed -= free_used
     player["pull_tickets"] -= float(needed)
 
-    results = []
-    unlocked_notifs = []
-    card = None
+    entries = []
+    notes = []
     for _ in range(count):
         card, is_dup, conv, unlocked_from_lock = execute_single_pull(player)
-        dup_text = " *(Trùng!)*" if is_dup else " ✨ **[MỚI]**"
+        entries.append({"card": card, "is_dup": is_dup, "unlocked": unlocked_from_lock})
         if unlocked_from_lock:
-            dup_text += " 🔓 **[ĐÃ MỞ KHÓA BỞI ADMIN!]**"
-            unlocked_notifs.append(f"🔓 Chúc mừng! Bạn đã quay trúng lại **#{card['id']:02d} {card['name']}**, thẻ bài đã được giải phóng khỏi trạng thái khóa Admin!")
-        results.append(f"• `[#{card['id']:02d}]` **[{card['rank']}] {card['name']}** (⚔️{card['power']} | ❤️{card['hp']}){dup_text}")
+            notes.append(f"🔓 Chúc mừng! Bạn đã quay trúng lại **#{card['id']:02d} {card['name']}**, thẻ bài đã được giải phóng khỏi trạng thái khóa Admin!")
 
     dq_notifs = update_daily_quest_progress(player, "pull", count)
     save_player(player)
-
-    embed = discord.Embed(
-        title=f"🌸 KẾT QUẢ PULL THẺ GACHA ({count} LƯỢT)",
-        description="\n".join(results),
-        color=0xDC2626 if any(c.startswith("• `[#") and "[SS]" in c for c in results) else 0x3B82F6
-    )
-    if card:
-        embed.set_thumbnail(url=card["image"])
-    if unlocked_notifs:
-        embed.add_field(name="🔓 GIẢI PHÓNG THẺ BÀI BỊ KHÓA:", value="\n".join(unlocked_notifs), inline=False)
     if dq_notifs:
-        embed.add_field(name="📜 Tiến Trình Nhiệm Vụ Ngày:", value="\n\n".join(dq_notifs), inline=False)
-    if 'ev_notifs' in locals() and ev_notifs:
-        embed.add_field(name="🎃 Tiến Trình Sự Kiện Halloween:", value="\n\n".join(ev_notifs), inline=False)
-    embed.set_footer(text=f"Vé pull còn lại: {player['pull_tickets']:.2f} | Free hôm nay: {player['free_pulls_remaining']}/5")
-    if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
-    else: await ctx_or_interaction.send(embed=embed)
+        notes.append("📜 **Tiến Trình Nhiệm Vụ Ngày:**\n" + "\n".join(dq_notifs))
+
+    await send_pull_gallery(
+        ctx_or_interaction, user, entries,
+        footer_text=f"Vé pull còn lại: {player['pull_tickets']:.2f} | Free hôm nay: {player['free_pulls_remaining']}/5",
+        notes=notes
+    )
 
 @bot.tree.command(name="pull", description="Quay thẻ nhân vật Touhou (Free 5 lượt/ngày)")
 @app_commands.describe(so_luong="Số lượt quay (1 đến 40, mặc định: 1)")
