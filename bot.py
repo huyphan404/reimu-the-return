@@ -12937,68 +12937,85 @@ async def handle_token_shop(ctx_or_interaction):
     else:
         await ctx_or_interaction.send(embed=embed, view=view)
 
+HELP_BG_GIF = "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/fa/99/7fYr3cIG.gif"
+
 async def handle_help(ctx_or_interaction):
-    desc = """
-⛩️ **HAKUREI REIMU DISCORD BOT - BẢN ĐỒ LỆNH**
+    event_on = EVENT_CONFIG.get("active", False)
+    event_status = "🟢 **ĐANG DIỄN RA**" if event_on else "🔴 **Hiện chưa có sự kiện**"
 
-**🌸 TÂN THỦ & NHIỆM VỤ:**
-• `/tutorial`: Khóa huấn luyện tân thủ (Thưởng 10 lượt pull, cấp 3 lượt pull 100% không trùng lá, không bao giờ ra thẻ SS, tiến trình 1 chiều).
-• `/story`: Chế độ cốt truyện Touhou Story Mode (Hồng Ma Dị Biến - Stage 1: Rumia, Stage 2: Bề mặt Hồ Sương Mù vs Cirno Ace 2).
-• `/prestige`: Hệ thống chuyển sinh (Reset Lv.0, nhận vé pull, tokens và nhân kinh nghiệm x2.0 - x10.0 XP, mở giới hạn cấp lên Lv.150, Lv.200, Lv.500+).
-• `/token`: Mở Token Shop đền Hakurei (Đổi thẻ SS, S hoặc quay ngẫu nhiên bằng tokens).
-• `/quest`: Xem 3/3 Nhiệm vụ Hàng Ngày (Nhận vé pull & thưởng lớn +10 lượt pull khi xong cả 3).
+    embed = discord.Embed(
+        title="🌸 HƯỚNG DẪN LỆNH - ĐỀN HAKUREI",
+        description=(
+            "⛩️ *Chào mừng đến Gensokyo! Dưới đây là toàn bộ lệnh bạn cần biết.*\n"
+            "💡 Mọi lệnh đều dùng được dạng `/lệnh` hoặc `!lệnh`."
+        ),
+        color=0xDC2626
+    )
 
-**🎮 GACHA, TIẾN HÓA & TRAO ĐỔI:**
-• `/pull [số_lượng]`: Quay thẻ Touhou (Free 5 lượt/ngày). *Thẻ đã quay được sẽ mở khóa vĩnh viễn! Quay trúng lại thẻ bị lock sẽ mở khóa!*
-• `/daily`: Điểm danh nhận 1 vé pull mỗi ngày.
-• `/evol [id_hoac_ten]`: Tiến hóa Ace 2 ⭐⭐ (Buff +300 ATK, +300 HP, trừ thẻ sau khi evol):
-  - [#15] Reimu (20 thẻ): Vô Tưởng Chuyển Sinh (40% miễn sát thương).
-  - [#18] Sakuya (30 thẻ): Thời Gian Đóng Băng (40% stun đối thủ).
-  - [#19] Marisa (25 thẻ): Master Spark (30% kích hoạt sát thương ×2.0 lần).
-  - [#09] Flandre (30 thẻ): Ripples of 495 Years (25% xóa 50% HP đối thủ / 30% HP Boss Raid, 1 lần/trận).
-  - [#12] Remilia (25 thẻ): Thương Đỏ Gungnir — THỤ ĐỘNG không cần kích hoạt: mọi đòn đánh +3% Máu Tối Đa (Max HP) mục tiêu, kèm GIF chiêu.
-  - [#21] Reisen (40 thẻ): Red Eye Mind Explosion (25% kích hoạt 1 lần/trận): mục tiêu có 20% tự gây sát thương lên bản thân trong 4 turn (không dùng lên chính mình).
-  - [#23] Cirno (60 thẻ): Perfect Freeze (40% kích hoạt 1 lần/trận): đóng băng khiến đối phương trong 2 turn tiếp có 45% không thể đánh trả, kèm GIF chiêu trực tiếp.
-  - [#13] Utsuho Reiuji (30 thẻ): Nuclear Spell Card (30% kích hoạt): gây 3.0x sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch ra sân sau đó trong 3 turn, kèm GIF chiêu trực tiếp.
-  - [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Điều kiện đặc biệt: Marisa, Reimu, Sakuya đều Ace 2 & 10 Mảnh Seiki):
-    * Cleave: Thụ động 100% mọi đòn đánh thường +2% Máu Tối Đa mục tiêu!
-    * Medicine Sign: 35% hồi 40% Máu Tối Đa bản thân, 1 lần/trận.
-    * Fantasy Seal: Buff lên 50% miễn toàn bộ sát thương 1 hiệp (dạng Ace 2), 1 lần/trận.
-    * Bóng Khái Niệm: 40% gây 15% Máu Tối Đa mục tiêu và lập tức xóa kỹ năng đối phương, 1 lần/trận.
-• `/trade <user> [your] [their]`: Trao đổi thẻ bài (Cú pháp `your:tên:số_lượng` và `their:tên:số_lượng`, ví dụ: `your:reimu: 1 their:sakuya:12`, giao diện xác nhận 2 bên).
-• `/team [hanh_dong] [id_the]`: Quản lý đội hình (view, add, remove). Mỗi cấp độ tăng +20 ATK và +25 HP buff!
-• `/check [id_hoac_ten]`: Soi chi tiết sức mạnh, máu và kỹ năng của 28 nhân vật Touhou + thẻ đặc biệt [T] #t1 Seiki (gõ `seiki` hoặc `t1`, kèm Ace 2, có nút ◀ ▶ lướt danh sách, menu chọn nhanh và nút 🔮 xem thẻ T1).
-• `/collection`: Xem 28 nhân vật Touhou (SS, S, A, B, C).
+    embed.add_field(
+        name="🚀 LỆNH MỞ ĐẦU",
+        value="• `/tutorial` : Khóa huấn luyện tân thủ, làm theo để nhận thưởng.",
+        inline=False
+    )
 
-**⚔️ CHIẾN ĐẤU & BOSS RAID:**
-• `/battle`: Giao đấu nhân vật nhận 50-100 XP (hồi chiêu 1 phút).
-• `/pvp <người_chơi>`: Thách đấu người chơi khác trong server trận đại chiến 3v3 đỉnh cao.
-• `/boss_status`: Kiểm tra hồi chiêu 15 phút của Boss Raid.
-• **Thông tin chi tiết trận chiến**: Sau Battle, Raid và PvP luôn có nút **📜 Xem Chi Tiết Trận Chiến & GIF Kỹ Năng** để xem lại từng hiệp kèm GIF hoạt ảnh trực tiếp (không dùng link dẫn ra ngoài).
+    embed.add_field(
+        name="⚔️ LỆNH CHIẾN ĐẤU",
+        value=(
+            "• `/battle` : Chiến đấu để cày cấp.\n"
+            "• `/pvp` : Thử sức với người chơi khác, cũng để làm nhiệm vụ.\n"
+            "• `/story` : Tham gia tiến trình cốt truyện."
+        ),
+        inline=False
+    )
 
-**👹 DỊ BIẾN REIMU DỊ HÌNH (LIVE COMBAT):**
-• **Phase 1 (30k HP / 15k DMG):** Quà rơi: 10% 10 vé, 40% 5 vé, 50% 3 vé. Trận đấu phát sóng turn-by-turn trực tiếp!
-• **Phase 2 Thức Tỉnh (50k HP / 22k DMG):** Tự động hồi sinh & hồi 100% HP mọi thẻ bài! Quà siêu cấp: 10% 20 vé, 40% 10 vé, 50% 5 vé!
-**👹 DỊ BIẾN SEIKI DỊ HÌNH - DỊ TÀ ĐỆ NHẤT PHÁP SƯ (LIVE COMBAT 2 PHASE):**
-• **Phase 1 (30k HP / 3k DMG chia đều):** Nội tại hồi 1.5% HP, Multi Master Spark (15%), Fantasy Seal (20%), Blitz Attack (20%). Quà: 10% 10 vé, 40% 5 vé, 50% 3 vé!
-• **Phase 2 Thức Tỉnh (90k HP / 10k DMG chia đều):** Hồi sinh & hồi 100% HP mọi thẻ bài! Nội tại **Cleave (100%)**: +20% Máu tối đa mục tiêu! **Nuclear Spell Card (10%)**: 10K DMG toàn tiền tuyến! Quà: 10% 30 vé, 40% 20 vé, 50% 10 vé, 5% +1 Mảnh Seiki!
-**👺 DỊ BIẾN BÁT ÁCH KIẾM THẦN TƯỚNG MAHORAGA (SINGLE PHASE - 90K HP):**
-• **90,000 HP / 6,000 DMG (chia đều tiền tuyến):**
-  - **The True Adapt (100% Thụ Động):** Mỗi hiệp tự hồi 3% HP tối đa (2,700 HP) & giảm 3% sát thương phải nhận (cộng dồn mỗi hiệp, tối đa 90%)!
-  - **Thoái Ma Kiếm (25%):** Rút kiếm chém 6,000 DMG sát thương thuần lên MỘT mục tiêu duy nhất (không chia đều)!
-• **Quà thanh tẩy:** 10% 20 vé, 40% 15 vé, 50% 10 vé (+100 XP), và 5% rơi +1 Mảnh Mahoraga (tích trữ cho Thẻ Mahoraga sắp ra mắt)!
+    embed.add_field(
+        name=f" LỆNH SỰ KIỆN (nếu đang có) - {event_status}",
+        value=(
+            "• `/event info` : Xem nhiệm vụ và thông tin sự kiện.\n"
+            "• `/event raid` : Mở phòng săn Event Boss.\n"
+            "• `/event shop` : Đổi quà bằng event item."
+        ),
+        inline=False
+    )
 
-**👑 LỆNH ADMIN (OWNER EXCLUSIVE - ID: 1502579398560317441):**
-• `/admin_lock <user> <id_the>`: Niêm phong thẻ bài của người chơi (chỉ mở khi pull ra lại).
-• `/admin_reset_quest [user]`: Làm mới thủ công 3/3 Nhiệm Vụ Ngày (hệ thống vốn tự động reset lúc 00:00 GMT+7).
-• `/admin_set_level <user> <level>`: Đặt cấp độ và đồng bộ XP (+50 XP/cấp chuẩn xác theo Prestige).
-• `/admin_confiscate <user> [id_the] [so_luong]`: Tước đoạt bài trừng phạt cheat (0 = tất cả).
-• `/admin_add_card <id_the> [so_luong] [user]`: Cấp thẻ cho người chơi / tự lấy thẻ.
-• `/sync`: Đồng bộ lại cây lệnh Slash Commands.
-"""
-    embed = discord.Embed(title="🌸 HƯỚNG DẪN LỆNH BOT REIMU", description=desc, color=0xDC2626)
-    if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
-    else: await ctx_or_interaction.send(embed=embed)
+    embed.add_field(
+        name="🎴 HỖ TRỢ: THẺ BÀI & ĐỘI HÌNH",
+        value=(
+            "• `/pull` : Quay thêm nhân vật.\n"
+            "• `/card_info` : Xem chi tiết sức mạnh, thông tin nhân vật.\n"
+            "• `/collection` : Xem chi tiết bộ sưu tập của bạn.\n"
+            "• `/team` : Xem chi tiết và sắp xếp đội hình.\n"
+            "• `/evol` : Mở bảng tiến hóa nhân vật.\n"
+            "• `/trade` : Trade những lá bài.\n"
+            "• `/t shards` : Kiểm tra số mảnh thẻ nhóm đặc biệt."
+        ),
+        inline=False
+    )
+
+    embed.add_field(
+        name="🎁 HỖ TRỢ: PHẦN THƯỞNG & VẬT PHẨM",
+        value=(
+            "• `/daily` : Nhận thưởng hằng ngày.\n"
+            "• `/quest` : Nhiệm vụ ngày, thêm lượt quay và phần thưởng.\n"
+            "• `/boss_status` : Kiểm tra tình trạng spawn rate Boss.\n"
+            "• `/prestige` : Chuyển sinh, đổi cấp độ lấy phần thưởng.\n"
+            "• `/token` : Dùng token mua đồ ở shop đặc biệt.\n"
+            "• `/item check` : Xem kho đồ của bạn.\n"
+            "• `/item trade` : Trade vật phẩm."
+        ),
+        inline=False
+    )
+
+    embed.set_image(url=HELP_BG_GIF)
+    embed.set_footer(text="Hakurei Shrine • Gõ /tutorial nếu bạn là người chơi mới!")
+
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        if ctx_or_interaction.response.is_done():
+            await ctx_or_interaction.followup.send(embed=embed)
+        else:
+            await ctx_or_interaction.response.send_message(embed=embed)
+    else:
+        await ctx_or_interaction.send(embed=embed)
 
 @bot.tree.command(name="help", description="Xem hướng dẫn toàn bộ lệnh chơi game, boss raid và lệnh admin")
 async def slash_help(interaction: discord.Interaction):
