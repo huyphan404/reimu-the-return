@@ -7797,21 +7797,56 @@ def _decode_pull_art(data: bytes):
     resample = getattr(Image, "Resampling", Image).LANCZOS
     return ImageOps.fit(img, (PULL_ART_W, PULL_ART_H), resample)
 
+# Tạo sẵn thư mục lưu ảnh vĩnh viễn trên máy
+CARD_ASSETS_DIR = os.path.join(os.path.dirname(__file__) if "__file__" in locals() else ".", "card_images")
+os.makedirs(CARD_ASSETS_DIR, exist_ok=True)
+
 async def _fetch_pull_art(card: dict):
     key = str(card.get("id"))
+    
+    # 1. Kiểm tra RAM cache
     if key in _PULL_IMG_CACHE:
         return _PULL_IMG_CACHE[key]
+
+    loop = asyncio.get_running_loop()
+
+    # 2. Kiểm tra file ảnh đã có sẵn trên máy/hosting chưa (Vĩnh viễn, không lo hết hạn)
+    for ext in (".png", ".jpg", ".jpeg", ".webp", ".gif"):
+        local_path = os.path.join(CARD_ASSETS_DIR, f"{key}{ext}")
+        if os.path.exists(local_path):
+            try:
+                def _load_local():
+                    with open(local_path, "rb") as f:
+                        return _decode_pull_art(f.read())
+                img = await loop.run_in_executor(None, _load_local)
+                _PULL_IMG_CACHE[key] = img
+                return img
+            except Exception as e:
+                print(f"⚠️ [PULL] Lỗi đọc ảnh cục bộ #{key}: {e}", flush=True)
+
+    # 3. Nếu chưa có trên máy, tải từ URL và TỰ ĐỘNG LƯU VÀO MÁY ĐỂ KHÔNG BAO GIỜ HẾT HẠN
     url = card.get("image")
     if not url:
         return None
+
     try:
-        timeout = aiohttp.ClientTimeout(total=8)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
+        timeout = aiohttp.ClientTimeout(total=10)
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
             async with session.get(url) as resp:
                 if resp.status != 200:
+                    print(f"⚠️ [PULL] Link thẻ #{key} trả về lỗi HTTP {resp.status} (có thể link Discord đã hết hạn).", flush=True)
                     return None
                 data = await resp.read()
-        loop = asyncio.get_running_loop()
+
+        # Lưu lại vào ổ cứng ngay lập tức để link hết hạn cũng không ảnh hưởng
+        save_path = os.path.join(CARD_ASSETS_DIR, f"{key}.png")
+        try:
+            with open(save_path, "wb") as f:
+                f.write(data)
+        except Exception:
+            pass
+
         img = await loop.run_in_executor(None, _decode_pull_art, data)
         _PULL_IMG_CACHE[key] = img
         return img
