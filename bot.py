@@ -15145,9 +15145,9 @@ PRIME_BOSS_CONFIG = {
     "dmg_reduction": 0.20,
     "kill_heal_pct": 0.025,
     "skills": {
-        "phan_chuyen": {"name": "Phản chuyển Niệm Bóng", "chance": 0.20, "multiplier": 2.2, "gif": PRIME_GIF_REVERSE},
-        "gan_ghep": {"name": "Gán ghép", "chance": 0.12, "heal_pct": 0.20, "gif": PRIME_GIF_HEAL},
-        "nhi_phan": {"name": "Nhị Phân Vô Cực khái niệm", "chance": 0.08, "gif": PRIME_GIF_BINARY},
+        "phan_chuyen": {"name": "Phản chuyển Niệm Bóng", "chance": 0.25, "multiplier": 2.2, "gif": PRIME_GIF_REVERSE},
+        "gan_ghep": {"name": "Gán ghép", "chance": 0.15, "heal_pct": 0.20, "gif": PRIME_GIF_HEAL},
+        "nhi_phan": {"name": "Nhị Phân Vô Cực khái niệm", "chance": 0.10, "gif": PRIME_GIF_BINARY},
     }
 }
 
@@ -15298,9 +15298,9 @@ async def spawn_prime_raid(channel, author, is_admin=False):
         name="⚖️ Nội Tại & Kỹ Năng:",
         value=(
             "• 🛡️ **Linh hồn của công lý (Passive):** Giảm **20% sát thương nhận vào**. Mỗi lần hạ được **1 thẻ bài**, hồi **2,5% máu tối đa**!\n"
-            "• 🔄 **Phản chuyển Niệm Bóng (20%):** Đảo ngược khái niệm, giáng đòn hủy diệt **2.2x sát thương gốc (33,000 DMG)** chia đều tiền tuyến!\n"
-            "• 🧩 **Gán ghép (12%):** Tập hợp các khái niệm gán lại, **hồi 20% máu tối đa**!\n"
-            "• ♾️ **Nhị Phân Vô Cực khái niệm (8%):** Đòn kết liễu — **hạ gục ngay 1 mục tiêu ngẫu nhiên (1 hit)**, "
+            "• 🔄 **Phản chuyển Niệm Bóng (25%):** Đảo ngược khái niệm, giáng đòn hủy diệt **2.2x sát thương gốc (33,000 DMG)** chia đều tiền tuyến!\n"
+            "• 🧩 **Gán ghép (15%):** Tập hợp các khái niệm gán lại, **hồi 20% máu tối đa**!\n"
+            "• ♾️ **Nhị Phân Vô Cực khái niệm (10%):** Đòn kết liễu — **hạ gục ngay 1 mục tiêu ngẫu nhiên (1 hit)**, "
             "**BỎ QUA mọi kỹ năng phòng thủ** (Yukari, Kizuna, Hong Meiling, Reimu, Seiki, Kasen...)!"
         ),
         inline=False
@@ -15569,7 +15569,7 @@ async def execute_prime_raid(channel, raid_data):
                     B["gif"] = sk["phan_chuyen"]["gif"]
                     total = int(power * sk["phan_chuyen"]["multiplier"])
                     each = max(100, total // n)
-                    action_log += f"🔄 **[KỸ NĂNG] Han Seiki** tung **Phản chuyển Niệm Bóng (20%)**! Đảo ngược khái niệm, giáng **{total:,} DMG** (2.2x), chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!"
+                    action_log += f"🔄 **[KỸ NĂNG] Han Seiki** tung **Phản chuyển Niệm Bóng (25%)**! Đảo ngược khái niệm, giáng **{total:,} DMG** (2.2x), chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!"
                     for c in active:
                         _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds)
                 elif chosen == "gan_ghep":
@@ -15577,7 +15577,7 @@ async def execute_prime_raid(channel, raid_data):
                     heal = int(max_hp * sk["gan_ghep"]["heal_pct"])
                     old = B["hp"]
                     B["hp"] = min(max_hp, B["hp"] + heal)
-                    action_log += f"🧩 **[KỸ NĂNG] Han Seiki** thi triển **Gán ghép (12%)**! Tập hợp các khái niệm tự chữa trị **+{B['hp'] - old:,} HP** (20% máu tối đa)!"
+                    action_log += f"🧩 **[KỸ NĂNG] Han Seiki** thi triển **Gán ghép (15%)**! Tập hợp các khái niệm tự chữa trị **+{B['hp'] - old:,} HP** (20% máu tối đa)!"
                 elif chosen == "nhi_phan":
                     B["gif"] = sk["nhi_phan"]["gif"]
                     tc = random.choice(active)
@@ -15585,7 +15585,7 @@ async def execute_prime_raid(channel, raid_data):
                     tac["current_hp"] = 0
                     forced_kills.append(tac)
                     action_log += (
-                        f"♾️ **[KỸ NĂNG TỐI THƯỢNG] Han Seiki** tung **Nhị Phân Vô Cực khái niệm (8%)**! "
+                        f"♾️ **[KỸ NĂNG TỐI THƯỢNG] Han Seiki** tung **Nhị Phân Vô Cực khái niệm (10%)**! "
                         f"Hệ số mũ vô hạn vượt mọi rào cản — **{tac['name']}** ({tc['username']}) bị **HẠ GỤC TỨC THÌ**, "
                         f"bỏ qua mọi kỹ năng phòng thủ!"
                     )
