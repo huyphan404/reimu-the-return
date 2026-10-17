@@ -2589,6 +2589,93 @@ class OpenDetailsView(discord.ui.View):
             return
         view = OpponentTeamView(self.opp_cards, self.opp_name, self.opp_level)
         await interaction.response.send_message(embed=view.get_embed(), view=view, ephemeral=True)
+
+# ==============================================================================
+# [UPDATE XP DROP] XP CỐ ĐỊNH (100%) + XP THEO HỆ SỐ (50%) CHO TẤT CẢ BOSS
+# ==============================================================================
+BOSS_XP_DROPS = {
+    ("reimu", 1):     {"flat": 2000, "mult": 1.0},
+    ("reimu", 2):     {"flat": 3500, "mult": 1.5},
+    ("seiki", 1):     {"flat": 2200, "mult": 1.2},
+    ("seiki", 2):     {"flat": 4000, "mult": 1.5},
+    ("fateria", 1):   {"flat": 4000, "mult": 3.0},
+    ("mahoraga", 1):  {"flat": 3000, "mult": 2.0},
+    ("han_seiki", 1): {"flat": 5000, "mult": None},   # mult cũ (50% x4) đã có sẵn trong code Prime
+    ("jotaro", 1):    {"flat": 3000, "mult": None},   # mult cũ (50% x1.5) đã có sẵn trong code Jotaro
+}
+BOSS_XP_MULT_CHANCE = 0.50   # tỉ lệ nhận XP theo hệ số (đổi số này nếu muốn)
+
+def grant_boss_xp_drop(p: dict, boss_key: str, phase: int = 1, raid_data: dict = None) -> list:
+    """Cộng XP drop cho người chơi p (caller tự save_player sau đó).
+    Ghi log vào raid_data['xp_report'] để gửi embed tổng kết riêng."""
+    cfg = BOSS_XP_DROPS.get((str(boss_key), int(phase)))
+    if not cfg:
+        return []
+    prestige = p.get("prestige", 0)
+    old_xp = p.get("xp", 0)
+    old_lvl = calculate_level_from_xp(old_xp, prestige)
+    _lvl, xp_in_lvl, needed_xp, _ratio = get_level_progress(old_xp, prestige)
+
+    lines = []
+    total = 0
+    flat = cfg.get("flat", 0)
+    if flat > 0:
+        total += flat
+        lines.append(f"✨ **+{flat:,} XP** (100%)")
+
+    mult = cfg.get("mult")
+    if mult and random.random() < BOSS_XP_MULT_CHANCE:
+        bonus = int(xp_in_lvl * mult)
+        if bonus > 0:
+            total += bonus
+            lines.append(f"✨ **+{bonus:,} XP** (50% - ×{mult:g} XP cấp hiện tại [{xp_in_lvl:,}/{needed_xp:,}])")
+
+    if total > 0:
+        p["xp"] = old_xp + total
+        new_lvl = calculate_level_from_xp(p["xp"], prestige)
+        if new_lvl > old_lvl:
+            lines.append(f"🌟 **LÊN CẤP {new_lvl}!**")
+
+    if raid_data is not None:
+        raid_data.setdefault("xp_report", []).append((int(phase), p.get("username", "???"), lines))
+    return lines
+
+async def send_boss_xp_report(channel, raid_data: dict):
+    """Gửi embed tổng kết XP drop (sau embed kết quả của trận)."""
+    try:
+        entries = raid_data.get("xp_report") or []
+        if not entries:
+            return
+        by_phase = {}
+        for phase, name, lines in entries:
+            if lines:
+                by_phase.setdefault(phase, []).append((name, lines))
+        boss_name = (raid_data.get("boss_config") or {}).get("name", "Boss")
+        two_phase = raid_data.get("boss_type") in ("reimu", "seiki")
+        for phase in sorted(by_phase):
+            blocks = [
+                f"🏆 **{name}**\n" + "\n".join(f"   └ {l}" for l in lines)
+                for name, lines in by_phase[phase]
+            ]
+            title = f"✨ XP DROP: {boss_name}" + (f" - PHASE {phase}" if two_phase else "")
+            chunks, cur = [], ""
+            for b in blocks:
+                if cur and len(cur) + len(b) + 2 > 3800:
+                    chunks.append(cur)
+                    cur = ""
+                cur += b + "\n\n"
+            if cur:
+                chunks.append(cur)
+            for i, ch in enumerate(chunks):
+                emb = discord.Embed(
+                    title=title if i == 0 else title + " (tiếp)",
+                    description=ch[:4000],
+                    color=0xF59E0B
+                )
+                await channel.send(embed=emb)
+    except Exception as e:
+        print(f"Lỗi gửi báo cáo XP boss: {e}", flush=True)
+
 # ==============================================================================
 # 6. QUẢN LÝ BOSS RAID (LIVE TURN-BY-TURN COMBAT, 15P COOLDOWN, TICKET REWARDS)
 # ==============================================================================
@@ -2669,6 +2756,7 @@ async def raid_timer_lifecycle(channel, raid_data, view):
             )
             try:
                 await execute_raid(channel, raid_data)
+                await send_boss_xp_report(channel, raid_data)
             except Exception as e:
                 print(f"Lỗi khi thực thi Boss Raid: {e}", flush=True)
                 try:
@@ -4162,6 +4250,7 @@ async def execute_raid(channel, raid_data):
                 items_won.append(shard_notice)
 
         p["pull_tickets"] += t_val
+        grant_boss_xp_drop(p, boss_type, 1, raid_data)
         p["xp"] += 100
         dq_notifs = update_daily_quest_progress(p, "raid", 1)
         ev_notifs = update_event_quest_progress(p, "raid", 1)
@@ -4796,6 +4885,7 @@ async def execute_raid(channel, raid_data):
                     items_won.append(f"🪭 **+1 Quạt Giấy** (2.5% Rơi từ Seiki Phase 2! Kho: {p_items['quat_giay']} cái)")
 
                 p["pull_tickets"] += t_val
+                grant_boss_xp_drop(p, "seiki", 2, raid_data)
                 p["xp"] += 150
                 save_player(p)
                 p2_rewards_data[uid] = {
@@ -5380,6 +5470,7 @@ async def execute_raid(channel, raid_data):
                 items_won.append(f"🪭 **+1 Quạt Giấy** (1% Cực Hiếm rơi từ Reimu Phase 2! Kho: {p_items['quat_giay']} cái)")
                 
             p["pull_tickets"] += t_val
+            grant_boss_xp_drop(p, "reimu", 2, raid_data)
             p["xp"] += 150
             save_player(p)
             p2_rewards_data[uid] = {
@@ -14698,6 +14789,7 @@ async def execute_jotaro_raid(channel, raid_data):
             if gain_xp > 0:
                 p["xp"] += gain_xp
                 got.append(f"✨ **+{gain_xp:,} XP** (50% - ×{JOTARO_XP_DROP_MULT} XP cấp hiện tại [{xp_in_lvl:,}/{needed_xp:,}])")
+        grant_boss_xp_drop(p, "jotaro", 1, raid_data)
         for n_ in update_daily_quest_progress(p, "raid", 1) + update_event_quest_progress(p, "raid", 1):
             got.append(n_)
         save_player(p)
@@ -15149,6 +15241,7 @@ async def prime_raid_timer_lifecycle(channel, raid_data, view):
             )
             try:
                 await execute_prime_raid(channel, raid_data)
+                await send_boss_xp_report(channel, raid_data)
             except Exception as e:
                 print(f"Lỗi khi thực thi Prime Raid: {e}", flush=True)
                 try:
@@ -15621,6 +15714,7 @@ async def execute_prime_raid(channel, raid_data):
             if gain_xp > 0:
                 p["xp"] += gain_xp
                 got.append(f"✨ **+{gain_xp:,} XP** (50% - ×{PRIME_XP_DROP_MULT:g} XP cấp hiện tại [{xp_in_lvl:,}/{needed_xp:,}])")
+        grant_boss_xp_drop(p, "han_seiki", 1, raid_data)
         for n_ in update_daily_quest_progress(p, "raid", 1) + update_event_quest_progress(p, "raid", 1):
             got.append(n_)
         save_player(p)
