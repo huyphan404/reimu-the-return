@@ -15330,7 +15330,7 @@ async def spawn_prime_raid(channel, author, is_admin=False):
 
 
 async def handle_prime_raid_open(ctx_or_interaction):
-    global active_prime_raid, prime_raid_cooldown_until
+    global active_prime_raid
     is_inter = isinstance(ctx_or_interaction, discord.Interaction)
     user = ctx_or_interaction.user if is_inter else ctx_or_interaction.author
     channel = ctx_or_interaction.channel
@@ -15353,18 +15353,22 @@ async def handle_prime_raid_open(ctx_or_interaction):
             await reply("🚨 Han Seiki đang xuất hiện hoặc đang giao chiến! Hãy đợi trận hiện tại kết thúc.")
             return
 
-    if not is_adm and now < prime_raid_cooldown_until:
-        rem = int(prime_raid_cooldown_until - now)
-        await reply(f"⏳ Han Seiki đang hồi chiêu! Cần đợi thêm **{rem // 60} phút {rem % 60} giây** nữa.")
+    player = get_player(user.id, user.display_name)
+
+    # Cooldown tính riêng cho NGƯỜI MỞ raid (giống /event raid)
+    last_t = player.get("last_prime_raid_time", 0.0)
+    if not is_adm and (now - last_t < PRIME_COOLDOWN):
+        rem = int(PRIME_COOLDOWN - (now - last_t))
+        await reply(f"⏳ Bạn vừa triệu hồi Han Seiki gần đây, cần nghỉ thêm **{rem // 60} phút {rem % 60} giây** nữa! (Bạn vẫn có thể bấm Tham Gia raid do người khác mở)")
         return
 
-    player = get_player(user.id, user.display_name)
     if not _prime_prepare_team(player):
         await reply("⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` trước nhé!")
         return
 
     if not is_adm:
-        prime_raid_cooldown_until = now + PRIME_COOLDOWN
+        player["last_prime_raid_time"] = now
+        save_player(player)
 
     text = f"⚖️ **{user.display_name}** đã mở nghi lễ triệu hồi **Han Seiki the Prime One**!"
     if is_inter:
