@@ -514,13 +514,13 @@ CARDS_BY_RANK = {
 }
 
 # ==============================================================================
-# BOSS REIMU DỊ HÌNH - CHỈ SỐ MỚI (PHASE 1: 30K HP, 3K DMG | PHASE 2: 50K HP, 10K DMG)
+# BOSS REIMU DỊ HÌNH - CHỈ SỐ MỚI (PHASE 1: 50K HP, 3K DMG | PHASE 2: 100K HP, 10K DMG)
 # ==============================================================================
 BOSS_CONFIG = {
     "name": "Reimu Dị Hình - Phase 1",
     "desc": "Đó không phải Reimu, sẵn sàng giao chiến!",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1549077421624401971/content.png?ex=6aa96245&is=6aa810c5&hm=c0248e497ee5afeed898b457736b39fc71368af3be1630f1cd59b5609c99fbeb&=&format=webp&quality=lossless&width=351&height=512",
-    "hp": 30000,
+    "hp": 50000,
     "power": 3000,
     "max_players": 6,
     "cooldown_seconds": 15 * 60
@@ -530,12 +530,12 @@ BOSS_PHASE2_CONFIG = {
     "name": "Reimu Dị Hình - Thức Tỉnh (Phase 2)",
     "desc": "Dị hình đang biến đổi, bùa chú của chúng ta đang rung động dữ dội!",
     "image": "https://media.discordapp.net/attachments/1549063334781911070/1549275653239472148/artwork.png?ex=6aaa1ae3&is=6aa8c963&hm=7187404882d4b8b0fcef91ef64aee3c73711924e971fb7b28b6fb3bf394a47d3&=&format=webp&quality=lossless&width=640&height=336",
-    "hp": 50000,
+    "hp": 100000,
     "power": 10000
 }
 
 # ==============================================================================
-# BOSS SEIKI DỊ HÌNH - DỊ TÀ ĐỆ NHẤT PHÁP SƯ (PHASE 1: 30K HP, 3K DMG, PASSIVE 1.5% HP)
+# BOSS SEIKI DỊ HÌNH - DỊ TÀ ĐỆ NHẤT PHÁP SƯ (PHASE 1: 55K HP, 3K DMG, PASSIVE 1.5% HP)
 # ==============================================================================
 SEIKI_BOSS_CONFIG = {
     "id": "seiki",
@@ -543,7 +543,7 @@ SEIKI_BOSS_CONFIG = {
     "desc": "Đó không phải cha ta!",
     "reimu_quote": "Đó không phải cha ta! Dị khí ngập tràn, người này đã bị tà niệm nuốt chửng!",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1550376898641788938/content.png?ex=6aae1c81&is=6aaccb01&hm=d3c3c9d6c077931869c7f11e64fb4de796b79fecc3a9210008008fbc15a25e5f&=&format=webp&quality=lossless&width=643&height=1024",
-    "hp": 30000,
+    "hp": 55000,
     "power": 3000,
     "passive_regen_pct": 0.015,
     "max_players": 6,
@@ -576,7 +576,7 @@ SEIKI_BOSS_CONFIG = {
 boss_cooldown_until = 0.0
 
 # ==============================================================================
-# SEIKI DỊ HÌNH PHASE 2 - THỨC TỈNH (90K HP, 10K DMG CHIA ĐỀU, NUCLEAR + CLEAVE)
+# SEIKI DỊ HÌNH PHASE 2 - THỨC TỈNH (105K HP, 10K DMG CHIA ĐỀU, NUCLEAR + CLEAVE)
 # ==============================================================================
 SEIKI_BOSS_PHASE2_CONFIG = {
     "id": "seiki_phase2",
@@ -584,7 +584,7 @@ SEIKI_BOSS_PHASE2_CONFIG = {
     "desc": "Dị tà ma lực bùng nổ, thân xác dị hình đang thức tỉnh hoàn toàn!",
     "reimu_quote": "Không thể nào... dị khí còn mạnh gấp bội! Mọi người cẩn thận, ngài ấy đã thức tỉnh rồi!",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1550376618160169012/content.png?ex=6ab0bf3e&is=6aaf6dbe&hm=eb9bf84552e0b67e8e03f8ac403af2034904b4b48330bd8cd220f39feb3c11a2&=&format=webp&quality=lossless&width=357&height=512",
-    "hp": 90000,
+    "hp": 105000,
     "power": 10000,
     "skills": {
         "nuclear_spell": {
@@ -736,7 +736,7 @@ MAHORAGA_BOSS_CONFIG = {
     "desc": "Thần tướng thuật thức tối thượng - kẻ thích nghi với mọi hiện tượng. Mọi đòn đánh chỉ khiến nó trở nên cứng cáp hơn!",
     "reimu_quote": "Cái thứ yêu quái nào vậy, cái thằng nhóc đầu nhím kia vừa triệu hồi cái gì vậy?",
     "image": "https://kimi-web-img.kimi.ai/img/gbaike-image.cdn.bcebos.com/84b485484cf2279a8a3412643b2a1c4f99bf0cd2",
-    "hp": 90000,
+    "hp": 120000,
     "power": 6000,
     "passive_regen_pct": 0.03,
     "passive_adapt_pct": 0.03,
@@ -765,7 +765,7 @@ FATERIA_BOSS_CONFIG = {
     "desc": "Thực thể thao túng dòng chảy thời gian và những con rối định mệnh!",
     "reimu_quote": "kẻ kiểm soát dòng chảy của thời gian, tất cả nghênh chiến!",
     "image": "https://media.discordapp.net/attachments/1549063334781911070/1556698641002004480/image.png?backend=b2&ex=6ac51c16&is=6ac3ca96&hm=3f8bb669aa03006bbd2fce5b687c6d81a036e8349764d9569f6bd412784446ab&=&format=webp&quality=lossless",
-    "hp": 100000,
+    "hp": 150000,
     "power": 9000,
     "max_players": 6,
     "cooldown_seconds": 15 * 60,
@@ -773,7 +773,7 @@ FATERIA_BOSS_CONFIG = {
         "name": "Save loop",
         "chance": 0.15,
         "heal_pct": 0.30,
-        "desc": "15% kích hoạt: Hồi 30% HP tối đa (28,500 HP) và miễn nhiễm toàn bộ sát thương trong turn đó!",
+        "desc": "15% kích hoạt: Hồi 30% HP tối đa (45,000 HP) và miễn nhiễm toàn bộ sát thương trong turn đó!",
         "gif": "https://static2.klipy.com/ii/e1b92bb53e0c9e442408bc677a56c789/3f/90/YA0o494Vr52yU7U.gif"
     },
     "skills": {
@@ -2758,12 +2758,12 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
         embed.add_field(
             name="🔮 Kỹ Năng & Nội Tại (Độc Quyền - Không Trùng Turn):",
             value=(
-                "• 💚 **Nội Tại:** Mỗi hiệp tự hồi phục **1.5% HP tối đa (450 HP)**!\n"
+                "• 💚 **Nội Tại:** Mỗi hiệp tự hồi phục **1.5% HP tối đa (825 HP)**!\n"
                 "• 🌟 **Multi Master Spark (15%):** Bộc phát ma lực x1.5 sát thương (4,500 DMG chia đều) duy trì trong **3 lượt**!\n"
                 "• 🛡️ **Fantasy Seal (20%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 turn!\n"
                 "• ⚡ **Blitz Attack (20%):** Oanh tạc chớp nhoáng gây **4,000 DMG** diện rộng lên toàn bộ thẻ tiền tuyến!\n"
                 "*(Lưu ý: Không bao giờ kích hoạt trùng chiêu trong cùng một hiệp)*\n\n"
-                "👹 **PHASE 2 - THỨC TỈNH (90K HP / 10K DMG CHIA ĐỀU):**\n"
+                "👹 **PHASE 2 - THỨC TỈNH (105K HP / 10K DMG CHIA ĐỀU):**\n"
                 "• ☢️ **Nuclear Spell Card (15%):** Gây **10,000 DMG** lên **TẤT CẢ** lá bài đang ở tiền tuyến!\n"
                 "• 🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **20% Máu Tối Đa** của mục tiêu!"
             ),
@@ -2795,7 +2795,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
             name="♾️ Nội Tại & Kỹ Năng (Độc Quyền - The True Adapt):",
             value=(
                 "• ♾️ **The True Adapt (100% - THỤ ĐỘNG):**\n"
-                "  - Mỗi hiệp tự hồi phục **3% HP tối đa (2,700 HP)**!\n"
+                "  - Mỗi hiệp tự hồi phục **3% HP tối đa (3,600 HP)**!\n"
                 "  - Mỗi hiệp **GIẢM 3% sát thương phải nhận** (cộng dồn mỗi hiệp - càng đánh càng cứng)!\n"
                 "• ⚔️ **Thoái Ma Kiếm (25%):** Rút trường kiếm giáng **6,000 DMG sát thương thuần** lên **MỘT mục tiêu** duy nhất (không chia đều)!"
             ),
@@ -2826,7 +2826,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
         embed.add_field(
             name="⏳ Nội Tại & Kỹ Năng (Khuôn Mẫu Số Phận):",
             value=(
-                "• 🔄 **Passive - Save loop (15%):** Hồi **30% HP tối đa (30,000 HP)** và **MIỄN NHIỄM SÁT THƯƠNG** trong turn đó!\n"
+                "• 🔄 **Passive - Save loop (15%):** Hồi **30% HP tối đa (45,000 HP)** và **MIỄN NHIỄM SÁT THƯƠNG** trong turn đó!\n"
                 "• ⛓️ **Skill 1 - Fate loop (10%):** Khiến đối thủ **không thể dùng skill trong 2 turn liên tiếp** (không lặp lại cho đến khi hết 2 turn đó)!\n"
                 "• 🪆 **Skill 2 - Clone attack (20% kích hoạt - Random 1/3 chiêu con rối):**\n"
                 "  - ⚡ **Thunder blaze:** Ngọn lửa chớp điện phập phờn gây **2.3x DMG (20,700 DMG)** chia đều sát thương!\n"
@@ -3115,7 +3115,7 @@ async def execute_raid(channel, raid_data):
     await asyncio.sleep(2.0)
 
     p1_rounds = 0
-    max_rounds = 35
+    max_rounds = 50
     boss_mind_turns = 0
     boss_freeze_debuff_turns = 0
     boss_molten_ground_turns = 0
@@ -4834,14 +4834,14 @@ async def execute_raid(channel, raid_data):
         return
 
     # ========================================================================
-    # PHASE 2: REIMU DỊ HÌNH - THỨC TỈNH (50K HP / 10K DMG)
+    # PHASE 2: REIMU DỊ HÌNH - THỨC TỈNH (100K HP / 10K DMG)
     # ========================================================================
     p2_alert_embed = discord.Embed(
         title="🚨 DỊ BIẾN BIẾN ĐỔI - BÙA CHÚ RUNG ĐỘNG DỮ DỘI! (PHASE 2)",
         description=(
             "⚡ **Dị hình đang biến đổi, bùa chú của chúng ta đang rung động dữ dội!**\n\n"
             f"👺 **{BOSS_PHASE2_CONFIG['name']}** đã thức tỉnh ma lực tối thượng!\n"
-            f"❤️ **Máu tăng lên:** **`50,000 HP`**\n"
+            f"❤️ **Máu tăng lên:** **`100,000 HP`**\n"
             f"⚔️ **Sát thương đánh thường:** **`10,000 DMG`** *(chia đều cho tiền tuyến)*\n\n"
             f"✨ **PHÉP MÀU THANH TẨY:**\n"
             f"**Lập tức hồi sinh và hồi 100% sinh lực toàn bộ thẻ bài của tất cả dũng giả!**"
@@ -8440,7 +8440,7 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
     if cur_shards < needed_shards:
         shard_names = {"seiki": "Mảnh Seiki", "mahoraga": "Mảnh Mahoraga", "kizuna": "Mảnh Kizuna", "fateria": "Fateria Shards"}
         shard_name_display = shard_names.get(shard_key, "Mảnh")
-        hint_text = "Tham gia đánh Boss Raid (Seiki Dị Hình hoặc Reimu Dị Hình) để nhận tỉ lệ 2.5% rơi mảnh Seiki!" if shard_key == "seiki" else "Tham gia đánh Boss Raid Mahoraga 90K HP để nhận tỉ lệ 5% rơi mảnh Mahoraga!"
+        hint_text = "Tham gia đánh Boss Raid (Seiki Dị Hình hoặc Reimu Dị Hình) để nhận tỉ lệ 2.5% rơi mảnh Seiki!" if shard_key == "seiki" else "Tham gia đánh Boss Raid Mahoraga 120K HP để nhận tỉ lệ 5% rơi mảnh Mahoraga!"
         msg = (
             f"❌ **Không đủ mảnh quy đổi!**\n"
             f"• Bạn đang có: **{cur_shards}/{needed_shards} {shard_name_display}**\n"
@@ -8617,7 +8617,7 @@ async def handle_view_shards(ctx_or_interaction):
             f"• Tiến độ: `{get_hp_bar(min(10, mahoraga_shards), 10)}` ({min(100, mahoraga_shards * 10)}%)\n"
             f"• Thẻ quy đổi: **[T] #t2 Mahoraga Bát ách kiếm thần tướng** (Kho: {has_mahoraga} lá)\n"
             f"• Thao tác: Gõ `/t translate loai_shard:mahoraga` khi đủ 10 mảnh để quy đổi ngay!\n"
-            f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Mahoraga** (90K HP)."
+            f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Mahoraga** (120K HP)."
         ),
         inline=False
     )
@@ -8630,7 +8630,7 @@ async def handle_view_shards(ctx_or_interaction):
             f"• Tiến độ: `{get_hp_bar(min(20, fateria_shards), 20)}` ({min(100, fateria_shards * 5)}%)\n"
             f"• Thẻ quy đổi: **[T] #t4 Fateria – Khuôn mẫu của số phận** (Kho: {has_fateria} lá)\n"
             f"• Thao tác: Gõ `/t translate loai_shard:fateria` khi đủ 20 mảnh để quy đổi ngay!\n"
-            f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Fateria – Khuôn mẫu của số phận** (100K HP / 9k DMG)."
+            f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Fateria – Khuôn mẫu của số phận** (150k HP / 9k DMG)."
         ),
         inline=False
     )
@@ -11724,7 +11724,7 @@ async def slash_boss_status(interaction: discord.Interaction):
     check_and_clean_expired_raid()
     now = time.time()
     embed = discord.Embed(title="👹 TRẠNG THÁI BOSS RAID: REIMU DỊ HÌNH (2 PHASE)", color=0xDC2626)
-    embed.add_field(name="👺 Bát Ách Kiếm Thần Tướng Mahoraga (Single Phase):", value=f"• 90,000 HP | 6,000 DMG (chia đều)\n• Nội tại The True Adapt (100%): tự hồi 3% HP tối đa (2,700 HP) và GIẢM 3% sát thương phải nhận mỗi lượt (cộng dồn)!\n• Kỹ năng Thoái Ma Kiếm (25%): 6,000 DMG sát thương thuần lên 1 mục tiêu duy nhất!\n• Phần thưởng: 10% 20 vé, 40% 15 vé, 50% 10 vé, 5% Mảnh Mahoraga!", inline=False)
+    embed.add_field(name="👺 Bát Ách Kiếm Thần Tướng Mahoraga (Single Phase):", value=f"• 120,000 HP | 6,000 DMG (chia đều)\n• Nội tại The True Adapt (100%): tự hồi 3% HP tối đa (3,600 HP) và GIẢM 3% sát thương phải nhận mỗi lượt (cộng dồn)!\n• Kỹ năng Thoái Ma Kiếm (25%): 6,000 DMG sát thương thuần lên 1 mục tiêu duy nhất!\n• Phần thưởng: 10% 20 vé, 40% 15 vé, 50% 10 vé, 5% Mảnh Mahoraga!", inline=False)
     embed.add_field(name="👹 Seiki Dị Hình (2 Phase):", value=f"• Phase 1: HP {SEIKI_BOSS_CONFIG['hp']:,} | {SEIKI_BOSS_CONFIG['power']:,} DMG (chia đều) + nội tại hồi 1.5% HP\n• Phase 2 Thức Tỉnh: HP {SEIKI_BOSS_PHASE2_CONFIG['hp']:,} | {SEIKI_BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều) + Cleave +10% Máu tối đa mục tiêu + Nuclear Spell Card (10%) 10K DMG toàn tiền tuyến!", inline=False)
     embed.set_thumbnail(url=BOSS_CONFIG["image"])
     embed.add_field(name="❤️ Chỉ Số 2 Phase:", value=f"• Phase 1: HP {BOSS_CONFIG['hp']:,} | Đánh thường {BOSS_CONFIG['power']:,} DMG (chia đều)\n• Phase 2: HP {BOSS_PHASE2_CONFIG['hp']:,} | Đánh thường {BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều)", inline=True)
@@ -11791,8 +11791,8 @@ async def prefix_boss_status(ctx, *args):
     app_commands.Choice(name="spawn - Triệu hồi Boss ngay tại kênh này", value="spawn"),
     app_commands.Choice(name="reset - Giải phóng Boss kẹt và xóa hồi chiêu", value="reset")
 ], loai_boss=[
-    app_commands.Choice(name="Fateria – Khuôn mẫu của số phận (100k HP / 9k DMG)", value="fateria"),
-    app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (90k HP / The True Adapt)", value="mahoraga"),
+    app_commands.Choice(name="Fateria – Khuôn mẫu của số phận (150k HP / 9k DMG)", value="fateria"),
+    app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (120k HP / The True Adapt)", value="mahoraga"),
     app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
     app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
     app_commands.Choice(name="Kujo Jotaro - Stone Ocean (110k HP / 9k5 DMG)", value="jotaro"),
@@ -11813,8 +11813,8 @@ async def slash_boss_admin(interaction: discord.Interaction, action: str, loai_b
 @bot.tree.command(name="admin_boss_spawn", description="[Admin] Triệu hồi ngay Boss Raid (Fateria, Mahoraga, Seiki, Reimu) tại kênh này")
 @app_commands.describe(loai_boss="Chọn Boss muốn triệu hồi")
 @app_commands.choices(loai_boss=[
-    app_commands.Choice(name="Fateria – Khuôn mẫu của số phận (100k HP / 9k DMG)", value="fateria"),
-    app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (90k HP / The True Adapt)", value="mahoraga"),
+    app_commands.Choice(name="Fateria – Khuôn mẫu của số phận (150k HP / 9k DMG)", value="fateria"),
+    app_commands.Choice(name="Bát Ách Kiếm Thần Tướng Mahoraga (120k HP / The True Adapt)", value="mahoraga"),
     app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
     app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
     app_commands.Choice(name="Kujo Jotaro - Stone Ocean (110k HP / 9k5 DMG)", value="jotaro"),
@@ -14414,7 +14414,7 @@ async def execute_jotaro_raid(channel, raid_data):
     await asyncio.sleep(2.0)
 
     rounds = 0
-    max_rounds = 35
+    max_rounds = 50
     boss_rage_used = False
     boss_rage_turns = 0
     boss_death_used = False
