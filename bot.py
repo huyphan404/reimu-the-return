@@ -1999,6 +1999,8 @@ def apply_bong_khai_niem_boss(boss_type: str, phase: int, erased_skill_current: 
         pool = [("blood_chain", "Blood chain"), ("dark_chain", "Dark chain")]
     elif boss_type == "kizuna_event" and phase == 2:
         pool = [("wonder_guard", "Wonder guard"), ("blood_chain", "Blood chain"), ("dark_chain", "Dark chain")]
+    elif boss_type == "han_seiki":
+        pool = [("phan_chuyen", "Phản chuyển Niệm Bóng"), ("gan_ghep", "Gán ghép"), ("nhi_phan", "Nhị Phân Vô Cực khái niệm")]
     elif boss_type == "jotaro":
         pool = [("stand_barrage", "Stand Barrage"), ("skull_breaker", "Skull Breaker"), ("time_stop", "Time Stop")]
     else:
@@ -13119,7 +13121,8 @@ async def handle_help(ctx_or_interaction):
         value=(
             "• `/battle` : Chiến đấu để cày cấp.\n"
             "• `/pvp` : Thử sức với người chơi khác, cũng để làm nhiệm vụ.\n"
-            "• `/story` : Tham gia tiến trình cốt truyện."
+            "• `/story` : Tham gia tiến trình cốt truyện.\n"
+            "• `/raid` : Triệu hồi Han Seiki the Prime One (tối đa 10 người, hồi chiêu 1 tiếng)."
         ),
         inline=False
     )
@@ -14118,7 +14121,7 @@ def _jt_player_attack(c, ac, rnd, B, notes):
     cid_s = str(cid).lower()
     is_ace = ac.get("is_ace2", False)
     nm = f"**{ac['name']}** ({c['username']})"
-    boss_name = JOTARO_BOSS_CONFIG["name"]
+    boss_name = B.get("boss_name", JOTARO_BOSS_CONFIG["name"])
     dmg = ac["power"]
 
     def setgif(u):
@@ -14207,7 +14210,7 @@ def _jt_player_attack(c, ac, rnd, B, notes):
                 c["seiki_used_turn"] = rnd
                 c["seiki_invul_turn"] = rnd
             if _t1["disable"]:
-                B["erased"], erase_msg = apply_bong_khai_niem_boss("jotaro", 1, B["erased"])
+                B["erased"], erase_msg = apply_bong_khai_niem_boss(B.get("boss_type", "jotaro"), 1, B["erased"])
                 _t1["logs"].append(erase_msg)
             if _t1["heal"]:
                 ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + _t1["heal"])
@@ -14991,6 +14994,629 @@ class KanaeCardView(discord.ui.View):
         v = CharacterCheckView(current_index=self.back_index, user_id=self.user_id)
         await interaction.response.edit_message(embed=v.get_current_embed(), view=v)
 
+# ==============================================================================
+# [UPDATE HAN SEIKI] BOSS CAO CẤP: HAN SEIKI THE PRIME ONE + LỆNH /RAID
+# ==============================================================================
+PRIME_GIF_SPAWN = "https://static2.klipy.com/ii/2f34308bfc69e8c858753b83566e3ab4/00/52/j3kSrYrla8BSqcCal.gif"
+PRIME_GIF_REVERSE = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/4c/27/SbtUUHliC0pHB.gif"
+PRIME_GIF_HEAL = "https://static2.klipy.com/ii/7607a26399874a14744aa5e7accfa062/28/a0/KyabVZ3e.gif"
+PRIME_GIF_BINARY = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/e1/1e/vyzqP4NnKOod9Se.gif"
+
+PRIME_XP_DROP_MULT = 4.0        # Drop XP = 4 x XP hiện tại trong cấp (Jotaro là 1.5)
+PRIME_COOLDOWN = 60 * 60        # Cooldown /raid: 1 tiếng (toàn server)
+PRIME_MAX_PLAYERS = 10
+PRIME_MAX_ROUNDS = 80
+
+PRIME_BOSS_CONFIG = {
+    "id": "han_seiki",
+    "name": "Han Seiki the Prime One",
+    "desc": "Kẻ thao túng khái niệm tối thượng. Mọi quy luật đều có thể bị đảo ngược trong tay hắn!",
+    "reimu_quote": "Khí tức này... không phải thứ mà con người nên đối mặt. Tất cả đồng lòng, đừng để hắn đảo ngược cuộc chiến!",
+    "image": PRIME_GIF_SPAWN,
+    "hp": 250000,
+    "power": 12000,
+    "dmg_reduction": 0.20,
+    "kill_heal_pct": 0.025,
+    "skills": {
+        "phan_chuyen": {"name": "Phản chuyển Niệm Bóng", "chance": 0.20, "multiplier": 2.2, "gif": PRIME_GIF_REVERSE},
+        "gan_ghep": {"name": "Gán ghép", "chance": 0.12, "heal_pct": 0.20, "gif": PRIME_GIF_HEAL},
+        "nhi_phan": {"name": "Nhị Phân Vô Cực khái niệm", "chance": 0.08, "gif": PRIME_GIF_BINARY},
+    }
+}
+
+active_prime_raid = None
+prime_raid_cooldown_until = 0.0
+
+
+def _prime_prepare_team(player) -> bool:
+    """Đảm bảo người chơi có đội hình hợp lệ (tự lấp thẻ mạnh nhất nếu thiếu). Trả về False nếu chưa có thẻ nào."""
+    has_any = len(player.get("team", [])) > 0 or any(cnt > 0 for cnt in player.get("inventory", {}).values())
+    if not has_any:
+        return False
+    current_team = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
+    if len(current_team) < 3:
+        owned_ids = get_owned_card_ids(player)
+        owned_ids.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
+        for cid in owned_ids:
+            if cid not in current_team:
+                current_team.append(cid)
+            if len(current_team) >= 3:
+                break
+        player["team"] = current_team
+        save_player(player)
+    return len(current_team) > 0
+
+
+class PrimeRaidJoinView(discord.ui.View):
+    def __init__(self, raid_data):
+        super().__init__(timeout=None)
+        self.raid_data = raid_data
+
+    @discord.ui.button(label="⚔️ Tham Gia Diệt Han Seiki (Miễn phí)", style=discord.ButtonStyle.danger, emoji="⚖️")
+    async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        rd = self.raid_data
+        if rd.get("started") or rd.get("closed"):
+            await interaction.response.send_message("Trận chiến đã bắt đầu hoặc thời gian chuẩn bị đã kết thúc!", ephemeral=True)
+            return
+        uid = interaction.user.id
+        if uid in rd["participants"]:
+            await interaction.response.send_message("Bạn đã có tên trong danh sách xuất trận rồi!", ephemeral=True)
+            return
+        if len(rd["participants"]) >= PRIME_MAX_PLAYERS:
+            await interaction.response.send_message(f"Đội hình đã đầy ({PRIME_MAX_PLAYERS}/{PRIME_MAX_PLAYERS})!", ephemeral=True)
+            return
+        player = get_player(uid, interaction.user.display_name)
+        if not _prime_prepare_team(player):
+            await interaction.response.send_message("⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` trước nhé!", ephemeral=True)
+            return
+
+        rd["participants"].append(uid)
+        rd["names"].append(interaction.user.display_name)
+        count = len(rd["participants"])
+        await interaction.response.send_message(f"🔥 {interaction.user.mention} đã tham chiến diệt **Han Seiki**! ({count}/{PRIME_MAX_PLAYERS} dũng giả)")
+        try:
+            embed = interaction.message.embeds[0]
+            embed.set_field_at(2, name=f"👥 Người Tham Gia ({count}/{PRIME_MAX_PLAYERS}):", value=", ".join(rd["names"]), inline=False)
+            await interaction.message.edit(embed=embed, view=self)
+        except Exception:
+            pass
+        if count >= PRIME_MAX_PLAYERS:
+            rd["start_event"].set()
+
+
+async def prime_raid_timer_lifecycle(channel, raid_data, view):
+    global active_prime_raid
+    try:
+        try:
+            await asyncio.wait_for(raid_data["start_event"].wait(), timeout=120.0)
+        except asyncio.TimeoutError:
+            pass
+
+        for child in view.children:
+            child.disabled = True
+        if raid_data.get("msg"):
+            try:
+                await raid_data["msg"].edit(view=view)
+            except Exception:
+                pass
+
+        if raid_data.get("started") or raid_data.get("closed"):
+            return
+
+        participants = raid_data.get("participants", [])
+        if participants:
+            raid_data["started"] = True
+            names_str = ", ".join(raid_data.get("names", []))
+            await channel.send(
+                f"⏰ **HẾT THỜI GIAN CHUẨN BỊ!**\n"
+                f"⚔️ **{len(participants)} Dũng Giả** ({names_str}) đồng loạt xuất trận!\n"
+                f"⚖️ **Han Seiki the Prime One** bước ra từ hư vô — **TRẬN ĐẠI CHIẾN BẮT ĐẦU!**"
+            )
+            try:
+                await execute_prime_raid(channel, raid_data)
+            except Exception as e:
+                print(f"Lỗi khi thực thi Prime Raid: {e}", flush=True)
+                try:
+                    await channel.send(f"⚠️ Đã xảy ra sự cố kỹ thuật trong trận đánh Boss: `{e}`")
+                except Exception:
+                    pass
+            finally:
+                active_prime_raid = None
+        else:
+            raid_data["closed"] = True
+            active_prime_raid = None
+            await channel.send("🌌 Han Seiki đã biến mất vào hư vô vì không có ai nghênh chiến...")
+    except asyncio.CancelledError:
+        return
+    except Exception as ex:
+        print(f"Lỗi trong prime_raid_timer_lifecycle: {ex}", flush=True)
+        active_prime_raid = None
+
+
+async def spawn_prime_raid(channel, author, is_admin=False):
+    global active_prime_raid
+    cfg = PRIME_BOSS_CONFIG
+    start_event = asyncio.Event()
+    raid_data = {
+        "channel_id": channel.id,
+        "boss_config": cfg,
+        "participants": [author.id],
+        "names": [author.display_name],
+        "created_timestamp": time.time(),
+        "start_event": start_event,
+        "started": False,
+        "closed": False,
+        "msg": None,
+        "view": None,
+        "task": None
+    }
+    active_prime_raid = raid_data
+
+    title = "🚨 [ADMIN TRIỆU HỒI] CẢNH BÁO TỐI CAO: HAN SEIKI THE PRIME ONE GIÁNG LÂM!" if is_admin else "🚨 CẢNH BÁO TỐI CAO: HAN SEIKI THE PRIME ONE GIÁNG LÂM!"
+    embed = discord.Embed(
+        title=title,
+        description=(
+            f"👑 **Khởi xướng bởi:** {author.mention}\n\n"
+            f"🌸 **Reimu:** *\"{cfg['reimu_quote']}\"*\n\n"
+            f"⚖️ **{cfg['name']}**\n*{cfg['desc']}*"
+        ),
+        color=0xFACC15
+    )
+    embed.set_image(url=PRIME_GIF_SPAWN)
+    embed.add_field(name="❤️ Máu Boss (HP):", value=f"**{cfg['hp']:,} HP** *(Single Phase)*", inline=True)
+    embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"**{cfg['power']:,} DMG** *(chia đều tiền tuyến)*", inline=True)
+    embed.add_field(name=f"👥 Người Tham Gia (1/{PRIME_MAX_PLAYERS}):", value=author.display_name, inline=False)
+    embed.add_field(
+        name="⚖️ Nội Tại & Kỹ Năng:",
+        value=(
+            "• 🛡️ **Linh hồn của công lý (Passive):** Giảm **20% sát thương nhận vào**. Mỗi lần hạ được **1 thẻ bài**, hồi **2,5% máu tối đa**!\n"
+            "• 🔄 **Phản chuyển Niệm Bóng (20%):** Đảo ngược khái niệm, giáng đòn hủy diệt **2.2x sát thương gốc (26,400 DMG)** chia đều tiền tuyến!\n"
+            "• 🧩 **Gán ghép (12%):** Tập hợp các khái niệm gán lại, **hồi 20% máu tối đa**!\n"
+            "• ♾️ **Nhị Phân Vô Cực khái niệm (8%):** Đòn kết liễu — **hạ gục ngay 1 mục tiêu ngẫu nhiên (1 hit)**, "
+            "**BỎ QUA mọi kỹ năng phòng thủ** (Yukari, Kizuna, Hong Meiling, Reimu, Seiki, Kasen...)!"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="🎁 Phần Thưởng Hạ Gục Boss:",
+        value=(
+            "• 🎟️ **100%** nhận **10 Vé Pull**\n"
+            "• 🎟️ **50%** nhận thêm **40 Vé Pull**\n"
+            f"• ✨ **50%** nhận XP = **×{PRIME_XP_DROP_MULT:g} XP hiện tại** trong cấp\n"
+            "• 🌸 **10%** rơi **Kanae Shard** | 🔮 **5%** Mảnh **Seiki** | ⏳ **5%** **Fateria Shard** | 🩸 **5%** Mảnh **Kizuna**"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
+        value=f"Có **2 phút** để bấm **'Tham Gia'** (tối đa **{PRIME_MAX_PLAYERS} người**). Đủ người hoặc hết giờ sẽ tự động khai màn!",
+        inline=False
+    )
+    embed.set_footer(text="Han Seiki the Prime One • /raid • Hồi chiêu 1 tiếng")
+
+    view = PrimeRaidJoinView(raid_data)
+    raid_data["view"] = view
+    msg = await channel.send(embed=embed, view=view)
+    raid_data["msg"] = msg
+    raid_data["task"] = asyncio.create_task(prime_raid_timer_lifecycle(channel, raid_data, view))
+
+
+async def handle_prime_raid_open(ctx_or_interaction):
+    global active_prime_raid, prime_raid_cooldown_until
+    is_inter = isinstance(ctx_or_interaction, discord.Interaction)
+    user = ctx_or_interaction.user if is_inter else ctx_or_interaction.author
+    channel = ctx_or_interaction.channel
+
+    async def reply(msg):
+        if is_inter:
+            await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else:
+            await ctx_or_interaction.send(msg)
+
+    is_adm = is_authorized_admin(user)
+    now = time.time()
+
+    if active_prime_raid is not None:
+        if is_adm:
+            if active_prime_raid.get("task") and not active_prime_raid["task"].done():
+                active_prime_raid["task"].cancel()
+            active_prime_raid = None
+        else:
+            await reply("🚨 Han Seiki đang xuất hiện hoặc đang giao chiến! Hãy đợi trận hiện tại kết thúc.")
+            return
+
+    if not is_adm and now < prime_raid_cooldown_until:
+        rem = int(prime_raid_cooldown_until - now)
+        await reply(f"⏳ Han Seiki đang hồi chiêu! Cần đợi thêm **{rem // 60} phút {rem % 60} giây** nữa.")
+        return
+
+    player = get_player(user.id, user.display_name)
+    if not _prime_prepare_team(player):
+        await reply("⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` trước nhé!")
+        return
+
+    if not is_adm:
+        prime_raid_cooldown_until = now + PRIME_COOLDOWN
+
+    text = f"⚖️ **{user.display_name}** đã mở nghi lễ triệu hồi **Han Seiki the Prime One**!"
+    if is_inter:
+        await ctx_or_interaction.response.send_message(text)
+    else:
+        await ctx_or_interaction.send(text)
+    await spawn_prime_raid(channel, user, is_admin=is_adm)
+
+
+@bot.tree.command(name="raid", description="Triệu hồi Boss Han Seiki the Prime One (tối đa 10 người, hồi chiêu 1 tiếng)")
+async def slash_raid_prime(interaction: discord.Interaction):
+    await handle_prime_raid_open(interaction)
+
+@bot.command(name="raid", aliases=["hanseiki", "primeboss"])
+async def prefix_raid_prime(ctx):
+    await handle_prime_raid_open(ctx)
+
+@bot.command(name="primereset")
+async def prefix_prime_reset(ctx):
+    """Admin: gỡ boss Prime bị kẹt + xóa cooldown."""
+    global active_prime_raid, prime_raid_cooldown_until
+    if not is_authorized_admin(ctx.author):
+        await ctx.send("⛔ Từ chối quyền truy cập!")
+        return
+    if active_prime_raid is not None and active_prime_raid.get("task") and not active_prime_raid["task"].done():
+        active_prime_raid["task"].cancel()
+    active_prime_raid = None
+    prime_raid_cooldown_until = 0.0
+    await ctx.send("🧹 Đã reset Han Seiki the Prime One và xóa hồi chiêu!")
+
+
+def _pr_status_lines(combatants):
+    out = []
+    for c in combatants:
+        if c["current_card_index"] < len(c["team_cards"]):
+            cur = c["team_cards"][c["current_card_index"]]
+            out.append(f"• **{c['username']}**: {cur['name']} ❤️{max(0, cur['current_hp']):,}/{cur['max_hp']:,}")
+        else:
+            out.append(f"• **{c['username']}**: ☠️ Tử trận")
+    return "\n".join(out)
+
+
+async def execute_prime_raid(channel, raid_data):
+    cfg = PRIME_BOSS_CONFIG
+    sk = cfg["skills"]
+    participants = raid_data["participants"]
+    if not participants:
+        await channel.send("⚖️ Han Seiki đã biến mất vì không có ai nghênh chiến...")
+        return
+
+    # ---------- DỰNG ĐỘI HÌNH ----------
+    combatants = []
+    for uid in participants:
+        p = get_player(uid)
+        lvl_pwr = get_level_atk_buff(p["level"])
+        lvl_hp = get_level_hp_buff(p["level"])
+        team_cids = [cid for cid in p.get("team", []) if cid in CARDS_DATA and not is_card_locked(p, cid)]
+        if len(team_cids) < 3:
+            owned_ids = get_owned_card_ids(p)
+            owned_ids.sort(key=lambda x: CARDS_DATA[x]["power"], reverse=True)
+            for cid in owned_ids:
+                if cid not in team_cids:
+                    team_cids.append(cid)
+                if len(team_cids) >= 3:
+                    break
+            p["team"] = team_cids
+            save_player(p)
+        team_cards = []
+        for cid in team_cids[:3]:
+            card = CARDS_DATA.get(cid)
+            if card:
+                is_ace = is_card_ace2(p, cid)
+                cp = card["power"] + lvl_pwr + (ACE_POWER_BUFF if is_ace else 0)
+                ch = card["hp"] + lvl_hp + (ACE_HP_BUFF if is_ace else 0)
+                team_cards.append({
+                    "cid": cid,
+                    "name": f"[Ace 2 ⭐⭐] #{card['id']} {card['name']}" if is_ace else f"{format_card_id(card['id'])} {card['name']}",
+                    "base_name": card["name"], "rank": card["rank"],
+                    "power": cp, "max_hp": ch, "current_hp": ch, "is_ace2": is_ace
+                })
+        apply_sakuya_ace3_to_cards(p, team_cards)
+        combatants.append({
+            "uid": uid, "username": p["username"], "level": p["level"],
+            "team_cards": team_cards, "current_card_index": 0,
+            "is_alive": len(team_cards) > 0, "total_dmg": 0,
+            "yukari_station_used": False, "yukari_lastword_used": False,
+            "sakuya_stun_used": False, "reimu_invul_used": False, "marisa_spark_used": False,
+            "flandre_used": False, "reisen_used": False, "cirno_freeze_used": False,
+            "seiki_seal_used": False, "seiki_spark_used": False, "seiki_heal_used": False,
+            "seiki_used_turn": -1, "seiki_invul_turn": -1, "t4_invul_turn": -1, "used_turn": -1,
+            "seal_used": False, "bong_used": False, "med_used": False,
+            "mahoraga_adapt_turns": 0, "t3_state": {}, "t4_state": {}, "t5_state": {}, "t6_state": {}, "s3_state": {}
+        })
+
+    max_hp = cfg["hp"]
+    power = cfg["power"]
+    B = {
+        "hp": max_hp, "max_hp": max_hp, "stunned": False, "mind": 0, "freeze": 0, "molten": 0,
+        "erased": None, "fate": 0, "locked_now": False, "ice": 0, "gif": None,
+        "true_cap": int(max_hp * 0.50), "true_accum": 0,
+        "boss_type": "han_seiki", "boss_name": cfg["name"], "active": []
+    }
+
+    init_embed = discord.Embed(
+        title="⚔️ ĐẠI CHIẾN BẮT ĐẦU: HAN SEIKI THE PRIME ONE",
+        description=(
+            f"🌸 **Reimu:** *\"{cfg['reimu_quote']}\"*\n\n"
+            f"🔥 **{len(combatants)} Dũng Giả** đã dàn trận nghênh chiến! Theo dõi từng hiệp trực tiếp bên dưới!"
+        ),
+        color=0xFACC15
+    )
+    init_embed.set_thumbnail(url=cfg["image"])
+    init_embed.add_field(name=f"❤️ Máu {cfg['name']}:", value=f"`{get_hp_bar(B['hp'], max_hp)}` **{B['hp']:,}/{max_hp:,} HP**", inline=False)
+    battle_msg = await channel.send(embed=init_embed)
+    await asyncio.sleep(2.0)
+
+    rounds = 0
+    all_turns = []
+
+    while B["hp"] > 0 and rounds < PRIME_MAX_ROUNDS:
+        active = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
+        if not active:
+            break
+        rounds += 1
+        front = [c["team_cards"][c["current_card_index"]] for c in active]
+        B["stunned"] = False
+        B["gif"] = None
+        B["active"] = active
+        B["locked_now"] = B["fate"] > 0
+        if B["fate"] > 0:
+            B["fate"] -= 1
+        notes = []
+        boss_fx = []
+
+        # ---------- Debuff đang đè lên Boss ----------
+        if B["mind"] > 0:
+            B["mind"] -= 1
+            if random.random() < 0.20:
+                B["hp"] = max(0, B["hp"] - power)
+                boss_fx.append(f"🌀 **[Red Eye Mind]** Boss mất kiểm soát, tự gây **{power:,} DMG** lên bản thân! (Còn {B['mind']} lượt)")
+        if B["molten"] > 0:
+            B["molten"] -= 1
+            applied, B["true_accum"], _cap = apply_raid_true_damage(int(max_hp * 0.02), B["true_accum"], B["true_cap"], "Bỏng Mặt Đất (Utsuho)")
+            if applied > 0:
+                B["hp"] = max(0, B["hp"] - applied)
+                boss_fx.append(f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Boss **{applied:,} DMG**! (Còn {B['molten']} lượt)")
+        if B["freeze"] > 0:
+            B["freeze"] -= 1
+            if random.random() < 0.45:
+                B["stunned"] = True
+                boss_fx.append(f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%)! (Còn {B['freeze']} lượt duy trì)")
+
+        # ---------- Lượt đánh của người chơi (Passive: giảm 20% sát thương nhận vào) ----------
+        round_dmg = 0
+        for c in active:
+            ac = c["team_cards"][c["current_card_index"]]
+            d = _jt_player_attack(c, ac, rounds, B, notes)
+            d = int(d * (1.0 - cfg["dmg_reduction"]))
+            round_dmg += d
+            c["total_dmg"] += d
+
+        B["hp"] = max(0, B["hp"] - round_dmg)
+        player_atk_str = f"Toàn quân gây **{round_dmg:,} DMG** lên Han Seiki! *(Đã bị **Linh hồn của công lý** giảm 20%)*"
+
+        # ---------- Hành động của Boss ----------
+        action_log = ""
+        hit_logs = []
+        forced_kills = []
+        if B["hp"] <= 0:
+            action_log = "💥 **Han Seiki the Prime One đã bị đánh bại! Các khái niệm trở lại trật tự!**"
+        elif B["stunned"]:
+            action_log = "❄️ Han Seiki bị ngưng động/bối rối, không thể ra đòn trong hiệp này!"
+        else:
+            ice_block = False
+            if B["ice"] > 0:
+                B["ice"] -= 1
+                if random.random() < 0.40:
+                    ice_block = True
+            if ice_block:
+                action_log = "❄️ **[Ice spear]** Giáo băng cầm chân Han Seiki, Boss không thể tấn công lượt này!"
+            else:
+                n = len(front)
+                chosen = None
+                if not B["locked_now"]:
+                    roll = random.random()
+                    acc = 0.0
+                    for key in ("phan_chuyen", "gan_ghep", "nhi_phan"):
+                        if B["erased"] == key:
+                            continue
+                        acc += sk[key]["chance"]
+                        if roll < acc:
+                            chosen = key
+                            break
+                else:
+                    action_log = "⛓️ **[Fate loop]** Kỹ năng của Han Seiki đang bị khóa, chỉ có thể đánh thường!\n"
+
+                if chosen == "phan_chuyen":
+                    B["gif"] = sk["phan_chuyen"]["gif"]
+                    total = int(power * sk["phan_chuyen"]["multiplier"])
+                    each = max(100, total // n)
+                    action_log += f"🔄 **[KỸ NĂNG] Han Seiki** tung **Phản chuyển Niệm Bóng (20%)**! Đảo ngược khái niệm, giáng **{total:,} DMG** (2.2x), chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!"
+                    for c in active:
+                        _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds)
+                elif chosen == "gan_ghep":
+                    B["gif"] = sk["gan_ghep"]["gif"]
+                    heal = int(max_hp * sk["gan_ghep"]["heal_pct"])
+                    old = B["hp"]
+                    B["hp"] = min(max_hp, B["hp"] + heal)
+                    action_log += f"🧩 **[KỸ NĂNG] Han Seiki** thi triển **Gán ghép (12%)**! Tập hợp các khái niệm tự chữa trị **+{B['hp'] - old:,} HP** (20% máu tối đa)!"
+                elif chosen == "nhi_phan":
+                    B["gif"] = sk["nhi_phan"]["gif"]
+                    tc = random.choice(active)
+                    tac = tc["team_cards"][tc["current_card_index"]]
+                    tac["current_hp"] = 0
+                    forced_kills.append(tac)
+                    action_log += (
+                        f"♾️ **[KỸ NĂNG TỐI THƯỢNG] Han Seiki** tung **Nhị Phân Vô Cực khái niệm (8%)**! "
+                        f"Hệ số mũ vô hạn vượt mọi rào cản — **{tac['name']}** ({tc['username']}) bị **HẠ GỤC TỨC THÌ**, "
+                        f"bỏ qua mọi kỹ năng phòng thủ!"
+                    )
+                else:
+                    each = max(100, power // n)
+                    action_log += f"⚔️ Han Seiki đánh thường tổng **{power:,} DMG**, chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!"
+                    for c in active:
+                        _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds, normal=True)
+        if hit_logs:
+            action_log += "\n" + "\n".join(hit_logs)
+
+        # ---------- Dọn hiệu ứng bảo hộ, rồi áp lại đòn kết liễu (để bỏ qua phòng thủ) ----------
+        kasen_restore_guard(active)
+        tick_wonder_guard(active)
+        restore_t4_save_loop(active, rounds)
+        for tac in forced_kills:
+            tac["current_hp"] = 0
+
+        # ---------- Thay thẻ / đổi sát thương / đếm số thẻ bị hạ ----------
+        push_logs = []
+        kills = 0
+        for c in active:
+            ac = c["team_cards"][c["current_card_index"]]
+            if ac["current_hp"] <= 0:
+                ac["current_hp"] = 0
+                kills += 1
+                trade = ac["power"]
+                B["hp"] = max(0, B["hp"] - trade)
+                c["total_dmg"] += trade
+                push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{ac['name']}** ({c['username']}) trước khi gục đã đổi **{trade:,} DMG** lên Boss!")
+                _g = sakuya3_raid_revive(c, push_logs)
+                if _g:
+                    B["gif"] = _g
+                    continue
+                c["current_card_index"] += 1
+                if c["current_card_index"] < len(c["team_cards"]):
+                    push_logs.append(f"💀 **{ac['name']}** gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
+                else:
+                    c["is_alive"] = False
+                    push_logs.append(f"☠️ **{c['username']}** đã hết thẻ bài và tử trận!")
+
+        # ---------- Passive: hạ được thẻ -> hồi 2,5% máu mỗi thẻ ----------
+        if kills > 0 and B["hp"] > 0:
+            heal = int(max_hp * cfg["kill_heal_pct"] * kills)
+            old = B["hp"]
+            B["hp"] = min(max_hp, B["hp"] + heal)
+            boss_fx.append(f"⚖️ **[Linh hồn của công lý]** Han Seiki hạ **{kills} thẻ bài** và hồi **+{B['hp'] - old:,} HP** (2,5% máu tối đa/thẻ)!")
+
+        # ---------- Embed ----------
+        status_str = _pr_status_lines(combatants)
+        fields = [("💥 Tiền Tuyến Tấn Công:", _jt_cut(player_atk_str, 300), False)]
+        if notes:
+            fields.append(("✨ Kỹ Năng Thẻ Bài:", _jt_cut("\n".join(notes), 900), False))
+        if boss_fx:
+            fields.append(("🌀 Hiệu Ứng / Passive Boss:", _jt_cut("\n".join(boss_fx), 500), False))
+        fields.append(("👺 Phản Kích Của Boss:", _jt_cut(action_log, 1000), False))
+        if push_logs:
+            fields.append(("🔄 Thay Đổi Tiền Tuyến:", _jt_cut("\n".join(push_logs), 600), False))
+        fields.append(("🛡️ Tình Trạng Tiền Tuyến:", _jt_cut(status_str, 800), False))
+
+        round_embed = discord.Embed(
+            title=f"⚖️ HIỆP {rounds} - HAN SEIKI THE PRIME ONE",
+            description=f"❤️ **Máu Boss:** `{get_hp_bar(B['hp'], max_hp)}` **{B['hp']:,}/{max_hp:,} HP**",
+            color=0xFACC15
+        )
+        for fname, fval, finl in fields:
+            round_embed.add_field(name=fname, value=fval, inline=finl)
+        if B["gif"]:
+            round_embed.set_image(url=B["gif"])
+        else:
+            round_embed.set_thumbnail(url=cfg["image"])
+
+        all_turns.append({
+            "round": rounds, "phase": 1,
+            "title": f"Hiệp {rounds}: {cfg['name']}",
+            "short_label": f"H{rounds} - Han Seiki",
+            "short_desc": f"Boss còn {B['hp']:,} HP",
+            "desc": f"⚖️ **{cfg['name']}**\n❤️ Máu Boss: `{get_hp_bar(B['hp'], max_hp)}` **{B['hp']:,}/{max_hp:,} HP**",
+            "color": 0xFACC15,
+            "image": B["gif"],
+            "fields": fields
+        })
+        try:
+            await battle_msg.edit(embed=round_embed)
+        except Exception:
+            pass
+        if B["hp"] <= 0:
+            break
+        await asyncio.sleep(3.0)
+
+    # ---------- THẤT BẠI ----------
+    if B["hp"] > 0:
+        fail = discord.Embed(
+            title="❌ QUÂN ĐOÀN THẤT THỦ TRƯỚC HAN SEIKI THE PRIME ONE!",
+            description=f"Các khái niệm đã bị Han Seiki đảo ngược sau {rounds} hiệp!\nBoss còn **{B['hp']:,} HP**.",
+            color=0xEF4444
+        )
+        fail.set_thumbnail(url=cfg["image"])
+        await channel.send(embed=fail, view=OpenDetailsView(all_turns))
+        return
+
+    # ---------- CHIẾN THẮNG: PHÁT THƯỞNG ----------
+    total_raid_dmg = sum(c["total_dmg"] for c in combatants)
+    lines = []
+    for uid in participants:
+        p = get_player(uid)
+        old_lvl = p.get("level", 1)
+        p["pull_tickets"] += 10.0
+        got = ["🎟️ **+10 Vé Pull** (100%)"]
+        p_shards = p.setdefault("shards", {})
+
+        if random.random() < 0.50:
+            p["pull_tickets"] += 40.0
+            got.append("🎟️ **+40 Vé Pull** (50% Bonus!)")
+        if random.random() < 0.10:
+            p_shards["kanae"] = p_shards.get("kanae", 0) + 1
+            got.append(f"🌸 **+1 Kanae Shard** (10%! Kho: {p_shards['kanae']}/10)")
+        if random.random() < 0.05:
+            p_shards["seiki"] = p_shards.get("seiki", 0) + 1
+            got.append(f"🔮 **+1 Mảnh Seiki** (5%! Kho: {p_shards['seiki']}/10)")
+        if random.random() < 0.05:
+            p_shards["fateria"] = p_shards.get("fateria", 0) + 1
+            got.append(f"⏳ **+1 Fateria Shard** (5%! Kho: {p_shards['fateria']}/20)")
+        if random.random() < 0.05:
+            p_shards["kizuna"] = p_shards.get("kizuna", 0) + 1
+            got.append(f"🩸 **+1 Mảnh Kizuna** (5%! Kho: {p_shards['kizuna']}/15)")
+        if random.random() < 0.50:
+            _, xp_in_lvl, needed_xp, _r = get_level_progress(p.get("xp", 0), p.get("prestige", 0))
+            gain_xp = int(xp_in_lvl * PRIME_XP_DROP_MULT)
+            if gain_xp > 0:
+                p["xp"] += gain_xp
+                got.append(f"✨ **+{gain_xp:,} XP** (50% - ×{PRIME_XP_DROP_MULT:g} XP cấp hiện tại [{xp_in_lvl:,}/{needed_xp:,}])")
+        for n_ in update_daily_quest_progress(p, "raid", 1) + update_event_quest_progress(p, "raid", 1):
+            got.append(n_)
+        save_player(p)
+        new_lvl = p.get("level", 1)
+        lvl_txt = f" 🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+        lines.append(f"🏆 **{p['username']}**:{lvl_txt}\n   └ " + "\n   └ ".join(got))
+
+    final = discord.Embed(
+        title="⚔️ KẾT QUẢ ĐẠI CHIẾN: HAN SEIKI THE PRIME ONE!",
+        description=(
+            "🌸 **Reimu thở phào:** *\"Phù... cuối cùng các khái niệm cũng trở lại đúng chỗ của chúng. Mọi người làm tốt lắm!\"*\n\n"
+            f"🎉 Đội quân đã hạ gục **Han Seiki the Prime One** sau **{rounds} hiệp**!\n"
+            f"💥 **Tổng Sát Thương:** **{total_raid_dmg:,} DMG**\n"
+            "⏳ **Hồi chiêu `/raid` tiếp theo:** **1 tiếng** kể từ lúc mở"
+        ),
+        color=0x10B981
+    )
+    final.set_thumbnail(url=cfg["image"])
+
+    # Chia phần thưởng thành nhiều field (mỗi field < 1000 ký tự)
+    chunk, chunk_len, idx = [], 0, 1
+    for ln in lines:
+        if chunk and chunk_len + len(ln) > 950:
+            final.add_field(name=f"🎁 Phần Thưởng (nhóm {idx}):", value="\n".join(chunk), inline=False)
+            chunk, chunk_len, idx = [], 0, idx + 1
+        chunk.append(_jt_cut(ln, 900))
+        chunk_len += len(ln) + 1
+    if chunk:
+        final.add_field(name=f"🎁 Phần Thưởng (nhóm {idx}):", value="\n".join(chunk), inline=False)
+    await channel.send(embed=final, view=OpenDetailsView(all_turns))
+    
 import sys
 
 def start_bot_safely():
