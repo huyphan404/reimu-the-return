@@ -2647,14 +2647,14 @@ class OpenDetailsView(discord.ui.View):
 # [UPDATE XP DROP] XP CỐ ĐỊNH (100%) + XP THEO HỆ SỐ (50%) CHO TẤT CẢ BOSS
 # ==============================================================================
 BOSS_XP_DROPS = {
-    ("reimu", 1):     {"flat": 2000, "mult": 1.0},
-    ("reimu", 2):     {"flat": 3500, "mult": 1.5},
-    ("seiki", 1):     {"flat": 2200, "mult": 1.2},
-    ("seiki", 2):     {"flat": 4000, "mult": 1.5},
-    ("fateria", 1):   {"flat": 4000, "mult": 3.0},
-    ("mahoraga", 1):  {"flat": 3000, "mult": 2.0},
-    ("han_seiki", 1): {"flat": 5000, "mult": None},   # mult cũ (50% x4) đã có sẵn trong code Prime
-    ("jotaro", 1):    {"flat": 3000, "mult": None},   # mult cũ (50% x1.5) đã có sẵn trong code Jotaro
+    ("reimu", 1):     {"flat": 1000, "mult": 1.0},
+    ("reimu", 2):     {"flat": 1550, "mult": 1.5},
+    ("seiki", 1):     {"flat": 1100, "mult": 1.2},
+    ("seiki", 2):     {"flat": 1800, "mult": 1.5},
+    ("fateria", 1):   {"flat": 2000, "mult": 3.0},
+    ("mahoraga", 1):  {"flat": 1550, "mult": 2.0},
+    ("han_seiki", 1): {"flat": 2500, "mult": None},   # mult cũ (50% x4) đã có sẵn trong code Prime
+    ("jotaro", 1):    {"flat": 1550, "mult": None},   # mult cũ (50% x1.5) đã có sẵn trong code Jotaro
 }
 BOSS_XP_MULT_CHANCE = 0.50   # tỉ lệ nhận XP theo hệ số (đổi số này nếu muốn)
 
