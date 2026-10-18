@@ -3649,21 +3649,21 @@ async def execute_raid(channel, raid_data):
                 if _s3["logs"]:
                     t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])
 
-                _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants)
-                if _ks_log:
-                    card_dmg += _ks_bonus
-                    turn_image = turn_image or _ks_gif
-                    t3_notif = ((t3_notif + "\n") if t3_notif else "") + _ks_log
-    
-                _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
-                if _ml_log:
-                    card_dmg = int(card_dmg * _ml_mult)
-                    if _ml_gif and not turn_image:
-                        turn_image = _ml_gif
-                    t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
-    
-                round_player_dmg += card_dmg
-                c["total_dmg"] += card_dmg
+            _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants)
+            if _ks_log:
+                card_dmg += _ks_bonus
+                turn_image = turn_image or _ks_gif
+                t3_notif = ((t3_notif + "\n") if t3_notif else "") + _ks_log
+
+            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            if _ml_log:
+                card_dmg = int(card_dmg * _ml_mult)
+                if _ml_gif and not turn_image:
+                    turn_image = _ml_gif
+                t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
+
+            round_player_dmg += card_dmg
+            c["total_dmg"] += card_dmg
 
         if boss_type == "seiki" and seiki_invul and not boss_stunned:
             player_atk_str = f"🛡️ Toàn quân dồn **{round_player_dmg:,} DMG** nhưng **Seiki Dị Hình** đã kích hoạt **Fantasy Seal**, MIỄN TOÀN BỘ SÁT THƯƠNG trong hiệp này!"
@@ -4688,21 +4688,21 @@ async def execute_raid(channel, raid_data):
                         turn_image = _s3["gif"]
                     if _s3["logs"]:
                         t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _s3["logs"])    
-            _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants)
-            if _ks_log:
-                card_dmg += _ks_bonus
-                turn_image = turn_image or _ks_gif
-                t3_notif = ((t3_notif + "\n") if t3_notif else "") + _ks_log
-
-            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
-            if _ml_log:
-                card_dmg = int(card_dmg * _ml_mult)
-                if _ml_gif and not turn_image:
-                    turn_image = _ml_gif
-                t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
-            
-            round_player_dmg += card_dmg
-            c["total_dmg"] += card_dmg
+                _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, active_combatants)
+                if _ks_log:
+                    card_dmg += _ks_bonus
+                    turn_image = turn_image or _ks_gif
+                    t3_notif = ((t3_notif + "\n") if t3_notif else "") + _ks_log
+    
+                _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+                if _ml_log:
+                    card_dmg = int(card_dmg * _ml_mult)
+                    if _ml_gif and not turn_image:
+                        turn_image = _ml_gif
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + _ml_log
+                
+                round_player_dmg += card_dmg
+                c["total_dmg"] += card_dmg
 
             p2_hp = max(0, p2_hp - round_player_dmg)
 
