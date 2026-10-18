@@ -10304,6 +10304,8 @@ async def handle_battle(ctx_or_interaction):
         st["battles_done"] = st.get("battles_done", 0) + 1
     elif st.get("current_stage", 0) == 2 and st.get("stage2_quiz_passed", False) and not st.get("stage2_quest_claimed", False):
         st["stage2_battles_done"] = st.get("stage2_battles_done", 0) + 1
+    elif st.get("current_stage", 0) == 3 and st.get("stage3_quiz_passed", False) and not st.get("stage3_quest_claimed", False):
+        st["stage3_battles_done"] = st.get("stage3_battles_done", 0) + 1
 
     dq_notifs = update_daily_quest_progress(player, "battle", 1)
     ev_notifs = update_event_quest_progress(player, "battle", 1)
@@ -12755,6 +12757,10 @@ async def handle_story(ctx_or_interaction):
     })
     
     stage = st.get("current_stage", 0)
+    
+    if stage >= 3:
+        await handle_story_stage3(ctx_or_interaction)
+        return
 
     if stage == 0:
         battles_cnt = st.get("battles_done", 0)
@@ -15810,6 +15816,656 @@ async def execute_prime_raid(channel, raid_data):
     if chunk:
         final.add_field(name=f"🎁 Phần Thưởng (nhóm {idx}):", value="\n".join(chunk), inline=False)
     await channel.send(embed=final, view=OpenDetailsView(all_turns))
+    
+# ==============================================================================
+# [UPDATE STORY STAGE 3] CỔNG HỒNG MA QUÁN - HONG MEILING (LIVE BATTLE)
+# ==============================================================================
+S3_MEILING_BASE_HP = 9300
+S3_MEILING_BASE_ATK = 1680
+S3_REQ_BATTLES = 15          # số lần /battle cần để mở boss
+S3_REQ_LEVEL = 40            # level tối thiểu
+S3_REIMU_GIF = "https://c.tenor.com/gc4ws16CrTYAAAAC/reimu-touhou.gif"
+
+
+async def _s3_send(ctx_or_interaction, **kwargs):
+    """Gửi tin nhắn an toàn cho cả Interaction (đã/chưa phản hồi) lẫn lệnh prefix."""
+    kwargs = {k: v for k, v in kwargs.items() if v is not None}
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        if ctx_or_interaction.response.is_done():
+            return await ctx_or_interaction.followup.send(wait=True, **kwargs)
+        await ctx_or_interaction.response.send_message(**kwargs)
+        return await ctx_or_interaction.original_response()
+    return await ctx_or_interaction.send(**kwargs)
+
+
+# ------------------------------------------------------------------------------
+# CÂU ĐỐ STAGE 3 (sai thì xáo trộn đáp án, đúng thì tự động đi tiếp)
+# ------------------------------------------------------------------------------
+class Stage3QuizView(discord.ui.View):
+    def __init__(self, user, player):
+        super().__init__(timeout=180)
+        self.user = user
+        self.player = player
+        self.options = [
+            {"id": "1", "label": "mups", "correct": False, "reply": "Cậu đúng là 1 thằng súc vật bệnh hoạn."},
+            {"id": "2", "label": "Đánh đi nhìn gì", "correct": True, "reply": "Được thôi, triển nào."},
+            {"id": "3", "label": "Nhìn yếu nhớt", "correct": False, "reply": "Yeah yeah, yếu thì đánh đi."},
+            {"id": "4", "label": "Ching chong", "correct": False, "reply": "Không đúng không sai."},
+        ]
+        self.build_buttons()
+
+    def build_buttons(self):
+        self.clear_items()
+        random.shuffle(self.options)
+        for opt in self.options:
+            btn = discord.ui.Button(label=opt["label"], style=discord.ButtonStyle.secondary)
+            btn.callback = self.make_callback(opt)
+            self.add_item(btn)
+
+    def make_callback(self, opt):
+        async def button_callback(interaction: discord.Interaction):
+            if interaction.user.id != self.user.id:
+                await interaction.response.send_message("❌ Đây không phải lượt trả lời của bạn!", ephemeral=True)
+                return
+            if opt["correct"]:
+                st = self.player.setdefault("story", {})
+                st["stage3_quiz_passed"] = True
+                save_player(self.player)
+                embed_ok = discord.Embed(
+                    title="✨ TRẢ LỜI CHÍNH XÁC!",
+                    description=(
+                        f"⛩️ **Reimu:** *\"{opt['reply']}\"*\n\n"
+                        "🏰 *Cánh cổng Hồng Ma Quán đã ở ngay trước mắt...*\n"
+                        "👉 Đang tự động tiếp tục cốt truyện!"
+                    ),
+                    color=0x10B981
+                )
+                await interaction.response.edit_message(embed=embed_ok, view=None)
+                await handle_story_stage3(interaction)   # tự động đi tiếp
+            else:
+                self.build_buttons()
+                embed_wrong = discord.Embed(
+                    title="🏰 CỔNG HỒNG MA QUÁN (SCARLET DEVIL MANSION GATE)",
+                    description=(
+                        "Băng qua cánh rừng, cả nhóm bắt gặp một dinh thự đỏ rực sừng sững.\n"
+                        "Reimu quay sang hỏi trợ thủ:\n"
+                        "**\"Cậu nghĩ cái đứa đứng canh cổng đó như nào?\"**\n\n"
+                        f"💢 **Reimu:** *\"{opt['reply']}\"*\n"
+                        "*(Đáp án chưa đúng! Các phương án đã được xáo trộn lại, hãy chọn lại!)*"
+                    ),
+                    color=0xEF4444
+                )
+                await interaction.response.edit_message(embed=embed_wrong, view=self)
+        return button_callback
+
+
+class StoryMeilingBattleView(discord.ui.View):
+    def __init__(self, user, player):
+        super().__init__(timeout=180)
+        self.user = user
+        self.player = player
+
+    @discord.ui.button(label="⚔️ Xuất Trận Quyết Đấu Hong Meiling (Live Battle)", style=discord.ButtonStyle.danger, emoji="💥")
+    async def fight_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+            return
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(content="🔥 **Trận chiến bắt đầu nghênh chiến Hong Meiling!**", view=self)
+        self.stop()
+        await run_story_meiling_battle(interaction, self.user, self.player)
+
+
+# ------------------------------------------------------------------------------
+# KỸ NĂNG CỦA TOÀN BỘ THẺ BÀI KHI ĐÁNH BOSS STORY STAGE 3
+# Trả về (sát thương, out) với out = {gif, invul, pguard}
+# ------------------------------------------------------------------------------
+def story_s3_player_turn(pc, rnd, B, logs):
+    cid = pc["cid"]
+    cs = str(cid).lower()
+    ace2 = bool(pc.get("is_ace2"))
+    fl = pc.setdefault("fl", {})
+    dmg = pc["power"]
+    out = {"gif": None, "invul": False, "pguard": False}
+
+    def g(u):
+        if u and not out["gif"]:
+            out["gif"] = u
+
+    # ----- Sakuya Ace 2: stun boss -----
+    if cid == 18 and ace2 and not fl.get("sakuya") and random.random() < 0.40:
+        fl["sakuya"] = True
+        B["stun"] = True
+        g(EVOL_CONFIG[18]["skill_gif"])
+        logs.append("⏳ **[Ace 2] [#18] Sakuya** kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Hong Meiling bị **STUN** mất lượt!")
+
+    # ----- Marisa Ace 2 -----
+    if cid == 19 and ace2 and not fl.get("marisa") and random.random() < 0.30:
+        fl["marisa"] = True
+        dmg = int(dmg * 2.0)
+        g(EVOL_CONFIG[19]["skill_gif"])
+        logs.append(f"🌟 **[Ace 2] [#19] Marisa** tung **Master Spark** (30%)! ×2.0 giáng **{dmg:,} DMG**!")
+
+    # ----- Yukari Ace 2 -----
+    if cid == 4 and ace2:
+        if not fl.get("y_station") and random.random() < 0.30:
+            fl["y_station"] = True
+            dmg = int(dmg * 2.0)
+            g(T5_YUKARI_STATION_GIF)
+            logs.append(f"🌌 **[Ace 2] [#04] Yukari** tung **Trip To The Old Station** (30%)! ×2.0 giáng **{dmg:,} DMG**!")
+        elif not fl.get("y_last") and random.random() < 0.25:
+            fl["y_last"] = True
+            dmg = int(dmg * 2.5)
+            B["stun"] = True
+            g(T5_YUKARI_LASTWORD_GIF)
+            logs.append(f"👁️ **[Ace 2] [#04] Yukari** kích hoạt **⸮⸮⸮ : Last Word !** (25%)! ×2.5 giáng **{dmg:,} DMG** và **STUN Meiling**!")
+
+    # ----- Flandre Ace 2: xóa 50% HP hiện tại của boss -----
+    if cid == 9 and ace2 and not fl.get("flandre") and random.random() < 0.25:
+        fl["flandre"] = True
+        rip = int(B["hp"] * 0.50)
+        B["hp"] = max(0, B["hp"] - rip)
+        g(EVOL_CONFIG[9]["skill_gif"])
+        logs.append(f"🦇 **[Ace 2] [#09] Flandre** tung **Ripples of 495 Years** (25%)! Xóa sổ **{rip:,} HP (50% HP Meiling)**!")
+
+    # ----- Remilia Ace 2: thụ động +3% Max HP -----
+    if cid == 12 and ace2:
+        bonus = int(B["max_hp"] * 0.03)
+        dmg += bonus
+        g(EVOL_CONFIG[12]["skill_gif"])
+        logs.append(f"🩸 **[Ace 2] [#12] Remilia** - **Thương Đỏ Gungnir** (thụ động): +**{bonus:,} DMG** (3% Máu tối đa)!")
+
+    # ----- Reisen Ace 2 -----
+    if cid == 21 and ace2 and not fl.get("reisen") and random.random() < 0.25:
+        fl["reisen"] = True
+        B["mind"] = 4
+        g(EVOL_CONFIG[21]["skill_gif"])
+        logs.append("🔴 **[Ace 2] [#21] Reisen** kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Meiling ảo giác: **20% tự gây sát thương** trong **4 lượt**!")
+
+    # ----- Cirno Ace 2 -----
+    if cid == 23 and ace2 and not fl.get("cirno") and random.random() < 0.40:
+        fl["cirno"] = True
+        B["freeze"] = 2
+        g(EVOL_CONFIG[23]["skill_gif"])
+        logs.append("❄️ **[Ace 2] [#23] Cirno** kích hoạt **Perfect Freeze** (40%)! 2 turn tới Meiling có **45% không thể đánh trả**!")
+
+    # ----- Utsuho Ace 2 -----
+    if cid == 13 and ace2 and random.random() < 0.30:
+        dmg = int(dmg * 3.0)
+        B["molten"] = 3
+        g(EVOL_CONFIG[13]["skill_gif"])
+        logs.append(f"☢️ **[Ace 2] [#13] Utsuho** tung **Nuclear Spell Card** (30%)! ×3.0 giáng **{dmg:,} DMG** và nung chảy mặt đất 3 turn (2% Máu Tối Đa/turn)!")
+
+    # ----- Hong Meiling (thẻ của người chơi) Ace 2 -----
+    if cid == 24 and ace2 and not fl.get("meiling") and random.random() < 0.30:
+        fl["meiling"] = True
+        out["pguard"] = True
+        dmg = int(dmg * 1.2)
+        g(MEILING_SKILL_GIF)
+        logs.append(f"🌈 **[Ace 2] [#24] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! ×1.2 sát thương (**{dmg:,} DMG**) và **giảm 15% sát thương phải nhận** lượt này!")
+
+    # ----- Seiki #t1 -----
+    if cs == "t1":
+        if ace2:
+            t1f = pc.setdefault("t1_flags", {"seal_used": False, "bong_used": False, "med_used": False, "used_turn": -1})
+            o = t1_ace2_attack(t1f, pc, rnd, B["max_hp"], "Boss Hong Meiling", is_boss=True)
+            if o.get("multiplier", 1.0) > 1.0:
+                dmg = int(dmg * o["multiplier"])
+            dmg += o["bonus"]
+            if o["direct"]:
+                B["hp"] = max(0, B["hp"] - o["direct"])
+            if o.get("invul"):
+                out["invul"] = True
+            if o["heal"]:
+                pc["current_hp"] = min(pc["max_hp"], pc["current_hp"] + o["heal"])
+            if o["disable"]:
+                B["erased"] = True
+                logs.append("🌑 **[Bóng Khái Niệm]** Đã xóa kỹ năng **Rainbow Taijiquan** của Hong Meiling!")
+            g(o["gif"])
+            logs.extend(o["logs"])
+        elif fl.get("used_turn") != rnd:
+            roll = random.random()
+            if not fl.get("spark") and roll < 0.30:
+                fl["spark"] = True
+                fl["used_turn"] = rnd
+                dmg = int(dmg * 1.5)
+                g(T1_SPARK_GIF)
+                logs.append(f"🌟 **[Nhóm T] [#t1] Seiki** tung **Master Spark** (30%)! ×1.5 giáng **{dmg:,} DMG**!")
+            elif not fl.get("heal") and pc["current_hp"] < pc["max_hp"] and roll < (0.50 if not fl.get("spark") else 0.20):
+                fl["heal"] = True
+                fl["used_turn"] = rnd
+                hv = int(pc["max_hp"] * 0.30)
+                pc["current_hp"] = min(pc["max_hp"], pc["current_hp"] + hv)
+                g(T1_HEAL_GIF)
+                logs.append(f"💚 **[Nhóm T] [#t1] Seiki** thi triển **Medicine Sign** (20%)! Hồi **+{hv:,} HP**!")
+
+    # ----- Mahoraga #t2 -----
+    if cs == "t2":
+        fl["maho"] = fl.get("maho", 0) + 1
+        hv = int(pc["max_hp"] * 0.05)
+        pc["current_hp"] = min(pc["max_hp"], pc["current_hp"] + hv)
+        adapt = int(min(0.90, fl["maho"] * 0.05) * 100)
+        if random.random() < 0.30:
+            dmg = int(dmg * 1.5)
+            g(T2_THOAI_MA_GIF)
+            logs.append(f"🔱 **[#t2] Mahoraga** The True Adapt (+{hv:,} HP, kháng {adapt}%) & **Thoái Ma Kiếm** (30%) ×1.5 giáng **{dmg:,} DMG**!")
+        else:
+            g(T2_PASSIVE_GIF)
+            logs.append(f"🔱 **[#t2] Mahoraga** The True Adapt: +{hv:,} HP, kháng sát thương {adapt}%!")
+
+    # ----- Kizuna #t3 -----
+    if cs == "t3":
+        o = t3_combat_turn(pc.setdefault("t3_state", {}), pc, rnd, B["max_hp"], "Boss Hong Meiling", is_ace2=ace2)
+        dmg = int(dmg * o["multiplier"]) + o["bonus_hp_dmg"]
+        g(o["gif"])
+        logs.extend(o["logs"])
+
+    # ----- Fateria #t4 -----
+    if cs == "t4":
+        o = t4_combat_turn(pc.setdefault("t4_state", {}), pc, "Boss Hong Meiling", heal_mult=1.0, enemy_fate_loop_turns=B["fate"])
+        dmg = int(dmg * o["multiplier"])
+        if o["save_loop_invul"]:
+            out["invul"] = True
+        if o["fate_loop_triggered"]:
+            B["fate"] = 2
+        if o["ice_spear_triggered"]:
+            B["ice"] = 2
+        g(o["gif"])
+        logs.extend(o["logs"])
+
+    # ----- Jotaro #t5 -----
+    if cs == "t5":
+        o = t5_combat_turn(pc.setdefault("t5_state", {}), pc, is_ace2=ace2)
+        dmg = int(dmg * o["multiplier"])
+        if o["stun"] or o["confuse"]:
+            B["stun"] = True
+        g(o["gif"])
+        logs.extend(o["logs"])
+
+    # ----- Kanae #t6 -----
+    if cs == "t6":
+        o = t6_combat_turn(pc.setdefault("t6_state", {}), pc, dmg)
+        dmg = o["damage"]
+        g(o["gif"])
+        logs.extend(o["logs"])
+
+    # ----- Sakuya Ace 3 -----
+    if cid == 18 and pc.get("is_ace3"):
+        o = sakuya3_combat_turn(pc.setdefault("s3_state", {}), pc, "Boss")
+        dmg = int(dmg * o["multiplier"])
+        if o["stun"]:
+            B["stun"] = True
+        g(o["gif"])
+        logs.extend(o["logs"])
+
+    # ----- Kasen Ace 2 (cả đội miễn thương) -----
+    dmg, kasen_guard, kasen_gif = kasen_duel_apply(pc, dmg, False, [logs])
+    if kasen_guard:
+        out["invul"] = True
+    g(kasen_gif)
+
+    return dmg, out
+
+
+# ------------------------------------------------------------------------------
+# LIVE BATTLE: HONG MEILING (STAGE 3)
+# ------------------------------------------------------------------------------
+async def run_story_meiling_battle(channel_or_interaction, user, player):
+    st = player.setdefault("story", {})
+    boss_lvl = st.get("meiling_boss_level") or player.get("level", S3_REQ_LEVEL)
+    B = {
+        "max_hp": S3_MEILING_BASE_HP + get_level_hp_buff(boss_lvl),
+        "power": S3_MEILING_BASE_ATK + get_level_atk_buff(boss_lvl),
+        "mind": 0, "molten": 0, "freeze": 0, "fate": 0, "ice": 0,
+        "erased": False, "stun": False
+    }
+    B["hp"] = B["max_hp"]
+    boss_img = CARDS_DATA[24]["image"]
+
+    team_cids = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
+    if len(team_cids) < 3:
+        owned = get_owned_card_ids(player)
+        owned.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
+        for cid in owned:
+            if cid not in team_cids:
+                team_cids.append(cid)
+            if len(team_cids) >= 3:
+                break
+        player["team"] = team_cids
+        save_player(player)
+
+    p_buff_pwr = get_level_atk_buff(player["level"])
+    p_buff_hp = get_level_hp_buff(player["level"])
+    player_cards = []
+    for cid in team_cids[:3]:
+        c = CARDS_DATA[cid]
+        is_ace = is_card_ace2(player, cid)
+        card_pwr = c["power"] + p_buff_pwr + (ACE_POWER_BUFF if is_ace else 0)
+        card_hp = c["hp"] + p_buff_hp + (ACE_HP_BUFF if is_ace else 0)
+        player_cards.append({
+            "cid": cid,
+            "name": f"[Ace 2 ⭐⭐] #{c['id']} {c['name']}" if is_ace else f"{format_card_id(c['id'])} {c['name']}",
+            "power": card_pwr, "max_hp": card_hp, "current_hp": card_hp, "is_ace2": is_ace
+        })
+    apply_sakuya_ace3_to_cards(player, player_cards)
+
+    if not player_cards:
+        await _s3_send(channel_or_interaction, content="⚠️ Bạn chưa có thẻ bài nào để chiến đấu! Hãy dùng `/pull` trước.")
+        return
+
+    embed_init = discord.Embed(
+        title="⚔️ [LIVE BATTLE] STAGE 3: CỔNG HỒNG MA QUÁN - HONG MEILING!",
+        description=(
+            f"👤 **Trợ thủ xuất trận:** {user.mention} (Lv.{player['level']})\n"
+            f"🥋 **Boss:** **[#24] Hong Meiling (Thủ Môn Hồng Ma Quán)** (Lv.{boss_lvl})\n"
+            f"❤️ Máu Boss: `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**\n"
+            f"⚔️ Sức mạnh: **{B['power']:,} DMG**\n"
+            f"🌈 Tuyệt kỹ: **Rainbow Taijiquan** (30% mỗi lượt, không giới hạn số lần)"
+        ),
+        color=0xDC2626
+    )
+    embed_init.set_thumbnail(url=boss_img)
+    msg = await _s3_send(channel_or_interaction, embed=embed_init)
+    await asyncio.sleep(2.0)
+
+    p_idx = 0
+    rounds = 0
+    while B["hp"] > 0 and p_idx < len(player_cards) and rounds < 30:
+        rounds += 1
+        pc = player_cards[p_idx]
+        fl = pc.setdefault("fl", {})
+        logs = []
+        turn_gif = None
+        B["stun"] = False
+        boss_frozen = False
+        o = {"gif": None, "invul": False, "pguard": False}
+
+        # --- hiệu ứng đang đè lên Boss ---
+        boss_locked = B["fate"] > 0
+        if boss_locked:
+            B["fate"] -= 1
+            logs.append("⛓️ **[Fate loop]** Meiling bị khóa kỹ năng, không thể dùng Rainbow Taijiquan trong hiệp này!")
+        if B["mind"] > 0:
+            B["mind"] -= 1
+            if random.random() < 0.20:
+                B["hp"] = max(0, B["hp"] - B["power"])
+                logs.append(f"🌀 **[Red Eye Mind]** Meiling mất kiểm soát, tự gây **{B['power']:,} DMG** lên bản thân! (Còn {B['mind']} lượt)")
+        if B["molten"] > 0:
+            B["molten"] -= 1
+            burn = int(B["max_hp"] * 0.02)
+            B["hp"] = max(0, B["hp"] - burn)
+            logs.append(f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Meiling **{burn:,} DMG** (2% Máu Tối Đa)! (Còn {B['molten']} lượt)")
+        if B["freeze"] > 0:
+            B["freeze"] -= 1
+            if random.random() < 0.45:
+                boss_frozen = True
+                logs.append(f"❄️ **[Perfect Freeze]** Meiling bị đóng băng cứng đờ (45%), không thể phản công! (Còn {B['freeze']} lượt)")
+        if B["ice"] > 0:
+            B["ice"] -= 1
+            if not boss_frozen and random.random() < 0.40:
+                boss_frozen = True
+                logs.append("❄️ **[Ice spear]** Giáo băng cầm chân Meiling (40%), không thể phản công!")
+
+        # --- Boss kích hoạt Rainbow Taijiquan (không giới hạn lần) ---
+        boss_guard = False
+        if B["hp"] > 0 and not boss_locked and not boss_frozen and not B["erased"] and random.random() < 0.30:
+            boss_guard = True
+            turn_gif = MEILING_SKILL_GIF
+            logs.append("🌈 **[Hong Meiling]** thi triển **Rainbow Taijiquan** (30%)! Đòn đánh **×1.2 sát thương** và **giảm 15% sát thương phải nhận** trong lượt này!")
+
+        # --- lượt đánh của người chơi ---
+        if B["hp"] > 0:
+            dmg, o = story_s3_player_turn(pc, rounds, B, logs)
+            if boss_guard:
+                dmg = int(dmg * 0.85)
+            B["hp"] = max(0, B["hp"] - dmg)
+            turn_gif = o["gif"] or turn_gif
+            logs.append(f"🗡️ **{pc['name']}** tấn công gây **{dmg:,} DMG** lên Hong Meiling!")
+
+        # --- Boss phản công ---
+        if B["hp"] <= 0:
+            logs.append("💥 **Hong Meiling đã bị đánh gục!**")
+        elif B["stun"]:
+            logs.append("❄️ Hong Meiling bị STUN/bối rối, không thể phản công!")
+        elif boss_frozen:
+            logs.append("❄️ Hong Meiling không thể phản công trong hiệp này!")
+        else:
+            boss_dmg = int(B["power"] * (1.2 if boss_guard else 1.0))
+            cs = str(pc["cid"]).lower()
+            ace2 = bool(pc.get("is_ace2"))
+            if o["invul"]:
+                logs.append(f"🛡️ **{pc['name']}** miễn nhiễm hoàn toàn đòn đánh của Meiling!")
+            elif pc["cid"] == 15 and ace2 and not fl.get("reimu") and random.random() < 0.40:
+                fl["reimu"] = True
+                turn_gif = turn_gif or EVOL_CONFIG[15]["skill_gif"]
+                logs.append("🛡️ **[Ace 2] [#15] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+            elif cs == "t1" and not ace2 and not fl.get("seal") and fl.get("used_turn") != rounds and random.random() < 0.40:
+                fl["seal"] = True
+                fl["used_turn"] = rounds
+                turn_gif = turn_gif or T1_SEAL_GIF
+                logs.append("🛡️ **[Nhóm T] [#t1] Seiki** kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+            elif cs == "t3" and pc.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
+                ref = int(boss_dmg * 0.60)
+                B["hp"] = max(0, B["hp"] - ref)
+                logs.append(f"🛡️ **[Ace 2] [#t3] Kizuna** duy trì **Wonder Guard**! Miễn thương và phản lại **{ref:,} DMG (60%)** vào Meiling!")
+            elif pc["cid"] == 4 and ace2 and not boss_guard and random.random() < 0.10:
+                B["hp"] = max(0, B["hp"] - boss_dmg)
+                logs.append(f"🌀 **[Ace 2] [#04] Yukari** kích hoạt **Invisible Gap** (10%)! Miễn thương và phản lại **{boss_dmg:,} DMG** vào Meiling!")
+            else:
+                taken = boss_dmg
+                if cs == "t2":
+                    taken = int(taken * (1.0 - min(0.90, fl.get("maho", 1) * 0.05)))
+                if o["pguard"]:
+                    taken = int(taken * 0.85)
+                pc["current_hp"] -= taken
+                logs.append(f"🥋 **Hong Meiling** phản công bằng **Thái Cực Quyền** gây **{taken:,} DMG** lên **{pc['name']}**!")
+
+        # --- Wonder Guard của Kizuna đếm lùi mỗi hiệp ---
+        t3s = pc.get("t3_state")
+        if t3s and t3s.get("wonder_guard_turns", 0) > 0:
+            t3s["wonder_guard_turns"] -= 1
+
+        # --- thẻ gục: đổi sát thương / Sakuya Ace 3 hồi sinh / đẩy thẻ kế tiếp ---
+        if pc["current_hp"] <= 0:
+            pc["current_hp"] = 0
+            trade = pc["power"]
+            B["hp"] = max(0, B["hp"] - trade)
+            logs.append(f"💥 [Đổi Sát Thương] **{pc['name']}** trước khi gục đã đổi **{trade:,} DMG** vào Meiling!")
+            _rv, _rv_log = sakuya3_try_revive(player_cards, p_idx)
+            if _rv_log:
+                logs.append(_rv_log)
+            if _rv:
+                turn_gif = SAKUYA3_PASSIVE_GIF
+            else:
+                p_idx += 1
+                if p_idx < len(player_cards):
+                    logs.append(f"💀 Đẩy **{player_cards[p_idx]['name']}** lên tiền tuyến!")
+
+        r_embed = discord.Embed(
+            title=f"⚔️ HIỆP {rounds} - QUYẾT ĐẤU HONG MEILING (STAGE 3)",
+            description=(f"❤️ Máu Meiling: `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**\n\n" + "\n".join(logs))[:4000],
+            color=0xDC2626 if B["hp"] > 0 else 0x10B981
+        )
+        if turn_gif:
+            r_embed.set_image(url=turn_gif)
+        else:
+            r_embed.set_thumbnail(url=boss_img)
+        try:
+            await msg.edit(embed=r_embed)
+        except Exception:
+            pass
+        if B["hp"] <= 0:
+            break
+        await asyncio.sleep(2.5)
+
+    # ---------------- KẾT QUẢ ----------------
+    if B["hp"] <= 0:
+        inv = player.setdefault("inventory", {})
+        inv["24"] = inv.get("24", 0) + 30
+        if 24 not in player.get("unlocked_cards", []):
+            player.setdefault("unlocked_cards", []).append(24)
+        player["pull_tickets"] += 20.0
+        st["stage3_completed"] = True
+        st["current_stage"] = 4
+        save_player(player)
+        embed_win = discord.Embed(
+            title="🎉 CHIẾN THẮNG STAGE 3: CỔNG HỒNG MA QUÁN!",
+            description=(
+                "🚬 **\"Reimu châm điếu thuốc trong khi trợ thủ cô xách ngang eo Meiling bắt đi dẫn đường\"**\n\n"
+                "🎁 **PHẦN THƯỞNG CHIẾN TÍCH STAGE 3:**\n"
+                f"• 🎴 **+30 Thẻ bài [#24] Hong Meiling (Rank C)** cộng thẳng vào túi đồ! (Hiện có: `{inv['24']}` lá)\n"
+                f"• 🎟️ **+20 Lượt Pull Tích Lũy** (Tổng vé hiện có: `{player['pull_tickets']:.2f}` vé)!\n"
+                "• 🏆 **Hoàn thành Stage 3!**"
+            ),
+            color=0x10B981
+        )
+        embed_win.set_image(url=S3_REIMU_GIF)
+        embed_win.set_footer(text="Stage 3 Completed • Dùng /evol để nâng Hong Meiling lên Ace 2")
+        try:
+            await msg.edit(embed=embed_win)
+        except Exception:
+            pass
+    else:
+        embed_loss = discord.Embed(
+            title="💀 THẤT BẠI TẠI STAGE 3!",
+            description=(
+                f"Đội hình của {user.mention} đã gục ngã trước Thái Cực Quyền của Hong Meiling!\n"
+                f"Meiling còn lại: **{B['hp']:,}/{B['max_hp']:,} HP**\n\n"
+                "💡 *Hãy nâng cấp thẻ bài, xếp lại đội hình qua `/team` và gõ lại `/story` để phục thù!*"
+            ),
+            color=0xEF4444
+        )
+        embed_loss.set_thumbnail(url=boss_img)
+        try:
+            await msg.edit(embed=embed_loss)
+        except Exception:
+            pass
+
+
+# ------------------------------------------------------------------------------
+# BỘ ĐIỀU HƯỚNG STAGE 3 (được /story gọi khi current_stage >= 3)
+# ------------------------------------------------------------------------------
+async def handle_story_stage3(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    st = player.setdefault("story", {})
+    st.setdefault("stage3_quiz_passed", False)
+    st.setdefault("stage3_battles_done", 0)
+    st.setdefault("stage3_quest_claimed", False)
+    st.setdefault("meiling_boss_level", None)
+    st.setdefault("stage3_completed", False)
+
+    # ----- Đã hoàn thành Stage 3 -----
+    if st.get("stage3_completed") or st.get("current_stage", 0) >= 4:
+        embed_done = discord.Embed(
+            title="🏆 BẠN ĐÃ VƯỢT QUA STAGE 3: CỔNG HỒNG MA QUÁN!",
+            description=(
+                "🚬 **\"Reimu châm điếu thuốc trong khi trợ thủ cô xách ngang eo Meiling bắt đi dẫn đường\"**\n\n"
+                f"👤 Trợ thủ: {user.mention}\n"
+                "✅ Bạn đã hạ gục Hong Meiling, nhận **30 Thẻ bài ID 24** và **20 Vé Pull**!\n\n"
+                "🏰 *Cánh cổng đã mở, bên trong Hồng Ma Quán còn nhiều bí ẩn đang chờ...*\n"
+                "🌟 **Stage 4 sẽ sớm cập bến trong bản cập nhật kế tiếp!**"
+            ),
+            color=0x10B981
+        )
+        embed_done.set_thumbnail(url=CARDS_DATA[24]["image"])
+        await _s3_send(ctx_or_interaction, embed=embed_done)
+        return
+
+    # ----- Câu đố -----
+    if not st.get("stage3_quiz_passed", False):
+        embed_quiz = discord.Embed(
+            title="🏰 STAGE 3: CỔNG HỒNG MA QUÁN (SCARLET DEVIL MANSION GATE)",
+            description=(
+                "Khi đi qua cánh rừng, cả nhóm bắt gặp một dinh thự đỏ rực sừng sững giữa làn sương.\n"
+                "Trước cổng có một cô gái đang đứng canh.\n\n"
+                "Reimu quay sang hỏi trợ thủ:\n"
+                "⛩️ **Reimu:** *\"Cậu nghĩ cái đứa đứng canh cổng đó như nào?\"*\n"
+                "🧑 **Trợ thủ:** *\"...\"*\n\n"
+                "👉 **Hãy chọn câu trả lời đúng bên dưới để tiếp tục:**"
+            ),
+            color=0xDC2626
+        )
+        embed_quiz.set_thumbnail(url=CARDS_DATA[24]["image"])
+        embed_quiz.set_footer(text="Chọn phương án bên dưới • Nếu sai sẽ xáo trộn vị trí câu trả lời")
+        await _s3_send(ctx_or_interaction, embed=embed_quiz, view=Stage3QuizView(user, player))
+        return
+
+    # ----- Nhiệm vụ tập luyện -----
+    if not st.get("stage3_quest_claimed", False):
+        b_done = st.get("stage3_battles_done", 0)
+        u_lvl = player.get("level", 1)
+        req_b_ok = b_done >= S3_REQ_BATTLES
+        req_l_ok = u_lvl >= S3_REQ_LEVEL
+
+        if req_b_ok and req_l_ok:
+            st["stage3_quest_claimed"] = True
+            st["meiling_boss_level"] = u_lvl      # cố định cấp boss theo level lúc mở quest
+            player["pull_tickets"] += 10.0
+            save_player(player)
+            embed_q_win = discord.Embed(
+                title="🎉 HOÀN THÀNH NHIỆM VỤ TẬP LUYỆN STAGE 3!",
+                description=(
+                    "⛩️ **Reimu:** *\"Hm? Coi nào, yêu quái hay người nào...\"*\n\n"
+                    "🎁 **PHẦN THƯỞNG HOÀN THÀNH:**\n"
+                    f"• 🎟️ **+10 Lượt Pull Tích Lũy** (Đã cộng vào tài khoản! Hiện có: `{player['pull_tickets']:.2f}` vé)\n"
+                    "• 🥋 **Mở khóa đại chiến:** **Hong Meiling - Thủ Môn Hồng Ma Quán**!\n\n"
+                    "👉 **LƯU Ý:** Hãy gõ lại lệnh `/story` ngay bây giờ để kiểm tra và tiến vào trận quyết đấu!"
+                ),
+                color=0x10B981
+            )
+            embed_q_win.set_thumbnail(url=CARDS_DATA[24]["image"])
+            await _s3_send(ctx_or_interaction, embed=embed_q_win)
+            return
+
+        status_b = "✅ ĐÃ HOÀN THÀNH" if req_b_ok else f"🔴 Chưa đủ ({b_done}/{S3_REQ_BATTLES} trận)"
+        status_l = "✅ ĐÃ ĐẠT" if req_l_ok else f"🔴 Chưa đủ (Cấp hiện tại: Lv.{u_lvl}/{S3_REQ_LEVEL})"
+        embed_quest = discord.Embed(
+            title="🎯 NHIỆM VỤ YÊU CẦU STAGE 3: CỔNG HỒNG MA QUÁN",
+            description=(
+                "Dinh thự phía trước toát ra sát khí nặng nề, bạn cần rèn luyện thêm trước khi đối mặt với người gác cổng!\n\n"
+                f"• ⚔️ **Đánh `/battle` {S3_REQ_BATTLES} lần:** **{status_b}**\n"
+                f"• ⭐ **Level tối thiểu {S3_REQ_LEVEL}:** **{status_l}**\n\n"
+                "🎁 **Phần thưởng:** **+10 Lượt Pull** 🎟️ & Mở khóa trận chiến với Hong Meiling!\n"
+                "💡 *Sau khi hoàn thành đủ, gõ lại `/story` để nhận thưởng!*"
+            ),
+            color=0xB91C1C
+        )
+        embed_quest.set_thumbnail(url=CARDS_DATA[24]["image"])
+        await _s3_send(ctx_or_interaction, embed=embed_quest)
+        return
+
+    # ----- Hội thoại + nút đánh boss -----
+    boss_lvl = st.get("meiling_boss_level") or player.get("level", S3_REQ_LEVEL)
+    dialogue = (
+        "• ⛩️ **Reimu:** *\"Hm? Coi nào, yêu quái hay người nào...\"*\n"
+        "• 🥋 **Meiling:** *\"Tôi chỉ là một người bình thường thôi.\"*\n"
+        "• 🧑 **Trợ thủ:** *(0^0) \"Vậy à…\"*\n"
+        "• ⛩️ **Reimu:** *\"Một người bình thường thì không đứng chặn ở đây. Tránh ra, tôi đang vội.\"*\n"
+        "• 🥋 **Meiling:** *\"Cô vội đi đâu chứ? Đằng sau tôi là một dinh thự tư nhân, không phận sự miễn vào.\"*\n"
+        "• 🥋 **Meiling:** *\"Có câu truyền thuyết kể rằng... thịt của vu nữ (Miko) ăn vào rất là ngon...\"*\n"
+        "• ⛩️ **Reimu:** *\"Đừng có mà đi rêu rao mấy cái lời đồn đại tầm bậy đó!\"*\n\n"
+        "⚠️ **CẢNH BÁO:** Hong Meiling đã vào thế thủ! Bấm nút bên dưới để khai màn trận Live Battle!"
+    )
+    embed_dlg = discord.Embed(title="🗺️ STAGE 3: CỔNG HỒNG MA QUÁN", description=dialogue, color=0xDC2626)
+    embed_dlg.set_thumbnail(url=CARDS_DATA[24]["image"])
+    embed_dlg.add_field(
+        name="👺 Thông Số Boss Hong Meiling:",
+        value=(
+            f"• Sức mạnh gốc: **{S3_MEILING_BASE_ATK:,} DMG** | Máu gốc: **{S3_MEILING_BASE_HP:,} HP**\n"
+            f"• Cấp độ Boss: **Lv.{boss_lvl}** (cố định lúc mở quest)\n"
+            "• Tuyệt kỹ: **Rainbow Taijiquan** (30%, ×1.2 sát thương, giảm 15% sát thương nhận, **không giới hạn lần**)"
+        ),
+        inline=True
+    )
+    embed_dlg.add_field(
+        name="🎁 Phần Thưởng Chiến Thắng:",
+        value="• 🎴 **30 Thẻ bài [#24] Hong Meiling** cộng thẳng túi đồ\n• 🎟️ **+20 Lượt Pull** tích lũy",
+        inline=True
+    )
+    embed_dlg.set_footer(text="Bấm nút màu đỏ bên dưới để chiến đấu trực tiếp!")
+    await _s3_send(ctx_or_interaction, embed=embed_dlg, view=StoryMeilingBattleView(user, player))
     
 import sys
 
