@@ -574,6 +574,11 @@ SEIKI_BOSS_CONFIG = {
 }
 
 boss_cooldown_until = 0.0
+# ==============================================================================
+# HỆ THỐNG COOLDOWN CHO LỆNH PULL (CHỐNG SPAM 3 GIÂY)
+# ==============================================================================
+PULL_COOLDOWN_SECONDS = 3.0
+user_pull_cooldowns = {}
 
 # ==============================================================================
 # SEIKI DỊ HÌNH PHASE 2 - THỨC TỈNH (105K HP, 10K DMG CHIA ĐỀU, NUCLEAR + CLEAVE)
@@ -8041,12 +8046,43 @@ class PullGalleryView(discord.ui.View):
         self.footer_text = footer_text
         self.idx = 0
         self.message = None
+
+        # Tùy chọn menu nhảy nhanh nếu có từ 2 trang trở lên (tối đa 10 khung trang)
+        if len(self.pages) > 1:
+            options = []
+            for i in range(len(self.pages)):
+                start_c = i * 10 + 1
+                end_c = min((i + 1) * 10, self.total)
+                options.append(discord.SelectOption(
+                    label=f"Khung Trang {i + 1}/{len(self.pages)} (Thẻ {start_c} - {end_c})",
+                    value=str(i),
+                    description=f"Xem 10 thẻ trong khung thứ {i + 1}",
+                    default=(i == 0)
+                ))
+            select_menu = discord.ui.Select(
+                placeholder=f"🔽 Nhảy nhanh tới khung trang (1 - {len(self.pages)})...",
+                options=options,
+                row=1
+            )
+            select_menu.callback = self.select_page_callback
+            self.add_item(select_menu)
+
         self._sync_buttons()
 
     def _sync_buttons(self):
+        self.first_btn.disabled = self.idx <= 0
         self.prev_btn.disabled = self.idx <= 0
         self.next_btn.disabled = self.idx >= len(self.pages) - 1
-        self.page_btn.label = f"Trang {self.idx + 1}/{len(self.pages)}"
+        self.last_btn.disabled = self.idx >= len(self.pages) - 1
+        self.page_btn.label = f"Khung {self.idx + 1}/{len(self.pages)}"
+
+    async def select_page_callback(self, interaction: discord.Interaction):
+        self.idx = int(interaction.data["values"][0])
+        for item in self.children:
+            if isinstance(item, discord.ui.Select):
+                for opt in item.options:
+                    opt.default = (opt.value == str(self.idx))
+        await self._go(interaction)
 
     def build(self):
         entries = self.pages[self.idx]
@@ -8055,7 +8091,7 @@ class PullGalleryView(discord.ui.View):
         r, g, b = PULL_RANK_COLORS.get(best_rank, (59, 130, 246))
         embed = discord.Embed(
             title="🌸 Touhou Pull",
-            description=f"🎴 **{self.total} lượt quay** • Trang {self.idx + 1}/{len(self.pages)}",
+            description=f"🎴 **{self.total} lượt quay** • Khung trang {self.idx + 1}/{len(self.pages)}",
             color=(r << 16) + (g << 8) + b
         )
         files = []
@@ -8085,13 +8121,19 @@ class PullGalleryView(discord.ui.View):
         embed, files = self.build()
         await interaction.response.edit_message(embed=embed, attachments=files, view=self)
 
+    @discord.ui.button(label="⏮️ Đầu", style=discord.ButtonStyle.secondary, row=0)
+    async def first_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.idx > 0:
+            self.idx = 0
+            await self._go(interaction)
+
     @discord.ui.button(label="◀ Trước", style=discord.ButtonStyle.primary, row=0)
     async def prev_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.idx > 0:
             self.idx -= 1
-        await self._go(interaction)
+            await self._go(interaction)
 
-    @discord.ui.button(label="Trang 1/1", style=discord.ButtonStyle.secondary, disabled=True, row=0)
+    @discord.ui.button(label="Khung 1/1", style=discord.ButtonStyle.secondary, disabled=True, row=0)
     async def page_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         pass
 
@@ -8099,7 +8141,13 @@ class PullGalleryView(discord.ui.View):
     async def next_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.idx < len(self.pages) - 1:
             self.idx += 1
-        await self._go(interaction)
+            await self._go(interaction)
+
+    @discord.ui.button(label="⏭️ Cuối", style=discord.ButtonStyle.secondary, row=0)
+    async def last_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.idx < len(self.pages) - 1:
+            self.idx = len(self.pages) - 1
+            await self._go(interaction)
 
     async def on_timeout(self):
         for child in self.children:
@@ -8151,6 +8199,17 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
     tut = player.get("tutorial", {})
+# 0. KIỂM TRA COOLDOWN 3 GIÂY CHỐNG SPAM PULL
+    now = time.time()
+    last_pull = user_pull_cooldowns.get(user.id, 0.0)
+    if now - last_pull < PULL_COOLDOWN_SECONDS:
+        rem = round(PULL_COOLDOWN_SECONDS - (now - last_pull), 1)
+        msg = f"⏳ Bạn thao tác quá nhanh! Vui lòng chờ thêm **{rem}s** nữa để tiếp tục quay thẻ (`/pull`)."
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else:
+            await ctx_or_interaction.send(msg)
+        return
 
     # ---------- PULL TÂN THỦ (3 lá không trùng, không SS) ----------
     if tut.get("active") and tut.get("step") == "pull" and not tut.get("pull_used", False):
@@ -8185,7 +8244,7 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
         return
 
     # ---------- PULL THƯỜNG ----------
-    count = max(1, min(40, count))
+    count = max(1, min(100, count))
     total_avail = player.get("free_pulls_remaining", 0) + int(player.get("pull_tickets", 0))
 
     if total_avail < count:
@@ -8199,6 +8258,8 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
     player["free_pulls_remaining"] -= free_used
     needed -= free_used
     player["pull_tickets"] -= float(needed)
+# Ghi nhận thời điểm pull thành công để kích hoạt 3 giây hồi chiêu
+    user_pull_cooldowns[user.id] = now
 
     entries = []
     notes = []
@@ -8220,7 +8281,7 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
     )
 
 @bot.tree.command(name="pull", description="Quay thẻ nhân vật Touhou (Free 5 lượt/ngày)")
-@app_commands.describe(so_luong="Số lượt quay (1 đến 40, mặc định: 1)")
+@app_commands.describe(so_luong="Số lượt quay (1 đến 100, mặc định: 1)")
 async def slash_pull(interaction: discord.Interaction, so_luong: int = 1):
     await handle_pull(interaction, so_luong)
 
