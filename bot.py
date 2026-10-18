@@ -15216,7 +15216,7 @@ class KanaeCardView(discord.ui.View):
         embed.add_field(
             name="⚔️ SỨC MẠNH & CHỈ SỐ:",
             value=(f"• ⚔️ **ATK:** `{card['power']:,}` | ❤️ **HP:** `{card['hp']:,}`\n"
-                   • 🛡️ **Trong đội hình (Lv.{lvl}):** `{card['power'] + (lvl - 1) * 15:,}` ATK | `{card['hp'] + (lvl - 1) * 45:,}` HP"),
+                   f"• 🛡️ **Trong đội hình (Lv.{lvl}):** `{card['power'] + (lvl - 1) * 15:,}` ATK | `{card['hp'] + (lvl - 1) * 45:,}` HP"),
             inline=False
         )
         embed.add_field(
