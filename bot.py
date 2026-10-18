@@ -458,7 +458,7 @@ KANAE_IMG = "https://media.discordapp.net/attachments/1533870485249589331/156066
 KANAE_SKILL_GIF = "https://static2.klipy.com/ii/8ce8357c78ea940b9c2015daf05ce1a5/cc/d1/yJC95QJo.gif"
 KANAE_BURST_CHANCE = 0.35   # tỉ lệ kích hoạt Bộc Phát Ấn Điểm
 KANAE_BURST_MULT = 1.5
-KANAE_STACK_BONUS = 0.15    # +15% sát thương đánh thường mỗi tầng ấn
+KANAE_STACK_BONUS = 1.2    # 1.2x sát thương đánh thường mỗi tầng ấn
 KANAE_MAX_BURST = 3         # tối đa 3 lần/trận
 
 CARDS_DATA["t6"] = {
@@ -478,7 +478,7 @@ CARDS_DATA["t6"] = {
             "name": "Bộc Phát Ấn Điểm",
             "chance": KANAE_BURST_CHANCE,
             "gif": KANAE_SKILL_GIF,
-            "desc": "Gây 1.5x sát thương, thêm 15% sát thương đánh thường cho mỗi tầng ấn rồi reset ấn (tối đa 3 lần/trận)."
+            "desc": "Gây 1.5x sát thương, thêm 1.2x sát thương đánh thường cho mỗi tầng ấn rồi reset ấn (tối đa 3 lần/trận)."
         }
     }
 }
@@ -8734,7 +8734,7 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
                 f"🎴 **THẺ BÀI NHẬN ĐƯỢC:** **[T] #t6 Kanae Wasuko – Bom Anh Đào**\n"
                 f"• **Chỉ số:** ⚔️ Power: **{card_info['power']:,}** | ❤️ HP: **{card_info['hp']:,}**\n"
                 f"• 🌸 **Passive - Dấu Ấn Anh Đào:** Mỗi lượt đánh thường tích 1 ấn, cộng dồn\n"
-                f"• 💥 **Skill - Bộc Phát Ấn Điểm:** ×1.5 sát thương + 15%/tầng ấn, reset ấn (tối đa 3 lần/trận)\n\n"
+                f"• 💥 **Skill - Bộc Phát Ấn Điểm:** ×1.5 sát thương + 1.2x/tầng ấn, reset ấn (tối đa 3 lần/trận)\n\n"
                 f"📦 **Kho mảnh còn lại:** `{shards_dict[shard_key]} Kanae Shards`\n"
                 f"🎒 **Kho đồ hiện tại:** `{player['inventory'][target_card_id]} lá`"
             ),
@@ -15183,7 +15183,7 @@ def t6_combat_turn(t6_state: dict, card_data: dict, base_dmg: int, skills_locked
         logs.append(
             f"🌸 **{tag}** kích nổ **Bộc Phát Ấn Điểm** ({int(KANAE_BURST_CHANCE*100)}%)! "
             f"×{KANAE_BURST_MULT} sát thương + **{bonus:,} DMG** từ **{stacks} tầng ấn** "
-            f"(15%/tầng) = **{damage:,} DMG**! Ấn đã reset. *(Lần {uses + 1}/{KANAE_MAX_BURST})*"
+            f"(1.2x/tầng) = **{damage:,} DMG**! Ấn đã reset. *(Lần {uses + 1}/{KANAE_MAX_BURST})*"
         )
     elif erased != "t6_mark":
         t6_state["stacks"] = stacks + 1
@@ -15224,7 +15224,7 @@ class KanaeCardView(discord.ui.View):
             value=(
                 "🌸 **Dấu Ấn Anh Đào (Passive):** Mỗi lượt đánh thường tích **1 ấn** nội tại, cộng dồn.\n"
                 f"💥 **Bộc Phát Ấn Điểm ({int(KANAE_BURST_CHANCE*100)}%):** Gây **×1.5 sát thương** và thêm "
-                "**15% sát thương đánh thường cho mỗi tầng ấn**. Sau khi kích chiêu sẽ **reset ấn** (tối đa **3 lần/trận**)."
+                "**1.2x sát thương đánh thường cho mỗi tầng ấn**. Sau khi kích chiêu sẽ **reset ấn** (tối đa **3 lần/trận**)."
             ),
             inline=False
         )
