@@ -105,10 +105,10 @@ ACE_POWER_BUFF = 300  # +300 ATK (Buff mới theo yêu cầu)
 ACE_HP_BUFF = 300     # +300 Máu (Buff mới theo yêu cầu)
 
 def get_level_atk_buff(level: int) -> int:
-    return max(0, (level - 1) * 20)  # +20 ATK mỗi khi lên cấp
+    return max(0, (level - 1) * 15)  # +15 ATK mỗi khi lên cấp
 
 def get_level_hp_buff(level: int) -> int:
-    return max(0, (level - 1) * 25)  # +25 HP mỗi khi lên cấp
+    return max(0, (level - 1) * 45)  # +45 HP mỗi khi lên cấp
 
 # ==============================================================================
 # 1. WEB SERVER CHO RENDER FREE
@@ -9206,8 +9206,8 @@ class CharacterCheckView(discord.ui.View):
 
         player = get_player(self.user_id) if self.user_id else None
         user_level = player.get("level", 1) if player else 1
-        lvl_atk_buff = (user_level - 1) * 20
-        lvl_hp_buff = (user_level - 1) * 25
+        lvl_atk_buff = (user_level - 1) * 15
+        lvl_hp_buff = (user_level - 1) * 45
         owned_cnt = player.get("inventory", {}).get(str(cid), 0) if player else 0
         is_user_ace = is_card_ace2(player, cid) if player else False
         is_locked = is_card_locked(player, cid) if player else False
@@ -9248,7 +9248,7 @@ class CharacterCheckView(discord.ui.View):
             f"• ⚔️ **Sức Mạnh (Power / ATK):** `{power_val:,}`\n"
             f"• ❤️ **Máu (HP):** `{hp_val:,}`\n"
             f"• 🛡️ **Trong Đội Hình (Cấp {user_level}):** `{atk_team:,}` ATK | `{hp_team:,}` HP\n"
-            f"*(Mỗi cấp người chơi tăng +20 ATK và +25 HP)*"
+            f"*(Mỗi cấp người chơi tăng +15 ATK và +45 HP)*"
         )
         if is_ace_mode:
             stats_text += "\n⭐ **Đặc quyền Ace 2:** `+300 ATK & +300 HP` cộng trực tiếp vĩnh viễn!"
@@ -9343,8 +9343,8 @@ class CharacterCheckView(discord.ui.View):
         details = CHARACTER_DETAILS["t1"]
         player = get_player(self.user_id) if self.user_id else None
         user_level = player.get("level", 1) if player else 1
-        lvl_atk_buff = (user_level - 1) * 20
-        lvl_hp_buff = (user_level - 1) * 25
+        lvl_atk_buff = (user_level - 1) * 15
+        lvl_hp_buff = (user_level - 1) * 45
         owned_cnt = player.get("inventory", {}).get("t1", 0) if player else 0
         shards_cnt = player.get("shards", {}).get("seiki", 0) if player else 0
         is_locked = is_card_locked(player, "t1") if player else False
@@ -9401,8 +9401,8 @@ class CharacterCheckView(discord.ui.View):
         details = CHARACTER_DETAILS.get("t2", {})
         player = get_player(self.user_id) if self.user_id else None
         user_level = player.get("level", 1) if player else 1
-        lvl_atk_buff = (user_level - 1) * 20
-        lvl_hp_buff = (user_level - 1) * 25
+        lvl_atk_buff = (user_level - 1) * 15
+        lvl_hp_buff = (user_level - 1) * 45
         owned_cnt = player.get("inventory", {}).get("t2", 0) if player else 0
         shards_cnt = player.get("shards", {}).get("mahoraga", 0) if player else 0
 
@@ -9435,8 +9435,8 @@ class CharacterCheckView(discord.ui.View):
         details = CHARACTER_DETAILS.get("t3", {})
         player = get_player(self.user_id) if self.user_id else None
         user_level = player.get("level", 1) if player else 1
-        lvl_atk_buff = (user_level - 1) * 20
-        lvl_hp_buff = (user_level - 1) * 25
+        lvl_atk_buff = (user_level - 1) * 15
+        lvl_hp_buff = (user_level - 1) * 45
         owned_cnt = player.get("inventory", {}).get("t3", 0) if player else 0
         shards_cnt = player.get("shards", {}).get("kizuna", 0) if player else 0
         thanh_loi_cnt = player.get("shards", {}).get("thanh_loi", 0) if player else 0
@@ -9473,8 +9473,8 @@ class CharacterCheckView(discord.ui.View):
         details = CHARACTER_DETAILS.get("t4", {})
         player = get_player(self.user_id) if self.user_id else None
         user_level = player.get("level", 1) if player else 1
-        lvl_atk_buff = (user_level - 1) * 20
-        lvl_hp_buff = (user_level - 1) * 25
+        lvl_atk_buff = (user_level - 1) * 15
+        lvl_hp_buff = (user_level - 1) * 45
         owned_cnt = player.get("inventory", {}).get("t4", 0) if player else 0
         shards_cnt = player.get("shards", {}).get("fateria", 0) if player else 0
 
@@ -10370,7 +10370,7 @@ async def handle_battle(ctx_or_interaction):
     save_player(player)
 
     new_lvl = player["level"]
-    lvl_up_str = f"\n🎉 **LÊN CẤP {new_lvl}!** (+20 ATK & +25 HP buff)" if new_lvl > old_lvl else ""
+    lvl_up_str = f"\n🎉 **LÊN CẤP {new_lvl}!** (+15 ATK & +45 HP buff)" if new_lvl > old_lvl else ""
     embed = discord.Embed(title=f"⚔️ BATTLE ({r_cnt} HIỆP): {user.display_name} VS {opp_name}", color=0x10B981 if win else 0xEF4444)
 
     your_team_lines = [
@@ -14280,7 +14280,7 @@ class JotaroCardView(discord.ui.View):
         embed.set_image(url=T5_GIF_EVOL if ace else T5_GIF_UNLOCK)
         embed.add_field(
             name="⚔️ SỨC MẠNH & CHỈ SỐ:",
-            value=f"• ⚔️ **ATK:** `{pw:,}` | ❤️ **HP:** `{hp:,}`\n• 🛡️ **Trong đội hình (Lv.{lvl}):** `{pw + (lvl - 1) * 20:,}` ATK | `{hp + (lvl - 1) * 25:,}` HP",
+            value=f"• ⚔️ **ATK:** `{pw:,}` | ❤️ **HP:** `{hp:,}`\n• 🛡️ **Trong đội hình (Lv.{lvl}):** `{pw + (lvl - 1) * 15:,}` ATK | `{hp + (lvl - 1) * 45:,}` HP",
             inline=False
         )
         if ace:
@@ -15127,7 +15127,7 @@ class SakuyaAce3CardView(discord.ui.View):
             name="⚔️ SỨC MẠNH & CHỈ SỐ:",
             value=(
                 f"• ⚔️ **ATK:** `{pw:,}` | ❤️ **HP:** `{hp:,}`\n"
-                f"• 🛡️ **Trong đội hình (Lv.{lvl}):** `{pw + (lvl - 1) * 20:,}` ATK | `{hp + (lvl - 1) * 25:,}` HP\n"
+                f"• 🛡️ **Trong đội hình (Lv.{lvl}):** `{pw + (lvl - 1) * 15:,}` ATK | `{hp + (lvl - 1) * 45:,}` HP\n"
                 f"*(Gốc {card['power']}/{card['hp']} + Ace 2 +300/+300 + Ace 3 +{SAKUYA3_BONUS_ATK}/+{SAKUYA3_BONUS_HP})*"
             ),
             inline=False
@@ -15216,7 +15216,7 @@ class KanaeCardView(discord.ui.View):
         embed.add_field(
             name="⚔️ SỨC MẠNH & CHỈ SỐ:",
             value=(f"• ⚔️ **ATK:** `{card['power']:,}` | ❤️ **HP:** `{card['hp']:,}`\n"
-                   f"• 🛡️ **Trong đội hình (Lv.{lvl}):** `{card['power'] + (lvl - 1) * 20:,}` ATK | `{card['hp'] + (lvl - 1) * 25:,}` HP"),
+                   • 🛡️ **Trong đội hình (Lv.{lvl}):** `{card['power'] + (lvl - 1) * 15:,}` ATK | `{card['hp'] + (lvl - 1) * 45:,}` HP"),
             inline=False
         )
         embed.add_field(
