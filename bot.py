@@ -8172,9 +8172,15 @@ class PullGalleryView(discord.ui.View):
         return True
 
     async def _go(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        if self.page_bytes[self.idx] is None:
+            try:
+                self.page_bytes[self.idx] = await render_pull_page(self.pages[self.idx])
+            except Exception as e:
+                print(f"⚠️ Lỗi render trang {self.idx + 1}: {e}", flush=True)
         self._sync_buttons()
         embed, files = self.build()
-        await interaction.response.edit_message(embed=embed, attachments=files, view=self)
+        await interaction.edit_original_response(embed=embed, attachments=files, view=self)
 
     @discord.ui.button(label="⏮️ Đầu", style=discord.ButtonStyle.secondary, row=0)
     async def first_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -8216,16 +8222,14 @@ class PullGalleryView(discord.ui.View):
 async def send_pull_gallery(ctx_or_interaction, user, entries, footer_text: str, notes: list = None):
     is_inter = isinstance(ctx_or_interaction, discord.Interaction)
     if is_inter and not ctx_or_interaction.response.is_done():
-        await ctx_or_interaction.response.defer()  # chống quá 3 giây khi đang vẽ ảnh
+        await ctx_or_interaction.response.defer()
 
     pages = [entries[i:i + PULL_PER_PAGE] for i in range(0, len(entries), PULL_PER_PAGE)]
-    page_bytes = []
-    for pg in pages:
-        try:
-            page_bytes.append(await render_pull_page(pg))
-        except Exception as e:
-            print(f"⚠️ [PULL] Lỗi vẽ bảng ảnh, dùng chữ dự phòng: {e}", flush=True)
-            page_bytes.append(None)
+    page_bytes = [None] * len(pages)
+    try:
+        page_bytes[0] = await render_pull_page(pages[0])
+    except Exception as e:
+        print(f"⚠️ [PULL] Lỗi vẽ trang 1: {e}", flush=True)
 
     view = PullGalleryView(user.id, pages, page_bytes, len(entries), footer_text)
     embed, files = view.build()
@@ -8250,6 +8254,14 @@ async def send_pull_gallery(ctx_or_interaction, user, entries, footer_text: str,
         else:
             await ctx_or_interaction.send(text)
 
+async def _pull_reply(ctx_or_interaction, msg, ephemeral=False):
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        if ctx_or_interaction.response.is_done():
+            await ctx_or_interaction.followup.send(msg, ephemeral=ephemeral)
+        else:
+            await ctx_or_interaction.response.send_message(msg, ephemeral=ephemeral)
+    else:
+        await ctx_or_interaction.send(msg)
 async def handle_pull(ctx_or_interaction, count: int = 1):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
@@ -8260,10 +8272,7 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
     if now - last_pull < PULL_COOLDOWN_SECONDS:
         rem = round(PULL_COOLDOWN_SECONDS - (now - last_pull), 1)
         msg = f"⏳ Bạn thao tác quá nhanh! Vui lòng chờ thêm **{rem}s** nữa để tiếp tục quay thẻ (`/pull`)."
-        if isinstance(ctx_or_interaction, discord.Interaction):
-            await ctx_or_interaction.response.send_message(msg, ephemeral=True)
-        else:
-            await ctx_or_interaction.send(msg)
+                await _pull_reply(ctx_or_interaction, msg, ephemeral=True)
         return
 
     # ---------- PULL TÂN THỦ (3 lá không trùng, không SS) ----------
@@ -8304,9 +8313,8 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
 
     if total_avail < count:
         msg = f"❌ Bạn không đủ lượt quay! (Có: {player.get('free_pulls_remaining', 0)} free + {player.get('pull_tickets', 0):.1f} vé, cần: {count}). Dùng `/daily` hoặc tham gia Raid để nhận thêm vé!"
-        if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
-        else: await ctx_or_interaction.send(msg)
-        return
+                await _pull_reply(ctx_or_interaction, msg, ephemeral=True)
+        return        
 
     needed = count
     free_used = min(player["free_pulls_remaining"], needed)
@@ -8338,6 +8346,7 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
 @bot.tree.command(name="pull", description="Quay thẻ nhân vật Touhou (Free 5 lượt/ngày)")
 @app_commands.describe(so_luong="Số lượt quay (1 đến 100, mặc định: 1)")
 async def slash_pull(interaction: discord.Interaction, so_luong: int = 1):
+    await interaction.response.defer()
     await handle_pull(interaction, so_luong)
 
 @bot.command(name="pull")
