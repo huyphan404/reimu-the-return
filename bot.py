@@ -6931,6 +6931,8 @@ async def slash_admin_confiscate(interaction: discord.Interaction, nguoi_dung: d
         return
     id_the = d2i(id_the)   # <<< THÊM DÒNG NÀY (ID hiển thị -> ID nội bộ)
     target = get_player(nguoi_dung.id, nguoi_dung.display_name)
+    inv = target.get("inventory", {})
+    team = target.get("team", [])
 
     if id_the == 0:
         total = sum(inv.values())
@@ -8272,7 +8274,7 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
     if now - last_pull < PULL_COOLDOWN_SECONDS:
         rem = round(PULL_COOLDOWN_SECONDS - (now - last_pull), 1)
         msg = f"⏳ Bạn thao tác quá nhanh! Vui lòng chờ thêm **{rem}s** nữa để tiếp tục quay thẻ (`/pull`)."
-                await _pull_reply(ctx_or_interaction, msg, ephemeral=True)
+        await _pull_reply(ctx_or_interaction, msg, ephemeral=True)
         return
 
     # ---------- PULL TÂN THỦ (3 lá không trùng, không SS) ----------
@@ -8313,7 +8315,7 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
 
     if total_avail < count:
         msg = f"❌ Bạn không đủ lượt quay! (Có: {player.get('free_pulls_remaining', 0)} free + {player.get('pull_tickets', 0):.1f} vé, cần: {count}). Dùng `/daily` hoặc tham gia Raid để nhận thêm vé!"
-                await _pull_reply(ctx_or_interaction, msg, ephemeral=True)
+        await _pull_reply(ctx_or_interaction, msg, ephemeral=True)
         return        
 
     needed = count
