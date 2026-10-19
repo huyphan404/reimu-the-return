@@ -521,6 +521,11 @@ CARD_DISPLAY_ID.update({
 DISPLAY_TO_INTERNAL = {v: k for k, v in CARD_DISPLAY_ID.items()}
 CARD_ORDER = [DISPLAY_TO_INTERNAL[d] for d in sorted(DISPLAY_TO_INTERNAL)]   # thứ tự hiển thị
 TOTAL_STD_CARDS = len(CARD_ORDER)
+# ===== Thay link ảnh Discord (hết hạn) bằng link raw GitHub (vĩnh viễn) =====
+GITHUB_RAW_BASE = "https://raw.githubusercontent.com/huyphan404/reimu-the-return/main"
+for _internal_id, _disp in CARD_DISPLAY_ID.items():
+    if _internal_id in CARDS_DATA:
+        CARDS_DATA[_internal_id]["image"] = f"{GITHUB_RAW_BASE}/{_disp}.jpg"
 
 def d2i(n):
     """ID hiển thị -> ID nội bộ (số lạ/0 thì giữ nguyên)."""
@@ -7949,55 +7954,50 @@ def _decode_pull_art(data: bytes):
     return ImageOps.fit(img, (PULL_ART_W, PULL_ART_H), resample)
 
 # Tạo sẵn thư mục lưu ảnh vĩnh viễn trên máy
-CARD_ASSETS_DIR = os.path.join(os.path.dirname(__file__) if "__file__" in locals() else ".", "card_images")
-os.makedirs(CARD_ASSETS_DIR, exist_ok=True)
-
+# Ảnh nằm ngay cạnh bot.py trong repo (1.jpg ... 31.jpg)
+CARD_ASSETS_DIR = os.path.dirname(os.path.abspath(__file__))
 async def _fetch_pull_art(card: dict):
     key = str(card.get("id"))
-    
+
     # 1. Kiểm tra RAM cache
     if key in _PULL_IMG_CACHE:
         return _PULL_IMG_CACHE[key]
 
     loop = asyncio.get_running_loop()
 
-    # 2. Kiểm tra file ảnh đã có sẵn trên máy/hosting chưa (Vĩnh viễn, không lo hết hạn)
-    for ext in (".png", ".jpg", ".jpeg", ".webp", ".gif"):
-        local_path = os.path.join(CARD_ASSETS_DIR, f"{key}{ext}")
+    # 2. Tên file ảnh trong repo = ID HIỂN THỊ (1-31), không phải ID nội bộ
+    try:
+        file_key = str(CARD_DISPLAY_ID.get(int(card.get("id")), card.get("id")))
+    except (ValueError, TypeError):
+        file_key = key   # thẻ t1, t2... không có ảnh số, dùng URL dự phòng
+
+    # 3. Thử đọc ảnh từ file trong repo trước (không bao giờ hết hạn)
+    for ext in (".jpg", ".png", ".jpeg", ".webp", ".gif"):
+        local_path = os.path.join(CARD_ASSETS_DIR, f"{file_key}{ext}")
         if os.path.exists(local_path):
             try:
-                def _load_local():
-                    with open(local_path, "rb") as f:
+                def _load_local(p=local_path):
+                    with open(p, "rb") as f:
                         return _decode_pull_art(f.read())
                 img = await loop.run_in_executor(None, _load_local)
                 _PULL_IMG_CACHE[key] = img
                 return img
             except Exception as e:
-                print(f"⚠️ [PULL] Lỗi đọc ảnh cục bộ #{key}: {e}", flush=True)
+                print(f"⚠️ [PULL] Lỗi đọc ảnh cục bộ #{file_key}: {e}", flush=True)
 
-    # 3. Nếu chưa có trên máy, tải từ URL và TỰ ĐỘNG LƯU VÀO MÁY ĐỂ KHÔNG BAO GIỜ HẾT HẠN
+    # 4. Dự phòng: tải từ URL (cho thẻ nhóm T không có ảnh trong repo)
     url = card.get("image")
     if not url:
         return None
-
     try:
         timeout = aiohttp.ClientTimeout(total=10)
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
         async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
             async with session.get(url) as resp:
                 if resp.status != 200:
-                    print(f"⚠️ [PULL] Link thẻ #{key} trả về lỗi HTTP {resp.status} (có thể link Discord đã hết hạn).", flush=True)
+                    print(f"⚠️ [PULL] Link thẻ #{key} lỗi HTTP {resp.status} (có thể đã hết hạn).", flush=True)
                     return None
                 data = await resp.read()
-
-        # Lưu lại vào ổ cứng ngay lập tức để link hết hạn cũng không ảnh hưởng
-        save_path = os.path.join(CARD_ASSETS_DIR, f"{key}.png")
-        try:
-            with open(save_path, "wb") as f:
-                f.write(data)
-        except Exception:
-            pass
-
         img = await loop.run_in_executor(None, _decode_pull_art, data)
         _PULL_IMG_CACHE[key] = img
         return img
