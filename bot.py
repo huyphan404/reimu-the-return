@@ -8,7 +8,7 @@
 # 4. ADMIN COMMANDS: /admin_set_level, /admin_confiscate, /admin_add_card, /admin_lock (ID: 1502579398560317441)
 # 5. LEVEL UP MỚI: Mỗi cấp tăng +50 XP (Lv.1: 100 XP, Lv.2: 150 XP, Lv.3: 200 XP...)
 # 6. EVOL UPDATE:
-#    - Luôn hiển thị ID nhân vật: [#17] Reimu Hakurei, [#18] Sakuya Izayoi
+#    - Luôn hiển thị ID nhân vật: [#15] reimu Hakurei, [#18] Sakuya Izayoi
 #    - Lệnh /evol hỗ trợ nhập trực tiếp ID hoặc tên
 #    - Hoạt ảnh GIF hiển thị trực tiếp trong Discord (embed image & direct GIF)
 #    - Buff tối thượng Ace: Mọi nhân vật đạt Ace đều được cộng +300 ATK (Power) và +300 Máu (HP)!
@@ -859,7 +859,7 @@ EVOL_CONFIG = {
         "id": 15,
         "key": "reimu",
         "name": "Reimu Hakurei",
-        "title": "[#17] Reimu Hakurei - Ace 2 ⭐⭐",
+        "title": "[#15] reimu Hakurei - Ace 2 ⭐⭐",
         "ace_level": "Ace 2 ⭐⭐",
         "required_cards": 20,
         "required_pulls": 20,
@@ -1109,7 +1109,7 @@ def kasen_restore_guard(active_combatants):
 # ACE 2 MỚI: [#t1] SEIKI ĐỆ NHẤT PHÁP SƯ (BỘ KỸ NĂNG THAY ĐỔI HOÀN TOÀN)
 # ==============================================================================
 T1_ACE2_CONFIG = {
-    "required_ace2": [19, 15, 18],   # [#19] Marisa, [#17] Reimu, [#18] Sakuya phải đạt Ace 2
+    "required_ace2": [19, 15, 18],   # [#19] Marisa, [#15] reimu, [#18] Sakuya phải đạt Ace 2
     "required_shards": 10,           # Chi phí: 10 Mảnh Seiki
     "cleave_pct": 0.02,              # Clave (thụ động 100%): đánh thường +2% Máu Tối Đa mục tiêu
     "gif_cleave": "https://static2.klipy.com/ii/9ed0121ed465c12e1f3dda331ed33f0e/9b/b3/mOb3k5Ux7HWC.gif",
@@ -1999,7 +1999,7 @@ def execute_seiki_ace2(player):
         names = ", ".join(f"[#{disp_id(c)}] {CARDS_DATA[c]['name']}" for c in missing)
         return False, (
             "❌ **Chưa đủ điều kiện tiến hóa Seiki Ace 2!**\n"
-            "• Yêu cầu: **[#19] Marisa**, **[#17] Reimu**, **[#18] Sakuya** đều phải đạt **Ace 2 ⭐⭐**.\n"
+            "• Yêu cầu: **[#19] Marisa**, **[#15] reimu**, **[#18] Sakuya** đều phải đạt **Ace 2 ⭐⭐**.\n"
             f"• Còn thiếu Ace 2: **{names}**"
         ), None
 
@@ -3713,7 +3713,7 @@ async def execute_raid(channel, raid_data):
                                 c["reimu_invul_used"] = True
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
@@ -3755,7 +3755,7 @@ async def execute_raid(channel, raid_data):
                                 c["reimu_invul_used"] = True
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
@@ -3797,7 +3797,7 @@ async def execute_raid(channel, raid_data):
                                 c["reimu_invul_used"] = True
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
@@ -3841,7 +3841,7 @@ async def execute_raid(channel, raid_data):
                             boss_action_log = (
                                 f"⚔️ **[KỸ NĂNG] Mahoraga** rút kiếm tung **THOÁI MA KIẾM** (25%)! "
                                 f"Trường kiếm khổng lồ giáng **{p1_power:,} DMG sát thương thuần** (không chia đều) thẳng vào **{ac['name']}** ({target_c['username']})!\n"
-                                f"🛡️ **[Ace 2] [#17] Reimu** ({target_c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                f"🛡️ **[Ace 2] [#15] reimu** ({target_c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                             )
                     if not invul and str(ac["cid"]).lower() == "t1" and (target_c.get("seiki_invul_turn") == p1_rounds or (not target_c.get("seiki_seal_used") and target_c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         target_c["seiki_seal_used"] = True
@@ -3900,7 +3900,7 @@ async def execute_raid(channel, raid_data):
                                 c["reimu_invul_used"] = True
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
@@ -3997,7 +3997,7 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 if not fateria_skill_gif:
                                     turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
@@ -4047,7 +4047,7 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 if not turn_image or turn_image == BOSS_SKILL_CONFIG["gif"]:
                                     turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
@@ -4088,7 +4088,7 @@ async def execute_raid(channel, raid_data):
                                 c["reimu_invul_used"] = True
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
@@ -4726,7 +4726,7 @@ async def execute_raid(channel, raid_data):
                                 c["reimu_invul_used"] = True
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p2_rounds
@@ -4772,7 +4772,7 @@ async def execute_raid(channel, raid_data):
                                 c["reimu_invul_used"] = True
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p2_rounds
@@ -5331,7 +5331,7 @@ async def execute_raid(channel, raid_data):
                             invul = True
                             if not turn_image or turn_image == BOSS_SKILL_CONFIG["gif"]:
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         c["seiki_seal_used"] = True
                         c["seiki_used_turn"] = p2_rounds
@@ -5366,7 +5366,7 @@ async def execute_raid(channel, raid_data):
                             c["reimu_invul_used"] = True
                             invul = True
                             turn_image = EVOL_CONFIG[15]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         c["seiki_seal_used"] = True
                         c["seiki_used_turn"] = p2_rounds
@@ -6092,7 +6092,7 @@ async def execute_event_raid(channel, raid_data):
                     if ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
                         if random.random() < 0.40:
                             c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                         boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
@@ -6119,7 +6119,7 @@ async def execute_event_raid(channel, raid_data):
                     if ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
                         if random.random() < 0.40:
                             c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                         boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
@@ -6152,7 +6152,7 @@ async def execute_event_raid(channel, raid_data):
                     elif ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
                         if random.random() < 0.40:
                             c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                         boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
@@ -6659,7 +6659,7 @@ async def execute_event_raid(channel, raid_data):
                         if ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
                             if random.random() < 0.40:
                                 c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                             boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
@@ -6686,7 +6686,7 @@ async def execute_event_raid(channel, raid_data):
                         if ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
                             if random.random() < 0.40:
                                 c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                             boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
@@ -6720,7 +6720,7 @@ async def execute_event_raid(channel, raid_data):
                         elif ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
                             if random.random() < 0.40:
                                 c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] Reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                             boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
@@ -7809,7 +7809,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
         name="🔮 [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Điều kiện đặc biệt):",
         value=(
             f"• Trạng thái: **{seiki_status}**\n"
-            "• Điều kiện: **[#19] Marisa + [#17] Reimu + [#18] Sakuya** đều Ace 2 ⭐⭐\n"
+            "• Điều kiện: **[#19] Marisa + [#15] reimu + [#18] Sakuya** đều Ace 2 ⭐⭐\n"
             "• Chi phí: **10 Mảnh Seiki** (không khấu trừ thẻ bài)\n"
             "• Buff Ace: **+300 ATK** & **+300 HP**\n"
             "• Kỹ năng: **Cleave** (thụ động +2% Máu tối đa mỗi đòn) • **Medicine Sign** (35% hồi 40% máu) • **Fantasy Seal** (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • **Bóng Khái Niệm** (20%: 1.5x sát thương + 10% máu tối đa + xóa kỹ năng đối thủ)"
@@ -7878,7 +7878,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     app_commands.Choice(name="[#09] Flandre Scarlet (Ace 2 - Cần 30 thẻ)", value="flandre"),
     app_commands.Choice(name="[#12] Remilia Scarlet (Ace 2 - Cần 25 thẻ)", value="remilia"),
     app_commands.Choice(name="[#13] Utsuho Reiuji (Ace 2 - Cần 30 thẻ)", value="utsuho"),
-    app_commands.Choice(name="[#17] Reimu Hakurei (Ace 2 - Cần 20 thẻ)", value="reimu"),
+    app_commands.Choice(name="[#15] reimu Hakurei (Ace 2 - Cần 20 thẻ)", value="reimu"),
     app_commands.Choice(name="[#19] Kasen Ibaraki (Ace 2 - 25 thẻ + có #14)", value="kasen"),
     app_commands.Choice(name="[#20] Sakuya Izayoi (Ace 2 - Cần 30 thẻ)", value="sakuya"),
     app_commands.Choice(name="[#20] Sakuya Izayoi (Ace 3 - 100 thẻ + 6 Ace2 + Prestige 4)", value="18a3"),
@@ -10205,7 +10205,7 @@ async def handle_battle(ctx_or_interaction):
                     oc_invul = True
                     if not turn_image:
                         turn_image = EVOL_CONFIG[15]["skill_gif"]
-                    msg_skill = f"🛡️ **Đối thủ [Ace 2] [#17] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (30%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
+                    msg_skill = f"🛡️ **Đối thủ [Ace 2] [#15] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (30%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
                     battle_logs.append(msg_skill)
                     turn_actions.append(msg_skill)
 
@@ -10246,7 +10246,7 @@ async def handle_battle(ctx_or_interaction):
                     pc_invul = True
                     if not turn_image:
                         turn_image = EVOL_CONFIG[15]["skill_gif"]
-                    msg_skill = f"🛡️ **[Ace 2] [#17] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
+                    msg_skill = f"🛡️ **[Ace 2] [#15] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
                     battle_logs.append(msg_skill)
                     turn_actions.append(msg_skill)
             if not pc_invul and str(pc["cid"]).lower() == "t1" and not p_seiki_seal and p_seiki_used_turn != r_cnt and not pc.get("is_ace2"):
@@ -10646,7 +10646,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 c_invul = True
                 if not turn_image:
                     turn_image = EVOL_CONFIG[15]["skill_gif"]
-                msg_skill = f"🛡️ **[Ace 2] [#17] Reimu** ({challenger.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                msg_skill = f"🛡️ **[Ace 2] [#15] reimu** ({challenger.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
@@ -10670,7 +10670,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 t_invul = True
                 if not turn_image:
                     turn_image = EVOL_CONFIG[15]["skill_gif"]
-                msg_skill = f"🛡️ **[Ace 2] [#17] Reimu** ({target.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                msg_skill = f"🛡️ **[Ace 2] [#15] reimu** ({target.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
@@ -16288,7 +16288,7 @@ async def run_story_meiling_battle(channel_or_interaction, user, player):
             elif pc["cid"] == 15 and ace2 and not fl.get("reimu") and random.random() < 0.40:
                 fl["reimu"] = True
                 turn_gif = turn_gif or EVOL_CONFIG[15]["skill_gif"]
-                logs.append("🛡️ **[Ace 2] [#17] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+                logs.append("🛡️ **[Ace 2] [#15] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
             elif cs == "t1" and not ace2 and not fl.get("seal") and fl.get("used_turn") != rounds and random.random() < 0.40:
                 fl["seal"] = True
                 fl["used_turn"] = rounds
