@@ -1812,6 +1812,9 @@ def get_player(user_id, username="Visitor"):
         data["items"].setdefault("quat_giay", 0)
         data["items"].setdefault("dia_ky_uc_jotaro", 0)
 
+    if not isinstance(data.get("equipment"), dict):
+        data["equipment"] = {"weapon": None, "armor": None}
+    data["items"].setdefault("nanh_fenrir", 0); data["items"].setdefault("giap_gaia", 0)
     if "event_progress" not in data or not isinstance(data.get("event_progress"), dict):
         data["event_progress"] = {"battle": 0, "pvp": 0, "raid": 0, "event_raid": 0, "claimed": False}
     if "last_event_raid_time" not in data:
@@ -2790,6 +2793,7 @@ def grant_boss_xp_drop(p: dict, boss_key: str, phase: int = 1, raid_data: dict =
 
 async def send_boss_xp_report(channel, raid_data: dict):
     """Gửi embed tổng kết XP drop (sau embed kết quả của trận)."""
+    await send_equip_drop_report(channel, raid_data)
     try:
         entries = raid_data.get("xp_report") or []
         if not entries:
@@ -3120,6 +3124,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
     if boss_type == "jotaro":
         embed = build_jotaro_spawn_embed(cfg, author, is_admin, title)
         
+      eq_add_boss_field(embed, boss_type)
     embed.set_footer(text=f"Bấm 'Tham Gia' để xuất trận • Miễn phí • {'Admin Force Spawn' if is_admin else 'Boss Tự Nhiên'}")
     view = RaidJoinView(raid_data)
     raid_data["view"] = view
@@ -3305,9 +3310,11 @@ async def execute_raid(channel, raid_data):
 
     boss_type = raid_data.get("boss_type", "reimu")
     boss_cfg = raid_data.get("boss_config", SEIKI_BOSS_CONFIG if boss_type == "seiki" else BOSS_CONFIG)
-    p1_max_hp = boss_cfg["hp"]
+    p1_max_hp = boss_cfg["hp"] + boss_eq_hp(boss_type)
     p1_hp = p1_max_hp
-    p1_power = boss_cfg["power"]
+    p1_power = boss_cfg["power"] + boss_eq_atk(boss_type)
+    for _c in combatants:
+        _c["eq_boss_fenrir"] = boss_eq_has(boss_type, "nanh_fenrir")
     seiki_spark_turns = 0
     boss_skill_erased = None
 
@@ -3775,6 +3782,12 @@ async def execute_raid(channel, raid_data):
             else:
                 p1_hp = max(0, p1_hp - round_player_dmg)
                 player_atk_str = f"Toàn quân gây **{round_player_dmg:,} DMG** lên Boss!"
+        if boss_type == "mahoraga" and p1_hp > 0 and round_player_dmg > 0:
+            _gh = int(p1_max_hp * GAIA_HEAL_PCT * boss_heal_mult)
+            if _gh > 0:
+                _gold = p1_hp
+                p1_hp = min(p1_max_hp, p1_hp + _gh)
+                player_atk_str += f"\n🛡️ **[Giáp Gaia - Boss]** Mahoraga chịu sát thương và hồi **+{p1_hp - _gold:,} HP** (2,5% máu tối đa)!"
         if ice_spear_blocked_logs:
             player_atk_str += "\n" + "\n".join(ice_spear_blocked_logs)
 
@@ -4399,6 +4412,7 @@ async def execute_raid(channel, raid_data):
 
         p["pull_tickets"] += t_val
         grant_boss_xp_drop(p, boss_type, 1, raid_data)
+        items_won.extend(eq_roll_drops(p, boss_type, raid_data))
         p["xp"] += 100
         dq_notifs = update_daily_quest_progress(p, "raid", 1)
         ev_notifs = update_event_quest_progress(p, "raid", 1)
@@ -8659,6 +8673,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
         embed.add_field(name="📊 TỔNG LỰC CHIẾN:", value=f"⚔️ Tổng Power: **{tot_pwr:,}** | ❤️ Tổng HP: **{tot_hp:,}**", inline=False)
         embed.set_thumbnail(url=CARDS_DATA[player["team"][0]]["image"])
 
+      eq_add_team_field(embed, player)
     embed.set_footer(text=f"Hakurei Shrine • Thắng {player.get('battles_won', 0)} trận")
     if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
     else: await ctx_or_interaction.send(embed=embed)
@@ -10356,6 +10371,7 @@ async def handle_battle(ctx_or_interaction):
             battle_logs.extend(_k7["logs"])
             turn_actions.extend(_k7["logs"])
         curr_oc_power = t7_duel_defend(pc, player_cards, curr_oc_power, oc["power"], stunned_oc, turn_actions)
+        _eq_pc_mark, _eq_oc_mark = pc["current_hp"], oc["current_hp"]
         # ===== [ACE 2] HONG MEILING - RAINBOW TAIJIQUAN (BATTLE) =====
         pc_meiling_guard = False; curr_pc_power, p_kasen_guard, _kg = kasen_duel_apply(pc, curr_pc_power, stunned_pc, [turn_actions, battle_logs]); turn_image = turn_image or _kg
         oc_meiling_guard = False
@@ -10489,6 +10505,8 @@ async def handle_battle(ctx_or_interaction):
                 turn_actions.append(f"🛡️ **{pc['name']}** miễn nhiễm toàn bộ đòn đánh của **{oc['name']}**!")
         else:
             turn_actions.append(f"❄️ **{oc['name']}** bị đóng băng nên không thể phản công!")
+        eq_fenrir_post(pc, oc, _eq_oc_mark, turn_actions)
+        eq_gaia_post(pc, _eq_pc_mark, curr_oc_power, oc["power"], turn_actions)
 
         if pc["current_hp"] <= 0:
             pc["current_hp"] = 0
@@ -11398,6 +11416,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
             turn_actions.extend(_k7b["logs"])
         t_curr_power = t7_duel_defend(cc, c_cards, t_curr_power, tc["power"], t_stunned, turn_actions)
         c_curr_power = t7_duel_defend(tc, t_cards, c_curr_power, cc["power"], c_stunned, turn_actions)
+        _eq_cc_mark, _eq_tc_mark = cc["current_hp"], tc["current_hp"]
         # ===== [ACE 2] HONG MEILING - RAINBOW TAIJIQUAN (PVP) =====
         c_meiling_guard = False
         t_meiling_guard = False; c_curr_power, _kc, _kcg = kasen_duel_apply(cc, c_curr_power, c_stunned, [turn_actions, pvp_logs]); c_invul = c_invul or _kc; turn_image = turn_image or _kcg; t_curr_power, _kt, _ktg = kasen_duel_apply(tc, t_curr_power, t_stunned, [turn_actions, pvp_logs]); t_invul = t_invul or _kt; turn_image = turn_image or _ktg
@@ -11544,6 +11563,10 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
 
         cc["cid"], cc["is_ace2"] = orig_cc_cid, orig_cc_ace
         tc["cid"], tc["is_ace2"] = orig_tc_cid, orig_tc_ace
+        eq_fenrir_post(cc, tc, _eq_tc_mark, turn_actions)
+        eq_fenrir_post(tc, cc, _eq_cc_mark, turn_actions)
+        eq_gaia_post(cc, _eq_cc_mark, t_curr_power, tc["power"], turn_actions)
+        eq_gaia_post(tc, _eq_tc_mark, c_curr_power, cc["power"], turn_actions)
         if cc["current_hp"] <= 0:
             cc["current_hp"] = 0
             trade_dmg = cc["power"]
@@ -12508,7 +12531,7 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
                 turn_image = MEILING_SKILL_GIF
             turn_logs.append(f"🌈 **[Ace 2] [#24] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({card_dmg:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!")
         
-        card_dmg, kasen_guard_story, _kg = kasen_duel_apply(pc, card_dmg, False, [turn_logs]); turn_image = turn_image or _kg; card_dmg, kasen_guard_story, _t7s, _t7g = t7_story_apply(pc, card_dmg, kasen_guard_story, rumia_max_hp, rumia_power, turn_logs, player_cards); boss_stun_story = boss_stun_story or _t7s; turn_image = turn_image or _t7g; rumia_hp = max(0, rumia_hp - card_dmg)
+        card_dmg, kasen_guard_story, _kg = kasen_duel_apply(pc, card_dmg, False, [turn_logs]); turn_image = turn_image or _kg; card_dmg, kasen_guard_story, _t7s, _t7g = t7_story_apply(pc, card_dmg, kasen_guard_story, rumia_max_hp, rumia_power, turn_logs, player_cards, boss_hp=rumia_hp); boss_stun_story = boss_stun_story or _t7s; turn_image = turn_image or _t7g; rumia_hp = max(0, rumia_hp - card_dmg)
         turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Rumia!")
 
         if rumia_hp <= 0:
@@ -12535,7 +12558,7 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
                     rumia_hp = max(0, rumia_hp - ref_dmg)
                     turn_logs.append(f"🛡️ **[Ace 2] [#t3] Kizuna** duy trì **Wonder Guard**! Miễn thương và phản lại **{ref_dmg:,} DMG (60%)** vào Rumia!")
                 if not invul:
-                    pc["current_hp"] -= int(rumia_power * (0.85 if meiling_guard_round == rounds else 1.0))
+                    eq_take_damage(pc, int(rumia_power * (0.85 if meiling_guard_round == rounds else 1.0)), turn_logs)
                     turn_logs.append(f"🌑 **Rumia** phản kích bằng **Dạ Tối Kết Giới** gây **{rumia_power:,} DMG** lên {pc['name']}!")
 
         if pc["current_hp"] <= 0:
@@ -12920,7 +12943,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     turn_image = MEILING_SKILL_GIF
                 turn_logs.append(f"🌈 **[Ace 2] [#24] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({card_dmg:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!")
             
-            card_dmg, kasen_guard_story, _kg = kasen_duel_apply(pc, card_dmg, False, [turn_logs]); turn_image = turn_image or _kg; card_dmg, kasen_guard_story, _t7s, _t7g = t7_story_apply(pc, card_dmg, kasen_guard_story, cirno_max_hp, cirno_power, turn_logs, player_cards); boss_stun_story = boss_stun_story or _t7s; turn_image = turn_image or _t7g; cirno_hp = max(0, cirno_hp - card_dmg)
+            card_dmg, kasen_guard_story, _kg = kasen_duel_apply(pc, card_dmg, False, [turn_logs]); turn_image = turn_image or _kg; card_dmg, kasen_guard_story, _t7s, _t7g = t7_story_apply(pc, card_dmg, kasen_guard_story, cirno_max_hp, cirno_power, turn_logs, player_cards, boss_hp=cirno_hp); boss_stun_story = boss_stun_story or _t7s; turn_image = turn_image or _t7g; cirno_hp = max(0, cirno_hp - card_dmg)
             turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Cirno!")
 
         if cirno_hp <= 0:
@@ -12960,7 +12983,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     cirno_hp = max(0, cirno_hp - ref_dmg)
                     turn_logs.append(f"🛡️ **[Ace 2] [#t3] Kizuna** duy trì **Wonder Guard**! Miễn thương và phản lại **{ref_dmg:,} DMG (60%)** vào Cirno!")
                 if not invul:
-                    pc["current_hp"] -= int(cirno_power * (0.85 if meiling_guard_round == rounds else 1.0))
+                    eq_take_damage(pc, int(cirno_power * (0.85 if meiling_guard_round == rounds else 1.0)), turn_logs, skill=cirno_used_skill_this_turn)
                     turn_logs.append(f"🧊 **Cirno Ace 2** phóng bão băng cực mạnh gây **{cirno_power:,} DMG** lên {pc['name']}!")
 
         if pc["current_hp"] <= 0:
@@ -13638,6 +13661,7 @@ async def handle_help(ctx_or_interaction):
             "• `/prestige` : Chuyển sinh, đổi cấp độ lấy phần thưởng.\n"
             "• `/token` : Dùng token mua đồ ở shop đặc biệt.\n"
             "• `/item check` : Xem kho đồ của bạn.\n"
+            "• `/weapond` : Trang bị vũ khí tấn công (mặc giáp dùng `/item use`).\n"
             "• `/item trade` : Trade vật phẩm."
         ),
         inline=False
@@ -13952,6 +13976,7 @@ async def handle_event_raid_open(ctx_or_interaction):
 
 # --- HÀM XỬ LÝ /ITEM CHECK (XEM KHO VẬT PHẨM) ---
 async def handle_item_check(ctx_or_interaction):
+    return await handle_item_check_v2(ctx_or_interaction)
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
     p_items = player.get("items", {})
@@ -13980,6 +14005,10 @@ async def handle_item_use(ctx_or_interaction, item_id: str):
     p_items = player.setdefault("items", {})
     
     clean_id = item_id.strip().lower()
+    clean_id = EQUIP_ALIASES.get(clean_id, clean_id)
+    if clean_id in EQUIPMENT_DB:
+        await handle_equip_item(ctx_or_interaction, player, clean_id)
+        return
     if clean_id in ["ruong", "ruong_halloween", "ruong_halloween_e", "chest"]:
         clean_id = "ruong_halloween_e"
 
@@ -14112,7 +14141,9 @@ class ItemGroup(app_commands.Group, name="item", description="Quản lý kho v�
     @app_commands.command(name="use", description="Sử dụng vật phẩm có mác [E] trong kho đồ")
     @app_commands.describe(item_id="Mã vật phẩm muốn dùng")
     @app_commands.choices(item_id=[
-        app_commands.Choice(name="Rương Halloween Ma Quái [E] (ruong_halloween_e)", value="ruong_halloween_e")
+        app_commands.Choice(name="Rương Halloween Ma Quái [E] (ruong_halloween_e)", value="ruong_halloween_e"),
+        app_commands.Choice(name="Giáp Gaia 🛡️ (giap_gaia)", value="giap_gaia"),
+        app_commands.Choice(name="Nanh Fenrir 🐺 (nanh_fenrir)", value="nanh_fenrir")
     ])
     async def slash_item_use_cmd(self, interaction: discord.Interaction, item_id: str):
         await handle_item_use(interaction, item_id)
@@ -14253,8 +14284,12 @@ class AdminGiveGroup(app_commands.Group, name="admin_give", description="[CHỦ 
         app_commands.Choice(name="Thánh Lõi (thanh_loi)", value="thanh_loi"),
         app_commands.Choice(name="Kẹo Halloween 🍬 (keo_halloween)", value="keo_halloween"),
         app_commands.Choice(name="Rương Halloween Ma Quái [E] (ruong_halloween_e)", value="ruong_halloween_e"),
+        app_commands.Choice(name="Nanh Fenrir 🐺 (nanh_fenrir)", value="nanh_fenrir"),
+        app_commands.Choice(name="Giáp Gaia 🛡️ (giap_gaia)", value="giap_gaia"),
         app_commands.Choice(name="Quạt Giấy 🪭 (quat_giay)", value="quat_giay"),
-        app_commands.Choice(name="Đĩa Ký Ức Jotaro 💿 (dia_ky_uc_jotaro)", value="dia_ky_uc_jotaro")
+        app_commands.Choice(name="Đĩa Ký Ức Jotaro 💿 (dia_ky_uc_jotaro)", value="dia_ky_uc_jotaro"),
+        app_commands.Choice(name="Nanh Fenrir 🐺", value="nanh_fenrir"),
+        app_commands.Choice(name="Giáp Gaia 🛡️", value="giap_gaia")
     ])
     async def slash_admin_give_item(self, interaction: discord.Interaction, vat_pham: str, so_luong: int = 1, nguoi_dung: Optional[discord.Member] = None):
         if not is_authorized_admin(interaction.user.id):
@@ -15200,6 +15235,7 @@ def sakuya3_requirements(player: dict) -> dict:
 
 def apply_sakuya_ace3_to_cards(player: dict, cards: list):
     """Gọi sau khi dựng team_cards/player_cards: cộng chỉ số Ace 3, tắt cờ Ace 2 (để skill Ace 2 cũ không chạy)."""
+    apply_equipment_to_cards(player, cards)
     if not is_card_ace3(player, 18):
         return
     for card in cards:
@@ -15675,6 +15711,7 @@ async def spawn_prime_raid(channel, author, is_admin=False):
         value=f"Có **2 phút** để bấm **'Tham Gia'** (tối đa **{PRIME_MAX_PLAYERS} người**). Đủ người hoặc hết giờ sẽ tự động khai màn!",
         inline=False
     )
+      eq_add_boss_field(embed, "han_seiki")
     embed.set_footer(text="Han Seiki the Prime One • /raid • Hồi chiêu 2 tiếng • Yêu cầu Lv.50 để mở")
 
     view = PrimeRaidJoinView(raid_data)
@@ -15835,6 +15872,15 @@ async def execute_prime_raid(channel, raid_data):
         "boss_type": "han_seiki", "boss_name": cfg["name"], "active": []
     }
 
+    # --- Trang bị của Boss: Nanh Fenrir + Giáp Gaia ---
+    max_hp += boss_eq_hp("han_seiki")
+    power += boss_eq_atk("han_seiki")
+    B["hp"] = max_hp
+    B["max_hp"] = max_hp
+    B["true_cap"] = int(max_hp * 0.50)
+    B["eq_gaia"] = True
+    for _c in combatants:
+        _c["eq_boss_fenrir"] = True
     init_embed = discord.Embed(
         title="⚔️ ĐẠI CHIẾN BẮT ĐẦU: HAN SEIKI THE PRIME ONE",
         description=(
@@ -15895,6 +15941,11 @@ async def execute_prime_raid(channel, raid_data):
 
         B["hp"] = max(0, B["hp"] - round_dmg)
         player_atk_str = f"Toàn quân gây **{round_dmg:,} DMG** lên Han Seiki! *(Đã bị **Linh hồn của công lý** giảm 20%)*"
+        if B["hp"] > 0 and round_dmg > 0:
+            _bgh = int(max_hp * GAIA_HEAL_PCT)
+            _bold = B["hp"]
+            B["hp"] = min(max_hp, B["hp"] + _bgh)
+            boss_fx.append(f"🛡️ **[Giáp Gaia - Boss]** Han Seiki chịu sát thương và hồi **+{B['hp'] - _bold:,} HP** (2,5% máu tối đa)!")
 
         # ---------- Hành động của Boss ----------
         action_log = ""
@@ -16085,6 +16136,7 @@ async def execute_prime_raid(channel, raid_data):
                 p["xp"] += gain_xp
                 got.append(f"✨ **+{gain_xp:,} XP** (50% - ×{PRIME_XP_DROP_MULT:g} XP cấp hiện tại [{xp_in_lvl:,}/{needed_xp:,}])")
         grant_boss_xp_drop(p, "han_seiki", 1, raid_data)
+        got.extend(eq_roll_drops(p, "han_seiki", raid_data))
         for n_ in update_daily_quest_progress(p, "raid", 1) + update_event_quest_progress(p, "raid", 1):
             got.append(n_)
         save_player(p)
@@ -16399,7 +16451,7 @@ def story_s3_player_turn(pc, rnd, B, logs):
         logs.extend(o["logs"])
 
     # ----- Kisami #t7 -----
-    dmg, _t7inv, _t7s, _t7g = t7_story_apply(pc, dmg, False, B["max_hp"], B["power"], logs, B.get("team"))
+    dmg, _t7inv, _t7s, _t7g = t7_story_apply(pc, dmg, False, B["max_hp"], B["power"], logs, B.get("team"), boss_hp=B["hp"])
     if _t7inv:
         out["invul"] = True
     if _t7s:
@@ -16565,7 +16617,7 @@ async def run_story_meiling_battle(channel_or_interaction, user, player):
                     taken = int(taken * (1.0 - min(0.90, fl.get("maho", 1) * 0.05)))
                 if o["pguard"]:
                     taken = int(taken * 0.85)
-                pc["current_hp"] -= taken
+                eq_take_damage(pc, taken, logs, skill=boss_guard)
                 logs.append(f"🥋 **Hong Meiling** phản công bằng **Thái Cực Quyền** gây **{taken:,} DMG** lên **{pc['name']}**!")
 
         # --- Wonder Guard của Kizuna đếm lùi mỗi hiệp ---
@@ -16924,6 +16976,8 @@ def t7_duel_defend(front: dict, cards: list, incoming: int, base_power: int, att
 
 def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
     """Raid thường (Reimu/Seiki/Mahoraga/Fateria/Event Kizuna, cả Phase 2). L = locals() của vòng lặp."""
+    eq_raid_mark(active)
+    card_dmg = eq_raid_player_attack(ac, card_dmg, L)
     try:
         if str(ac.get("cid")).lower() != "t7":
             return card_dmg, boss_stunned, turn_image, notif
@@ -16990,6 +17044,8 @@ def t7_raid_after_boss(active, boss_log) -> str:
 
 def t7_jt_attack(c, ac, dmg, B, notes):
     """Boss Jotaro / Han Seiki (dùng _jt_player_attack)."""
+    eq_raid_mark(B.get("active", []))
+    dmg = eq_jt_player_attack(ac, dmg, B)
     try:
         if str(ac.get("cid")).lower() != "t7":
             return dmg
@@ -17018,8 +17074,9 @@ def t7_jt_attack(c, ac, dmg, B, notes):
     return dmg
 
 
-def t7_story_apply(pc, card_dmg, guard, boss_max_hp, boss_power, logs, team=None):
+def t7_story_apply(pc, card_dmg, guard, boss_max_hp, boss_power, logs, team=None, boss_hp=None):
     """Story (Rumia/Cirno/Meiling). Trả về (card_dmg, guard_miễn_thương, boss_bị_stun, gif)."""
+    card_dmg = eq_fenrir_story(pc, card_dmg, boss_hp, boss_max_hp, logs)
     stun, gif = False, None
     try:
         if str(pc.get("cid")).lower() == "t7":
@@ -17163,6 +17220,317 @@ class KisamiCardView(discord.ui.View):
     async def on_back(self, interaction: discord.Interaction):
         v = CharacterCheckView(current_index=self.back_index, user_id=self.user_id)
         await interaction.response.edit_message(embed=v.get_current_embed(), view=v)
+
+# ==============================================================================
+# [UPDATE TRANG BỊ] NANH FENRIR (VŨ KHÍ) + GIÁP GAIA (GIÁP)
+# ==============================================================================
+FENRIR_ATK = 180              # +ATK cho TOÀN ĐỘI khi trang bị
+FENRIR_EXTRA_PCT = 0.30       # +30% sát thương đánh thường lên mục tiêu dưới 50% máu
+FENRIR_HP_THRESHOLD = 0.50
+GAIA_HP = 800                 # +máu cho từng thẻ
+GAIA_HEAL_PCT = 0.025         # hồi 2,5% máu tối đa khi chịu sát thương
+GAIA_SKILL_REDUCE = 0.10      # giảm 10% sát thương từ skill
+
+# Link Discord sẽ hết hạn -> nên up ảnh lên GitHub repo rồi thay link raw vào đây
+FENRIR_IMG = "https://media.discordapp.net/attachments/1527157582115111077/1562050755676999700/image.png?ex=6ad894a1&is=6ad74321&hm=6da5f1fd2f987dee1a6f03568cc17b8602332f7be6cbbc91a1390a9bb57e93c5&=&format=webp&quality=lossless"
+GAIA_IMG = "https://media.discordapp.net/attachments/1527157582115111077/1562051549474332793/image.png?ex=6ad8955e&is=6ad743de&hm=5abe16b8a21112051dcea7c16df4c8c89a8e42b143b194232b1e05da784d17dd&=&format=webp&quality=lossless"
+
+EQUIPMENT_DB = {
+    "nanh_fenrir": {
+        "id": "nanh_fenrir", "name": "Nanh Fenrir 🐺", "slot": "weapon", "slot_name": "Vũ khí tấn công",
+        "image": FENRIR_IMG, "color": 0xB91C1C,
+        "desc": "**+180 ATK** cho toàn đội. **Nội tại:** mục tiêu dưới 50% máu phải chịu thêm **30% sát thương đánh thường**."
+    },
+    "giap_gaia": {
+        "id": "giap_gaia", "name": "Giáp Gaia 🛡️", "slot": "armor", "slot_name": "Giáp phòng thủ",
+        "image": GAIA_IMG, "color": 0x16A34A,
+        "desc": "**+800 máu** cho mỗi thẻ. Khi chịu sát thương **hồi 2,5% máu tối đa**, **giảm 10% sát thương từ skills**."
+    },
+}
+EQUIP_ALIASES = {"fenrir": "nanh_fenrir", "nanh": "nanh_fenrir", "gaia": "giap_gaia", "giap": "giap_gaia"}
+
+ITEMS_DATABASE["nanh_fenrir"] = {
+    "id": "nanh_fenrir", "name": "Nanh Fenrir 🐺", "usable": True, "tradeable": True,
+    "desc": EQUIPMENT_DB["nanh_fenrir"]["desc"] + " (Dùng `/weapond` hoặc `/item use` để trang bị; mỗi đội 1 vũ khí)"
+}
+ITEMS_DATABASE["giap_gaia"] = {
+    "id": "giap_gaia", "name": "Giáp Gaia 🛡️", "usable": True, "tradeable": True,
+    "desc": EQUIPMENT_DB["giap_gaia"]["desc"] + " (Dùng `/item use` để mặc; mỗi đội 1 giáp)"
+}
+
+# Boss sở hữu trang bị & bảng rơi
+EQUIP_BOSS = {
+    "han_seiki": ("nanh_fenrir", "giap_gaia"),
+    "mahoraga": ("giap_gaia",),
+    "fateria": ("nanh_fenrir",),
+}
+EQUIP_DROPS = {
+    "han_seiki": (("nanh_fenrir", 0.02), ("giap_gaia", 0.01)),
+    "mahoraga": (("giap_gaia", 0.02),),
+    "fateria": (("nanh_fenrir", 0.01),),
+}
+
+def boss_eq_has(boss_key, item_id) -> bool:
+    return item_id in EQUIP_BOSS.get(str(boss_key), ())
+
+def boss_eq_hp(boss_key) -> int:
+    return GAIA_HP if boss_eq_has(boss_key, "giap_gaia") else 0
+
+def boss_eq_atk(boss_key) -> int:
+    return FENRIR_ATK if boss_eq_has(boss_key, "nanh_fenrir") else 0
+
+def get_active_equipment(player: dict) -> dict:
+    """Trả về {'weapon': id, 'armor': id}. Chỉ tính khi người chơi VẪN CÒN sở hữu món đồ."""
+    res = {}
+    try:
+        eq = player.get("equipment") or {}
+        items = player.get("items") or {}
+        for slot in ("weapon", "armor"):
+            iid = eq.get(slot)
+            info = EQUIPMENT_DB.get(iid) if iid else None
+            if info and info["slot"] == slot and items.get(iid, 0) >= 1:
+                res[slot] = iid
+    except Exception as e:
+        print(f"[EQ] lỗi get_active_equipment: {e}", flush=True)
+    return res
+
+def apply_equipment_to_cards(player: dict, cards: list):
+    """Cộng chỉ số trang bị vào danh sách thẻ chiến đấu (gọi từ apply_sakuya_ace3_to_cards)."""
+    try:
+        act = get_active_equipment(player)
+        fen = act.get("weapon") == "nanh_fenrir"
+        gai = act.get("armor") == "giap_gaia"
+        if not (fen or gai):
+            return
+        for card in cards:
+            if fen:
+                card["power"] += FENRIR_ATK
+                card["eq_fenrir"] = True
+            if gai:
+                for k in ("hp", "max_hp", "current_hp"):
+                    if k in card:
+                        card[k] += GAIA_HP
+                card["eq_gaia"] = True
+    except Exception as e:
+        print(f"[EQ] lỗi apply_equipment: {e}", flush=True)
+
+# ---------------- BATTLE / PVP ----------------
+def eq_fenrir_post(att, tgt, tgt_mark, logs):
+    """Sau khi đòn đã tính: nếu mục tiêu (trước đòn) dưới 50% máu và đã bị trúng đòn -> trừ thêm 30% ATK."""
+    try:
+        if not att.get("eq_fenrir") or tgt_mark is None:
+            return
+        mx = tgt.get("max_hp") or tgt.get("hp") or 1
+        if tgt_mark >= mx * FENRIR_HP_THRESHOLD:
+            return
+        if tgt_mark - tgt["current_hp"] <= 0:
+            return
+        extra = int(att["power"] * FENRIR_EXTRA_PCT)
+        if extra <= 0:
+            return
+        tgt["current_hp"] -= extra
+        logs.append(f"🐺 **[Nanh Fenrir]** **{att['name']}** đánh trúng mục tiêu dưới 50% máu: gây thêm **+{extra:,} DMG** (30%)!")
+    except Exception as e:
+        print(f"[EQ] lỗi fenrir_post: {e}", flush=True)
+
+def eq_gaia_post(card, mark, incoming, base_power, logs):
+    """Giáp Gaia: nếu thẻ mất máu trong hiệp -> hồi 2,5% máu tối đa (+ hoàn 10% nếu là sát thương skill)."""
+    try:
+        if not card.get("eq_gaia") or mark is None:
+            return
+        lost = mark - card["current_hp"]
+        if lost <= 0:
+            return
+        mx = card.get("max_hp") or card.get("hp") or 1
+        refund = 0
+        if incoming and incoming != base_power:      # khác đòn đánh thường => coi là skill
+            refund = min(lost, int(incoming * GAIA_SKILL_REDUCE))
+        gain = refund + int(mx * GAIA_HEAL_PCT)
+        before = card["current_hp"]
+        card["current_hp"] = min(mx, card["current_hp"] + gain)
+        logs.append(f"🛡️ **[Giáp Gaia]** **{card['name']}** hồi **+{card['current_hp'] - before:,} HP** (2,5% máu tối đa" + (f" + giảm 10% sát thương skill)" if refund else ")"))
+    except Exception as e:
+        print(f"[EQ] lỗi gaia_post: {e}", flush=True)
+
+# ---------------- STORY ----------------
+def eq_take_damage(card, dmg, logs=None, skill=False):
+    """Trừ máu thẻ người chơi trong Story (có xử lý Giáp Gaia)."""
+    dmg = int(dmg)
+    try:
+        if card.get("eq_gaia"):
+            if skill:
+                dmg = int(dmg * (1.0 - GAIA_SKILL_REDUCE))
+            card["current_hp"] -= dmg
+            if dmg > 0:
+                mx = card.get("max_hp") or card.get("hp") or 1
+                heal = int(mx * GAIA_HEAL_PCT)
+                before = card["current_hp"]
+                card["current_hp"] = min(mx, card["current_hp"] + heal)
+                if logs is not None:
+                    logs.append(f"🛡️ **[Giáp Gaia]** **{card['name']}** hồi **+{card['current_hp'] - before:,} HP** khi chịu sát thương (2,5%)!")
+            return
+    except Exception as e:
+        print(f"[EQ] lỗi take_damage: {e}", flush=True)
+    card["current_hp"] -= dmg
+
+def eq_fenrir_story(pc, dmg, boss_hp, boss_max_hp, logs):
+    try:
+        if pc.get("eq_fenrir") and boss_hp is not None and boss_max_hp and boss_hp < boss_max_hp * FENRIR_HP_THRESHOLD:
+            bonus = int(pc["power"] * FENRIR_EXTRA_PCT)
+            logs.append(f"🐺 **[Nanh Fenrir]** Boss dưới 50% máu! Đòn đánh thường gây thêm **+{bonus:,} DMG** (30%)!")
+            return dmg + bonus
+    except Exception as e:
+        print(f"[EQ] lỗi fenrir_story: {e}", flush=True)
+    return dmg
+
+# ---------------- RAID ----------------
+def eq_raid_mark(active):
+    """Ghi nhận máu thẻ tiền tuyến TRƯỚC khi Boss ra đòn."""
+    try:
+        for c in active or []:
+            cards = c.get("team_cards", [])
+            for k in cards:
+                k.pop("eq_hp_mark", None)
+            i = c.get("current_card_index", 0)
+            if i < len(cards):
+                cards[i]["eq_hp_mark"] = cards[i]["current_hp"]
+    except Exception as e:
+        print(f"[EQ] lỗi raid_mark: {e}", flush=True)
+
+def eq_raid_player_attack(ac, card_dmg, L):
+    """Raid thường/Event: Fenrir của người chơi + Giáp Gaia của Boss (Mahoraga). L = locals() của vòng lặp."""
+    try:
+        bt = L.get("boss_type")
+        if bt and boss_eq_has(bt, "giap_gaia"):
+            skill_part = max(0, card_dmg - ac["power"])
+            card_dmg -= int(skill_part * GAIA_SKILL_REDUCE)
+        if ac.get("eq_fenrir"):
+            if "p2_hp" in L:
+                hp, mx = L.get("p2_hp"), L.get("p2_max_hp")
+            else:
+                hp, mx = L.get("p1_hp"), L.get("p1_max_hp")
+            if hp is not None and mx and hp < mx * FENRIR_HP_THRESHOLD:
+                card_dmg += int(ac["power"] * FENRIR_EXTRA_PCT)
+    except Exception as e:
+        print(f"[EQ] lỗi raid_player_attack: {e}", flush=True)
+    return card_dmg
+
+def eq_jt_player_attack(ac, dmg, B):
+    """Boss Jotaro / Han Seiki."""
+    try:
+        if B.get("eq_gaia"):
+            dmg -= int(max(0, dmg - ac["power"]) * GAIA_SKILL_REDUCE)
+        if ac.get("eq_fenrir") and B["hp"] < B["max_hp"] * FENRIR_HP_THRESHOLD:
+            dmg += int(ac["power"] * FENRIR_EXTRA_PCT)
+    except Exception as e:
+        print(f"[EQ] lỗi jt_player_attack: {e}", flush=True)
+    return dmg
+
+def eq_raid_after_boss(active, boss_log) -> str:
+    """Sau khi Boss ra đòn: Fenrir của Boss (đánh thường +30% lên thẻ <50% máu) + Giáp Gaia của người chơi."""
+    txt = str(boss_log or "")
+    is_skill = any(k in txt for k in KISAMI_BOSS_SKILL_KEYS)
+    fen_n = fen_dmg = gaia_n = gaia_heal = 0
+    for c in active or []:
+        cards = c.get("team_cards", [])
+        idx = c.get("current_card_index", 0)
+        if idx >= len(cards):
+            continue
+        ac = cards[idx]
+        mark = ac.pop("eq_hp_mark", None)
+        if mark is None or c.get("kasen_guard"):
+            continue
+        lost = mark - ac["current_hp"]
+        if lost <= 0:
+            continue
+        mx = ac["max_hp"]
+        if c.get("eq_boss_fenrir") and not is_skill and mark < mx * FENRIR_HP_THRESHOLD:
+            extra = int(lost * FENRIR_EXTRA_PCT)
+            if extra > 0:
+                ac["current_hp"] -= extra
+                lost += extra
+                fen_n += 1
+                fen_dmg += extra
+        if ac.get("eq_gaia"):
+            gain = int(mx * GAIA_HEAL_PCT) + (int(lost * GAIA_SKILL_REDUCE) if is_skill else 0)
+            before = ac["current_hp"]
+            ac["current_hp"] = min(mx, ac["current_hp"] + gain)
+            gaia_n += 1
+            gaia_heal += ac["current_hp"] - before
+    out = ""
+    if fen_n:
+        out += f"\n🐺 **[Nanh Fenrir - Boss]** {fen_n} thẻ dưới 50% máu chịu thêm tổng **+{fen_dmg:,} DMG** (30% đòn đánh thường)!"
+    if gaia_n:
+        out += f"\n🛡️ **[Giáp Gaia]** {gaia_n} thẻ hồi tổng **+{gaia_heal:,} HP** khi chịu sát thương (2,5% + giảm 10% sát thương skill)!"
+    return out
+
+def _t7_raid_after_boss_core(active, boss_log) -> str:
+    base = _t7_raid_after_boss_core(active, boss_log)
+    try:
+        return base + eq_raid_after_boss(active, boss_log)
+    except Exception as e:
+        print(f"[EQ] lỗi raid_after_boss: {e}", flush=True)
+        return base
+
+# ---------------- DROP ----------------
+def eq_roll_drops(p, boss_key, raid_data=None):
+    lines = []
+    for iid, ch in EQUIP_DROPS.get(str(boss_key), ()):
+        if random.random() < ch:
+            items = p.setdefault("items", {})
+            items[iid] = items.get(iid, 0) + 1
+            info = EQUIPMENT_DB[iid]
+            lines.append(f"✨ **+1 {info['name']}** ({ch * 100:g}% Cực Hiếm! Kho: {items[iid]})")
+            if raid_data is not None:
+                raid_data.setdefault("eq_drops", []).append((p.get("username", "???"), iid))
+    return lines
+
+async def send_equip_drop_report(channel, raid_data):
+    try:
+        drops = raid_data.get("eq_drops") or []
+        raid_data["eq_drops"] = []
+        for name, iid in drops:
+            info = EQUIPMENT_DB[iid]
+            emb = discord.Embed(
+                title=f"🎁 TRANG BỊ HIẾM RƠI RA: {info['name']}",
+                description=f"🏆 **{name}** đã nhận được **{info['name']}**!\n{info['desc']}",
+                color=info["color"]
+            )
+            emb.set_thumbnail(url=info["image"])
+            await channel.send(embed=emb)
+    except Exception as e:
+        print(f"[EQ] lỗi send_equip_drop_report: {e}", flush=True)
+
+# ---------------- HIỂN THỊ ----------------
+def eq_add_boss_field(embed, boss_key):
+    try:
+        have = EQUIP_BOSS.get(str(boss_key), ())
+        if not have:
+            return
+        lines = []
+        if "nanh_fenrir" in have:
+            lines.append("🐺 **Nanh Fenrir:** +180 ATK; đòn đánh thường gây thêm +30% lên thẻ dưới 50% máu")
+        if "giap_gaia" in have:
+            lines.append("🛡️ **Giáp Gaia:** +800 máu; hồi 2,5% máu tối đa khi chịu sát thương; giảm 10% sát thương skill")
+        drops = " | ".join(f"{EQUIPMENT_DB[i]['name']} {ch * 100:g}%" for i, ch in EQUIP_DROPS.get(str(boss_key), ()))
+        embed.add_field(name="⚔️ Trang Bị Của Boss & Drop:", value="\n".join(lines) + f"\n🎁 **Rơi:** {drops}", inline=False)
+    except Exception as e:
+        print(f"[EQ] lỗi add_boss_field: {e}", flush=True)
+
+def eq_add_team_field(embed, player):
+    try:
+        act = get_active_equipment(player)
+        w = EQUIPMENT_DB[act["weapon"]]["name"] if "weapon" in act else "*(trống)*"
+        a = EQUIPMENT_DB[act["armor"]]["name"] if "armor" in act else "*(trống)*"
+        embed.add_field(
+            name="🎒 TRANG BỊ ĐỘI HÌNH:",
+            value=f"• Vũ khí: **{w}**\n• Giáp: **{a}**\n*(Chỉ số trang bị được cộng khi vào trận)*",
+            inline=False
+        )
+    except Exception:
+        pass
+
+async def _eq_send(ctx_or_interaction, content=None, embeds=None, ephemeral=False):
 
 import sys
 
