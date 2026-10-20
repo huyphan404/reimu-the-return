@@ -2963,7 +2963,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
         )
         embed.add_field(
             name="🎁 Phần Thưởng Thanh Tẩy Boss:",
-            value="• **Phase 1:** 10% nhận **10 Vé**, 40% nhận **5 Vé**, 50% nhận **3 Vé**! (+100 XP)\n• **Phase 2 (Thức Tỉnh):** 10% nhận **30 Vé**, 40% nhận **20 Vé**, 50% nhận **10 Vé**! 🔮 **5%** rơi **+1 Mảnh Seiki** | 🪭 **2.5%** rơi **+1 Quạt Giấy**! (+150 XP)\n• 🔮 Mỗi Phase đều có **2.5%** rơi **+1 Mảnh Seiki** (10 mảnh = 1 thẻ [T] #t1 Seiki - dùng `/t translate`)!\n• Nhận thêm điểm danh nhiệm vụ diệt Boss!",
+            value="• **Phase 1:** 10% nhận **10 Vé**, 40% nhận **5 Vé**, 50% nhận **3 Vé**! (+100 XP)\n• **Phase 2 (Thức Tỉnh):** 10% nhận **30 Vé**, 40% nhận **20 Vé**, 50% nhận **10 Vé**! 🔮 **5%** rơi **+1 Mảnh Seiki** | 🌪️ **5%** rơi **+1 Kisami Shard** | 🪭 **2.5%** rơi **+1 Quạt Giấy**! (+150 XP)\n• 🔮 Mỗi Phase đều có **2.5%** rơi **+1 Mảnh Seiki** (10 mảnh = 1 thẻ [T] #t1 Seiki - dùng `/t translate`)!\n• Nhận thêm điểm danh nhiệm vụ diệt Boss!",
         )
         embed.add_field(
             name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
@@ -4985,6 +4985,11 @@ async def execute_raid(channel, raid_data):
                     p_items = p.setdefault("items", {})
                     p_items["quat_giay"] = p_items.get("quat_giay", 0) + 1
                     items_won.append(f"🪭 **+1 Quạt Giấy** (2.5% Rơi từ Seiki Phase 2! Kho: {p_items['quat_giay']} cái)")
+                # 5% rơi Kisami Shards ở Seiki Phase 2
+                if random.random() < 0.05:
+                    p_shards = p.setdefault("shards", {})
+                    p_shards["kisami"] = p_shards.get("kisami", 0) + 1
+                    items_won.append(f"🌪️ **+1 Kisami Shard** (5% Rơi từ Seiki Phase 2! Kho: {p_shards['kisami']}/{KISAMI_SHARDS_UNLOCK})")
 
                 p["pull_tickets"] += t_val
                 grant_boss_xp_drop(p, "seiki", 2, raid_data)
@@ -5020,7 +5025,7 @@ async def execute_raid(channel, raid_data):
                 lvl_up = f" 🌟 **LÊN CẤP {r['new_level']}!**" if r['new_level'] > r['old_level'] else ""
                 shard_line = f"\n   └ {r['items'][1]}" if len(r['items']) > 1 else ""
                 p2_summary.append(f"🏆 **{r['username']}**: Nhận **+{r['total_pulls']:.0f} Vé Pull** ({r['items'][0]}) + 150 XP!{lvl_up}{shard_line}\n   └ *Tổng vé hiện có: {r['total_tickets']:.2f} vé*")
-            final_embed.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (10% 30 vé, 40% 20 vé, 50% 10 vé, 5% Mảnh Seiki, 2,5% Quạt giấy):", value="\n".join(p2_summary), inline=False)
+            final_embed.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (10% 30 vé, 40% 20 vé, 50% 10 vé, 5% Mảnh Seiki, 2,5% Quạt giấy,5% mảnh kisami):", value="\n".join(p2_summary), inline=False)
         else:
             final_embed.add_field(name="⚠️ Kết Quả Phase 2:", value=f"Boss Phase 2 còn {p2_hp:,} HP! Toàn bộ quà Phase 1 vẫn được bảo lưu trọn vẹn.", inline=False)
 
@@ -15605,7 +15610,7 @@ async def spawn_prime_raid(channel, author, is_admin=False):
             "• 🎟️ **100%** nhận **10 Vé Pull**\n"
             "• 🎟️ **50%** nhận thêm **40 Vé Pull**\n"
             f"• ✨ **50%** nhận XP = **×{PRIME_XP_DROP_MULT:g} XP hiện tại** trong cấp\n"
-            "• 🌸 **10%** rơi **Kanae Shard** | 🔮 **5%** Mảnh **Seiki** | ⏳ **5%** **Fateria Shard** | 🩸 **5%** Mảnh **Kizuna**"
+            "• 🌸 **10%** rơi **Kanae Shard**| 🌪️ **6%** rơi **Kisami Shard** | 🔮 **5%** Mảnh **Seiki** | ⏳ **5%** **Fateria Shard** | 🩸 **5%** Mảnh **Kizuna**"
         ),
         inline=False
     )
@@ -16006,6 +16011,9 @@ async def execute_prime_raid(channel, raid_data):
         if random.random() < 0.05:
             p_shards["kizuna"] = p_shards.get("kizuna", 0) + 1
             got.append(f"🩸 **+1 Mảnh Kizuna** (5%! Kho: {p_shards['kizuna']}/15)")
+        if random.random() < 0.06:
+            p_shards["kisami"] = p_shards.get("kisami", 0) + 1
+            got.append(f"🌪️ **+1 Kisami Shard** (6%! Kho: {p_shards['kisami']}/{KISAMI_SHARDS_UNLOCK})")
         if random.random() < 0.50:
             _, xp_in_lvl, needed_xp, _r = get_level_progress(p.get("xp", 0), p.get("prestige", 0))
             gain_xp = int(xp_in_lvl * PRIME_XP_DROP_MULT)
