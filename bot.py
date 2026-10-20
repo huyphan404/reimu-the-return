@@ -1387,12 +1387,17 @@ def test_and_connect_mongo():
 
     try:
         from pymongo import MongoClient
-        client = MongoClient(current_uri, serverSelectionTimeoutMS=5000)
+        client = MongoClient(current_uri, serverSelectionTimeoutMS=5000, connectTimeoutMS=5000, socketTimeoutMS=10000, maxPoolSize=50)
         client.admin.command('ping')
         db = client["reimu_database"]
         users_collection = db["users"]
         conversations_collection = db["conversations"]
         players_collection = db["players"]
+        try:
+            players_collection.create_index("user_id")
+            conversations_collection.create_index("key")
+        except Exception as _e:
+            print(f"⚠️ Không tạo được index: {_e}", flush=True)
         mongo_client = client
         use_mongo = True
         mongo_error_detail = None
@@ -1761,11 +1766,13 @@ def get_player(user_id, username="Visitor"):
     now_date = get_today_vn()
     data = None
     is_new = False
+    read_failed = False
     if use_mongo and players_collection is not None:
         try:
             doc = players_collection.find_one({"user_id": uid_str})
             if doc: data = doc
         except Exception as e:
+            read_failed = True
             print(f"Lỗi đọc player MongoDB: {e}", flush=True)
     else:
         try:
@@ -1776,6 +1783,8 @@ def get_player(user_id, username="Visitor"):
             print(f"Lỗi đọc player SQLite: {e}", flush=True)
 
     if not data:
+        if read_failed:
+            raise RuntimeError("DB_READ_FAILED")
         data = get_default_player(user_id, username)
         is_new = True
 
@@ -1901,15 +1910,19 @@ def save_player(player_data):
             doc = dict(player_data)
             doc["updated_at"] = now_iso
             players_collection.update_one({"user_id": uid_str}, {"$set": doc}, upsert=True)
+            return True
         except Exception as e:
             print(f"Lỗi ghi player MongoDB: {e}", flush=True)
+            return False
     else:
         try:
             cursor.execute('INSERT OR REPLACE INTO players (user_id, player_data_json, updated_at) VALUES (?, ?, ?)',
                            (uid_str, json.dumps(player_data, ensure_ascii=False), now_iso))
             conn.commit()
+            return True
         except Exception as e:
             print(f"Lỗi ghi player SQLite: {e}", flush=True)
+            return False
 
 def get_all_opponents(exclude_id=None):
     opponents = []
@@ -1992,6 +2005,7 @@ async def on_ready():
     print(f"==================================================", flush=True)
     print(f"✅ Bot đã đăng nhập thành công: {bot.user.name} ({bot.user.id})", flush=True)
     print(f"⛩️ Sẵn sàng phục vụ tại Đền Hakurei!", flush=True)
+    asyncio.create_task(prewarm_pull_art())
     print(f"==================================================", flush=True)
     try:
         synced = await bot.tree.sync()
@@ -8083,6 +8097,10 @@ def _pull_font(size: int):
 def _decode_pull_art(data: bytes):
     img = Image.open(io.BytesIO(data))
     try:
+        img.draft("RGB", (PULL_ART_W * 2, PULL_ART_H * 2))
+    except Exception:
+        pass
+    try:
         img.seek(0)  # GIF -> lấy khung hình đầu
     except Exception:
         pass
@@ -8093,6 +8111,15 @@ def _decode_pull_art(data: bytes):
 # Tạo sẵn thư mục lưu ảnh vĩnh viễn trên máy
 # Ảnh nằm ngay cạnh bot.py trong repo (1.jpg ... 31.jpg)
 CARD_ASSETS_DIR = os.path.dirname(os.path.abspath(__file__))
+async def prewarm_pull_art():
+    for cid in CARD_ORDER:
+        card = CARDS_DATA.get(cid)
+        if card:
+            try:
+                await _fetch_pull_art(card)
+            except Exception:
+                pass
+    print("🖼️ [PULL] Đã làm nóng cache ảnh thẻ.", flush=True)
 async def _fetch_pull_art(card: dict):
     key = str(card.get("id"))
 
@@ -8214,7 +8241,7 @@ def _compose_pull_page(entries, art_map):
                           f"ATK {card.get('power', 0):,}  HP {card.get('hp', 0):,}", f_stat, (220, 220, 230, 255))
 
     buf = io.BytesIO()
-    canvas.save(buf, format="PNG")
+    canvas.save(buf, format="PNG", compress_level=1)
     return buf.getvalue()
 
 async def render_pull_page(entries):
@@ -8376,10 +8403,20 @@ async def send_pull_gallery(ctx_or_interaction, user, entries, footer_text: str,
     if len(pages) > 1:
         kwargs["view"] = view
 
-    if is_inter:
-        msg = await ctx_or_interaction.followup.send(wait=True, **kwargs)
-    else:
-        msg = await ctx_or_interaction.send(**kwargs)
+    try:
+        if is_inter:
+            msg = await ctx_or_interaction.followup.send(wait=True, **kwargs)
+        else:
+            msg = await ctx_or_interaction.send(**kwargs)
+    except Exception as err:
+        print(f"⚠️ [PULL] Gửi gallery lỗi: {err}", flush=True)
+        text = "🎴 **Kết quả pull (ĐÃ LƯU vào kho, xem bằng /collection):**\n" + "\n".join(
+            f"• [{x['card']['rank']}] #{disp_id(x['card']['id'])} {x['card']['name']}" for x in entries[:40])
+        try:
+            await ctx_or_interaction.channel.send(text[:1900])
+        except Exception:
+            pass
+        return
     view.message = msg
 
     if notes:
@@ -8399,9 +8436,25 @@ async def _pull_reply(ctx_or_interaction, msg, ephemeral=False):
             await ctx_or_interaction.response.send_message(msg, ephemeral=ephemeral)
     else:
         await ctx_or_interaction.send(msg)
+_pull_locks = {}
+
 async def handle_pull(ctx_or_interaction, count: int = 1):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
-    player = get_player(user.id, user.display_name)
+    lock = _pull_locks.setdefault(user.id, asyncio.Lock())
+    if lock.locked():
+        await _pull_reply(ctx_or_interaction, "⏳ Lượt quay trước của bạn vẫn đang xử lý, vui lòng chờ!", ephemeral=True)
+        return
+    async with lock:
+        try:
+            await _handle_pull_inner(ctx_or_interaction, count)
+        except RuntimeError as err:
+            if "DB_READ_FAILED" in str(err):
+                await _pull_reply(ctx_or_interaction, "⚠️ Database đang chậm, **chưa trừ lượt nào**. Hãy thử lại sau ít giây!", ephemeral=True)
+            else:
+                raise
+async def _handle_pull_inner(ctx_or_interaction, count: int = 1):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = await asyncio.to_thread(get_player, user.id, user.display_name)
     tut = player.get("tutorial", {})
 # 0. KIỂM TRA COOLDOWN 3 GIÂY CHỐNG SPAM PULL
     now = time.time()
@@ -8435,7 +8488,7 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
         tut["quest_pulls_remaining"] = 0
         tut["pull_used"] = True
         tut["step"] = "collection"
-        save_player(player)
+        await asyncio.to_thread(save_player, player)
 
         await send_pull_gallery(
             ctx_or_interaction, user, entries,
@@ -8470,7 +8523,9 @@ async def handle_pull(ctx_or_interaction, count: int = 1):
             notes.append(f"🔓 Chúc mừng! Bạn đã quay trúng lại **#{disp_id(card['id'])} {card['name']}**, thẻ bài đã được giải phóng khỏi trạng thái khóa Admin!")
 
     dq_notifs = update_daily_quest_progress(player, "pull", count)
-    save_player(player)
+    ok = await asyncio.to_thread(save_player, player)
+    if not ok:
+        notes.append("⚠️ Lưu dữ liệu thất bại! Hãy dùng /collection kiểm tra, nếu thiếu thẻ hãy báo admin.")
     if dq_notifs:
         notes.append("📜 **Tiến Trình Nhiệm Vụ Ngày:**\n" + "\n".join(dq_notifs))
 
