@@ -99,6 +99,40 @@ def format_time_until_midnight_vn() -> str:
     return f"{hours} giờ {minutes:02d} phút"
 
 # ==============================================================================
+# [UPDATE PRESTIGE] YÊU CẦU PRESTIGE CHO THẺ NHÓM T
+# ==============================================================================
+# Ace 2 của các thẻ T: thiếu Prestige -> Ace 2 bị KHÓA (mất buff + kỹ năng Ace 2)
+T_ACE2_PRESTIGE_REQ = {"t5": 4, "t1": 2, "t3": 4, "t7": 2}
+# Cả thẻ bị khóa (không dùng được) nếu thiếu Prestige. Fateria chưa có Ace 2 nên khóa cả thẻ.
+T_CARD_PRESTIGE_REQ = {"t4": 3}
+T_PRESTIGE_NAMES = {"t1": "Seiki", "t3": "Kizuna", "t4": "Fateria", "t5": "Jotaro", "t7": "Kisami"}
+
+def _raw_ace2(player: dict, card_id) -> bool:
+    """Đã tiến hóa Ace 2 hay chưa (KHÔNG xét Prestige)."""
+    evo = player.get("evolutions", {}) or {}
+    return evo.get(str(card_id), 0) >= 2 or evo.get(str(card_id).lower(), 0) >= 2
+
+def is_card_prestige_locked(player: dict, card_id) -> bool:
+    """True nếu cả thẻ bị khóa do thiếu Prestige (hiện chỉ Fateria #t4)."""
+    req = T_CARD_PRESTIGE_REQ.get(str(card_id).lower())
+    return bool(req and player.get("prestige", 0) < req)
+
+def ace2_prestige_block(player: dict, card_id):
+    """Trả về chuỗi thông báo nếu thiếu Prestige để tiến hóa/dùng Ace 2, ngược lại trả None."""
+    cid_s = str(card_id).lower()
+    req = T_ACE2_PRESTIGE_REQ.get(cid_s)
+    cur = player.get("prestige", 0)
+    if not req or cur >= req:
+        return None
+    name = T_PRESTIGE_NAMES.get(cid_s, cid_s)
+    if _raw_ace2(player, cid_s):
+        return (
+            f"🔒 **[#{cid_s}] {name} Ace 2 đang bị KHÓA!**\n"
+            f"• Cần **Prestige {req}+** (hiện tại: P{cur}) để mở lại Ace 2.\n"
+            f"• Bạn đã tiến hóa rồi nên **không mất gì**, đạt Prestige là Ace 2 tự hoạt động lại."
+        )
+    return f"❌ Tiến hóa **[#{cid_s}] {name} Ace 2** yêu cầu **Prestige {req}+** (hiện tại: P{cur})!"
+# ==============================================================================
 # BUFF CHỈ SỐ ACE (ÁP DỤNG CHO MỌI NHÂN VẬT TIẾN HÓA ACE) & BUFF CẤP ĐỘ MỚI
 # ==============================================================================
 ACE_POWER_BUFF = 300  # +300 ATK (Buff mới theo yêu cầu)
@@ -494,7 +528,7 @@ KISAMI_GIF_KHUCXA = "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92
 
 KISAMI_SHARDS_UNLOCK = 10          # đổi thẻ Ace 1
 KISAMI_SHARDS_ACE2 = 15            # tiến hóa Ace 2
-KISAMI_ACE2_PRESTIGE = 3           # prestige tối thiểu để lên Ace 2
+KISAMI_ACE2_PRESTIGE = 2           # prestige tối thiểu để lên Ace 2
 KISAMI_SKILL_REDUCE = 0.10         # passive Dịch ma thuật: giảm 10% sát thương từ chiêu
 KISAMI_ACE2_KEEP_REDUCTION = True  # Ace 2 có giữ passive giảm 10% không
 KISAMI_POISON_PCTS = (0.06, 0.10, 0.05)   # độc 3 lượt: 6% / 10% / 5% máu tối đa
@@ -1687,6 +1721,8 @@ def normalize_user_card_input(raw_id):
     return normalize_card_id(s)       # tên / alias
 
 def is_card_locked(player: dict, card_id: Union[int, str]) -> bool:
+    if is_card_prestige_locked(player, card_id):
+        return True
     try:
         cid_int = int(card_id)
     except (ValueError, TypeError):
@@ -1713,8 +1749,12 @@ def get_card_pulled_count(player: dict, card_id: Union[int, str]) -> int:
     return max(inv_cnt, pull_cnt)
 
 def is_card_ace2(player: dict, card_id: Union[int, str]) -> bool:
-    cid_str = str(card_id)
-    return player.get("evolutions", {}).get(cid_str, 0) >= 2
+    if not _raw_ace2(player, card_id):
+        return False
+    req = T_ACE2_PRESTIGE_REQ.get(str(card_id).lower())
+    if req and player.get("prestige", 0) < req:
+        return False   # thiếu Prestige -> Ace 2 bị khóa
+    return True
 
 def get_player(user_id, username="Visitor"):
     uid_str = str(user_id)
@@ -1980,6 +2020,9 @@ async def on_message(message: discord.Message):
 # ==============================================================================
 def execute_kizuna_ace2(player):
     """Tiến hóa Ace 2 [#t3] Kizuna: yêu cầu sở hữu thẻ Kizuna (Ace 1) + 1 vật phẩm Thánh Lõi."""
+    _blk = ace2_prestige_block(player, "t3")
+    if _blk:
+        return False, _blk, None
     if is_card_ace2(player, "t3"):
         return False, "⚠️ **[#t3] Kizuna the emperor of vampire** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
 
@@ -2028,6 +2071,9 @@ def execute_kizuna_ace2(player):
 # ==============================================================================
 def execute_seiki_ace2(player):
     """Tiến hóa Ace 2 [#t1] Seiki: yêu cầu đã mở khóa thẻ #t1 + Ace 2 của Marisa [#19], Reimu [#15], Sakuya [#18] + 10 Mảnh Seiki."""
+    _blk = ace2_prestige_block(player, "t1")
+    if _blk:
+        return False, _blk, None
     if is_card_ace2(player, "t1"):
         return False, "⚠️ **[#t1] Seiki Đệ Pháp Toàn Năng** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
 
@@ -7531,7 +7577,7 @@ class EvolSelectView(discord.ui.View):
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
         await do_evolve_interaction(interaction, self.player, "18a3")  
-    @discord.ui.button(label="☠️ [#t7] Kisami Ace 2 (15 Mảnh + Seiki Ace2 + P3)", style=discord.ButtonStyle.success, emoji="⚗️", row=4)
+    @discord.ui.button(label="☠️ [#t7] Kisami Ace 2 (15 Mảnh + Seiki Ace2 + P2)", style=discord.ButtonStyle.success, emoji="⚗️", row=4)
     async def button_evol_kisami(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
@@ -7970,7 +8016,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     app_commands.Choice(name="[#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - 10 Mảnh)", value="t1"),
     app_commands.Choice(name="[#t5] Jotaro Kujo (Ace 2 - 10 Mảnh + Đĩa Ký Ức)", value="t5"),
     app_commands.Choice(name="[#t3] Kizuna the emperor of vampire (Ace 2 - 1 Thánh Lõi)", value="t3"),
-    app_commands.Choice(name="[#t7] Kisami Mikawa (Ace 2 - 15 Mảnh + Seiki Ace2 + Prestige 3)", value="t7")
+    app_commands.Choice(name="[#t7] Kisami Mikawa (Ace 2 - 15 Mảnh + Seiki Ace2 + Prestige 2)", value="t7")
 ])
 async def slash_evol(interaction: discord.Interaction, id_hoac_ten: str = None):
     await handle_evol(interaction, id_hoac_ten)
@@ -8483,6 +8529,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
     lvl_buff_pwr = get_level_atk_buff(cur_lvl)
     lvl_buff_hp = get_level_hp_buff(cur_lvl)
     act = action.lower().strip() if action else "view"
+    player["team"] = [c for c in player.get("team", []) if not is_card_prestige_locked(player, c)]
     if card_id is not None:
         card_id = normalize_user_card_input(card_id)
 
@@ -8493,6 +8540,12 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
             else: await ctx_or_interaction.send(msg)
             return
 
+        if is_card_prestige_locked(player, card_id):
+            _req = T_CARD_PRESTIGE_REQ.get(str(card_id).lower(), 0)
+            msg = f"🔒 Thẻ **{format_card_id(card_id)} {CARDS_DATA[card_id]['name']}** yêu cầu **Prestige {_req}+** mới được dùng! (Hiện tại: P{player.get('prestige', 0)})"
+            if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+            else: await ctx_or_interaction.send(msg)
+            return      
         if is_card_locked(player, card_id):
             msg = f"🔒 Thẻ **{format_card_id(card_id)} {CARDS_DATA[card_id]['name']}** hiện đang bị Quản Trị Viên niêm phong! Bạn chỉ có thể dùng lại khi quay gacha (`/pull`) trúng lại lá này."
             if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
@@ -14377,6 +14430,9 @@ def t5_combat_turn(t5_state: dict, card_data: dict, is_ace2: bool = False, skill
 
 def execute_jotaro_ace2(player):
     """Ace 2 [#t5] Jotaro: cần thẻ Ace 1 + 10 Jotaro shards + 1 Đĩa Ký Ức Jotaro."""
+    _blk = ace2_prestige_block(player, "t5")
+    if _blk:
+        return False, _blk, None
     if is_card_ace2(player, "t5"):
         return False, "⚠️ **[#t5] Jotaro Kujo** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
     if not is_card_unlocked(player, "t5") and player.get("inventory", {}).get("t5", 0) <= 0:
@@ -16990,6 +17046,9 @@ def t7_story_apply(pc, card_dmg, guard, boss_max_hp, boss_power, logs, team=None
 
 def execute_kisami_ace2(player):
     """Ace 2 [#t7]: có thẻ + 15 shard + Seiki (#t1) Ace 2 + Prestige >= 3."""
+    _blk = ace2_prestige_block(player, "t7")
+    if _blk:
+        return False, _blk, None
     if is_card_ace2(player, "t7"):
         return False, "⚠️ **[#t7] Kisami Mikawa** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
     if not is_card_unlocked(player, "t7") and player.get("inventory", {}).get("t7", 0) <= 0:
