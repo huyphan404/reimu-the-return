@@ -3124,7 +3124,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
     if boss_type == "jotaro":
         embed = build_jotaro_spawn_embed(cfg, author, is_admin, title)
         
-      eq_add_boss_field(embed, boss_type)
+    eq_add_boss_field(embed, boss_type)
     embed.set_footer(text=f"Bấm 'Tham Gia' để xuất trận • Miễn phí • {'Admin Force Spawn' if is_admin else 'Boss Tự Nhiên'}")
     view = RaidJoinView(raid_data)
     raid_data["view"] = view
@@ -8673,7 +8673,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
         embed.add_field(name="📊 TỔNG LỰC CHIẾN:", value=f"⚔️ Tổng Power: **{tot_pwr:,}** | ❤️ Tổng HP: **{tot_hp:,}**", inline=False)
         embed.set_thumbnail(url=CARDS_DATA[player["team"][0]]["image"])
 
-      eq_add_team_field(embed, player)
+    eq_add_team_field(embed, player)
     embed.set_footer(text=f"Hakurei Shrine • Thắng {player.get('battles_won', 0)} trận")
     if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
     else: await ctx_or_interaction.send(embed=embed)
@@ -15711,7 +15711,7 @@ async def spawn_prime_raid(channel, author, is_admin=False):
         value=f"Có **2 phút** để bấm **'Tham Gia'** (tối đa **{PRIME_MAX_PLAYERS} người**). Đủ người hoặc hết giờ sẽ tự động khai màn!",
         inline=False
     )
-      eq_add_boss_field(embed, "han_seiki")
+    eq_add_boss_field(embed, "han_seiki")
     embed.set_footer(text="Han Seiki the Prime One • /raid • Hồi chiêu 2 tiếng • Yêu cầu Lv.50 để mở")
 
     view = PrimeRaidJoinView(raid_data)
@@ -17529,8 +17529,10 @@ def eq_add_team_field(embed, player):
         )
     except Exception:
         pass
-
+        
 async def _eq_send(ctx_or_interaction, content=None, embeds=None, ephemeral=False):
+    pass
+
 
 import sys
 
