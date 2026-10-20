@@ -13976,23 +13976,22 @@ async def handle_event_raid_open(ctx_or_interaction):
 
 # --- HÀM XỬ LÝ /ITEM CHECK (XEM KHO VẬT PHẨM) ---
 async def handle_item_check(ctx_or_interaction):
-    return await handle_item_check_v2(ctx_or_interaction)
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
     p_items = player.get("items", {})
-
+    act = get_active_equipment(player)
     lines = []
     for ik, iv in ITEMS_DATABASE.items():
         cnt = p_items.get(ik, 0)
-        tag = " `[E - Có thể Dùng]`" if iv["usable"] else ""
-        lines.append(f"• **{iv['name']}**{tag}: `{cnt}` cái\n  └ *{iv['desc']}*")
-
+        tag = " `[E - Có thể Dùng]`" if iv.get("usable") else ""
+        worn = " ✅ **(Đang trang bị)**" if ik in act.values() else ""
+        lines.append(f"• **{iv['name']}**{tag}{worn}: `{cnt}` cái\n  └ *{iv['desc']}*")
     embed = discord.Embed(
         title=f"🎒 KHO VẬT PHẨM (ITEMS) - {user.display_name.upper()}",
-        description="\n\n".join(lines),
+        description="\n\n".join(lines)[:4000],
         color=0x3B82F6
     )
-    embed.set_footer(text="Dùng /item use ruong_halloween_e để mở các vật phẩm có mác [E]")
+    embed.set_footer(text="Dùng /item use giap_gaia hoặc /weapond để trang bị")
     if isinstance(ctx_or_interaction, discord.Interaction):
         await ctx_or_interaction.response.send_message(embed=embed)
     else:
@@ -17007,7 +17006,7 @@ def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
     return card_dmg, boss_stunned, turn_image, notif
 
 
-def t7_raid_after_boss(active, boss_log) -> str:
+def _t7_raid_after_boss_core(active, boss_log) -> str:
     """Gọi SAU khi Boss ra đòn: áp dụng né 40% (Khúc xạ) và giảm 10% sát thương chiêu (Dịch ma thuật)."""
     extra = []
     try:
@@ -17464,7 +17463,7 @@ def eq_raid_after_boss(active, boss_log) -> str:
         out += f"\n🛡️ **[Giáp Gaia]** {gaia_n} thẻ hồi tổng **+{gaia_heal:,} HP** khi chịu sát thương (2,5% + giảm 10% sát thương skill)!"
     return out
 
-def _t7_raid_after_boss_core(active, boss_log) -> str:
+def t7_raid_after_boss(active, boss_log) -> str:
     base = _t7_raid_after_boss_core(active, boss_log)
     try:
         return base + eq_raid_after_boss(active, boss_log)
@@ -17530,10 +17529,53 @@ def eq_add_team_field(embed, player):
     except Exception:
         pass
         
-async def _eq_send(ctx_or_interaction, content=None, embeds=None, ephemeral=False):
-    pass
+async def _eq_send(ctx_or_interaction, content=None, embed=None, ephemeral=False):
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        if ctx_or_interaction.response.is_done():
+            return await ctx_or_interaction.followup.send(content=content, embed=embed, ephemeral=ephemeral)
+        return await ctx_or_interaction.response.send_message(content=content, embed=embed, ephemeral=ephemeral)
+    return await ctx_or_interaction.send(content=content, embed=embed)
 
 
+async def handle_equip_item(ctx_or_interaction, player, item_id: str):
+    """Trang bị Nanh Fenrir (vũ khí) / Giáp Gaia (giáp). Mỗi slot 1 món."""
+    info = EQUIPMENT_DB.get(item_id)
+    if not info:
+        await _eq_send(ctx_or_interaction, content="❌ Vật phẩm này không phải trang bị!", ephemeral=True)
+        return
+    items = player.setdefault("items", {})
+    if items.get(item_id, 0) < 1:
+        await _eq_send(ctx_or_interaction, content=f"❌ Bạn không có **{info['name']}** trong kho đồ!", ephemeral=True)
+        return
+    eq = player.get("equipment")
+    if not isinstance(eq, dict):
+        eq = {"weapon": None, "armor": None}
+        player["equipment"] = eq
+    slot = info["slot"]
+    if eq.get(slot) == item_id:
+        eq[slot] = None
+        save_player(player)
+        await _eq_send(ctx_or_interaction, content=f"🔓 Đã **tháo** {info['name']} khỏi đội hình.")
+        return
+    eq[slot] = item_id
+    save_player(player)
+    embed = discord.Embed(
+        title=f"✅ ĐÃ TRANG BỊ: {info['name']}",
+        description=f"📌 **Vị trí:** {info['slot_name']}\n{info['desc']}\n\n*(Dùng lại lệnh để tháo ra. Chỉ số được cộng khi vào trận.)*",
+        color=info["color"]
+    )
+    embed.set_thumbnail(url=info["image"])
+    await _eq_send(ctx_or_interaction, embed=embed)
+
+@bot.tree.command(name="weapond", description="Trang bị / tháo vũ khí (Nanh Fenrir 🐺)")
+async def slash_weapond(interaction: discord.Interaction):
+    player = get_player(interaction.user.id, interaction.user.display_name)
+    await handle_equip_item(interaction, player, "nanh_fenrir")
+
+@bot.command(name="weapond", aliases=["weapon"])
+async def prefix_weapond(ctx):
+    player = get_player(ctx.author.id, ctx.author.display_name)
+    await handle_equip_item(ctx, player, "nanh_fenrir")
 import sys
 
 def start_bot_safely():
