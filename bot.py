@@ -13547,7 +13547,7 @@ async def handle_help(ctx_or_interaction):
             "• `/battle` : Chiến đấu để cày cấp.\n"
             "• `/pvp` : Thử sức với người chơi khác, cũng để làm nhiệm vụ.\n"
             "• `/story` : Tham gia tiến trình cốt truyện.\n"
-            "• `/raid` : Triệu hồi Han Seiki the Prime One (tối đa 10 người, hồi chiêu 1 tiếng)."
+            "• `/raid` : Triệu hồi Han Seiki the Prime One (yêu cầu Lv.50, tối đa 10 người, hồi chiêu 2 tiếng)."
         ),
         inline=False
     )
@@ -15429,7 +15429,7 @@ PRIME_GIF_HEAL = "https://static2.klipy.com/ii/7607a26399874a14744aa5e7accfa062/
 PRIME_GIF_BINARY = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/e1/1e/vyzqP4NnKOod9Se.gif"
 
 PRIME_XP_DROP_MULT = 4.0        # Drop XP = 4 x XP hiện tại trong cấp (Jotaro là 1.5)
-PRIME_COOLDOWN = 60 * 60        # Cooldown /raid: 1 tiếng (toàn server)
+PRIME_COOLDOWN = 2 * 60 * 60        # Cooldown /raid: 1 tiếng (toàn server)
 PRIME_MAX_PLAYERS = 10
 PRIME_MAX_ROUNDS = 80
 
@@ -15619,7 +15619,7 @@ async def spawn_prime_raid(channel, author, is_admin=False):
         value=f"Có **2 phút** để bấm **'Tham Gia'** (tối đa **{PRIME_MAX_PLAYERS} người**). Đủ người hoặc hết giờ sẽ tự động khai màn!",
         inline=False
     )
-    embed.set_footer(text="Han Seiki the Prime One • /raid • Hồi chiêu 1 tiếng")
+    embed.set_footer(text="Han Seiki the Prime One • /raid • Hồi chiêu 2 tiếng • Yêu cầu Lv.50 để mở")
 
     view = PrimeRaidJoinView(raid_data)
     raid_data["view"] = view
@@ -15654,13 +15654,21 @@ async def handle_prime_raid_open(ctx_or_interaction):
 
     player = get_player(user.id, user.display_name)
 
-    # Cooldown tính riêng cho NGƯỜI MỞ raid (giống /event raid)
+    # 1. Yêu cầu cấp độ tối thiểu Lv.50 để MỞ RAID (Admin được miễn)
+    if not is_adm and player.get("level", 1) < 50:
+        await reply(f"⛔ **Cấp độ không đủ!** Yêu cầu đạt tối thiểu **Lv.50** để mở Raid Han Seiki the Prime One! (Cấp hiện tại của bạn: **Lv.{player.get('level', 1)}**)")
+        return
+
+    # 2. Cooldown 2 tiếng tính riêng cho NGƯỜI MỞ raid (người khác vẫn join bình thường)
     last_t = player.get("last_prime_raid_time", 0.0)
     if not is_adm and (now - last_t < PRIME_COOLDOWN):
         rem = int(PRIME_COOLDOWN - (now - last_t))
-        await reply(f"⏳ Bạn vừa triệu hồi Han Seiki gần đây, cần nghỉ thêm **{rem // 60} phút {rem % 60} giây** nữa! (Bạn vẫn có thể bấm Tham Gia raid do người khác mở)")
+        hours = rem // 3600
+        mins = (rem % 3600) // 60
+        secs = rem % 60
+        time_str = f"{hours} giờ {mins} phút" if hours > 0 else f"{mins} phút {secs} giây"
+        await reply(f"⏳ Bạn vừa triệu hồi Han Seiki gần đây, cần nghỉ thêm **{time_str}** nữa! (Bạn vẫn có thể bấm Tham Gia raid do người khác mở)")
         return
-
     if not _prime_prepare_team(player):
         await reply("⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` trước nhé!")
         return
@@ -15677,7 +15685,7 @@ async def handle_prime_raid_open(ctx_or_interaction):
     await spawn_prime_raid(channel, user, is_admin=is_adm)
 
 
-@bot.tree.command(name="raid", description="Triệu hồi Boss Han Seiki the Prime One (tối đa 10 người, hồi chiêu 1 tiếng)")
+@bot.tree.command(name="raid", description="Triệu hồi Boss Han Seiki the Prime One (Yêu cầu Lv.50, tối đa 10 người, hồi chiêu 2 tiếng)")
 async def slash_raid_prime(interaction: discord.Interaction):
     await handle_prime_raid_open(interaction)
 
@@ -16034,7 +16042,7 @@ async def execute_prime_raid(channel, raid_data):
             "🌸 **Reimu thở phào:** *\"Phù... cuối cùng các khái niệm cũng trở lại đúng chỗ của chúng. Mọi người làm tốt lắm!\"*\n\n"
             f"🎉 Đội quân đã hạ gục **Han Seiki the Prime One** sau **{rounds} hiệp**!\n"
             f"💥 **Tổng Sát Thương:** **{total_raid_dmg:,} DMG**\n"
-            "⏳ **Hồi chiêu `/raid` tiếp theo:** **1 tiếng** kể từ lúc mở"
+            "⏳ **Hồi chiêu `/raid` tiếp theo:** **2 tiếng** kể từ lúc mở"
         ),
         color=0x10B981
     )
