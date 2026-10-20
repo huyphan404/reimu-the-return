@@ -19,7 +19,7 @@
 # 9. ACE 2 MỚI:
 #    - [#09] Flandre Scarlet (30 thẻ): Ripples of 495 Years — 25% xóa 50% HP đối thủ (Battle/PvP)
 #      hoặc 30% HP Boss (Raid Phase 1 & 2), kích hoạt 1 lần/trận, kèm GIF kỹ năng trực tiếp!
-#    - Buff Marisa Ace 2 [#18]: Master Spark tăng sát thương từ ×1.5 lên ×2.0!
+#    - Buff Marisa Ace 2 [#18]: Master Spark tăng sát thương từ ×1.5 lên ×2.5!
 #    - [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 ⭐⭐): Cleave (+2% Max HP mục tiêu mọi đòn) • Medicine Sign (35% hồi 40% máu) •
 #      Fantasy Seal (40% ở Ace 1 / buff lên 50% ở Ace 2: Miễn toàn bộ sát thương) • Bóng Khái Niệm (40%: 15% Max HP + xóa kỹ năng đối phương)!
 # ==============================================================================
@@ -27,7 +27,7 @@
 # UPDATE 2026-09-22: THEM [#10] KOISHI KOMEIJI (Rank S - 600 ATK / 6,060 HP) - ID CU 10-26 DAY LEN 11-27, TU DONG DI TRU DU LIEU NGUOI CHOI
 # UPDATE 2026-09-24: THEM ACE 2 MOI - [#12] REMILIA (25 THE, THUONG DO GUNGNIR THU DONG +3% MAX HP MUC TIEU) & [#20] REISEN (40 THE, RED EYE MIND EXPLOSION 25% - MUC TIEU 20% TU SAT TRONG 4 TURN)
 # UPDATE 2026-09-27: THEM BOSS MOI [BAT ACH KIEM THAN TUONG MAHORAGA] (90K HP / 6K DMG CHIA DEU) - THE TRUE ADAPT (HOI 3% HP + GIAM 3% ST MOI TURN) + THOAI MA KIEM (DON MUC TIEU), TI LE SPAWN 3 BOSS DEU 1/3, THEM MAHORAGA SHARD (5% DROP)
-# UPDATE 2026-09-27: CAP NHAT ACE 2 MOI - [#22] CIRNO (60 THE, PERFECT FREEZE 40% - 2 TURN TIEP 45% DONG BANG KHONG DANH TRA) & [#13] UTSUHO REIUJI (30 THE, NUCLEAR SPELL CARD 30% - 3.0x DMG & DUNG NHAM BONG 2% MAX HP TRONG 3 TURN)
+# UPDATE 2026-09-27: CAP NHAT ACE 2 MOI - [#22] CIRNO (60 THE, PERFECT FREEZE 40% - 2 TURN TIEP 45% DONG BANG KHONG DANH TRA) & [#13] UTSUHO REIUJI (30 THE, NUCLEAR SPELL CARD 30% - 3.5x DMG & DUNG NHAM BONG 2% MAX HP TRONG 3 TURN)
 import os
 import re
 import time
@@ -941,7 +941,7 @@ EVOL_CONFIG = {
         "required_pulls": 20,
         "evol_gif": "https://c.tenor.com/39VGItAUUCYAAAAC/reimu-reimu-hakurei.gif",
         "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh (Miễn Thương)",
-        "skill_desc": "Miễn toàn bộ sát thương duy nhất 1 lần trong trận (Tỷ lệ đồng nhất 40% mỗi hiệp khi nhận đòn cả trong Raid Boss và Battle/PvP, chỉ bảo vệ riêng Reimu).",
+        "skill_desc": "Miễn toàn bộ sát thương duy nhất 1 lần trong trận (Tỷ lệ đồng nhất 40% mỗi hiệp khi nhận đòn cả trong Raid Boss và Battle/PvP, chỉ bảo vệ riêng Reimu). Khi kích hoạt còn PHẢN ĐÒN gây thêm 1x ATK lên đối thủ/Boss.",
         "skill_gif": "https://c.tenor.com/gc4ws16CrTYAAAAC/reimu-touhou.gif",
         "bonus_power": 300,
         "bonus_hp": 300
@@ -970,8 +970,8 @@ EVOL_CONFIG = {
         "required_cards": 25,
         "required_pulls": 25,
         "evol_gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/de/e5/qY4XYpLV.gif",
-        "skill_name": "Bát Quái Lô - Master Spark (Sát Thương ×2.0)",
-        "skill_desc": "Kích hoạt 1 lần trong trận: 30% tung ra Master Spark với sát thương ×2.0 lần sát thương gốc!",
+        "skill_name": "Bát Quái Lô - Master Spark (Sát Thương ×2.5)",
+        "skill_desc": "Kích hoạt 1 lần trong trận: 30% tung ra Master Spark với sát thương ×2.5 lần sát thương gốc!",
         "skill_gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/f4/32/73qv2IMW.gif",
         "bonus_power": 300,
         "bonus_hp": 300
@@ -1046,7 +1046,7 @@ EVOL_CONFIG = {
         "required_pulls": 30,
         "evol_gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/06/9b/o5Pa7BgCiYHgJEb.gif",
         "skill_name": "Nuclear Spell Card (Hạch Tâm Bộc Phá)",
-        "skill_desc": "30% kích hoạt: Gây ra 3.0x sát thương và khiến mặt đất nung chảy gây bỏng 2% Máu Tối Đa cho những lá bài địch ra sân sau đó trong 3 turn thì mặt đất sẽ bình thường trở lại, kèm GIF chiêu thức trực tiếp!",
+        "skill_desc": "30% kích hoạt: Gây ra 3.5x sát thương và khiến mặt đất nung chảy gây bỏng 2% Máu Tối Đa cho những lá bài địch ra sân sau đó trong 3 turn thì mặt đất sẽ bình thường trở lại, kèm GIF chiêu thức trực tiếp!",
         "skill_gif": "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/5a/61/6mcQnspY.gif",
         "bonus_power": 300,
         "bonus_hp": 300
@@ -1062,8 +1062,8 @@ EVOL_CONFIG = {
         "evol_gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/d8/aa/WN8D1IccKr8iW.gif",
         "skill_name": "Trip To The Old Station • Last Word • Invisible Gap",
         "skill_desc": (
-            "🌌 **Trip To The Old Station (30%):** Gây sát thương ×2.0 (1 lần/trận).\n"
-            "👁️ **⸮⸮⸮ : Last Word ! (25%):** Gây sát thương ×2.5 và STUN đóng băng đối thủ 1 turn (1 lần/trận).\n"
+            "🌌 **Trip To The Old Station (30%):** Gây sát thương ×2.2 (1 lần/trận).\n"
+            "👁️ **⸮⸮⸮ : Last Word ! (25%):** Gây sát thương ×3.5 và STUN đóng băng đối thủ 1 turn (1 lần/trận).\n"
             "🌀 **Invisible Gap (Nội Tại - 10%):** Phản lại 100% sát thương đòn đánh thường của kẻ địch (không chặn kỹ năng)."
         ),
         "bonus_power": 300,
@@ -1302,13 +1302,13 @@ CHARACTER_DETAILS = {
     10: {"title": "Tiểu Thư Tâm Trí Khép Kín", "skill_name": "Tâm Linh Cảm Ứng (Subconscious)", "skill_desc": "Em gái của Satori Komeiji, tự khép kín trái tim để thoát khỏi sự dị nghị của thế gian. Lướt đi vô thức khắp Gensokyo và tung những đòn đánh lén từ tiềm thức mà không một ai kịp lường trước (600 ATK / 6,060 HP)."},
     11: {"title": "Công Chúa Ánh Trăng", "skill_name": "Vĩnh Cửu & Tức Thời", "skill_desc": "Công chúa Nguyệt Cung lưu đày tại Eientei, điều khiển dòng chảy thời gian vĩnh cửu và tức thời cùng thần bảo quý giá (590 ATK / 6,400 HP)."},
     12: {"title": "Chúa Tể Hồng Ma Quán", "skill_name": "Thương Đỏ Gungnir (Vận Mệnh)", "skill_desc": "Ma cà rồng kiêu hãnh bẻ cong số mệnh kẻ thù, phóng ra ngọn giáo ánh sáng đỏ Gungnir xuyên thủng phòng ngự (560 ATK / 5,600 HP). [Ace 2 ⭐⭐]: Thương Đỏ Gungnir — kỹ năng THỤ ĐỘNG không cần kích hoạt: mọi đòn đánh gây thêm sát thương bằng 3% Máu Tối Đa (Max HP) của mục tiêu!"},
-    13: {"title": "Mặt Trời Địa Ngục", "skill_name": "Hạch Tâm Phản Ứng (Nuclear)", "skill_desc": "Mang sức mạnh thần mặt trời Yatagarasu, thi triển hạch tâm nhiệt hạch thiêu đốt toàn bộ chiến trường (550 ATK / 5,300 HP). [Ace 2 ⭐⭐]: Nuclear Spell Card (30%) — Gây 3.0x sát thương và khiến mặt đất nung chảy gây bỏng 2% Máu Tối Đa cho những lá bài địch ra sân sau đó trong 3 turn!"},
+    13: {"title": "Mặt Trời Địa Ngục", "skill_name": "Hạch Tâm Phản Ứng (Nuclear)", "skill_desc": "Mang sức mạnh thần mặt trời Yatagarasu, thi triển hạch tâm nhiệt hạch thiêu đốt toàn bộ chiến trường (550 ATK / 5,300 HP). [Ace 2 ⭐⭐]: Nuclear Spell Card (30%) — Gây 3.5x sát thương và khiến mặt đất nung chảy gây bỏng 2% Máu Tối Đa cho những lá bài địch ra sân sau đó trong 3 turn!"},
     14: {"title": "Cánh Tay Quỷ Bị Phong Ấn", "skill_name": "Quỷ Khí Trảm Thiết", "skill_desc": "Cánh tay phải bị chém đứt của Đại Quỷ Ibaraki-Douji, ẩn chứa ma lực quỷ giới cuồng bạo và sức công phá kinh thiên động địa (500 ATK / 4,800 HP)."},
-    15: {"title": "Vu Nữ Đền Hakurei", "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh", "skill_desc": "Bay lượn khỏi thực tại và trừ tà ma thuật. [Ace 2 ⭐⭐]: Miễn toàn bộ sát thương 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
+    15: {"title": "Vu Nữ Đền Hakurei", "skill_name": "Bùa Chú Vô Tưởng Chuyển Sinh", "skill_desc": "Bay lượn khỏi thực tại và trừ tà ma thuật. [Ace 2 ⭐⭐]: Miễn toàn bộ sát thương 1 lần trong trận và phản đòn 1x ATK (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
     16: {"title": "Phượng Hoàng Bất Tử", "skill_name": "Phượng Hoàng Bất Diệt", "skill_desc": "Cơ thể bất tử do uống tiên dược Hourai, triệu hồi ngọn lửa phượng hoàng thiêu đốt kẻ địch mà không hề sợ chết (490 ATK / 5,200 HP)."},
     17: {"title": "Tiên Nhân Một Tay", "skill_name": "Thần Thú Giáng Lâm", "skill_desc": "Một trong Tứ Thiên Vương ẩn mình dưới thân phận tiên nhân dạy dỗ yêu quái và điều khiển muôn loài linh thú (480 ATK / 4,900 HP). [Ace 2 ⭐⭐]: Triệu Hoán Vong Cốt (35%, 1 lần/trận) — cả đội miễn 100% sát thương trong turn đó và gây thêm ×0.8 ATK!"},
     18: {"title": "Hầu Gái Trưởng Hoàn Hảo", "skill_name": "Thời Gian Đóng Băng", "skill_desc": "Bậc thầy phi dao bạc và không-thời gian. [Ace 2 ⭐⭐]: Đóng băng thời gian làm đối thủ/boss bị STUN mất lượt 1 lần trong trận (Tỷ lệ đồng nhất 40% cả trong Raid Boss và Battle/PvP)!"},
-    19: {"title": "Phù Thủy Bình Thường", "skill_name": "Bát Quái Lô - Master Spark", "skill_desc": "Ma thuật ánh sáng và nhiệt độ cao. [Ace 2 ⭐⭐]: Bắn đại bác ma thuật Master Spark gây sát thương ×2.0 lần sát thương gốc (Tỷ lệ 30% 1 lần trong trận)!"},
+    19: {"title": "Phù Thủy Bình Thường", "skill_name": "Bát Quái Lô - Master Spark", "skill_desc": "Ma thuật ánh sáng và nhiệt độ cao. [Ace 2 ⭐⭐]: Bắn đại bác ma thuật Master Spark gây sát thương ×2.5 lần sát thương gốc (Tỷ lệ 30% 1 lần trong trận)!"},
     20: {"title": "Kiếm Sĩ Nửa Người Nửa Ma", "skill_name": "Song Kiếm Lâu Quan & Bạch Lâu", "skill_desc": "Thần tốc kiếm đạo: Lâu Quan Kiếm chém vạn vật và Bạch Lâu Kiếm chém tan ảo tưởng mê muội (410 ATK / 4,100 HP)."},
     21: {"title": "Thỏ Ngọc Chiến Binh", "skill_name": "Hồng Nhãn Cuồng Loạn", "skill_desc": "Thỏ ngọc từ Mặt Trăng phát sóng ảo giác từ ánh mắt đỏ rực làm hoa mắt và rối loạn phương hướng đối phương (390 ATK / 3,900 HP). [Ace 2 ⭐⭐]: Red Eye Mind Explosion (25%, 1 lần/trận) — mục tiêu bị chọn có 20% tỷ lệ tự gây sát thương lên bản thân sau mỗi lượt (không dùng lên chính mình), hiệu ứng tồn tại 4 turn!"},
     22: {"title": "Đại Ma Đạo Sĩ Thất Diệu", "skill_name": "Thất Diệu Ma Thuật", "skill_desc": "Phù thủy thông thái trong thư viện ngầm, kết hợp 7 nguyên tố tự nhiên tạo thành ma trận công thủ liên hoàn (380 ATK / 3,200 HP)."},
@@ -2691,16 +2691,16 @@ class OpponentTeamView(discord.ui.View):
         if is_ace and c["cid"] in [4, 9, 12, 13, 15, 18, 19, 21, 23, 24]:
             if c["cid"] == 4:
                 skill_text += (
-                    "\n🌌 **[Ace 2 Hiệu Ứng]** 30% *Trip To The Old Station* (×2.0 DMG, 1 lần/trận) • "
-                    "25% *Last Word* (×2.5 DMG + Stun 1 turn, 1 lần/trận) • "
+                    "\n🌌 **[Ace 2 Hiệu Ứng]** 30% *Trip To The Old Station* (×2.2 DMG, 1 lần/trận) • "
+                    "25% *Last Word* (×3.5 DMG + Stun 1 turn, 1 lần/trận) • "
                     "10% *Invisible Gap* (Nội tại phản 100% sát thương đánh thường)."
                 )
             elif c["cid"] == 15:
-                skill_text += "\n🛡️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Vô Tưởng Chuyển Sinh* né toàn bộ sát thương."
+                skill_text += "\n🛡️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Vô Tưởng Chuyển Sinh* né toàn bộ sát thương và phản đòn 1x ATK."
             elif c["cid"] == 18:
                 skill_text += "\n⏳ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Thời Gian Đóng Băng* khiến đối phương mất lượt."
             elif c["cid"] == 19:
-                skill_text += "\n🌟 **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Master Spark* bộc phá ×2.0 sát thương."
+                skill_text += "\n🌟 **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Master Spark* bộc phá ×2.5 sát thương."
             elif c["cid"] == 9:
                 skill_text += "\n🦇 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Ripples of 495 Years* xóa sổ 50% HP đối thủ (30% HP Boss trong Raid, 1 lần/trận)."
             elif c["cid"] == 12:
@@ -2710,7 +2710,7 @@ class OpponentTeamView(discord.ui.View):
             elif c["cid"] == 23:
                 skill_text += "\n❄️ **[Ace 2 Hiệu Ứng]** 40% kích hoạt *Perfect Freeze* (1 lần/trận): đóng băng đối thủ, trong 2 turn tiếp theo có 45% không thể đánh trả."
             elif c["cid"] == 13:
-                skill_text += "\n☢️ **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Nuclear Spell Card* bộc phá ×3.0 sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn."
+                skill_text += "\n☢️ **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Nuclear Spell Card* bộc phá ×3.5 sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn."
             elif c["cid"] == 24:
                 skill_text += "\n🌈 **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Rainbow Taijiquan* (1 lần/trận): ×1.2 sát thương và giảm 15% sát thương phải nhận trong lượt đó."    
         if is_ace and str(c["cid"]).lower() == "t1":
@@ -3547,26 +3547,26 @@ async def execute_raid(channel, raid_data):
             if ac["cid"] == 19 and ac["is_ace2"] and not c.get("marisa_spark_used"):
                 if random.random() < 0.30:
                     c["marisa_spark_used"] = True
-                    card_dmg = int(card_dmg * 2.0)
+                    card_dmg = int(card_dmg * 2.5)
                     if not turn_image:
                         turn_image = EVOL_CONFIG[19]["skill_gif"]
-                    marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.0 giáng **{card_dmg:,} DMG** lên Boss!"
+                    marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.5 giáng **{card_dmg:,} DMG** lên Boss!"
 
             # Kỹ năng Yukari Ace 2 tấn công:
             if ac["cid"] == 4 and ac.get("is_ace2"):
                 if not c.get("yukari_station_used") and random.random() < 0.30:
                     c["yukari_station_used"] = True
-                    card_dmg = int(card_dmg * 2.0)
+                    card_dmg = int(card_dmg * 2.2)
                     if not turn_image:
                         turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
-                    yukari_notif = f"🌌 **[Ace 2] [#04] Yukari** ({c['username']}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{card_dmg:,} DMG**!"
+                    yukari_notif = f"🌌 **[Ace 2] [#04] Yukari** ({c['username']}) tung **Trip To The Old Station** (30%)! Sát thương ×2.2 giáng **{card_dmg:,} DMG**!"
                 elif not c.get("yukari_lastword_used") and random.random() < 0.25:
                     c["yukari_lastword_used"] = True
-                    card_dmg = int(card_dmg * 2.5)
+                    card_dmg = int(card_dmg * 3.5)
                     boss_stunned = True
                     if not turn_image:
                         turn_image = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/03/4b/epgnCZ5A8KOdm.gif"
-                    yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{card_dmg:,} DMG** và **STUN đối thủ**!"
+                    yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×3.5 gây **{card_dmg:,} DMG** và **STUN đối thủ**!"
 
             if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
                 if random.random() < 0.25:
@@ -3615,11 +3615,11 @@ async def execute_raid(channel, raid_data):
 
             if ac["cid"] == 13 and ac["is_ace2"]:
                 if random.random() < 0.30:
-                    card_dmg = int(card_dmg * 3.0)
+                    card_dmg = int(card_dmg * 3.5)
                     boss_molten_ground_turns = 3
                     if not turn_image:
                         turn_image = EVOL_CONFIG[13]["skill_gif"]
-                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
+                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.5 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
 
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
@@ -4596,7 +4596,7 @@ async def execute_raid(channel, raid_data):
                     if random.random() < 0.40:
                         c["sakuya_stun_used"] = True
                         boss_stunned = True
-                        turn_image = EVOL_CONFIG[19]["skill_gif"]
+                        turn_image = EVOL_CONFIG[18]["skill_gif"]
                         sakuya_stun_notif = f"⏳ **[Ace 2] [#18] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss Phase 2 bị **STUN**!"
                         break
 
@@ -4613,25 +4613,25 @@ async def execute_raid(channel, raid_data):
                 if ac["cid"] == 19 and ac["is_ace2"] and not c.get("marisa_spark_used"):
                     if random.random() < 0.30:
                         c["marisa_spark_used"] = True
-                        card_dmg = int(card_dmg * 2.0)
+                        card_dmg = int(card_dmg * 2.5)
                         if not turn_image:
                             turn_image = EVOL_CONFIG[19]["skill_gif"]
-                        marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.0 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
+                        marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.5 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
 
                 if ac["cid"] == 4 and ac.get("is_ace2"):
                     if not c.get("yukari_station_used") and random.random() < 0.30:
                         c["yukari_station_used"] = True
-                        card_dmg = int(card_dmg * 2.0)
+                        card_dmg = int(card_dmg * 2.2)
                         if not turn_image:
                             turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
-                        yukari_notif = f"🌌 **[Ace 2] [#04] Yukari** ({c['username']}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{card_dmg:,} DMG**!"
+                        yukari_notif = f"🌌 **[Ace 2] [#04] Yukari** ({c['username']}) tung **Trip To The Old Station** (30%)! Sát thương ×2.2 giáng **{card_dmg:,} DMG**!"
                     elif not c.get("yukari_lastword_used") and random.random() < 0.25:
                         c["yukari_lastword_used"] = True
-                        card_dmg = int(card_dmg * 2.5)
+                        card_dmg = int(card_dmg * 3.5)
                         boss_stunned = True
                         if not turn_image:
                             turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
-                        yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{card_dmg:,} DMG** và **STUN Boss Phase 2**!"
+                        yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×3.5 gây **{card_dmg:,} DMG** và **STUN Boss Phase 2**!"
 
                 if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
                     if random.random() < 0.25:
@@ -4680,11 +4680,11 @@ async def execute_raid(channel, raid_data):
 
                 if ac["cid"] == 13 and ac["is_ace2"]:
                     if random.random() < 0.30:
-                        card_dmg = int(card_dmg * 3.0)
+                        card_dmg = int(card_dmg * 3.5)
                         boss_molten_ground_turns = 3
                         if not turn_image:
                             turn_image = EVOL_CONFIG[13]["skill_gif"]
-                        utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho Boss Phase 2 trong 3 turn)!"
+                        utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.5 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho Boss Phase 2 trong 3 turn)!"
 
                 if str(ac["cid"]).lower() == "t1":
                     if ac.get("is_ace2"):
@@ -5210,7 +5210,7 @@ async def execute_raid(channel, raid_data):
                 if random.random() < 0.40:
                     c["sakuya_stun_used"] = True
                     boss_stunned = True
-                    turn_image = EVOL_CONFIG[19]["skill_gif"]
+                    turn_image = EVOL_CONFIG[18]["skill_gif"]
                     sakuya_stun_notif = f"⏳ **[Ace 2] [#18] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss Phase 2 bị **STUN**!"
                     break
 
@@ -5227,25 +5227,25 @@ async def execute_raid(channel, raid_data):
             if ac["cid"] == 19 and ac["is_ace2"] and not c.get("marisa_spark_used"):
                 if random.random() < 0.30:
                     c["marisa_spark_used"] = True
-                    card_dmg = int(card_dmg * 2.0)
+                    card_dmg = int(card_dmg * 2.5)
                     if not turn_image:
                         turn_image = EVOL_CONFIG[19]["skill_gif"]
-                    marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.0 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
+                    marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.5 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
 # Kỹ năng Yukari Ace 2:
             if ac["cid"] == 4 and ac.get("is_ace2"):
                 if not c.get("yukari_station_used") and random.random() < 0.30:
                     c["yukari_station_used"] = True
-                    card_dmg = int(card_dmg * 2.0)
+                    card_dmg = int(card_dmg * 2.2)
                     if not turn_image:
                         turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
-                    yukari_notif = f"🌌 **[Ace 2] [#04] Yukari** ({c['username']}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{card_dmg:,} DMG**!"
+                    yukari_notif = f"🌌 **[Ace 2] [#04] Yukari** ({c['username']}) tung **Trip To The Old Station** (30%)! Sát thương ×2.2 giáng **{card_dmg:,} DMG**!"
                 elif not c.get("yukari_lastword_used") and random.random() < 0.25:
                     c["yukari_lastword_used"] = True
-                    card_dmg = int(card_dmg * 2.5)
+                    card_dmg = int(card_dmg * 3.5)
                     boss_stunned = True
                     if not turn_image:
                         turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
-                    yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{card_dmg:,} DMG** và **STUN đối thủ**!"
+                    yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×3.5 gây **{card_dmg:,} DMG** và **STUN đối thủ**!"
 
             if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
                 if random.random() < 0.25:
@@ -5294,11 +5294,11 @@ async def execute_raid(channel, raid_data):
 
             if ac["cid"] == 13 and ac["is_ace2"]:
                 if random.random() < 0.30:
-                    card_dmg = int(card_dmg * 3.0)
+                    card_dmg = int(card_dmg * 3.5)
                     boss_molten_ground_turns = 3
                     if not turn_image:
                         turn_image = EVOL_CONFIG[13]["skill_gif"]
-                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.0 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho Boss Phase 2 trong 3 turn)!"
+                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({c['username']}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.5 giáng **{card_dmg:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho Boss Phase 2 trong 3 turn)!"
 
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
@@ -6036,24 +6036,24 @@ async def execute_event_raid(channel, raid_data):
             if ac["cid"] == 19 and ac["is_ace2"] and not c.get("marisa_spark_used"):
                 if random.random() < 0.30:
                     c["marisa_spark_used"] = True
-                    card_dmg = int(card_dmg * 2.0)
+                    card_dmg = int(card_dmg * 2.5)
                     if not turn_image: turn_image = EVOL_CONFIG[19]["skill_gif"]
-                    marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa** ({c['username']}) tung **Master Spark (×2.0)**! Giáng **{card_dmg:,} DMG**!"
+                    marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa** ({c['username']}) tung **Master Spark (×2.5)**! Giáng **{card_dmg:,} DMG**!"
 
             if ac["cid"] == 4 and ac.get("is_ace2"):
                 if not c.get("yukari_station_used") and random.random() < 0.30:
                     c["yukari_station_used"] = True
-                    card_dmg = int(card_dmg * 2.0)
+                    card_dmg = int(card_dmg * 2.2)
                     if not turn_image:
                         turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
-                    yukari_notif = f"🌌 **[Ace 2] [#04] Yukari** ({c['username']}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{card_dmg:,} DMG**!"
+                    yukari_notif = f"🌌 **[Ace 2] [#04] Yukari** ({c['username']}) tung **Trip To The Old Station** (30%)! Sát thương ×2.2 giáng **{card_dmg:,} DMG**!"
                 elif not c.get("yukari_lastword_used") and random.random() < 0.25:
                     c["yukari_lastword_used"] = True
-                    card_dmg = int(card_dmg * 2.5)
+                    card_dmg = int(card_dmg * 3.5)
                     boss_stunned = True
                     if not turn_image:
                         turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
-                    yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{card_dmg:,} DMG** và **STUN Boss Kizuna**!"
+                    yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×3.5 gây **{card_dmg:,} DMG** và **STUN Boss Kizuna**!"
 
             if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
                 if random.random() < 0.25:
@@ -6088,10 +6088,10 @@ async def execute_event_raid(channel, raid_data):
 
             if ac["cid"] == 13 and ac["is_ace2"]:
                 if random.random() < 0.30:
-                    card_dmg = int(card_dmg * 3.0)
+                    card_dmg = int(card_dmg * 3.5)
                     boss_molten_ground_turns = 3
                     if not turn_image: turn_image = EVOL_CONFIG[13]["skill_gif"]
-                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho** ({c['username']}) tung **Nuclear Spell Card (×3.0)**! Giáng **{card_dmg:,} DMG** & nung đất 3 lượt!"
+                    utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho** ({c['username']}) tung **Nuclear Spell Card (×3.5)**! Giáng **{card_dmg:,} DMG** & nung đất 3 lượt!"
 
             # KỸ NĂNG THẺ T1 SEIKI
             if str(ac["cid"]).lower() == "t1":
@@ -6534,27 +6534,27 @@ async def execute_event_raid(channel, raid_data):
             if ac["cid"] == 19 and ac["is_ace2"] and not c.get("marisa_spark_used"):
                 if random.random() < 0.30:
                     c["marisa_spark_used"] = True
-                    card_dmg = int(card_dmg * 2.0)
+                    card_dmg = int(card_dmg * 2.5)
                     if not turn_image: turn_image = EVOL_CONFIG[19]["skill_gif"]
-                    marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa** ({c['username']}) tung **Master Spark (×2.0)**! Giáng **{card_dmg:,} DMG**!"
+                    marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa** ({c['username']}) tung **Master Spark (×2.5)**! Giáng **{card_dmg:,} DMG**!"
 
             if ac["cid"] == 4 and ac.get("is_ace2"):
                 if not c.get("yukari_station_used") and random.random() < 0.30:
                     c["yukari_station_used"] = True
-                    card_dmg = int(card_dmg * 2.0)
+                    card_dmg = int(card_dmg * 2.2)
                     if not turn_image:
                         turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
-                    yukari_notif = f"🌌 **[Ace 2] [#04] Yukari** ({c['username']}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{card_dmg:,} DMG**!"
+                    yukari_notif = f"🌌 **[Ace 2] [#04] Yukari** ({c['username']}) tung **Trip To The Old Station** (30%)! Sát thương ×2.2 giáng **{card_dmg:,} DMG**!"
                 elif not c.get("yukari_lastword_used") and random.random() < 0.25:
                     c["yukari_lastword_used"] = True
-                    card_dmg = int(card_dmg * 2.5)
+                    card_dmg = int(card_dmg * 3.5)
                     if not turn_image:
                         turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
                     if boss_wg_active:
                         yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** nhưng bị **Wonder Guard Boss** chặn đứng STUN & phản đòn!"
                     else:
                         boss_stunned = True
-                        yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{card_dmg:,} DMG** và **STUN Boss Kizuna**!"
+                        yukari_notif = f"👁️ **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×3.5 gây **{card_dmg:,} DMG** và **STUN Boss Kizuna**!"
 
             if ac["cid"] == 9 and ac["is_ace2"] and not c.get("flandre_used"):
                 if random.random() < 0.25:
@@ -6601,13 +6601,13 @@ async def execute_event_raid(channel, raid_data):
 
             if ac["cid"] == 13 and ac["is_ace2"]:
                 if random.random() < 0.30:
-                    card_dmg = int(card_dmg * 3.0)
+                    card_dmg = int(card_dmg * 3.5)
                     if not turn_image: turn_image = EVOL_CONFIG[13]["skill_gif"]
                     if boss_wg_active:
-                        utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho** ({c['username']}) tung **Nuclear Spell Card (×3.0)** nhưng bị **Wonder Guard Boss** chặn hiệu ứng nung đất & phản sát thương!"
+                        utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho** ({c['username']}) tung **Nuclear Spell Card (×3.5)** nhưng bị **Wonder Guard Boss** chặn hiệu ứng nung đất & phản sát thương!"
                     else:
                         boss_molten_ground_turns = 3
-                        utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho** ({c['username']}) tung **Nuclear Spell Card (×3.0)**! Giáng **{card_dmg:,} DMG** & nung đất 3 lượt!"
+                        utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho** ({c['username']}) tung **Nuclear Spell Card (×3.5)**! Giáng **{card_dmg:,} DMG** & nung đất 3 lượt!"
 
             # KỸ NĂNG THẺ T1 SEIKI
             if str(ac["cid"]).lower() == "t1":
@@ -7849,7 +7849,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             f"• Trạng thái: **{reimu_status}**\n"
             f"• Trong túi đồ: **{reimu_cnt}/20** lá *(tiến hóa xong trừ 20 lá)*\n"
             f"• Buff Ace: **+300 ATK** & **+300 HP**\n"
-            f"• Kỹ năng: **{reimu_cfg['skill_name']}** (Miễn thương 1 lần trong trận, tỷ lệ 40% cả raid và battle/pvp)"
+            f"• Kỹ năng: **{reimu_cfg['skill_name']}** (Miễn thương + phản đòn 1x ATK, 1 lần/trận, tỷ lệ 40% cả raid và battle/pvp)"
         ),
         inline=False
     )
@@ -7873,7 +7873,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             f"• Trạng thái: **{marisa_status}**\n"
             f"• Trong túi đồ: **{marisa_cnt}/25** lá *(tiến hóa xong trừ 25 lá)*\n"
             f"• Buff Ace: **+300 ATK** & **+300 HP**\n"
-            f"• Kỹ năng: **{marisa_cfg['skill_name']}** (Master Spark ×2.0 sát thương gốc, rate 30% kích hoạt 1 lần trong trận)"
+            f"• Kỹ năng: **{marisa_cfg['skill_name']}** (Master Spark ×2.5 sát thương gốc, rate 30% kích hoạt 1 lần trong trận)"
         ),
         inline=False
     )
@@ -7933,7 +7933,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             f"• Trạng thái: **{utsuho_status}**\n"
             f"• Trong túi đồ: **{utsuho_cnt}/30** lá *(tiến hóa xong trừ 30 lá)*\n"
             f"• Buff Ace: **+300 ATK** & **+300 HP**\n"
-            f"• Kỹ năng: **{utsuho_cfg['skill_name']}** (30% gây 3.0x sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch ra sân sau đó trong 3 turn)"
+            f"• Kỹ năng: **{utsuho_cfg['skill_name']}** (30% gây 3.5x sát thương & nung chảy mặt đất gây bỏng 2% Máu Tối Đa cho bài địch ra sân sau đó trong 3 turn)"
         ),
         inline=False
     )
@@ -7945,7 +7945,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             f"• Trạng thái: **{yukari_status}**\n"
             f"• Túi đồ: **{yukari_cnt}/10** Thẻ Yukari | **{yukari_fan_cnt}/1** Quạt Giấy 🪭\n"
             f"• Buff Ace: **+300 ATK** & **+300 HP**\n"
-            f"• Kỹ năng: **Trip To The Old Station** (30% x2.0 DMG) • **Last Word** (25% x2.5 DMG + Stun 1 turn) • **Invisible Gap** (10% phản 100% đòn đánh thường)"
+            f"• Kỹ năng: **Trip To The Old Station** (30% x2.2 DMG) • **Last Word** (25% x3.5 DMG + Stun 1 turn) • **Invisible Gap** (10% phản 100% đòn đánh thường)"
         ),
         inline=False
     )
@@ -8033,7 +8033,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     app_commands.Choice(name="[#09] Flandre Scarlet (Ace 2 - Cần 30 thẻ)", value="flandre"),
     app_commands.Choice(name="[#12] Remilia Scarlet (Ace 2 - Cần 25 thẻ)", value="remilia"),
     app_commands.Choice(name="[#13] Utsuho Reiuji (Ace 2 - Cần 30 thẻ)", value="utsuho"),
-    app_commands.Choice(name="[#15] reimu Hakurei (Ace 2 - Cần 20 thẻ)", value="reimu"),
+    app_commands.Choice(name="[#17] Reimu Hakurei (Ace 2 - Cần 20 thẻ)", value="reimu"),
     app_commands.Choice(name="[#19] Kasen Ibaraki (Ace 2 - 25 thẻ + có #14)", value="kasen"),
     app_commands.Choice(name="[#20] Sakuya Izayoi (Ace 2 - Cần 30 thẻ)", value="sakuya"),
     app_commands.Choice(name="[#20] Sakuya Izayoi (Ace 3 - 100 thẻ + 6 Ace2 + Prestige 4)", value="18a3"),
@@ -10095,7 +10095,7 @@ async def handle_battle(ctx_or_interaction):
             if random.random() < 0.40:
                 p_sakuya = True
                 stunned_oc = True
-                turn_image = EVOL_CONFIG[19]["skill_gif"]
+                turn_image = EVOL_CONFIG[18]["skill_gif"]
                 msg_skill = f"⏳ **[Ace 2] [#18] Sakuya** kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {oc['name']} bị STUN mất lượt!"
                 battle_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
@@ -10105,7 +10105,7 @@ async def handle_battle(ctx_or_interaction):
                 o_sakuya = True
                 stunned_pc = True
                 if not turn_image:
-                    turn_image = EVOL_CONFIG[19]["skill_gif"]
+                    turn_image = EVOL_CONFIG[18]["skill_gif"]
                 msg_skill = f"⏳ **Đối thủ [Ace 2] [#18] Sakuya** kích hoạt **Thời Gian Đóng Băng** (30%)! ❄️ {pc['name']} bị STUN mất lượt!"
                 battle_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
@@ -10114,29 +10114,29 @@ async def handle_battle(ctx_or_interaction):
         if pc["cid"] == 19 and pc["is_ace2"] and not p_marisa:
             if random.random() < 0.30:
                 p_marisa = True
-                curr_pc_power = int(curr_pc_power * 2.0)
+                curr_pc_power = int(curr_pc_power * 2.5)
                 if not turn_image:
                     turn_image = EVOL_CONFIG[19]["skill_gif"]
-                msg_m = f"🌟 **[Ace 2] [#19] Marisa** tung ra **Master Spark** (30%)! Bộc phá ×2.0 sát thương gây **{curr_pc_power:,} DMG**!"
+                msg_m = f"🌟 **[Ace 2] [#19] Marisa** tung ra **Master Spark** (30%)! Bộc phá ×2.5 sát thương gây **{curr_pc_power:,} DMG**!"
                 battle_logs.append(msg_m)
                 turn_actions.append(msg_m)
 # Kỹ năng Yukari Ace 2 trong PvE Battle:
         if pc["cid"] == 4 and pc["is_ace2"]:
             if not p_yukari_station and random.random() < 0.30:
                 p_yukari_station = True
-                curr_pc_power = int(curr_pc_power * 2.0)
+                curr_pc_power = int(curr_pc_power * 2.2)
                 if not turn_image:
                     turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
-                msg_y = f"🌌 **[Ace 2] [#04] Yukari** ({user.display_name}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{curr_pc_power:,} DMG**!"
+                msg_y = f"🌌 **[Ace 2] [#04] Yukari** ({user.display_name}) tung **Trip To The Old Station** (30%)! Sát thương ×2.2 giáng **{curr_pc_power:,} DMG**!"
                 battle_logs.append(msg_y)
                 turn_actions.append(msg_y)
             elif not p_yukari_lastword and random.random() < 0.25:
                 p_yukari_lastword = True
-                curr_pc_power = int(curr_pc_power * 2.5)
+                curr_pc_power = int(curr_pc_power * 3.5)
                 stunned_oc = True
                 if not turn_image:
                     turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
-                msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({user.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{curr_pc_power:,} DMG** và **STUN đối thủ**!"
+                msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({user.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×3.5 gây **{curr_pc_power:,} DMG** và **STUN đối thủ**!"
                 battle_logs.append(msg_y)
                 turn_actions.append(msg_y)
                 
@@ -10169,11 +10169,11 @@ async def handle_battle(ctx_or_interaction):
 
         if pc["cid"] == 13 and pc["is_ace2"]:
             if random.random() < 0.30:
-                curr_pc_power = int(curr_pc_power * 3.0)
+                curr_pc_power = int(curr_pc_power * 3.5)
                 o_molten_ground_turns = 3
                 if not turn_image:
                     turn_image = EVOL_CONFIG[13]["skill_gif"]
-                msg_u = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({user.display_name}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.0 giáng **{curr_pc_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
+                msg_u = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({user.display_name}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.5 giáng **{curr_pc_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
                 battle_logs.append(msg_u)
                 turn_actions.append(msg_u)
 
@@ -10333,29 +10333,29 @@ async def handle_battle(ctx_or_interaction):
             if oc["cid"] == 19 and oc.get("is_ace2") and not o_marisa:
                 if random.random() < 0.30:
                     o_marisa = True
-                    curr_oc_power = int(curr_oc_power * 2.0)
+                    curr_oc_power = int(curr_oc_power * 2.5)
                     if not turn_image:
                         turn_image = EVOL_CONFIG[19]["skill_gif"]
-                    msg_m = f"🌟 **Đối thủ [Ace 2] [#19] Marisa** tung ra **Master Spark** (30%)! Bộc phá ×2.0 sát thương gây **{curr_oc_power:,} DMG**!"
+                    msg_m = f"🌟 **Đối thủ [Ace 2] [#19] Marisa** tung ra **Master Spark** (30%)! Bộc phá ×2.5 sát thương gây **{curr_oc_power:,} DMG**!"
                     battle_logs.append(msg_m)
                     turn_actions.append(msg_m)
 
             if oc["cid"] == 4 and oc.get("is_ace2"):
                 if not o_yukari_station and random.random() < 0.30:
                     o_yukari_station = True
-                    curr_oc_power = int(curr_oc_power * 2.0)
+                    curr_oc_power = int(curr_oc_power * 2.2)
                     if not turn_image:
                         turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
-                    msg_y = f"🌌 **Đối thủ [Ace 2] [#04] Yukari** tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{curr_oc_power:,} DMG**!"
+                    msg_y = f"🌌 **Đối thủ [Ace 2] [#04] Yukari** tung **Trip To The Old Station** (30%)! Sát thương ×2.2 giáng **{curr_oc_power:,} DMG**!"
                     battle_logs.append(msg_y)
                     turn_actions.append(msg_y)
                 elif not o_yukari_lastword and random.random() < 0.25:
                     o_yukari_lastword = True
-                    curr_oc_power = int(curr_oc_power * 2.5)
+                    curr_oc_power = int(curr_oc_power * 3.5)
                     stunned_pc = True
                     if not turn_image:
                         turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
-                    msg_y = f"👁️ **Đối thủ [Ace 2] [#04] Yukari** kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{curr_oc_power:,} DMG** và **STUN bạn 1 lượt**!"
+                    msg_y = f"👁️ **Đối thủ [Ace 2] [#04] Yukari** kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×3.5 gây **{curr_oc_power:,} DMG** và **STUN bạn 1 lượt**!"
                     battle_logs.append(msg_y)
                     turn_actions.append(msg_y)
 
@@ -10404,11 +10404,11 @@ async def handle_battle(ctx_or_interaction):
 
             if oc["cid"] == 13 and oc.get("is_ace2") and oc.get("erased_skill") != "utsuho_nuclear":
                 if random.random() < 0.30:
-                    curr_oc_power = int(curr_oc_power * 3.0)
+                    curr_oc_power = int(curr_oc_power * 3.5)
                     p_molten_ground_turns = 3
                     if not turn_image:
                         turn_image = EVOL_CONFIG[13]["skill_gif"]
-                    msg_u = f"☢️ **Đối thủ [Ace 2] [#13] Utsuho Reiuji** bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.0 giáng **{curr_oc_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa trong 3 turn)!"
+                    msg_u = f"☢️ **Đối thủ [Ace 2] [#13] Utsuho Reiuji** bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.5 giáng **{curr_oc_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa trong 3 turn)!"
                     battle_logs.append(msg_u)
                     turn_actions.append(msg_u)
 
@@ -10483,6 +10483,8 @@ async def handle_battle(ctx_or_interaction):
                 if random.random() < 0.30:
                     o_reimu = True
                     oc_invul = True
+                    pc["current_hp"] = max(0, pc["current_hp"] - oc["power"])
+                    turn_actions.append(f"🌸 **Đối thủ [Ace 2] [#15] reimu** phản đòn **1x ATK**, gây **{oc['power']:,} DMG** lên **{pc['name']}**!")
                     if not turn_image:
                         turn_image = EVOL_CONFIG[15]["skill_gif"]
                     msg_skill = f"🛡️ **Đối thủ [Ace 2] [#15] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (30%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
@@ -10524,6 +10526,8 @@ async def handle_battle(ctx_or_interaction):
                 if random.random() < 0.40:
                     p_reimu = True
                     pc_invul = True
+                    oc["current_hp"] = max(0, oc["current_hp"] - pc["power"])
+                    turn_actions.append(f"🌸 **[Ace 2] [#15] reimu** phản đòn **1x ATK**, gây **{pc['power']:,} DMG** lên **{oc['name']}**!")
                     if not turn_image:
                         turn_image = EVOL_CONFIG[15]["skill_gif"]
                     msg_skill = f"🛡️ **[Ace 2] [#15] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
@@ -10905,7 +10909,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
             if random.random() < 0.40:
                 c_sakuya = True
                 t_stunned = True
-                turn_image = EVOL_CONFIG[19]["skill_gif"]
+                turn_image = EVOL_CONFIG[18]["skill_gif"]
                 msg_skill = f"⏳ **[Ace 2] [#18] Sakuya** ({challenger.display_name}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {tc['name']} bị STUN!"
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
@@ -10915,7 +10919,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 t_sakuya = True
                 c_stunned = True
                 if not turn_image:
-                    turn_image = EVOL_CONFIG[19]["skill_gif"]
+                    turn_image = EVOL_CONFIG[18]["skill_gif"]
                 msg_skill = f"⏳ **[Ace 2] [#18] Sakuya** ({target.display_name}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {cc['name']} bị STUN!"
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
@@ -10926,6 +10930,8 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
             if random.random() < 0.40:
                 c_reimu = True
                 c_invul = True
+                tc["current_hp"] = max(0, tc["current_hp"] - cc["power"])
+                turn_actions.append(f"🌸 **[Ace 2] [#15] reimu** ({challenger.display_name}) phản đòn **1x ATK**, gây **{cc['power']:,} DMG** lên **{tc['name']}**!")
                 if not turn_image:
                     turn_image = EVOL_CONFIG[15]["skill_gif"]
                 msg_skill = f"🛡️ **[Ace 2] [#15] reimu** ({challenger.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
@@ -10950,6 +10956,8 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
             if random.random() < 0.40:
                 t_reimu = True
                 t_invul = True
+                cc["current_hp"] = max(0, cc["current_hp"] - tc["power"])
+                turn_actions.append(f"🌸 **[Ace 2] [#15] reimu** ({target.display_name}) phản đòn **1x ATK**, gây **{tc['power']:,} DMG** lên **{cc['name']}**!")
                 if not turn_image:
                     turn_image = EVOL_CONFIG[15]["skill_gif"]
                 msg_skill = f"🛡️ **[Ace 2] [#15] reimu** ({target.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
@@ -10975,29 +10983,29 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
         if cc["cid"] == 19 and cc["is_ace2"] and not c_marisa:
             if random.random() < 0.30:
                 c_marisa = True
-                c_curr_power = int(c_curr_power * 2.0)
+                c_curr_power = int(c_curr_power * 2.5)
                 if not turn_image:
                     turn_image = EVOL_CONFIG[19]["skill_gif"]
-                msg_m = f"🌟 **[Ace 2] [#19] Marisa** ({challenger.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×2.0 sát thương ({c_curr_power:,} DMG)!"
+                msg_m = f"🌟 **[Ace 2] [#19] Marisa** ({challenger.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×2.5 sát thương ({c_curr_power:,} DMG)!"
                 pvp_logs.append(msg_m)
                 turn_actions.append(msg_m)
 # Kỹ năng Yukari Ace 2 bên Thách đấu:
         if cc["cid"] == 4 and cc["is_ace2"]:
             if cc.get("erased_skill") != "yukari_station" and not p_yukari_station and random.random() < 0.30:
                 p_yukari_station = True
-                c_curr_power = int(c_curr_power * 2.0)
+                c_curr_power = int(c_curr_power * 2.2)
                 if not turn_image:
                     turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
-                msg_y = f"🌌 **[Ace 2] [#04] Yukari** ({challenger.display_name}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{c_curr_power:,} DMG**!"
+                msg_y = f"🌌 **[Ace 2] [#04] Yukari** ({challenger.display_name}) tung **Trip To The Old Station** (30%)! Sát thương ×2.2 giáng **{c_curr_power:,} DMG**!"
                 pvp_logs.append(msg_y)
                 turn_actions.append(msg_y)
             elif cc.get("erased_skill") != "yukari_lastword" and not p_yukari_lastword and random.random() < 0.25:
                 p_yukari_lastword = True
-                c_curr_power = int(c_curr_power * 2.5)
+                c_curr_power = int(c_curr_power * 3.5)
                 t_stunned = True
                 if not turn_image:
                     turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
-                msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({challenger.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{c_curr_power:,} DMG** và **STUN đối thủ**!"
+                msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({challenger.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×3.5 gây **{c_curr_power:,} DMG** và **STUN đối thủ**!"
                 pvp_logs.append(msg_y)
                 turn_actions.append(msg_y)
 
@@ -11030,11 +11038,11 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
 
         if cc["cid"] == 13 and cc["is_ace2"] and cc.get("erased_skill") != "utsuho_nuclear":
             if random.random() < 0.30:
-                c_curr_power = int(c_curr_power * 3.0)
+                c_curr_power = int(c_curr_power * 3.5)
                 t_molten_ground_turns = 3
                 if not turn_image:
                     turn_image = EVOL_CONFIG[13]["skill_gif"]
-                msg_u = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({challenger.display_name}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.0 giáng **{c_curr_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
+                msg_u = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({challenger.display_name}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.5 giáng **{c_curr_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
                 pvp_logs.append(msg_u)
                 turn_actions.append(msg_u)
 
@@ -11206,29 +11214,29 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
         if tc["cid"] == 19 and tc["is_ace2"] and not t_marisa:
             if random.random() < 0.30:
                 t_marisa = True
-                t_curr_power = int(t_curr_power * 2.0)
+                t_curr_power = int(t_curr_power * 2.5)
                 if not turn_image:
                     turn_image = EVOL_CONFIG[19]["skill_gif"]
-                msg_m = f"🌟 **[Ace 2] [#19] Marisa** ({target.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×2.0 sát thương ({t_curr_power:,} DMG)!"
+                msg_m = f"🌟 **[Ace 2] [#19] Marisa** ({target.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×2.5 sát thương ({t_curr_power:,} DMG)!"
                 pvp_logs.append(msg_m)
                 turn_actions.append(msg_m)
 # Kỹ năng Yukari Ace 2 bên Nhận thách đấu:
         if tc["cid"] == 4 and tc["is_ace2"]:
             if tc.get("erased_skill") != "yukari_station" and not o_yukari_station and random.random() < 0.30:
                 o_yukari_station = True
-                t_curr_power = int(t_curr_power * 2.0)
+                t_curr_power = int(t_curr_power * 2.2)
                 if not turn_image:
                     turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
-                msg_y = f"🌌 **[Ace 2] [#04] Yukari** ({target.display_name}) tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{t_curr_power:,} DMG**!"
+                msg_y = f"🌌 **[Ace 2] [#04] Yukari** ({target.display_name}) tung **Trip To The Old Station** (30%)! Sát thương ×2.2 giáng **{t_curr_power:,} DMG**!"
                 pvp_logs.append(msg_y)
                 turn_actions.append(msg_y)
             elif tc.get("erased_skill") != "yukari_lastword" and not o_yukari_lastword and random.random() < 0.25:
                 o_yukari_lastword = True
-                t_curr_power = int(t_curr_power * 2.5)
+                t_curr_power = int(t_curr_power * 3.5)
                 c_stunned = True
                 if not turn_image:
                     turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
-                msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({target.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{t_curr_power:,} DMG** và **STUN đối thủ**!"
+                msg_y = f"👁️ **[Ace 2] [#04] Yukari** ({target.display_name}) kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×3.5 gây **{t_curr_power:,} DMG** và **STUN đối thủ**!"
                 pvp_logs.append(msg_y)
                 turn_actions.append(msg_y)
 
@@ -11261,11 +11269,11 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
 
         if tc["cid"] == 13 and tc["is_ace2"] and tc.get("erased_skill") != "utsuho_nuclear":
             if random.random() < 0.30:
-                t_curr_power = int(t_curr_power * 3.0)
+                t_curr_power = int(t_curr_power * 3.5)
                 c_molten_ground_turns = 3
                 if not turn_image:
                     turn_image = EVOL_CONFIG[13]["skill_gif"]
-                msg_u = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({target.display_name}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.0 giáng **{t_curr_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
+                msg_u = f"☢️ **[Ace 2] [#13] Utsuho Reiuji** ({target.display_name}) bộc phát **Nuclear Spell Card** (30%)! Sát thương nhiệt hạch ×3.5 giáng **{t_curr_power:,} DMG** và nung chảy mặt đất (gây bỏng 2% Máu Tối Đa cho bài địch trong 3 turn)!"
                 pvp_logs.append(msg_u)
                 turn_actions.append(msg_u)
 
@@ -12483,24 +12491,24 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
         if pc["cid"] == 4 and pc.get("is_ace2"):
             if not yukari_station_used and random.random() < 0.30:
                 yukari_station_used = True
-                card_dmg = int(card_dmg * 2.0)
+                card_dmg = int(card_dmg * 2.2)
                 if not turn_image:
                     turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
-                turn_logs.append(f"🌌 **[Ace 2] [#04] Yukari** tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{card_dmg:,} DMG**!")
+                turn_logs.append(f"🌌 **[Ace 2] [#04] Yukari** tung **Trip To The Old Station** (30%)! Sát thương ×2.2 giáng **{card_dmg:,} DMG**!")
             elif not yukari_lastword_used and random.random() < 0.25:
                 yukari_lastword_used = True
-                card_dmg = int(card_dmg * 2.5)
+                card_dmg = int(card_dmg * 3.5)
                 yukari_stun_this_turn = True
                 if not turn_image:
                     turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
-                turn_logs.append(f"👁️ **[Ace 2] [#04] Yukari** kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{card_dmg:,} DMG** và **STUN Rumia 1 lượt**!")
+                turn_logs.append(f"👁️ **[Ace 2] [#04] Yukari** kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×3.5 gây **{card_dmg:,} DMG** và **STUN Rumia 1 lượt**!")
 
         if pc["cid"] == 19 and pc["is_ace2"] and not marisa_used:
             if random.random() < 0.30:
                 marisa_used = True
-                card_dmg = int(card_dmg * 2.0)
+                card_dmg = int(card_dmg * 2.5)
                 if not turn_image: turn_image = EVOL_CONFIG[19]["skill_gif"]
-                turn_logs.append(f"🌟 **[Ace 2] Marisa** tung **Master Spark** (×2.0)! Giáng {card_dmg:,} DMG!")
+                turn_logs.append(f"🌟 **[Ace 2] Marisa** tung **Master Spark** (×2.5)! Giáng {card_dmg:,} DMG!")
                 
           # Kỹ năng Seiki Ace 2 trong Story Mode
         if str(pc["cid"]).lower() == "t1" and pc.get("is_ace2"):
@@ -12604,6 +12612,8 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
                     if random.random() < 0.40:
                         reimu_used = True
                         invul = True
+                        rumia_hp = max(0, rumia_hp - pc["power"])
+                        turn_logs.append(f"🌸 **[Ace 2] Reimu** phản đòn **1x ATK**, gây **{pc['power']:,} DMG** lên Rumia!")
                         if not turn_image: turn_image = EVOL_CONFIG[15]["skill_gif"]
                         turn_logs.append(f"🛡️ **[Ace 2] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh**! Miễn toàn bộ sát thương!")
                 elif str(pc["cid"]).lower() == "t3" and pc.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
@@ -12894,24 +12904,24 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
             if pc["cid"] == 4 and pc.get("is_ace2"):
                 if not yukari_station_used and random.random() < 0.30:
                     yukari_station_used = True
-                    card_dmg = int(card_dmg * 2.0)
+                    card_dmg = int(card_dmg * 2.2)
                     if not turn_image:
                         turn_image = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/7e/69/snvix5aVyjKgjesAJV.gif"
-                    turn_logs.append(f"🌌 **[Ace 2] [#04] Yukari** tung **Trip To The Old Station** (30%)! Sát thương ×2.0 giáng **{card_dmg:,} DMG**!")
+                    turn_logs.append(f"🌌 **[Ace 2] [#04] Yukari** tung **Trip To The Old Station** (30%)! Sát thương ×2.2 giáng **{card_dmg:,} DMG**!")
                 elif not yukari_lastword_used and random.random() < 0.25:
                     yukari_lastword_used = True
-                    card_dmg = int(card_dmg * 2.5)
+                    card_dmg = int(card_dmg * 3.5)
                     yukari_stun_this_turn = True
                     if not turn_image:
                         turn_image = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/10/02/MpIyWY0S6AxOQZLQ.gif"
-                    turn_logs.append(f"👁️ **[Ace 2] [#04] Yukari** kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×2.5 gây **{card_dmg:,} DMG** và **STUN Cirno 1 lượt**!")
+                    turn_logs.append(f"👁️ **[Ace 2] [#04] Yukari** kích hoạt **⸮⸮⸮ : Last Word !** (25%)! Bộc phá ×3.5 gây **{card_dmg:,} DMG** và **STUN Cirno 1 lượt**!")
 
             if pc["cid"] == 19 and pc["is_ace2"] and not marisa_used:
                 if random.random() < 0.30:
                     marisa_used = True
-                    card_dmg = int(card_dmg * 2.0)
+                    card_dmg = int(card_dmg * 2.5)
                     if not turn_image: turn_image = EVOL_CONFIG[19]["skill_gif"]
-                    turn_logs.append(f"🌟 **[Ace 2] Marisa** tung **Master Spark** (×2.0)! Giáng {card_dmg:,} DMG!")
+                    turn_logs.append(f"🌟 **[Ace 2] Marisa** tung **Master Spark** (×2.5)! Giáng {card_dmg:,} DMG!")
                     
                     # Kỹ năng Seiki Ace 2 trong Stage 2
             if str(pc["cid"]).lower() == "t1" and pc.get("is_ace2"):
@@ -13026,6 +13036,8 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     if random.random() < 0.40:
                         reimu_used = True
                         invul = True
+                        cirno_hp = max(0, cirno_hp - pc["power"])
+                        turn_logs.append(f"🌸 **[Ace 2] Reimu** phản đòn **1x ATK**, gây **{pc['power']:,} DMG** lên Cirno!")
                         if not turn_image: turn_image = EVOL_CONFIG[15]["skill_gif"]
                         turn_logs.append("🛡️ **[Ace 2] Reimu** kích hoạt **Vô Tưởng Chuyển Sinh**! Miễn sát thương!")
                 elif str(pc["cid"]).lower() == "t3" and pc.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
@@ -14706,22 +14718,22 @@ def _jt_player_attack(c, ac, rnd, B, notes):
 
     if cid == 19 and is_ace and not c.get("marisa_spark_used") and random.random() < 0.30:
         c["marisa_spark_used"] = True
-        dmg = int(dmg * 2.0)
+        dmg = int(dmg * 2.5)
         setgif(EVOL_CONFIG[19]["skill_gif"])
-        notes.append(f"🌟 **[Ace 2] Marisa** {nm} tung **Master Spark** ×2.0 giáng **{dmg:,} DMG**!")
+        notes.append(f"🌟 **[Ace 2] Marisa** {nm} tung **Master Spark** ×2.5 giáng **{dmg:,} DMG**!")
 
     if cid == 4 and is_ace:
         if not c.get("yukari_station_used") and random.random() < 0.30:
             c["yukari_station_used"] = True
-            dmg = int(dmg * 2.0)
+            dmg = int(dmg * 2.2)
             setgif(T5_YUKARI_STATION_GIF)
-            notes.append(f"🌌 **[Ace 2] Yukari** {nm} tung **Trip To The Old Station** ×2.0 giáng **{dmg:,} DMG**!")
+            notes.append(f"🌌 **[Ace 2] Yukari** {nm} tung **Trip To The Old Station** ×2.2 giáng **{dmg:,} DMG**!")
         elif not c.get("yukari_lastword_used") and random.random() < 0.25:
             c["yukari_lastword_used"] = True
-            dmg = int(dmg * 2.5)
+            dmg = int(dmg * 3.5)
             B["stunned"] = True
             setgif(T5_YUKARI_LASTWORD_GIF)
-            notes.append(f"👁️ **[Ace 2] Yukari** {nm} kích hoạt **Last Word!** ×2.5 giáng **{dmg:,} DMG** và **STUN Boss**!")
+            notes.append(f"👁️ **[Ace 2] Yukari** {nm} kích hoạt **Last Word!** ×3.5 giáng **{dmg:,} DMG** và **STUN Boss**!")
 
     if cid == 9 and is_ace and not c.get("flandre_used") and random.random() < 0.25:
         c["flandre_used"] = True
@@ -14754,10 +14766,10 @@ def _jt_player_attack(c, ac, rnd, B, notes):
         notes.append(f"❄️ **[Ace 2] Cirno** {nm} kích hoạt **Perfect Freeze**! 2 turn tới Boss có 45% không thể đánh trả!")
 
     if cid == 13 and is_ace and random.random() < 0.30:
-        dmg = int(dmg * 3.0)
+        dmg = int(dmg * 3.5)
         B["molten"] = 3
         setgif(EVOL_CONFIG[13]["skill_gif"])
-        notes.append(f"☢️ **[Ace 2] Utsuho** {nm} tung **Nuclear Spell Card** ×3.0 giáng **{dmg:,} DMG** và nung chảy mặt đất 3 turn!")
+        notes.append(f"☢️ **[Ace 2] Utsuho** {nm} tung **Nuclear Spell Card** ×3.5 giáng **{dmg:,} DMG** và nung chảy mặt đất 3 turn!")
 
     if cid_s == "t1":
         if is_ace:
@@ -16348,23 +16360,23 @@ def story_s3_player_turn(pc, rnd, B, logs):
     # ----- Marisa Ace 2 -----
     if cid == 19 and ace2 and not fl.get("marisa") and random.random() < 0.30:
         fl["marisa"] = True
-        dmg = int(dmg * 2.0)
+        dmg = int(dmg * 2.5)
         g(EVOL_CONFIG[19]["skill_gif"])
-        logs.append(f"🌟 **[Ace 2] [#19] Marisa** tung **Master Spark** (30%)! ×2.0 giáng **{dmg:,} DMG**!")
+        logs.append(f"🌟 **[Ace 2] [#19] Marisa** tung **Master Spark** (30%)! ×2.5 giáng **{dmg:,} DMG**!")
 
     # ----- Yukari Ace 2 -----
     if cid == 4 and ace2:
         if not fl.get("y_station") and random.random() < 0.30:
             fl["y_station"] = True
-            dmg = int(dmg * 2.0)
+            dmg = int(dmg * 2.2)
             g(T5_YUKARI_STATION_GIF)
-            logs.append(f"🌌 **[Ace 2] [#04] Yukari** tung **Trip To The Old Station** (30%)! ×2.0 giáng **{dmg:,} DMG**!")
+            logs.append(f"🌌 **[Ace 2] [#04] Yukari** tung **Trip To The Old Station** (30%)! ×2.2 giáng **{dmg:,} DMG**!")
         elif not fl.get("y_last") and random.random() < 0.25:
             fl["y_last"] = True
-            dmg = int(dmg * 2.5)
+            dmg = int(dmg * 3.5)
             B["stun"] = True
             g(T5_YUKARI_LASTWORD_GIF)
-            logs.append(f"👁️ **[Ace 2] [#04] Yukari** kích hoạt **⸮⸮⸮ : Last Word !** (25%)! ×2.5 giáng **{dmg:,} DMG** và **STUN Meiling**!")
+            logs.append(f"👁️ **[Ace 2] [#04] Yukari** kích hoạt **⸮⸮⸮ : Last Word !** (25%)! ×3.5 giáng **{dmg:,} DMG** và **STUN Meiling**!")
 
     # ----- Flandre Ace 2: xóa 50% HP hiện tại của boss -----
     if cid == 9 and ace2 and not fl.get("flandre") and random.random() < 0.25:
@@ -16397,10 +16409,10 @@ def story_s3_player_turn(pc, rnd, B, logs):
 
     # ----- Utsuho Ace 2 -----
     if cid == 13 and ace2 and random.random() < 0.30:
-        dmg = int(dmg * 3.0)
+        dmg = int(dmg * 3.5)
         B["molten"] = 3
         g(EVOL_CONFIG[13]["skill_gif"])
-        logs.append(f"☢️ **[Ace 2] [#13] Utsuho** tung **Nuclear Spell Card** (30%)! ×3.0 giáng **{dmg:,} DMG** và nung chảy mặt đất 3 turn (2% Máu Tối Đa/turn)!")
+        logs.append(f"☢️ **[Ace 2] [#13] Utsuho** tung **Nuclear Spell Card** (30%)! ×3.5 giáng **{dmg:,} DMG** và nung chảy mặt đất 3 turn (2% Máu Tối Đa/turn)!")
 
     # ----- Hong Meiling (thẻ của người chơi) Ace 2 -----
     if cid == 24 and ace2 and not fl.get("meiling") and random.random() < 0.30:
@@ -17028,10 +17040,31 @@ def t7_duel_defend(front: dict, cards: list, incoming: int, base_power: int, att
     return incoming
 
 
+def reimu_counter_bonus(c, ac):
+    """Reimu Ace 2: sau khi Vo Tuong Chuyen Sinh kich hoat -> phan don 1x ATK (tra 1 lan)."""
+    try:
+        if not c.get("reimu_invul_used"):
+            c["reimu_paid"] = False
+            return 0, None
+        if c.get("reimu_paid"):
+            return 0, None
+        for k in c.get("team_cards", []):
+            if k.get("cid") == 15 and k.get("is_ace2"):
+                c["reimu_paid"] = True
+                d = int(k["power"])
+                return d, f"🌸 **[Ace 2] [#15] reimu** ({c['username']}) - **Vô Tưởng Chuyển Sinh** phản đòn **1x ATK**: +**{d:,} DMG** lên Boss!"
+    except Exception as e:
+        print(f"[REIMU] loi counter: {e}", flush=True)
+    return 0, None
+
 def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
     """Raid thường (Reimu/Seiki/Mahoraga/Fateria/Event Kizuna, cả Phase 2). L = locals() của vòng lặp."""
     eq_raid_mark(active)
     card_dmg = eq_raid_player_attack(ac, card_dmg, L)
+    _rb, _rl = reimu_counter_bonus(c, ac)
+    if _rb:
+        card_dmg += _rb
+        notif = (notif + chr(10) if notif else "") + _rl
     try:
         if str(ac.get("cid")).lower() != "t7":
             return card_dmg, boss_stunned, turn_image, notif
@@ -17100,6 +17133,10 @@ def t7_jt_attack(c, ac, dmg, B, notes):
     """Boss Jotaro / Han Seiki (dùng _jt_player_attack)."""
     eq_raid_mark(B.get("active", []))
     dmg = eq_jt_player_attack(ac, dmg, B)
+    _rb, _rl = reimu_counter_bonus(c, ac)
+    if _rb:
+        dmg += _rb
+        notes.append(_rl)
     try:
         if str(ac.get("cid")).lower() != "t7":
             return dmg
