@@ -102,7 +102,7 @@ def format_time_until_midnight_vn() -> str:
 # [UPDATE PRESTIGE] YÊU CẦU PRESTIGE CHO THẺ NHÓM T
 # ==============================================================================
 # Ace 2 của các thẻ T: thiếu Prestige -> Ace 2 bị KHÓA (mất buff + kỹ năng Ace 2)
-T_ACE2_PRESTIGE_REQ = {"t5": 4, "t1": 2, "t3": 4, "t7": 2}
+T_ACE2_PRESTIGE_REQ = {"t5": 4, "t1": 2, "t3": 3, "t7": 2}
 # Cả thẻ bị khóa (không dùng được) nếu thiếu Prestige. Fateria chưa có Ace 2 nên khóa cả thẻ.
 T_CARD_PRESTIGE_REQ = {"t4": 3}
 T_PRESTIGE_NAMES = {"t1": "Seiki", "t3": "Kizuna", "t4": "Fateria", "t5": "Jotaro", "t7": "Kisami"}
@@ -7580,7 +7580,7 @@ class EvolSelectView(discord.ui.View):
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
         await do_evolve_interaction(interaction, self.player, 17)
-    @discord.ui.button(label="🩸 [#t3] Tiến Hóa Kizuna Ace 2 (1 Thánh Lõi)", style=discord.ButtonStyle.danger, emoji="👑", row=3)
+    @discord.ui.button(label="🩸 [#t3] Tiến Hóa Kizuna Ace 2 (1 Thánh Lõi + P3)", style=discord.ButtonStyle.danger, emoji="👑", row=3)
     async def button_evol_kizuna(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
@@ -7950,6 +7950,28 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
         inline=False
     )
     
+    _kz_ace = is_card_ace2(player, "t3")
+    _kz_unl = is_card_unlocked(player, "t3") or player.get("inventory", {}).get("t3", 0) > 0
+    _kz_tl = player.get("items", {}).get("thanh_loi", 0) or player.get("shards", {}).get("thanh_loi", 0)
+    _kz_p = player.get("prestige", 0)
+    if _kz_ace:
+        _kz_status = "✅ ĐÃ ĐẠT ACE 2 ⭐⭐"
+    elif _raw_ace2(player, "t3") and _kz_p < 3:
+        _kz_status = f"🔒 ĐÃ TIẾN HÓA NHƯNG BỊ KHÓA (Cần P3+, hiện tại P{_kz_p})"
+    elif _kz_unl and _kz_tl >= 1 and _kz_p >= 3:
+        _kz_status = "🟢 SẴN SÀNG TIẾN HÓA!"
+    else:
+        _kz_status = f"🔴 Chưa đủ (Thẻ #t3: {'✅' if _kz_unl else '❌'} | Thánh Lõi: {_kz_tl}/1 | Prestige: P{_kz_p}/3)"
+    embed.add_field(
+        name="🩸 [#t3] Kizuna the emperor of vampire (Ace 2 - Yêu cầu: 1 Thánh Lõi + Prestige 3+):",
+        value=(
+            f"• Trạng thái: **{_kz_status}**\n"
+            "• Điều kiện: sở hữu thẻ #t3 (Ace 1) + **1 Thánh Lõi** + **Prestige 3+**\n"
+            "• Buff Ace: **+300 ATK** & **+300 HP**\n"
+            "• Kỹ năng: **True Vampire** (hồi 5% máu/lượt) • **Blood Chain** (2.0x DMG) • **Dark Chain** (1.5x + 5% Max HP) • **Wonder Guard** (20%: miễn thương & phản 60% trong 3 lượt)"
+        ),
+        inline=False
+    )
     embed.add_field(
         name="🔮 [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Điều kiện đặc biệt):",
         value=(
@@ -8043,7 +8065,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     app_commands.Choice(name="[#27] Hong Meiling (Ace 2 - Cần 100 thẻ)", value="meiling"),
     app_commands.Choice(name="[#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - 10 Mảnh)", value="t1"),
     app_commands.Choice(name="[#t5] Jotaro Kujo (Ace 2 - 10 Mảnh + Đĩa Ký Ức)", value="t5"),
-    app_commands.Choice(name="[#t3] Kizuna the emperor of vampire (Ace 2 - 1 Thánh Lõi)", value="t3"),
+    app_commands.Choice(name="[#t3] Kizuna the emperor of vampire (Ace 2 - 1 Thánh Lõi + Prestige 3)", value="t3"),
     app_commands.Choice(name="[#t7] Kisami Mikawa (Ace 2 - 15 Mảnh + Seiki Ace2 + Prestige 2)", value="t7")
 ])
 async def slash_evol(interaction: discord.Interaction, id_hoac_ten: str = None):
@@ -9125,7 +9147,7 @@ async def handle_view_shards(ctx_or_interaction):
             f"• Mảnh Kizuna: **`{kizuna_shards}/15` mảnh** (Kho thẻ: {has_kizuna} lá)\n"
             f"• 👑 **Thánh Lõi (Vật phẩm tiến hóa Ace 2):** **`{thanh_loi_cnt}/1` lõi**\n"
             f"• Thao tác: Gõ `/t translate loai_shard:kizuna` khi đủ 15 mảnh để nhận thẻ [T] #t3 Kizuna!\n"
-            f"• Tiến hóa Ace 2: Dùng `/evol id_hoac_ten:t3` khi đã có thẻ Kizuna và 1 Thánh Lõi."
+            f"• Tiến hóa Ace 2: Dùng `/evol id_hoac_ten:t3` khi đã có thẻ Kizuna, 1 Thánh Lõi và đạt **Prestige 3+**."
         ),
         inline=False
     )
@@ -9702,7 +9724,7 @@ class CharacterCheckView(discord.ui.View):
 
         embed = discord.Embed(
             title="🩸 [THẺ ĐẶC BIỆT NHÓM T] #t3 KIZUNA THE EMPEROR OF VAMPIRE" + (" - ACE 2 ⭐⭐" if is_kizuna_ace else ""),
-            description=f"*{details.get('title', 'Hoàng Đế Ma Cà Rồng')}*\n✨ Mở khóa bằng **15 Mảnh Kizuna** (`/t translate loai_shard:kizuna`). Tiến hóa Ace 2 cần **1 Thánh Lõi**.",
+            description=f"*{details.get('title', 'Hoàng Đế Ma Cà Rồng')}*\n✨ Mở khóa bằng **15 Mảnh Kizuna** (`/t translate loai_shard:kizuna`). Tiến hóa Ace 2 cần **1 Thánh Lõi + Prestige 3+**.",
             color=0x991B1B
         )
         embed.set_image(url=card["image"])
@@ -15597,7 +15619,7 @@ PRIME_BOSS_CONFIG = {
     "desc": "Kẻ thao túng khái niệm tối thượng. Mọi quy luật đều có thể bị đảo ngược trong tay hắn!",
     "reimu_quote": "Khí tức này... không phải thứ mà con người nên đối mặt. Tất cả đồng lòng, đừng để hắn đảo ngược cuộc chiến!",
     "image": PRIME_GIF_SPAWN,
-    "hp": 230000,
+    "hp": 200000,
     "power": 11000,
     "dmg_reduction": 0.20,
     "kill_heal_pct": 0.025,
@@ -15754,7 +15776,7 @@ async def spawn_prime_raid(channel, author, is_admin=False):
     embed.add_field(
         name="⚖️ Nội Tại & Kỹ Năng:",
         value=(
-            "• 🛡️ **Linh hồn của công lý (Passive):** Giảm **20% sát thương nhận vào**. Mỗi lần hạ được **1 thẻ bài**, hồi **2,5% máu tối đa**!\n"
+            "• 🛡️ **Linh hồn của công lý (Passive):** Giảm **20% sát thương nhận vào**. Mỗi lần hạ được **1 thẻ bài**, hồi **1,5% máu tối đa**!\n"
             "• 🔄 **Phản chuyển Niệm Bóng (25%):** Đảo ngược khái niệm, giáng đòn hủy diệt **2.2x sát thương gốc (24,200 DMG)** chia đều tiền tuyến!\n"
             "• 🧩 **Gán ghép (15%):** Tập hợp các khái niệm gán lại, **hồi 20% máu tối đa**!\n"
             "• ♾️ **Nhị Phân Vô Cực khái niệm (10%):** Đòn kết liễu — **hạ gục ngay 1 mục tiêu ngẫu nhiên (1 hit)**, "
@@ -16112,7 +16134,7 @@ async def execute_prime_raid(channel, raid_data):
             heal = int(max_hp * cfg["kill_heal_pct"] * kills)
             old = B["hp"]
             B["hp"] = min(max_hp, B["hp"] + heal)
-            boss_fx.append(f"⚖️ **[Linh hồn của công lý]** Han Seiki hạ **{kills} thẻ bài** và hồi **+{B['hp'] - old:,} HP** (2,5% máu tối đa/thẻ)!")
+            boss_fx.append(f"⚖️ **[Linh hồn của công lý]** Han Seiki hạ **{kills} thẻ bài** và hồi **+{B['hp'] - old:,} HP** (1,5% máu tối đa/thẻ)!")
 
         # ---------- Embed ----------
         status_str = _pr_status_lines(combatants)
