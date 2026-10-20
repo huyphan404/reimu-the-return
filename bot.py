@@ -483,6 +483,43 @@ CARDS_DATA["t6"] = {
     }
 }
 
+# ===== [UPDATE KISAMI] THẺ T7 KISAMI MIKAWA =====
+KISAMI_IMG = "https://media.discordapp.net/attachments/1543072032034521228/1562009733647310868/95d340a2-ee60-4d87-8632-5af565d96ae5.png?ex=6ad86e6d&is=6ad71ced&hm=e41d812ea390dec7202e7a9ffacf5196811c1b42b6a5081ed90041b94c2c825e&=&format=webp&quality=lossless&width=1280&height=741"
+KISAMI_UNLOCK_GIF = "https://static2.klipy.com/ii/e293a233a303a98e471f78d04e13a1b0/fc/51/IfnDrVf7.gif"
+KISAMI_EVOL_GIF = "https://static2.klipy.com/ii/2fd1ee858360694ebc7272832a866c2b/41/cb/xszsQiWnzVCG.gif"
+KISAMI_GIF_DICHMIEN = "https://static2.klipy.com/ii/8ce8357c78ea940b9c2015daf05ce1a5/d0/7e/F9sn3NmC.gif"
+KISAMI_GIF_AOANH = "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/d7/bb/mpOs8RMl.gif"
+KISAMI_GIF_NHIETBANG = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/52/d2/3N9aLd72pWd1WE.gif"
+KISAMI_GIF_KHUCXA = "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/1d/c0/KqU5jQtd.gif"
+
+KISAMI_SHARDS_UNLOCK = 10          # đổi thẻ Ace 1
+KISAMI_SHARDS_ACE2 = 15            # tiến hóa Ace 2
+KISAMI_ACE2_PRESTIGE = 3           # prestige tối thiểu để lên Ace 2
+KISAMI_SKILL_REDUCE = 0.10         # passive Dịch ma thuật: giảm 10% sát thương từ chiêu
+KISAMI_ACE2_KEEP_REDUCTION = True  # Ace 2 có giữ passive giảm 10% không
+KISAMI_POISON_PCTS = (0.06, 0.10, 0.05)   # độc 3 lượt: 6% / 10% / 5% máu tối đa
+KISAMI_NHIETBANG_CHANCE = 0.30     # Ace 2 skill 1 (bạn chưa ghi %, tự đặt)
+KISAMI_KHUCXA_CHANCE = 0.25        # Ace 2 skill 2 (bạn chưa ghi %, tự đặt)
+KISAMI_ACE2_MAX_USES = 1           # số lần/trận của mỗi skill Ace 2
+KISAMI_BOSS_SKILL_KEYS = ("[KỸ NĂNG", "[SKILL", "[NỘI TẠI BOSS]", "Blood chain (20%)", "Dark chain (20%)")
+
+CARDS_DATA["t7"] = {
+    "id": "t7",
+    "name": "Kisami Mikawa",
+    "rank": "T",
+    "power": 700,
+    "hp": 6500,
+    "image": KISAMI_IMG,
+    "unlock_gif": KISAMI_UNLOCK_GIF or KISAMI_IMG,
+    "passive": {
+        "name": "Dịch ma thuật",
+        "desc": "Giảm 10% sát thương nhận phải từ các chiêu (skills)."
+    },
+    "skills": {
+        "dich_mien": {"name": "Dịch miên", "chance": 0.30, "gif": KISAMI_GIF_DICHMIEN},
+        "ao_anh_huong": {"name": "Ảo ảnh hương", "chance": 0.25, "gif": KISAMI_GIF_AOANH}
+    }
+}
 JOTARO_XP_DROP_MULT = 1.5   # Boss drop XP = 1.5 x XP hiện tại (đổi số này nếu muốn)
 
 JOTARO_BOSS_CONFIG = {
@@ -1598,6 +1635,7 @@ CARD_ALIASES = {
     "mystia": 26, "lorelei": 26,
     "wriggle": 27, "nightbug": 27,
     "tewi": 28,
+    "kisami": "t7", "t7": "t7", "mikawa": "t7", "kisamimikawa": "t7",
     "koishi": 10, "komeiji": 10,
     "seiki": "t1", "t1": "t1", "dephap": "t1", "toannang": "t1",
     "mahoraga": "t2", "t2": "t2", "batach": "t2",
@@ -1723,6 +1761,7 @@ def get_player(user_id, username="Visitor"):
         data["shards"].setdefault("thanh_loi", 0)
         data["shards"].setdefault("jotaro", 0)
         data["shards"].setdefault("kanae", 0)
+        data["shards"].setdefault("kisami", 0)
 
     if "items" not in data or not isinstance(data.get("items"), dict):
         data["items"] = {"thanh_loi": 0, "keo_halloween": 0, "ruong_halloween_e": 0, "quat_giay": 0}
@@ -2096,6 +2135,11 @@ def apply_bong_khai_niem_card(target_card: dict):
             pool = [("t3_vampire", "True Vampire"), ("t3_blood", "Blood Chain"), ("t3_dark", "Dark Chain")]
     elif cid_str == "t4":
         pool = [("t4_save_loop", "Save loop"), ("t4_fate_loop", "Fate loop"), ("t4_clone_attack", "Clone attack")]
+    elif cid_str == "t7":
+        if is_ace:
+            pool = [("t7_nhietbang", "Nhiệt băng"), ("t7_khucxa", "Khúc xạ ánh sáng"), ("t7_cumul", "Cộng dồn hóa học")]
+        else:
+            pool = [("t7_reduce", "Dịch ma thuật"), ("t7_dichmien", "Dịch miên"), ("t7_aoanh", "Ảo ảnh hương")]
     elif cid_str == "t6":
         pool = [("t6_mark", "Dấu Ấn Anh Đào"), ("t6_burst", "Bộc Phát Ấn Điểm")]
     elif cid_str == "t5":
@@ -3660,7 +3704,7 @@ async def execute_raid(channel, raid_data):
                 turn_image = turn_image or _ks_gif
                 t3_notif = ((t3_notif + "\n") if t3_notif else "") + _ks_log
 
-            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            card_dmg, boss_stunned, turn_image, t3_notif = t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, t3_notif, active_combatants, locals()); _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
             if _ml_log:
                 card_dmg = int(card_dmg * _ml_mult)
                 if _ml_gif and not turn_image:
@@ -4118,7 +4162,7 @@ async def execute_raid(channel, raid_data):
                             else:
                                 ac["current_hp"] -= dmg_per_card
 
-        kasen_restore_guard(active_combatants); push_logs = []; tick_wonder_guard(active_combatants)
+        boss_action_log += t7_raid_after_boss(active_combatants, boss_action_log); kasen_restore_guard(active_combatants); push_logs = []; tick_wonder_guard(active_combatants)
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if str(ac["cid"]).lower() == "t4" and c.get("t4_invul_turn") == p1_rounds:
@@ -4699,7 +4743,7 @@ async def execute_raid(channel, raid_data):
                     turn_image = turn_image or _ks_gif
                     t3_notif = ((t3_notif + "\n") if t3_notif else "") + _ks_log
     
-                _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+                card_dmg, boss_stunned, turn_image, t3_notif = t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, t3_notif, active_combatants, locals()); _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
                 if _ml_log:
                     card_dmg = int(card_dmg * _ml_mult)
                     if _ml_gif and not turn_image:
@@ -4806,7 +4850,7 @@ async def execute_raid(channel, raid_data):
                     if not turn_image:
                         turn_image = p2_cfg["skills"]["cleave"]["gif"]
 
-            kasen_restore_guard(active_combatants); push_logs = []; tick_wonder_guard(active_combatants)
+            boss_action_log += t7_raid_after_boss(active_combatants, boss_action_log); kasen_restore_guard(active_combatants); push_logs = []; tick_wonder_guard(active_combatants)
             for c in active_combatants:
                 ac = c["team_cards"][c["current_card_index"]]
                 if str(ac["cid"]).lower() == "t4" and c.get("t4_invul_turn") == p2_rounds:
@@ -5306,7 +5350,7 @@ async def execute_raid(channel, raid_data):
                 turn_image = turn_image or _ks_gif
                 t3_notif = ((t3_notif + "\n") if t3_notif else "") + _ks_log
 
-            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            card_dmg, boss_stunned, turn_image, t3_notif = t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, t3_notif, active_combatants, locals()); _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
             if _ml_log:
                 card_dmg = int(card_dmg * _ml_mult)
                 if _ml_gif and not turn_image:
@@ -5390,7 +5434,7 @@ async def execute_raid(channel, raid_data):
                     if not invul:
                         ac["current_hp"] -= int(dmg_per_card * (1.0 - (min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05) if str(ac["cid"]).lower() == "t2" else 0.0)))
 
-        kasen_restore_guard(active_combatants); push_logs = []; tick_wonder_guard(active_combatants)
+        boss_action_log += t7_raid_after_boss(active_combatants, boss_action_log); kasen_restore_guard(active_combatants); push_logs = []; tick_wonder_guard(active_combatants)
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if str(ac["cid"]).lower() == "t4" and c.get("t4_invul_turn") == p2_rounds:
@@ -6065,7 +6109,7 @@ async def execute_event_raid(channel, raid_data):
                 turn_image = turn_image or _ks_gif
                 t3_notif = ((t3_notif + "\n") if t3_notif else "") + _ks_log
 
-            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            card_dmg, boss_stunned, turn_image, t3_notif = t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, t3_notif, active_combatants, locals()); _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
             if _ml_log:
                 card_dmg = int(card_dmg * _ml_mult)
                 if _ml_gif and not turn_image:
@@ -6174,7 +6218,7 @@ async def execute_event_raid(channel, raid_data):
                             ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
                         else:
                             ac["current_hp"] -= dmg_each
-        kasen_restore_guard(active_combatants); push_logs = []; tick_wonder_guard(active_combatants); restore_t4_save_loop(active_combatants, p1_rounds)
+        boss_action_log += t7_raid_after_boss(active_combatants, boss_action_log); kasen_restore_guard(active_combatants); push_logs = []; tick_wonder_guard(active_combatants); restore_t4_save_loop(active_combatants, p1_rounds)
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if ac["current_hp"] <= 0:
@@ -6587,7 +6631,7 @@ async def execute_event_raid(channel, raid_data):
                 turn_image = turn_image or _ks_gif
                 t3_notif = ((t3_notif + "\n") if t3_notif else "") + _ks_log
 
-            _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
+            card_dmg, boss_stunned, turn_image, t3_notif = t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, t3_notif, active_combatants, locals()); _ml_mult, _ml_gif, _ml_log = meiling_raid_turn(c, ac)
             if _ml_log:
                 card_dmg = int(card_dmg * _ml_mult)
                 if _ml_gif and not turn_image:
@@ -6743,7 +6787,7 @@ async def execute_event_raid(channel, raid_data):
                                 ac["current_hp"] -= int(dmg_each * (1.0 - adapt_pct))
                             else:
                                 ac["current_hp"] -= dmg_each
-        kasen_restore_guard(active_combatants); push_logs = []; tick_wonder_guard(active_combatants); restore_t4_save_loop(active_combatants, p2_rounds)
+        boss_action_log += t7_raid_after_boss(active_combatants, boss_action_log); kasen_restore_guard(active_combatants); push_logs = []; tick_wonder_guard(active_combatants); restore_t4_save_loop(active_combatants, p2_rounds)
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
             if ac["current_hp"] <= 0:
@@ -7139,7 +7183,8 @@ SHARD_DISPLAY_NAMES = {
     "fateria": "Fateria Shards",
     "thanh_loi": "Thánh Lõi",
     "jotaro": "Jotaro Shards",
-    "kanae": "Kanae Shards"
+    "kanae": "Kanae Shards",
+    "kisami": "Kisami Shards"
 }
 
 def normalize_shard_key(raw: str):
@@ -7156,6 +7201,8 @@ def normalize_shard_key(raw: str):
         return "thanh_loi"
     if s in ["kanae", "t6", "wasuko", "kanae_shard"]:
         return "kanae"
+    if s in ["kisami", "t7", "mikawa", "kisami_shard"]:
+        return "kisami"
     if s in ["jotaro", "t5", "kujo", "jotaro_shard"]:
         return "jotaro"    
     return None
@@ -7185,6 +7232,7 @@ def do_remove_shard(target_player: dict, s_key: str, so_luong: int):
     app_commands.Choice(name="Fateria Shards (fateria)", value="fateria"),
     app_commands.Choice(name="Jotaro Shards (jotaro)", value="jotaro"),
     app_commands.Choice(name="Kanae Shards (kanae)", value="kanae"),
+    app_commands.Choice(name="Kisami Shards (kisami)", value="kisami"),
     app_commands.Choice(name="Thánh Lõi (thanh_loi)", value="thanh_loi")
 ])
 async def slash_admin_remove_shard(interaction: discord.Interaction, nguoi_dung: discord.Member, loai_shard: str, so_luong: int = 1):
@@ -7477,7 +7525,13 @@ class EvolSelectView(discord.ui.View):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
-        await do_evolve_interaction(interaction, self.player, "18a3")    
+        await do_evolve_interaction(interaction, self.player, "18a3")  
+    @discord.ui.button(label="☠️ [#t7] Kisami Ace 2 (15 Mảnh + Seiki Ace2 + P3)", style=discord.ButtonStyle.success, emoji="⚗️", row=4)
+    async def button_evol_kisami(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
+            return
+        await do_evolve_interaction(interaction, self.player, "t7")
         
 def execute_card_evolution(player, cid: Union[int, str]):
     if str(cid).strip().lower() in ("18a3", "sakuya3", "ace3"):
@@ -7488,6 +7542,9 @@ def execute_card_evolution(player, cid: Union[int, str]):
         return execute_seiki_ace2(player)
     if str(cid).strip().lower() in ("t5", "jotaro", "kujo"):
         return execute_jotaro_ace2(player)  
+
+    if str(cid).strip().lower() in ("t7", "kisami", "mikawa"):
+        return execute_kisami_ace2(player)
 
     cfg = EVOL_CONFIG.get(cid)
     if not cfg:
@@ -7616,6 +7673,8 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             cid_target = "t1"
         elif nv_clean in ("t5", "#t5", "jotaro", "kujo"):
             cid_target = "t5"
+        elif nv_clean in ("t7", "#t7", "kisami", "mikawa"):
+            cid_target = "t7"
             
     if nhan_vat_hoac_id:
         _nv = str(nhan_vat_hoac_id).strip().lower().replace("#", "")
@@ -7870,6 +7929,16 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
         ),
         inline=False
     )
+    _k_sh = player.get("shards", {}).get("kisami", 0)
+    _k_ok = all([is_card_ace2(player, "t1"), player.get("prestige", 0) >= KISAMI_ACE2_PRESTIGE, _k_sh >= KISAMI_SHARDS_ACE2])
+    embed.add_field(
+        name="☠️ [#t7] Kisami Mikawa (Ace 2 - Điều kiện đặc biệt):",
+        value=(
+            f"• Trạng thái: **{'✅ ĐÃ ĐẠT ACE 2 ⭐⭐' if is_card_ace2(player, 't7') else ('🟢 SẴN SÀNG!' if _k_ok else '🔴 Chưa đủ')}**\n"
+            f"• Cần: **15 Kisami Shards** ({_k_sh}/15) + **Seiki Ace 2** ({'✅' if is_card_ace2(player, 't1') else '❌'}) + **Prestige 3+** (P{player.get('prestige', 0)})"
+        ),
+        inline=False
+    )
     embed.set_footer(text="Bấm nút chọn hoặc dùng /evol kèm ID nhân vật!")
 
     view = EvolSelectView(player, user.id)
@@ -7895,7 +7964,8 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     app_commands.Choice(name="[#27] Hong Meiling (Ace 2 - Cần 100 thẻ)", value="meiling"),
     app_commands.Choice(name="[#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - 10 Mảnh)", value="t1"),
     app_commands.Choice(name="[#t5] Jotaro Kujo (Ace 2 - 10 Mảnh + Đĩa Ký Ức)", value="t5"),
-    app_commands.Choice(name="[#t3] Kizuna the emperor of vampire (Ace 2 - 1 Thánh Lõi)", value="t3")
+    app_commands.Choice(name="[#t3] Kizuna the emperor of vampire (Ace 2 - 1 Thánh Lõi)", value="t3"),
+    app_commands.Choice(name="[#t7] Kisami Mikawa (Ace 2 - 15 Mảnh + Seiki Ace2 + Prestige 3)", value="t7")
 ])
 async def slash_evol(interaction: discord.Interaction, id_hoac_ten: str = None):
     await handle_evol(interaction, id_hoac_ten)
@@ -8578,7 +8648,7 @@ async def handle_collection(ctx_or_interaction):
 
     t_lines = []
     shards_cnt = player.get("shards", {}).get("seiki", 0)
-    for t_cid in ["t1", "t2", "t3", "t4", "t5", "t6"]:
+    for t_cid in ["t1", "t2", "t3", "t4", "t5", "t6", "t7"]:
         if t_cid in CARDS_DATA:
             t_card = CARDS_DATA[t_cid]
             t_cnt = player["inventory"].get(t_cid, 0)
@@ -8613,6 +8683,11 @@ async def handle_collection(ctx_or_interaction):
                 t_shard_info = f"   └ 🌸 **Kanae Shards:** `{k_shards}/10` mảnh"
                 if k_shards >= 10:
                     t_shard_info += " ✨ *(Đủ 10 mảnh! Dùng `/t translate loai_shard:kanae` để đổi ngay!)*"
+            elif t_cid == "t7":
+                _ks = player.get("shards", {}).get("kisami", 0)
+                t_shard_info = f"   └ ☠️ **Kisami Shards:** `{_ks}/{KISAMI_SHARDS_UNLOCK}` mảnh"
+                if _ks >= KISAMI_SHARDS_UNLOCK:
+                    t_shard_info += " ✨ *(Đủ mảnh! Dùng `/t translate loai_shard:kisami` để đổi ngay!)*"
             elif t_cid == "t4":
                 fateria_shards = player.get("shards", {}).get("fateria", 0)
                 t_shard_info = f"   └ ⏳ **Mảnh Fateria:** `{fateria_shards}/20` mảnh"
@@ -8681,6 +8756,10 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
         shard_key = "jotaro"
         target_card_id = "t5"
         needed_shards = 15
+    elif shard_key in ["kisami", "t7", "mikawa", "kisami_shard"]:
+        shard_key = "kisami"
+        target_card_id = "t7"
+        needed_shards = KISAMI_SHARDS_UNLOCK
     else:
         msg = f"❌ Loại mảnh `{loai_shard}` không tồn tại! Hiện tại có: `seiki` (10 mảnh), `mahoraga` (10 mảnh), `kizuna` (15 mảnh) và `fateria` (20 mảnh)."
         if isinstance(ctx_or_interaction, discord.Interaction):
@@ -8714,6 +8793,29 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
     player["inventory"][target_card_id] = player["inventory"].get(target_card_id, 0) + 1
     save_player(player)
 
+    if target_card_id == "t7":
+        embed = discord.Embed(
+            title="☠️ QUY ĐỔI THÀNH CÔNG: KISAMI MIKAWA!",
+            description=(
+                f"✨ **Chúc mừng {user.mention}!** Bạn đã dung hợp thành công **{KISAMI_SHARDS_UNLOCK} Kisami Shards**!\n\n"
+                f"🎴 **THẺ BÀI NHẬN ĐƯỢC:** **[T] #t7 Kisami Mikawa**\n"
+                f"• **Chỉ số:** ⚔️ Power: **{card_info['power']:,}** | ❤️ HP: **{card_info['hp']:,}**\n"
+                f"• 🧪 **Passive - Dịch ma thuật:** Giảm 10% sát thương nhận từ các chiêu\n"
+                f"• ☠️ **Skill 1 - Dịch miên (30%):** 1x DMG + độc 3 lượt (6%/10%/5% Máu Tối Đa), 1 lần/trận\n"
+                f"• 🌫️ **Skill 2 - Ảo ảnh hương (25%):** Địch 20% tự đánh vào mình trong 2 turn\n\n"
+                f"📦 **Kho mảnh còn lại:** `{shards_dict[shard_key]} Kisami Shards`\n"
+                f"🎒 **Kho đồ hiện tại:** `{player['inventory'][target_card_id]} lá`"
+            ),
+            color=0x22C55E
+        )
+        embed.set_image(url=card_info.get("unlock_gif") or card_info["image"])
+        embed.set_footer(text="Dùng /team add id_the:t7 để đưa Kisami vào đội hình!")
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=embed)
+        else:
+            await ctx_or_interaction.send(embed=embed)
+        return
+        
     if target_card_id == "t5":
         embed = discord.Embed(
             title="⏱️ QUY ĐỔI THÀNH CÔNG: JOTARO KUJO - STAR PLATINUM!",
@@ -8911,6 +9013,16 @@ async def handle_view_shards(ctx_or_interaction):
         ),
         inline=False
     )
+    kisami_shards = shards_dict.get("kisami", 0)
+    embed.add_field(
+        name="☠️ Mảnh Kisami Mikawa:",
+        value=(
+            f"• Hiện có: **`{kisami_shards}` mảnh** (Kho thẻ #t7: {player['inventory'].get('t7', 0)} lá)\n"
+            f"• Đổi thẻ Ace 1: `/t translate loai_shard:kisami` khi đủ {KISAMI_SHARDS_UNLOCK} mảnh\n"
+            f"• Ace 2: cần thêm **{KISAMI_SHARDS_ACE2} mảnh** + Seiki Ace 2 + Prestige {KISAMI_ACE2_PRESTIGE}+"
+        ),
+        inline=False
+    )
     kanae_shards = shards_dict.get("kanae", 0)
     embed.add_field(
         name="🌸 Mảnh Kanae Wasuko (Bom Anh Đào):",
@@ -8936,7 +9048,8 @@ class ShardGroup(app_commands.Group, name="t", description="Quản lý kho mản
         app_commands.Choice(name="Mảnh Kizuna (15 mảnh -> Thẻ [T] #t3 Kizuna)", value="kizuna"),
         app_commands.Choice(name="Mảnh Jotaro (15 mảnh -> Thẻ [T] #t5 Jotaro)", value="jotaro"),
         app_commands.Choice(name="Kanae Shards (10 mảnh -> Thẻ [T] #6 Kanae)", value="kanae"),
-        app_commands.Choice(name="Mảnh Fateria (20 mảnh -> Thẻ [T] #t4 Fateria)", value="fateria")
+        app_commands.Choice(name="Mảnh Fateria (20 mảnh -> Thẻ [T] #t4 Fateria)", value="fateria"),
+        app_commands.Choice(name="Kisami Shards (10 mảnh -> Thẻ [T] #t7 Kisami)", value="kisami")
     ])
     async def slash_t_translate(self, interaction: discord.Interaction, loai_shard: str = "seiki"):
         await handle_translate_shard(interaction, loai_shard)
@@ -9173,6 +9286,9 @@ class CharacterCheckView(discord.ui.View):
         t6_btn = discord.ui.Button(label="#t6 Kanae", style=discord.ButtonStyle.secondary, emoji="🌸", row=4)
         t6_btn.callback = self.show_t6_card
         self.add_item(t6_btn)
+        t7_btn = discord.ui.Button(label="#t7 Kisami", style=discord.ButtonStyle.secondary, emoji="☠️", row=4)
+        t7_btn.callback = self.show_t7_card
+        self.add_item(t7_btn)
         if cid == 18 and not (self.show_t1 or self.show_t2 or self.show_t3 or self.show_t4):
             s3_btn = discord.ui.Button(label="#18 Sakuya Ace 3", style=discord.ButtonStyle.primary, emoji="🌠", row=4)
             s3_btn.callback = self.show_s3_card
@@ -9341,6 +9457,9 @@ class CharacterCheckView(discord.ui.View):
         await interaction.response.edit_message(embed=self.get_current_embed(), view=self)
     async def show_t6_card(self, interaction: discord.Interaction):
         kv = KanaeCardView(self.user_id, self.current_index)
+        await interaction.response.edit_message(embed=kv.get_embed(), view=kv)
+    async def show_t7_card(self, interaction: discord.Interaction):
+        kv = KisamiCardView(self.user_id, self.current_index)
         await interaction.response.edit_message(embed=kv.get_embed(), view=kv)
     async def show_t5_card(self, interaction: discord.Interaction):
         jv = JotaroCardView(self.user_id, self.current_index)
@@ -9546,6 +9665,13 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
     show_t3_flag = False
     show_t4_flag = False
 
+    if nhan_vat and str(nhan_vat).strip().lower().replace("#", "").replace(" ", "") in ("t7", "kisami", "mikawa", "kisamimikawa"):
+        _kv = KisamiCardView(user.id, 0)
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=_kv.get_embed(), view=_kv)
+        else:
+            await ctx_or_interaction.send(embed=_kv.get_embed(), view=_kv)
+        return
     if nhan_vat and str(nhan_vat).strip().lower().replace("#", "").replace(" ", "") in ("t6", "kanae", "wasuko", "kanaewasuko"):
         _kv = KanaeCardView(user.id, 0)
         if isinstance(ctx_or_interaction, discord.Interaction):
@@ -10158,6 +10284,20 @@ async def handle_battle(ctx_or_interaction):
                     battle_logs.append(msg_u)
                     turn_actions.append(msg_u)
 
+        # ===== [T7 KISAMI] BATTLE =====
+        if str(pc["cid"]).lower() == "t7":
+            _k7 = t7_combat_turn(pc.setdefault("t7_state", {}), pc, oc["hp"], oc["power"], f"**{oc['name']}**",
+                                 is_ace2=pc.get("is_ace2", False), skills_locked=stunned_pc)
+            curr_pc_power = int(curr_pc_power * _k7["multiplier"]) + _k7["bonus"]
+            if _k7["noretal"]:
+                stunned_oc = True
+            if _k7["refract"]:
+                t7_refract_set(player_cards, pc, 3)
+            if _k7["gif"] and not turn_image:
+                turn_image = _k7["gif"]
+            battle_logs.extend(_k7["logs"])
+            turn_actions.extend(_k7["logs"])
+        curr_oc_power = t7_duel_defend(pc, player_cards, curr_oc_power, oc["power"], stunned_oc, turn_actions)
         # ===== [ACE 2] HONG MEILING - RAINBOW TAIJIQUAN (BATTLE) =====
         pc_meiling_guard = False; curr_pc_power, p_kasen_guard, _kg = kasen_duel_apply(pc, curr_pc_power, stunned_pc, [turn_actions, battle_logs]); turn_image = turn_image or _kg
         oc_meiling_guard = False
@@ -11173,6 +11313,33 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 t_stunned = True
                 turn_actions.append(f"❄️ **[Ice spear]** **{tc['name']}** ({target.display_name}) bị giáo băng cầm chân (40%), không thể tấn công lượt này!")
 
+        # ===== [T7 KISAMI] PVP =====
+        if str(cc["cid"]).lower() == "t7":
+            _k7a = t7_combat_turn(cc.setdefault("t7_state", {}), cc, tc["max_hp"], tc["power"], f"**{tc['name']}** ({target.display_name})",
+                                  is_ace2=cc.get("is_ace2", False), skills_locked=c_stunned)
+            c_curr_power = int(c_curr_power * _k7a["multiplier"]) + _k7a["bonus"]
+            if _k7a["noretal"]:
+                t_stunned = True
+            if _k7a["refract"]:
+                t7_refract_set(c_cards, cc, 3)
+            if _k7a["gif"] and not turn_image:
+                turn_image = _k7a["gif"]
+            pvp_logs.extend(_k7a["logs"])
+            turn_actions.extend(_k7a["logs"])
+        if str(tc["cid"]).lower() == "t7":
+            _k7b = t7_combat_turn(tc.setdefault("t7_state", {}), tc, cc["max_hp"], cc["power"], f"**{cc['name']}** ({challenger.display_name})",
+                                  is_ace2=tc.get("is_ace2", False), skills_locked=t_stunned)
+            t_curr_power = int(t_curr_power * _k7b["multiplier"]) + _k7b["bonus"]
+            if _k7b["noretal"]:
+                c_stunned = True
+            if _k7b["refract"]:
+                t7_refract_set(t_cards, tc, 3)
+            if _k7b["gif"] and not turn_image:
+                turn_image = _k7b["gif"]
+            pvp_logs.extend(_k7b["logs"])
+            turn_actions.extend(_k7b["logs"])
+        t_curr_power = t7_duel_defend(cc, c_cards, t_curr_power, tc["power"], t_stunned, turn_actions)
+        c_curr_power = t7_duel_defend(tc, t_cards, c_curr_power, cc["power"], c_stunned, turn_actions)
         # ===== [ACE 2] HONG MEILING - RAINBOW TAIJIQUAN (PVP) =====
         c_meiling_guard = False
         t_meiling_guard = False; c_curr_power, _kc, _kcg = kasen_duel_apply(cc, c_curr_power, c_stunned, [turn_actions, pvp_logs]); c_invul = c_invul or _kc; turn_image = turn_image or _kcg; t_curr_power, _kt, _ktg = kasen_duel_apply(tc, t_curr_power, t_stunned, [turn_actions, pvp_logs]); t_invul = t_invul or _kt; turn_image = turn_image or _ktg
@@ -12283,7 +12450,7 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
                 turn_image = MEILING_SKILL_GIF
             turn_logs.append(f"🌈 **[Ace 2] [#24] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({card_dmg:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!")
         
-        card_dmg, kasen_guard_story, _kg = kasen_duel_apply(pc, card_dmg, False, [turn_logs]); turn_image = turn_image or _kg; rumia_hp = max(0, rumia_hp - card_dmg)
+        card_dmg, kasen_guard_story, _kg = kasen_duel_apply(pc, card_dmg, False, [turn_logs]); turn_image = turn_image or _kg; card_dmg, kasen_guard_story, _t7s, _t7g = t7_story_apply(pc, card_dmg, kasen_guard_story, rumia_max_hp, rumia_power, turn_logs, player_cards); boss_stun_story = boss_stun_story or _t7s; turn_image = turn_image or _t7g; rumia_hp = max(0, rumia_hp - card_dmg)
         turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Rumia!")
 
         if rumia_hp <= 0:
@@ -12695,7 +12862,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     turn_image = MEILING_SKILL_GIF
                 turn_logs.append(f"🌈 **[Ace 2] [#24] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({card_dmg:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!")
             
-            card_dmg, kasen_guard_story, _kg = kasen_duel_apply(pc, card_dmg, False, [turn_logs]); turn_image = turn_image or _kg; cirno_hp = max(0, cirno_hp - card_dmg)
+            card_dmg, kasen_guard_story, _kg = kasen_duel_apply(pc, card_dmg, False, [turn_logs]); turn_image = turn_image or _kg; card_dmg, kasen_guard_story, _t7s, _t7g = t7_story_apply(pc, card_dmg, kasen_guard_story, cirno_max_hp, cirno_power, turn_logs, player_cards); boss_stun_story = boss_stun_story or _t7s; turn_image = turn_image or _t7g; cirno_hp = max(0, cirno_hp - card_dmg)
             turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Cirno!")
 
         if cirno_hp <= 0:
@@ -14544,7 +14711,7 @@ def _jt_player_attack(c, ac, rnd, B, notes):
             B["stunned"] = True
         setgif(_s3["gif"])
         notes.extend([f"({c['username']}) {l}" for l in _s3["logs"]])   
-    _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, B.get("active", []))
+    dmg = t7_jt_attack(c, ac, dmg, B, notes); _ks_bonus, _ks_gif, _ks_log = kasen_raid_turn(c, ac, B.get("active", []))
     if _ks_log:
         dmg += _ks_bonus
         setgif(_ks_gif)
@@ -14813,7 +14980,7 @@ async def execute_jotaro_raid(channel, raid_data):
             boss_rage_turns -= 1
 
         # ---------- Thay thẻ / đổi sát thương ----------
-        kasen_restore_guard(active); tick_wonder_guard(active)
+        action_log += t7_raid_after_boss(active, action_log); kasen_restore_guard(active); tick_wonder_guard(active)
         restore_t4_save_loop(active, rounds)
         push_logs = []
         for c in active:
@@ -15064,7 +15231,7 @@ def reset_sakuya3_phase(c: dict):
     c["s3_state"] = {}
     c["t6_state"] = {}
     for card in c.get("team_cards", []):
-        card["s3_passive_used"] = False
+        card["s3_passive_used"] = False; card["t7_refract"] = 0
 
 
 def sakuya3_skill_text() -> str:
@@ -15725,7 +15892,7 @@ async def execute_prime_raid(channel, raid_data):
             action_log += "\n" + "\n".join(hit_logs)
 
         # ---------- Dọn hiệu ứng bảo hộ, rồi áp lại đòn kết liễu (để bỏ qua phòng thủ) ----------
-        kasen_restore_guard(active)
+        action_log += t7_raid_after_boss(active, action_log); kasen_restore_guard(active)
         tick_wonder_guard(active)
         restore_t4_save_loop(active, rounds)
         for tac in forced_kills:
@@ -16159,6 +16326,13 @@ def story_s3_player_turn(pc, rnd, B, logs):
         g(o["gif"])
         logs.extend(o["logs"])
 
+    # ----- Kisami #t7 -----
+    dmg, _t7inv, _t7s, _t7g = t7_story_apply(pc, dmg, False, B["max_hp"], B["power"], logs, B.get("team"))
+    if _t7inv:
+        out["invul"] = True
+    if _t7s:
+        B["stun"] = True
+    g(_t7g)
     # ----- Kasen Ace 2 (cả đội miễn thương) -----
     dmg, kasen_guard, kasen_gif = kasen_duel_apply(pc, dmg, False, [logs])
     if kasen_guard:
@@ -16210,6 +16384,7 @@ async def run_story_meiling_battle(channel_or_interaction, user, player):
         })
     apply_sakuya_ace3_to_cards(player, player_cards)
 
+    B["team"] = player_cards
     if not player_cards:
         await _s3_send(channel_or_interaction, content="⚠️ Bạn chưa có thẻ bài nào để chiến đấu! Hãy dùng `/pull` trước.")
         return
@@ -16527,6 +16702,393 @@ async def handle_story_stage3(ctx_or_interaction):
     embed_dlg.set_footer(text="Bấm nút màu đỏ bên dưới để chiến đấu trực tiếp!")
     await _s3_send(ctx_or_interaction, embed=embed_dlg, view=StoryMeilingBattleView(user, player))
     
+# ==============================================================================
+# [UPDATE KISAMI] HÀM LÕI THẺ T7 KISAMI MIKAWA
+# ==============================================================================
+def t7_combat_turn(st: dict, card: dict, target_max_hp: int, target_power: int, target_name: str,
+                   is_ace2: bool = False, skills_locked: bool = False):
+    """Lượt đánh của Kisami (dùng chung Battle/PvP/Story/Raid).
+    Trả về dict: multiplier, bonus (sát thương cộng thêm: độc/bỏng/tự hại), noretal (địch không đánh trả),
+    refract (vừa kích hoạt Khúc xạ ánh sáng -> caller đặt hiệu ứng cho cả đội), gif, logs."""
+    logs, gif = [], None
+    mult, bonus = 1.0, 0
+    noretal, refract = False, False
+    erased = card.get("erased_skill")
+    tag = "[Ace 2] [#t7] Kisami Mikawa" if is_ace2 else "[Nhóm T] [#t7] Kisami Mikawa"
+
+    # 1) Độc Dịch miên đang chạy (6% / 10% / 5% máu tối đa mục tiêu)
+    left = st.get("poison_left", 0)
+    if left > 0:
+        pct = KISAMI_POISON_PCTS[3 - left]
+        d = max(1, int(target_max_hp * pct))
+        bonus += d
+        st["poison_left"] = left - 1
+        logs.append(f"☠️ **{tag}** - **Dịch miên**: độc tố ăn mòn {target_name}, gây **{d:,} DMG** ({int(pct * 100)}% Máu Tối Đa)! *(Còn {left - 1} nhịp độc)*")
+
+    # 2) Bỏng Nhiệt băng (3% máu tối đa, 2 turn)
+    left = st.get("burn_left", 0)
+    if left > 0:
+        d = max(1, int(target_max_hp * 0.03))
+        bonus += d
+        st["burn_left"] = left - 1
+        logs.append(f"🔥 **{tag}** - **Nhiệt băng**: {target_name} bị bỏng, mất **{d:,} HP** (3% Máu Tối Đa)! *(Còn {left - 1} turn)*")
+
+    # 3) 40% địch không đánh trả (Nhiệt băng, 2 turn)
+    left = st.get("noretal_left", 0)
+    if left > 0:
+        st["noretal_left"] = left - 1
+        if random.random() < 0.40:
+            noretal = True
+            logs.append(f"🧊 **{tag}** - **Nhiệt băng**: {target_name} bị đóng băng đột ngột (40%), **không thể đánh trả** hiệp này!")
+
+    # 4) Ảo ảnh hương: 20% địch tự đánh vào mình
+    left = st.get("selfhurt_left", 0)
+    if left > 0:
+        st["selfhurt_left"] = left - 1
+        if random.random() < 0.20:
+            bonus += int(target_power)
+            logs.append(f"🌫️ **{tag}** - **Ảo ảnh hương**: {target_name} choáng váng, **tự đánh trúng bản thân {int(target_power):,} DMG** (20%)!")
+
+    # 5) Roll kỹ năng chủ động (tối đa 1 chiêu / lượt)
+    used = False
+    if not skills_locked:
+        opts = []
+        if not is_ace2:
+            if erased != "t7_dichmien" and st.get("dm_uses", 0) < 1:
+                opts.append(("dm", 0.30))
+            if erased != "t7_aoanh" and st.get("selfhurt_left", 0) <= 0:
+                opts.append(("aa", 0.25))
+        else:
+            if erased != "t7_nhietbang" and st.get("nb_uses", 0) < KISAMI_ACE2_MAX_USES:
+                opts.append(("nb", KISAMI_NHIETBANG_CHANCE))
+            if erased != "t7_khucxa" and st.get("kx_uses", 0) < KISAMI_ACE2_MAX_USES:
+                opts.append(("kx", KISAMI_KHUCXA_CHANCE))
+        roll, acc = random.random(), 0.0
+        for key, ch in opts:
+            acc += ch
+            if roll < acc:
+                used = True
+                if key == "dm":
+                    st["dm_uses"] = 1
+                    st["poison_left"] = 3
+                    mult = 1.0
+                    gif = KISAMI_GIF_DICHMIEN
+                    logs.append(f"☠️ **{tag}** tung **Dịch miên** (30%)! Đợt độc tố gây **1x DMG** và gây độc **3 lượt** (6% / 10% / 5% Máu Tối Đa) lên {target_name}! *(1 lần/trận, độc dừng nếu Kisami bị hạ)*")
+                elif key == "aa":
+                    st["selfhurt_left"] = 2
+                    gif = KISAMI_GIF_AOANH
+                    logs.append(f"🌫️ **{tag}** tung **Ảo ảnh hương** (25%)! Làn hương độc khiến {target_name} choáng váng, **20% tự đánh vào mình trong 2 turn**!")
+                elif key == "nb":
+                    st["nb_uses"] = st.get("nb_uses", 0) + 1
+                    st["burn_left"] = 2
+                    st["noretal_left"] = 2
+                    mult = 2.0
+                    gif = KISAMI_GIF_NHIETBANG
+                    logs.append(f"🔥❄️ **{tag}** tung **Nhiệt băng**! Oxy cháy dữ dội rồi đóng băng đột ngột: **×2.0 DMG**, {target_name} bị bỏng **3% Máu Tối Đa** và **40% không đánh trả** trong 2 turn!")
+                else:
+                    st["kx_uses"] = st.get("kx_uses", 0) + 1
+                    refract = True
+                    gif = KISAMI_GIF_KHUCXA
+                    logs.append(f"🌈 **{tag}** tung **Khúc xạ ánh sáng**! Quang học của địch bị đảo lộn: **toàn đội (gồm Kisami) 40% né chiêu địch trong 3 turn** (hết tác dụng nếu Kisami chết)!")
+                break
+
+    # 6) Passive Ace 2: Cộng dồn hóa học (đã dùng cả 2 skill -> đánh thường x1.5)
+    if (is_ace2 and not used and erased != "t7_cumul"
+            and st.get("nb_uses", 0) >= 1 and st.get("kx_uses", 0) >= 1):
+        mult = 1.5
+        logs.append(f"⚗️ **{tag}** - **Cộng dồn hóa học**: đòn đánh thường **×1.5 sát thương**!")
+
+    return {"multiplier": mult, "bonus": bonus, "noretal": noretal, "refract": refract, "gif": gif, "logs": logs}
+
+
+def t7_has_reduce(card: dict) -> bool:
+    if str(card.get("cid")).lower() != "t7":
+        return False
+    if card.get("erased_skill") == "t7_reduce":
+        return False
+    if card.get("is_ace2") and not KISAMI_ACE2_KEEP_REDUCTION:
+        return False
+    return True
+
+
+def t7_refract_set(cards: list, owner: dict, turns: int = 3):
+    """Khúc xạ ánh sáng: đặt hiệu ứng 40% né cho cả đội (owner = thẻ Kisami)."""
+    for k in cards:
+        k["t7_refract"] = turns
+        k["t7_refract_owner"] = owner
+
+
+def t7_refract_try(card: dict) -> bool:
+    """True nếu thẻ này né được (40%). Tự gỡ hiệu ứng nếu Kisami đã chết."""
+    own = card.get("t7_refract_owner")
+    if not own or card.get("t7_refract", 0) <= 0:
+        return False
+    if own.get("current_hp", 1) <= 0:
+        card["t7_refract"] = 0
+        return False
+    return random.random() < 0.40
+
+
+def t7_duel_defend(front: dict, cards: list, incoming: int, base_power: int, attacker_stunned: bool, actions: list) -> int:
+    """Battle/PvP: phòng thủ của phe có Kisami. Trả về sát thương địch gây ra sau khi né/giảm."""
+    try:
+        dodge = (not attacker_stunned) and incoming > 0 and t7_refract_try(front)
+        for k in cards:
+            if k.get("t7_refract", 0) > 0:
+                k["t7_refract"] -= 1
+        if attacker_stunned or incoming <= 0:
+            return incoming
+        if dodge:
+            actions.append(f"🌈 **[Ace 2] [#t7] Kisami - Khúc xạ ánh sáng**: **{front['name']}** né hoàn toàn đòn của địch (40%)!")
+            return 0
+        if t7_has_reduce(front) and incoming != base_power:
+            new = int(incoming * (1.0 - KISAMI_SKILL_REDUCE))
+            actions.append(f"🧪 **[#t7] Kisami - Dịch ma thuật**: giảm 10% sát thương từ chiêu địch ({incoming:,} ➜ {new:,} DMG)!")
+            return new
+    except Exception as e:
+        print(f"[T7] lỗi duel_defend: {e}", flush=True)
+    return incoming
+
+
+def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
+    """Raid thường (Reimu/Seiki/Mahoraga/Fateria/Event Kizuna, cả Phase 2). L = locals() của vòng lặp."""
+    try:
+        if str(ac.get("cid")).lower() != "t7":
+            return card_dmg, boss_stunned, turn_image, notif
+        max_hp = L.get("p2_max_hp") or L.get("p1_max_hp") or 100000
+        power = L.get("p2_power") or L.get("p1_power") or 5000
+        st = c.setdefault("t3_state", {}).setdefault("t7", {})   # tự reset khi sang Phase 2
+        r = t7_combat_turn(st, ac, max_hp, power, "Boss", is_ace2=bool(ac.get("is_ace2")))
+        card_dmg = int(card_dmg * r["multiplier"]) + r["bonus"]
+        if r["noretal"]:
+            boss_stunned = True
+        if r["refract"]:
+            for c2 in active:
+                t7_refract_set(c2.get("team_cards", []), ac, 3)
+        if r["gif"] and not turn_image:
+            turn_image = r["gif"]
+        if r["logs"]:
+            notif = (notif + "\n" if notif else "") + "\n".join(f"({c['username']}) {l}" for l in r["logs"])
+        for c2 in active:   # ghi nhận máu trước khi Boss ra đòn
+            cards2 = c2.get("team_cards", [])
+            for k in cards2:
+                k.pop("t7_hp_mark", None)
+            i2 = c2.get("current_card_index", 0)
+            if i2 < len(cards2):
+                cards2[i2]["t7_hp_mark"] = cards2[i2]["current_hp"]
+    except Exception as e:
+        print(f"[T7] lỗi raid_attack: {e}", flush=True)
+    return card_dmg, boss_stunned, turn_image, notif
+
+
+def t7_raid_after_boss(active, boss_log) -> str:
+    """Gọi SAU khi Boss ra đòn: áp dụng né 40% (Khúc xạ) và giảm 10% sát thương chiêu (Dịch ma thuật)."""
+    extra = []
+    try:
+        txt = str(boss_log or "")
+        is_skill = any(k in txt for k in KISAMI_BOSS_SKILL_KEYS)
+        for c in active:
+            cards = c.get("team_cards", [])
+            idx = c.get("current_card_index", 0)
+            if idx >= len(cards):
+                continue
+            ac = cards[idx]
+            mark = ac.pop("t7_hp_mark", None)
+            if mark is None:
+                continue
+            lost = mark - ac.get("current_hp", mark)
+            if lost <= 0:
+                continue
+            if t7_refract_try(ac):
+                ac["current_hp"] = max(ac["current_hp"], mark)
+                extra.append(f"🌈 **[Ace 2] [#t7] Kisami - Khúc xạ ánh sáng**: **{ac['name']}** ({c['username']}) né hoàn toàn đòn của Boss (40%)!")
+            elif is_skill and t7_has_reduce(ac):
+                refund = int(lost * KISAMI_SKILL_REDUCE)
+                if refund > 0:
+                    ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + refund)
+                    extra.append(f"🧪 **[#t7] Kisami - Dịch ma thuật** ({c['username']}): giảm 10% sát thương chiêu Boss (hoàn **{refund:,} HP**)!")
+        for c in active:
+            for k in c.get("team_cards", []):
+                if k.get("t7_refract", 0) > 0:
+                    k["t7_refract"] -= 1
+    except Exception as e:
+        print(f"[T7] lỗi raid_after_boss: {e}", flush=True)
+    return ("\n" + "\n".join(extra)) if extra else ""
+
+
+def t7_jt_attack(c, ac, dmg, B, notes):
+    """Boss Jotaro / Han Seiki (dùng _jt_player_attack)."""
+    try:
+        if str(ac.get("cid")).lower() != "t7":
+            return dmg
+        cfg = PRIME_BOSS_CONFIG if B.get("boss_type") == "han_seiki" else JOTARO_BOSS_CONFIG
+        st = c.setdefault("t3_state", {}).setdefault("t7", {})
+        r = t7_combat_turn(st, ac, B["max_hp"], cfg["power"], "Boss", is_ace2=bool(ac.get("is_ace2")))
+        dmg = int(dmg * r["multiplier"]) + r["bonus"]
+        if r["noretal"]:
+            B["stunned"] = True
+        active = B.get("active", [])
+        if r["refract"]:
+            for c2 in active:
+                t7_refract_set(c2.get("team_cards", []), ac, 3)
+        if r["gif"] and not B.get("gif"):
+            B["gif"] = r["gif"]
+        notes.extend(f"({c['username']}) {l}" for l in r["logs"])
+        for c2 in active:
+            cards2 = c2.get("team_cards", [])
+            for k in cards2:
+                k.pop("t7_hp_mark", None)
+            i2 = c2.get("current_card_index", 0)
+            if i2 < len(cards2):
+                cards2[i2]["t7_hp_mark"] = cards2[i2]["current_hp"]
+    except Exception as e:
+        print(f"[T7] lỗi jt_attack: {e}", flush=True)
+    return dmg
+
+
+def t7_story_apply(pc, card_dmg, guard, boss_max_hp, boss_power, logs, team=None):
+    """Story (Rumia/Cirno/Meiling). Trả về (card_dmg, guard_miễn_thương, boss_bị_stun, gif)."""
+    stun, gif = False, None
+    try:
+        if str(pc.get("cid")).lower() == "t7":
+            r = t7_combat_turn(pc.setdefault("t7_state", {}), pc, boss_max_hp, boss_power, "Boss", is_ace2=bool(pc.get("is_ace2")))
+            card_dmg = int(card_dmg * r["multiplier"]) + r["bonus"]
+            if r["noretal"]:
+                stun = True
+            if r["refract"] and team is not None:
+                t7_refract_set(team, pc, 3)
+            gif = r["gif"]
+            logs.extend(r["logs"])
+        if team is not None:
+            dodge = (not stun) and t7_refract_try(pc)
+            for k in team:
+                if k.get("t7_refract", 0) > 0:
+                    k["t7_refract"] -= 1
+            if dodge:
+                guard = True
+                logs.append(f"🌈 **[Ace 2] [#t7] Kisami - Khúc xạ ánh sáng**: **{pc['name']}** né hoàn toàn đòn phản công (40%)!")
+    except Exception as e:
+        print(f"[T7] lỗi story_apply: {e}", flush=True)
+    return card_dmg, guard, stun, gif
+
+
+def execute_kisami_ace2(player):
+    """Ace 2 [#t7]: có thẻ + 15 shard + Seiki (#t1) Ace 2 + Prestige >= 3."""
+    if is_card_ace2(player, "t7"):
+        return False, "⚠️ **[#t7] Kisami Mikawa** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
+    if not is_card_unlocked(player, "t7") and player.get("inventory", {}).get("t7", 0) <= 0:
+        return False, (
+            "❌ **Bạn chưa mở khóa thẻ [#t7] Kisami Mikawa (Ace 1)!**\n"
+            f"• Thu thập **{KISAMI_SHARDS_UNLOCK} Kisami Shards** rồi dùng `/t translate loai_shard:kisami` để đổi thẻ gốc trước."
+        ), None
+    shards = player.setdefault("shards", {})
+    cur = shards.get("kisami", 0)
+    problems = []
+    if not is_card_ace2(player, "t1"):
+        problems.append("• **[#t1] Seiki Đệ Pháp Toàn Năng** phải đạt **Ace 2 ⭐⭐**.")
+    if player.get("prestige", 0) < KISAMI_ACE2_PRESTIGE:
+        problems.append(f"• Cần **Prestige {KISAMI_ACE2_PRESTIGE}+** (hiện tại: P{player.get('prestige', 0)}).")
+    if cur < KISAMI_SHARDS_ACE2:
+        problems.append(f"• Kisami Shards: **{cur}/{KISAMI_SHARDS_ACE2}**.")
+    if problems:
+        return False, "❌ **Chưa đủ điều kiện tiến hóa Kisami Ace 2!**\n" + "\n".join(problems), None
+
+    shards["kisami"] = cur - KISAMI_SHARDS_ACE2
+    player.setdefault("evolutions", {})["t7"] = 2
+    save_player(player)
+
+    embed = discord.Embed(
+        title="🌟 TIẾN HÓA THÀNH CÔNG: [#t7] KISAMI MIKAWA - ACE 2 ⭐⭐!",
+        description=(
+            "⚗️ **HÓA HỌC THỨC TỈNH - BỘ KỸ NĂNG ACE 2:**\n\n"
+            "⚗️ **Cộng dồn hóa học (Passive):** Sau khi kích hoạt được cả 2 skill, đòn đánh thường **×1.5 sát thương**.\n"
+            "🔥❄️ **Nhiệt băng:** **×2.0 DMG**, địch bị bỏng **3% Máu Tối Đa** và **40% không đánh trả** (2 turn).\n"
+            "🌈 **Khúc xạ ánh sáng:** Toàn đội (gồm Kisami) **40% né chiêu địch trong 3 turn**, hết tác dụng nếu Kisami chết.\n\n"
+            f"📉 **Chi phí:** {KISAMI_SHARDS_ACE2} Kisami Shards (còn `{shards['kisami']}`)\n"
+            "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn!"
+        ),
+        color=0x22C55E
+    )
+    embed.set_image(url=KISAMI_EVOL_GIF)
+    embed.set_footer(text="Touhou Evolution System • Kisami Ace 2 Activated • Card ID #t7")
+    return True, "", embed
+
+
+class KisamiCardView(discord.ui.View):
+    """Giao diện /check, /card_info cho thẻ #t7 (ảnh cố định cho cả Ace 1 và Ace 2)."""
+    def __init__(self, user_id=None, back_index: int = 0, show_ace: bool = False):
+        super().__init__(timeout=180)
+        self.user_id = user_id
+        self.back_index = back_index
+        self.show_ace = show_ace
+        self._build()
+
+    def _build(self):
+        self.clear_items()
+        if self.show_ace:
+            toggle = discord.ui.Button(label="⭐ Xem Bản Ace 1", style=discord.ButtonStyle.secondary, emoji="🔄", row=0)
+        else:
+            toggle = discord.ui.Button(label="🌟 Xem Ace 2 ⭐⭐", style=discord.ButtonStyle.success, emoji="✨", row=0)
+        toggle.callback = self.on_toggle
+        self.add_item(toggle)
+        back = discord.ui.Button(label="📖 Quay lại danh sách nhân vật", style=discord.ButtonStyle.primary, row=0)
+        back.callback = self.on_back
+        self.add_item(back)
+
+    def get_embed(self):
+        card = CARDS_DATA["t7"]
+        player = get_player(self.user_id) if self.user_id else None
+        lvl = player.get("level", 1) if player else 1
+        owned = player.get("inventory", {}).get("t7", 0) if player else 0
+        shards = player.get("shards", {}).get("kisami", 0) if player else 0
+        ace = self.show_ace
+        pw = card["power"] + (ACE_POWER_BUFF if ace else 0)
+        hp = card["hp"] + (ACE_HP_BUFF if ace else 0)
+        embed = discord.Embed(
+            title="🌟 [Ace 2 ⭐⭐] #t7 KISAMI MIKAWA (THỨC TỈNH)" if ace else "☠️ [THẺ ĐẶC BIỆT NHÓM T] #t7 KISAMI MIKAWA",
+            description=("🔥 **Đang xem: ACE 2 ⭐⭐** *(+300 ATK / +300 HP)*" if ace else
+                         f"✨ Mở khóa bằng **{KISAMI_SHARDS_UNLOCK} Kisami Shards** (`/t translate loai_shard:kisami`).\n✨ **Có thể tiến hóa Ace 2 ⭐⭐!**"),
+            color=0x22C55E
+        )
+        embed.set_image(url=KISAMI_IMG)   # ảnh cố định
+        embed.add_field(
+            name="⚔️ SỨC MẠNH & CHỈ SỐ:",
+            value=f"• ⚔️ **ATK:** `{pw:,}` | ❤️ **HP:** `{hp:,}`\n• 🛡️ **Trong đội hình (Lv.{lvl}):** `{pw + (lvl - 1) * 15:,}` ATK | `{hp + (lvl - 1) * 45:,}` HP",
+            inline=False
+        )
+        if ace:
+            skills = (
+                "⚗️ **Cộng dồn hóa học (Passive):** Sau khi kích hoạt được cả 2 skill, đánh thường ×1.5 sát thương.\n"
+                "🧪 **Dịch ma thuật (Passive):** Giảm 10% sát thương nhận từ các chiêu." + ("" if KISAMI_ACE2_KEEP_REDUCTION else " *(không áp dụng ở Ace 2)*") + "\n"
+                "🔥❄️ **Nhiệt băng:** ×2.0 DMG, địch bỏng 3% Máu Tối Đa + 40% không đánh trả (2 turn).\n"
+                "🌈 **Khúc xạ ánh sáng:** Toàn đội (gồm Kisami) 40% né chiêu địch trong 3 turn, hết tác dụng nếu Kisami chết."
+            )
+        else:
+            skills = (
+                "🧪 **Dịch ma thuật (Passive):** Giảm 10% sát thương nhận phải từ các chiêu (skills).\n"
+                "☠️ **Dịch miên (30%):** 1x DMG + độc 3 lượt (6% / 10% / 5% Máu Tối Đa). 1 lần/trận, độc dừng nếu Kisami bị hạ.\n"
+                "🌫️ **Ảo ảnh hương (25%):** Địch choáng váng, 20% tự đánh vào mình trong 2 turn."
+            )
+        embed.add_field(name="🔮 KỸ NĂNG:", value=skills, inline=False)
+        if player:
+            si = is_card_ace2(player, "t1")
+            ok = (owned > 0 and shards >= KISAMI_SHARDS_ACE2 and si and player.get("prestige", 0) >= KISAMI_ACE2_PRESTIGE)
+            badge = "🌟 ĐÃ THỨC TỈNH ACE 2" if is_card_ace2(player, "t7") else (
+                "🟢 Đủ điều kiện! Dùng `/evol id_hoac_ten:t7`" if ok else
+                f"🔴 Chưa đủ (Shard {shards}/{KISAMI_SHARDS_ACE2} | Seiki Ace 2: {'✅' if si else '❌'} | Prestige P{player.get('prestige', 0)}/{KISAMI_ACE2_PRESTIGE})")
+            embed.add_field(name="🎒 TÚI ĐỒ CỦA BẠN:", value=f"• Sở hữu: **{owned}** lá\n• ☠️ Kisami Shards: **{shards}**\n• Cảnh giới: **{badge}**", inline=False)
+        embed.set_footer(text="Thẻ nhóm T đặc biệt • Hoạt động trong Raid, Battle, PvP, Story")
+        return embed
+
+    async def on_toggle(self, interaction: discord.Interaction):
+        self.show_ace = not self.show_ace
+        self._build()
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    async def on_back(self, interaction: discord.Interaction):
+        v = CharacterCheckView(current_index=self.back_index, user_id=self.user_id)
+        await interaction.response.edit_message(embed=v.get_current_embed(), view=v)
+
 import sys
 
 def start_bot_safely():
