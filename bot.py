@@ -850,7 +850,7 @@ MAHORAGA_BOSS_CONFIG = {
     "desc": "Thần tướng thuật thức tối thượng - kẻ thích nghi với mọi hiện tượng. Mọi đòn đánh chỉ khiến nó trở nên cứng cáp hơn!",
     "reimu_quote": "Cái thứ yêu quái nào vậy, cái thằng nhóc đầu nhím kia vừa triệu hồi cái gì vậy?",
     "image": "https://kimi-web-img.kimi.ai/img/gbaike-image.cdn.bcebos.com/84b485484cf2279a8a3412643b2a1c4f99bf0cd2",
-    "hp": 120000,
+    "hp": 95000,
     "power": 6000,
     "passive_regen_pct": 0.03,
     "passive_adapt_pct": 0.03,
@@ -3051,7 +3051,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
             name="♾️ Nội Tại & Kỹ Năng (Độc Quyền - The True Adapt):",
             value=(
                 "• ♾️ **The True Adapt (100% - THỤ ĐỘNG):**\n"
-                "  - Mỗi hiệp tự hồi phục **3% HP tối đa (3,600 HP)**!\n"
+                "  - Mỗi hiệp tự hồi phục **3% HP tối đa (2,850 HP)**!\n"
                 "  - Mỗi hiệp **GIẢM 3% sát thương phải nhận** (cộng dồn mỗi hiệp - càng đánh càng cứng)!\n"
                 "• ⚔️ **Thoái Ma Kiếm (25%):** Rút trường kiếm giáng **6,000 DMG sát thương thuần** lên **MỘT mục tiêu** duy nhất (không chia đều)!"
             ),
@@ -8902,7 +8902,7 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
     if cur_shards < needed_shards:
         shard_names = {"seiki": "Mảnh Seiki", "mahoraga": "Mảnh Mahoraga", "kizuna": "Mảnh Kizuna", "fateria": "Fateria Shards"}
         shard_name_display = shard_names.get(shard_key, "Mảnh")
-        hint_text = "Tham gia đánh Boss Raid (Seiki Dị Hình hoặc Reimu Dị Hình) để nhận tỉ lệ 2.5% rơi mảnh Seiki!" if shard_key == "seiki" else "Tham gia đánh Boss Raid Mahoraga 120K HP để nhận tỉ lệ 5% rơi mảnh Mahoraga!"
+        hint_text = "Tham gia đánh Boss Raid (Seiki Dị Hình hoặc Reimu Dị Hình) để nhận tỉ lệ 2.5% rơi mảnh Seiki!" if shard_key == "seiki" else "Tham gia đánh Boss Raid Mahoraga 95K HP để nhận tỉ lệ 5% rơi mảnh Mahoraga!"
         msg = (
             f"❌ **Không đủ mảnh quy đổi!**\n"
             f"• Bạn đang có: **{cur_shards}/{needed_shards} {shard_name_display}**\n"
@@ -9102,7 +9102,7 @@ async def handle_view_shards(ctx_or_interaction):
             f"• Tiến độ: `{get_hp_bar(min(10, mahoraga_shards), 10)}` ({min(100, mahoraga_shards * 10)}%)\n"
             f"• Thẻ quy đổi: **[T] #t2 Mahoraga Bát ách kiếm thần tướng** (Kho: {has_mahoraga} lá)\n"
             f"• Thao tác: Gõ `/t translate loai_shard:mahoraga` khi đủ 10 mảnh để quy đổi ngay!\n"
-            f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Mahoraga** (120K HP)."
+            f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Mahoraga** (95K HP)."
         ),
         inline=False
     )
@@ -12278,7 +12278,7 @@ async def slash_boss_status(interaction: discord.Interaction):
     check_and_clean_expired_raid()
     now = time.time()
     embed = discord.Embed(title="👹 TRẠNG THÁI BOSS RAID: REIMU DỊ HÌNH (2 PHASE)", color=0xDC2626)
-    embed.add_field(name="👺 Bát Ách Kiếm Thần Tướng Mahoraga (Single Phase):", value=f"• 120,000 HP | 6,000 DMG (chia đều)\n• Nội tại The True Adapt (100%): tự hồi 3% HP tối đa (3,600 HP) và GIẢM 3% sát thương phải nhận mỗi lượt (cộng dồn)!\n• Kỹ năng Thoái Ma Kiếm (25%): 6,000 DMG sát thương thuần lên 1 mục tiêu duy nhất!\n• Phần thưởng: 10% 20 vé, 40% 15 vé, 50% 10 vé, 5% Mảnh Mahoraga!", inline=False)
+    embed.add_field(name="👺 Bát Ách Kiếm Thần Tướng Mahoraga (Single Phase):", value=f"• 95,000 HP | 6,000 DMG (chia đều)\n• Nội tại The True Adapt (100%): tự hồi 3% HP tối đa (2,850 HP) và GIẢM 3% sát thương phải nhận mỗi lượt (cộng dồn)!\n• Kỹ năng Thoái Ma Kiếm (25%): 6,000 DMG sát thương thuần lên 1 mục tiêu duy nhất!\n• Phần thưởng: 10% 20 vé, 40% 15 vé, 50% 10 vé, 5% Mảnh Mahoraga!", inline=False)
     embed.add_field(name="👹 Seiki Dị Hình (2 Phase):", value=f"• Phase 1: HP {SEIKI_BOSS_CONFIG['hp']:,} | {SEIKI_BOSS_CONFIG['power']:,} DMG (chia đều) + nội tại hồi 1.5% HP\n• Phase 2 Thức Tỉnh: HP {SEIKI_BOSS_PHASE2_CONFIG['hp']:,} | {SEIKI_BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều) + Cleave +10% Máu tối đa mục tiêu + Nuclear Spell Card (10%) 10K DMG toàn tiền tuyến!", inline=False)
     embed.set_thumbnail(url=BOSS_CONFIG["image"])
     embed.add_field(name="❤️ Chỉ Số 2 Phase:", value=f"• Phase 1: HP {BOSS_CONFIG['hp']:,} | Đánh thường {BOSS_CONFIG['power']:,} DMG (chia đều)\n• Phase 2: HP {BOSS_PHASE2_CONFIG['hp']:,} | Đánh thường {BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều)", inline=True)
@@ -15585,8 +15585,8 @@ PRIME_BOSS_CONFIG = {
     "desc": "Kẻ thao túng khái niệm tối thượng. Mọi quy luật đều có thể bị đảo ngược trong tay hắn!",
     "reimu_quote": "Khí tức này... không phải thứ mà con người nên đối mặt. Tất cả đồng lòng, đừng để hắn đảo ngược cuộc chiến!",
     "image": PRIME_GIF_SPAWN,
-    "hp": 270000,
-    "power": 15000,
+    "hp": 230000,
+    "power": 11000,
     "dmg_reduction": 0.20,
     "kill_heal_pct": 0.025,
     "skills": {
@@ -15743,7 +15743,7 @@ async def spawn_prime_raid(channel, author, is_admin=False):
         name="⚖️ Nội Tại & Kỹ Năng:",
         value=(
             "• 🛡️ **Linh hồn của công lý (Passive):** Giảm **20% sát thương nhận vào**. Mỗi lần hạ được **1 thẻ bài**, hồi **2,5% máu tối đa**!\n"
-            "• 🔄 **Phản chuyển Niệm Bóng (25%):** Đảo ngược khái niệm, giáng đòn hủy diệt **2.2x sát thương gốc (33,000 DMG)** chia đều tiền tuyến!\n"
+            "• 🔄 **Phản chuyển Niệm Bóng (25%):** Đảo ngược khái niệm, giáng đòn hủy diệt **2.2x sát thương gốc (24,200 DMG)** chia đều tiền tuyến!\n"
             "• 🧩 **Gán ghép (15%):** Tập hợp các khái niệm gán lại, **hồi 20% máu tối đa**!\n"
             "• ♾️ **Nhị Phân Vô Cực khái niệm (10%):** Đòn kết liễu — **hạ gục ngay 1 mục tiêu ngẫu nhiên (1 hit)**, "
             "**BỎ QUA mọi kỹ năng phòng thủ** (Yukari, Kizuna, Hong Meiling, Reimu, Seiki, Kasen...)!"
