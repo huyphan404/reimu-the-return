@@ -17447,7 +17447,7 @@ def eq_fenrir_post(att, tgt, tgt_mark, logs):
         print(f"[EQ] lỗi fenrir_post: {e}", flush=True)
 
 def eq_gaia_post(card, mark, incoming, base_power, logs):
-    """Giáp Gaia: nếu thẻ mất máu trong hiệp -> hồi 2,5% máu tối đa (+ hoàn 10% nếu là sát thương skill)."""
+    """Giáp Gaia: nếu thẻ mất máu trong hiệp -> hồi 1,5% máu tối đa (+ hoàn 5% nếu là sát thương skill)."""
     try:
         if not card.get("eq_gaia") or mark is None:
             return
