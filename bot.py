@@ -3801,7 +3801,7 @@ async def execute_raid(channel, raid_data):
             if _gh > 0:
                 _gold = p1_hp
                 p1_hp = min(p1_max_hp, p1_hp + _gh)
-                player_atk_str += f"\n🛡️ **[Giáp Gaia - Boss]** Mahoraga chịu sát thương và hồi **+{p1_hp - _gold:,} HP** (2,5% máu tối đa)!"
+                player_atk_str += f"\n🛡️ **[Giáp Gaia - Boss]** Mahoraga chịu sát thương và hồi **+{p1_hp - _gold:,} HP** (1,5% máu tối đa)!"
         if ice_spear_blocked_logs:
             player_atk_str += "\n" + "\n".join(ice_spear_blocked_logs)
 
@@ -16033,7 +16033,7 @@ async def execute_prime_raid(channel, raid_data):
             _bgh = int(max_hp * GAIA_HEAL_PCT)
             _bold = B["hp"]
             B["hp"] = min(max_hp, B["hp"] + _bgh)
-            boss_fx.append(f"🛡️ **[Giáp Gaia - Boss]** Han Seiki chịu sát thương và hồi **+{B['hp'] - _bold:,} HP** (2,5% máu tối đa)!")
+            boss_fx.append(f"🛡️ **[Giáp Gaia - Boss]** Han Seiki chịu sát thương và hồi **+{B['hp'] - _bold:,} HP** (1,5% máu tối đa)!")
 
         # ---------- Hành động của Boss ----------
         action_log = ""
@@ -17341,8 +17341,8 @@ FENRIR_ATK = 180              # +ATK cho TOÀN ĐỘI khi trang bị
 FENRIR_EXTRA_PCT = 0.30       # +30% sát thương đánh thường lên mục tiêu dưới 50% máu
 FENRIR_HP_THRESHOLD = 0.50
 GAIA_HP = 800                 # +máu cho từng thẻ
-GAIA_HEAL_PCT = 0.025         # hồi 2,5% máu tối đa khi chịu sát thương
-GAIA_SKILL_REDUCE = 0.10      # giảm 10% sát thương từ skill
+GAIA_HEAL_PCT = 0.015         # hồi 1,5% máu tối đa khi chịu sát thương
+GAIA_SKILL_REDUCE = 0.05      # giảm 5% sát thương từ skill
 
 # Link Discord sẽ hết hạn -> nên up ảnh lên GitHub repo rồi thay link raw vào đây
 FENRIR_IMG = "https://media.discordapp.net/attachments/1527157582115111077/1562050755676999700/image.png?ex=6ad894a1&is=6ad74321&hm=6da5f1fd2f987dee1a6f03568cc17b8602332f7be6cbbc91a1390a9bb57e93c5&=&format=webp&quality=lossless"
@@ -17357,7 +17357,7 @@ EQUIPMENT_DB = {
     "giap_gaia": {
         "id": "giap_gaia", "name": "Giáp Gaia 🛡️", "slot": "armor", "slot_name": "Giáp phòng thủ",
         "image": GAIA_IMG, "color": 0x16A34A,
-        "desc": "**+800 máu** cho mỗi thẻ. Khi chịu sát thương **hồi 2,5% máu tối đa**, **giảm 10% sát thương từ skills**."
+        "desc": "**+800 máu** cho mỗi thẻ. Khi chịu sát thương **hồi 1,5% máu tối đa**, **giảm 5% sát thương từ skills**."
     },
 }
 EQUIP_ALIASES = {"fenrir": "nanh_fenrir", "nanh": "nanh_fenrir", "gaia": "giap_gaia", "giap": "giap_gaia"}
@@ -17461,7 +17461,7 @@ def eq_gaia_post(card, mark, incoming, base_power, logs):
         gain = refund + int(mx * GAIA_HEAL_PCT)
         before = card["current_hp"]
         card["current_hp"] = min(mx, card["current_hp"] + gain)
-        logs.append(f"🛡️ **[Giáp Gaia]** **{card['name']}** hồi **+{card['current_hp'] - before:,} HP** (2,5% máu tối đa" + (f" + giảm 10% sát thương skill)" if refund else ")"))
+        logs.append(f"🛡️ **[Giáp Gaia]** **{card['name']}** hồi **+{card['current_hp'] - before:,} HP** (1,5% máu tối đa" + (f" + giảm 5% sát thương skill)" if refund else ")"))
     except Exception as e:
         print(f"[EQ] lỗi gaia_post: {e}", flush=True)
 
@@ -17480,7 +17480,7 @@ def eq_take_damage(card, dmg, logs=None, skill=False):
                 before = card["current_hp"]
                 card["current_hp"] = min(mx, card["current_hp"] + heal)
                 if logs is not None:
-                    logs.append(f"🛡️ **[Giáp Gaia]** **{card['name']}** hồi **+{card['current_hp'] - before:,} HP** khi chịu sát thương (2,5%)!")
+                    logs.append(f"🛡️ **[Giáp Gaia]** **{card['name']}** hồi **+{card['current_hp'] - before:,} HP** khi chịu sát thương (1,5%)!")
             return
     except Exception as e:
         print(f"[EQ] lỗi take_damage: {e}", flush=True)
@@ -17574,7 +17574,7 @@ def eq_raid_after_boss(active, boss_log) -> str:
     if fen_n:
         out += f"\n🐺 **[Nanh Fenrir - Boss]** {fen_n} thẻ dưới 50% máu chịu thêm tổng **+{fen_dmg:,} DMG** (30% đòn đánh thường)!"
     if gaia_n:
-        out += f"\n🛡️ **[Giáp Gaia]** {gaia_n} thẻ hồi tổng **+{gaia_heal:,} HP** khi chịu sát thương (2,5% + giảm 10% sát thương skill)!"
+        out += f"\n🛡️ **[Giáp Gaia]** {gaia_n} thẻ hồi tổng **+{gaia_heal:,} HP** khi chịu sát thương (1,5% + giảm 5% sát thương skill)!"
     return out
 
 def t7_raid_after_boss(active, boss_log) -> str:
@@ -17624,7 +17624,7 @@ def eq_add_boss_field(embed, boss_key):
         if "nanh_fenrir" in have:
             lines.append("🐺 **Nanh Fenrir:** +180 ATK; đòn đánh thường gây thêm +30% lên thẻ dưới 50% máu")
         if "giap_gaia" in have:
-            lines.append("🛡️ **Giáp Gaia:** +800 máu; hồi 2,5% máu tối đa khi chịu sát thương; giảm 10% sát thương skill")
+            lines.append("🛡️ **Giáp Gaia:** +800 máu; hồi 1,5% máu tối đa khi chịu sát thương; giảm 5% sát thương skill")
         drops = " | ".join(f"{EQUIPMENT_DB[i]['name']} {ch * 100:g}%" for i, ch in EQUIP_DROPS.get(str(boss_key), ()))
         embed.add_field(name="⚔️ Trang Bị Của Boss & Drop:", value="\n".join(lines) + f"\n🎁 **Rơi:** {drops}", inline=False)
     except Exception as e:
