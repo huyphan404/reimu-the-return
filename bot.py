@@ -593,10 +593,11 @@ DISPLAY_TO_INTERNAL = {v: k for k, v in CARD_DISPLAY_ID.items()}
 CARD_ORDER = [DISPLAY_TO_INTERNAL[d] for d in sorted(DISPLAY_TO_INTERNAL)]   # thứ tự hiển thị
 TOTAL_STD_CARDS = len(CARD_ORDER)
 # ===== Thay link ảnh Discord (hết hạn) bằng link raw GitHub (vĩnh viễn) =====
+IMG_VER = "2"   # đổi số này mỗi lần thay ảnh để Discord tải lại
 GITHUB_RAW_BASE = "https://raw.githubusercontent.com/huyphan404/reimu-the-return/main"
 for _internal_id, _disp in CARD_DISPLAY_ID.items():
     if _internal_id in CARDS_DATA:
-        CARDS_DATA[_internal_id]["image"] = f"{GITHUB_RAW_BASE}/{_disp}.jpg"
+                CARDS_DATA[_internal_id]["image"] = f"{GITHUB_RAW_BASE}/{_disp}.jpg?v={IMG_VER}"
 
 def d2i(n):
     """ID hiển thị -> ID nội bộ (số lạ/0 thì giữ nguyên)."""
