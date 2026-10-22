@@ -14167,9 +14167,12 @@ async def handle_item_trade(ctx_or_interaction, user: discord.Member, vat_pham: 
     if clean_vp in ["thanhloi", "thanh_loi", "core"]: clean_vp = "thanh_loi"
     elif clean_vp in ["keo", "candy", "keo_halloween"]: clean_vp = "keo_halloween"
     elif clean_vp in ["ruong", "ruong_halloween", "ruong_halloween_e"]: clean_vp = "ruong_halloween_e"
+    elif clean_vp in ["quat", "quatgiay", "quat_giay"]: clean_vp = "quat_giay"
+    elif clean_vp in ["jotaro", "dia", "dia_ky_uc_jotaro"]: clean_vp = "dia_ky_uc_jotaro"
+    else: clean_vp = EQUIP_ALIASES.get(clean_vp, clean_vp)   # fenrir/nanh -> nanh_fenrir, gaia/giap -> giap_gaia
 
     if clean_vp not in ITEMS_DATABASE:
-        msg = f"❌ Mã vật phẩm `{vat_pham}` không tồn tại! (Hợp lệ: `thanh_loi`, `keo_halloween`, `ruong_halloween_e`)."
+        msg = f"❌ Mã vật phẩm `{vat_pham}` không tồn tại! (Hợp lệ: `thanh_loi`, `keo_halloween`, `ruong_halloween_e`, `quat_giay`, `dia_ky_uc_jotaro`, `nanh_fenrir`, `giap_gaia`)."
         if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else: await ctx_or_interaction.send(msg)
         return
@@ -14183,6 +14186,15 @@ async def handle_item_trade(ctx_or_interaction, user: discord.Member, vat_pham: 
 
     inv_a[clean_vp] -= so_luong
     inv_b[clean_vp] = inv_b.get(clean_vp, 0) + so_luong
+
+    # Nếu là trang bị và người gửi hết đồ -> tự gỡ khỏi slot đang mặc
+    unequip_note = ""
+    if clean_vp in EQUIPMENT_DB and inv_a[clean_vp] <= 0:
+        eq_a = p_a.get("equipment")
+        if isinstance(eq_a, dict) and eq_a.get(EQUIPMENT_DB[clean_vp]["slot"]) == clean_vp:
+            eq_a[EQUIPMENT_DB[clean_vp]["slot"]] = None
+            unequip_note = "\n⚠️ *Trang bị này đã được tự động tháo khỏi đội hình của người gửi.*"
+
     save_player(p_a)
     save_player(p_b)
 
@@ -14193,6 +14205,7 @@ async def handle_item_trade(ctx_or_interaction, user: discord.Member, vat_pham: 
             f"🤝 **{author.mention}** đã chuyển thành công **{so_luong}x {item_name}** cho **{user.mention}**!\n\n"
             f"• Kho của {author.display_name} còn lại: `{inv_a[clean_vp]}` cái\n"
             f"• Kho của {user.display_name} hiện có: `{inv_b[clean_vp]}` cái"
+            f"{unequip_note}"
         ),
         color=0x10B981
     )
@@ -14244,7 +14257,9 @@ class ItemGroup(app_commands.Group, name="item", description="Quản lý kho v�
         app_commands.Choice(name="Kẹo Halloween", value="keo_halloween"),
         app_commands.Choice(name="Rương Halloween [E]", value="ruong_halloween_e"),
         app_commands.Choice(name="Đĩa Ký Ức Jotaro 💿 (dia_ky_uc_jotaro)", value="dia_ky_uc_jotaro"),
-        app_commands.Choice(name="Quạt Giấy 🪭 (quat_giay)", value="quat_giay")
+        app_commands.Choice(name="Quạt Giấy 🪭 (quat_giay)", value="quat_giay"),
+        app_commands.Choice(name="Nanh Fenrir 🐺 (nanh_fenrir)", value="nanh_fenrir"),
+        app_commands.Choice(name="Giáp Gaia 🛡️ (giap_gaia)", value="giap_gaia")
     ])
     async def slash_item_trade_cmd(self, interaction: discord.Interaction, user: discord.Member, vat_pham: str, so_luong: int = 1):
         await handle_item_trade(interaction, user, vat_pham, so_luong)
