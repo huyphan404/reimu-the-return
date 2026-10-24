@@ -7719,6 +7719,33 @@ async def do_evolve_interaction(interaction: discord.Interaction, player, cid: U
 async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
+    # ===== [UPDATE EVOL] Điều hướng mới: required / tiến hóa trực tiếp =====
+    target = resolve_evol_target(nhan_vat_hoac_id)
+    _evol_hint = "\n\n📋 Dùng `/evol required` để xem điều kiện tiến hóa của từng nhân vật."
+    if target == "required":
+        await send_evol_required(ctx_or_interaction, user)
+        return
+    if target is None:
+        _m = f"❌ Không tìm thấy nhân vật `{nhan_vat_hoac_id}` có hệ tiến hóa!" + _evol_hint
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(_m, ephemeral=True)
+        else:
+            await ctx_or_interaction.send(_m)
+        return
+    _ok, _err, _emb = execute_card_evolution(player, target)
+    if not _ok:
+        _m = _err + _evol_hint
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(_m, ephemeral=True)
+        else:
+            await ctx_or_interaction.send(_m)
+    else:
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=_emb)
+        else:
+            await ctx_or_interaction.send(embed=_emb)
+    return
+    # ===== HẾT PHẦN MỚI (code cũ bên dưới giữ nguyên, không bị chạy tới nữa) =====
 
     cid_target = None
     if nhan_vat_hoac_id:
@@ -8049,31 +8076,295 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     else:
         await ctx_or_interaction.send(embed=embed, view=view)
 
-@bot.tree.command(name="evol", description="Tiến hóa nhân vật lên Ace 2")
-@app_commands.describe(id_hoac_ten="Nhập số ID thẻ hoặc chọn nhân vật")
-@app_commands.choices(id_hoac_ten=[
-    app_commands.Choice(name="[#04] Yukari Yakumo (Ace 2 - Cần 10 thẻ + 1 Quạt Giấy 🪭)", value="yukari"),
-    app_commands.Choice(name="[#09] Flandre Scarlet (Ace 2 - Cần 30 thẻ)", value="flandre"),
-    app_commands.Choice(name="[#12] Remilia Scarlet (Ace 2 - Cần 25 thẻ)", value="remilia"),
-    app_commands.Choice(name="[#13] Utsuho Reiuji (Ace 2 - Cần 30 thẻ)", value="utsuho"),
-    app_commands.Choice(name="[#17] Reimu Hakurei (Ace 2 - Cần 20 thẻ)", value="reimu"),
-    app_commands.Choice(name="[#19] Kasen Ibaraki (Ace 2 - 25 thẻ + có #14)", value="kasen"),
-    app_commands.Choice(name="[#20] Sakuya Izayoi (Ace 2 - Cần 30 thẻ)", value="sakuya"),
-    app_commands.Choice(name="[#20] Sakuya Izayoi (Ace 3 - 100 thẻ + 6 Ace2 + Prestige 4)", value="18a3"),
-    app_commands.Choice(name="[#21] Marisa Kirisame (Ace 2 - Cần 25 thẻ)", value="marisa"),
-    app_commands.Choice(name="[#23] Reisen Udongein Inaba (Ace 2 - Cần 40 thẻ)", value="reisen"),
-    app_commands.Choice(name="[#26] Cirno (Ace 2 - Cần 60 thẻ)", value="cirno"),
-    app_commands.Choice(name="[#27] Hong Meiling (Ace 2 - Cần 100 thẻ)", value="meiling"),
-    app_commands.Choice(name="[#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - 10 Mảnh)", value="t1"),
-    app_commands.Choice(name="[#t5] Jotaro Kujo (Ace 2 - 10 Mảnh + Đĩa Ký Ức)", value="t5"),
-    app_commands.Choice(name="[#t3] Kizuna the emperor of vampire (Ace 2 - 1 Thánh Lõi + Prestige 3)", value="t3"),
-    app_commands.Choice(name="[#t7] Kisami Mikawa (Ace 2 - 15 Mảnh + Seiki Ace2 + Prestige 2)", value="t7")
-])
+# ==============================================================================
+# [UPDATE EVOL] /evol <id|tên> (AUTOCOMPLETE) + /evol required (BẢNG ĐIỀU KIỆN)
+# ==============================================================================
+EVOL_ORDER = [4, 9, 12, 13, 15, 17, 18, 19, 21, 23, 24, "t1", "t3", "t5", "t7"]
+EVOL_T_SHARD = {"t1": ("seiki", 10), "t3": ("kizuna", 15), "t5": ("jotaro", 15)}
+
+
+def evol_tag(key) -> str:
+    return f"[#{disp_id(key)}]"
+
+
+def evol_name(key) -> str:
+    c = CARDS_DATA.get(key)
+    return c["name"] if c else str(key)
+
+
+def evol_choice_list():
+    """Danh sách (value, nhãn) cho autocomplete."""
+    out = []
+    for k in EVOL_ORDER:
+        out.append((str(k), f"{evol_tag(k)} {evol_name(k)}"))
+        if k == 18:
+            out.append(("18a3", f"{evol_tag(k)} {evol_name(k)} — Ace 3 🌠"))
+    return out
+
+
+async def evol_autocomplete(interaction: discord.Interaction, current: str):
+    cur = (current or "").lower().strip().replace("#", "")
+    res = []
+    if not cur or cur in "required":
+        res.append(app_commands.Choice(name="📋 required — Xem điều kiện tiến hóa các nhân vật", value="required"))
+    for val, label in evol_choice_list():
+        if not cur or cur in label.lower() or cur == val.lower():
+            res.append(app_commands.Choice(name=label[:100], value=val))
+    return res[:25]
+
+
+def resolve_evol_target(raw):
+    """Trả về: 'required' | int | 't1'/'t3'/'t5'/'t7' | '18a3' | None (không có evol)."""
+    if raw is None:
+        return "required"
+    s = str(raw).strip().lower()
+    m = re.match(r"^\[#?([0-9a-z]+)\]", s)   # người chơi gõ nguyên nhãn "[#20] Sakuya..."
+    if m:
+        s = m.group(1)
+    s = s.replace("#", "").strip()
+    compact = s.replace(" ", "")
+    if compact in ("", "required", "require", "requir", "req", "dieukien", "yeucau"):
+        return "required"
+    if compact in ("18a3", "sakuya3", "ace3", "sakuyaace3", "sakuya_ace3") or ("sakuya" in compact and "ace3" in compact):
+        return "18a3"
+    if compact in ("t1", "t3", "t5", "t7"):
+        return compact
+    if compact.isdigit():                      # số = ID HIỂN THỊ
+        internal = DISPLAY_TO_INTERNAL.get(int(compact))
+        return internal if internal in EVOL_ORDER else None
+    alias = CARD_ALIASES.get(compact) or CARD_ALIASES.get(s)
+    if alias in EVOL_ORDER:
+        return alias
+    for k in EVOL_ORDER:                       # khớp một phần tên
+        if s and s in evol_name(k).lower():
+            return k
+    return None
+
+
+def _rq(ok, text):
+    return (bool(ok), f"{'✅' if ok else '❌'} {text}")
+
+
+def evol_req_data(player, key, stage):
+    """Trả về (rows[(ok, text)], state). state: done | locked | ready | no"""
+    inv = player.get("inventory", {}) or {}
+    items = player.get("items", {}) or {}
+    shards = player.get("shards", {}) or {}
+    prestige = player.get("prestige", 0)
+    ks = str(key)
+    rows = []
+
+    def owned_card(k):
+        return is_card_unlocked(player, k) or inv.get(str(k), 0) > 0
+
+    # ---------- ACE 1 (thẻ gốc) ----------
+    if stage == 1:
+        if isinstance(key, int):
+            rows.append(_rq(owned_card(key), f"Sở hữu thẻ ({inv.get(ks, 0)} lá) — nhận từ /pull"))
+        else:
+            if key == "t7":
+                sk, need = "kisami", KISAMI_SHARDS_UNLOCK
+            else:
+                sk, need = EVOL_T_SHARD[key]
+            rows.append(_rq(owned_card(key), f"Mở thẻ bằng {need} mảnh ({shards.get(sk, 0)}/{need}) qua /t translate"))
+        return rows, ("done" if rows[0][0] else "no")
+
+    # ---------- ACE 3 (chỉ Sakuya) ----------
+    if stage == 3:
+        r = sakuya3_requirements(player)
+        rows.append(_rq(r["cards"] >= SAKUYA3_REQ_CARDS, f"Thẻ Sakuya: {r['cards']}/{SAKUYA3_REQ_CARDS} lá"))
+        rows.append(_rq(r["sakuya_ace2"], f"Ace 2: {evol_tag(18)} {evol_name(18)}"))
+        for c, n in SAKUYA3_REQ_ACE2:
+            rows.append(_rq(is_card_ace2(player, c), f"Ace 2: {evol_tag(c)} {evol_name(c)}"))
+        rows.append(_rq(r["prestige"] >= SAKUYA3_REQ_PRESTIGE, f"Prestige {SAKUYA3_REQ_PRESTIGE}+ (hiện tại P{r['prestige']})"))
+        if is_card_ace3(player, 18):
+            return rows, "done"
+        return rows, ("ready" if all(x[0] for x in rows) else "no")
+
+    # ---------- ACE 2 ----------
+    if isinstance(key, int):
+        cfg = EVOL_CONFIG[key]
+        req = cfg["required_cards"]
+        cnt = inv.get(ks, 0)
+        rows.append(_rq(cnt >= req, f"Thẻ {evol_tag(key)} {evol_name(key)}: {cnt}/{req} lá"))
+        ri = cfg.get("required_item")
+        if ri:
+            have = items.get(ri, 0)
+            rows.append(_rq(have >= 1, f"{ITEMS_DATABASE.get(ri, {}).get('name', ri)}: {have}/1"))
+        ro = cfg.get("required_owned_card")
+        if ro is not None:
+            ok = inv.get(str(ro), 0) >= 1 and not is_card_locked(player, ro)
+            rows.append(_rq(ok, f"Sở hữu thẻ {evol_tag(ro)} {evol_name(ro)} (không bị trừ)"))
+    else:
+        rows.append(_rq(owned_card(key), f"Sở hữu thẻ {evol_tag(key)} (Ace 1)"))
+        if key == "t1":
+            need = T1_ACE2_CONFIG["required_shards"]
+            have = shards.get("seiki", 0)
+            rows.append(_rq(have >= need, f"Mảnh Seiki: {have}/{need}"))
+            for c in T1_ACE2_CONFIG["required_ace2"]:
+                rows.append(_rq(is_card_ace2(player, c), f"Ace 2: {evol_tag(c)} {evol_name(c)}"))
+        elif key == "t3":
+            have = items.get("thanh_loi", 0) or shards.get("thanh_loi", 0)
+            rows.append(_rq(have >= 1, f"Thánh Lõi 🌟: {have}/1"))
+        elif key == "t5":
+            have_s = shards.get("jotaro", 0)
+            have_d = items.get("dia_ky_uc_jotaro", 0)
+            rows.append(_rq(have_s >= 10, f"Jotaro Shards: {have_s}/10"))
+            rows.append(_rq(have_d >= 1, f"Đĩa Ký Ức Jotaro 💿: {have_d}/1"))
+        elif key == "t7":
+            have = shards.get("kisami", 0)
+            rows.append(_rq(have >= KISAMI_SHARDS_ACE2, f"Kisami Shards: {have}/{KISAMI_SHARDS_ACE2}"))
+            rows.append(_rq(is_card_ace2(player, "t1"), f"Ace 2: {evol_tag('t1')} {evol_name('t1')}"))
+        pr = T_ACE2_PRESTIGE_REQ.get(key)
+        if pr:
+            rows.append(_rq(prestige >= pr, f"Prestige {pr}+ (hiện tại P{prestige})"))
+
+    if _raw_ace2(player, key):
+        return rows, ("done" if is_card_ace2(player, key) else "locked")
+    return rows, ("ready" if all(x[0] for x in rows) else "no")
+
+
+def evol_stage_image(key, stage):
+    if stage == 3:
+        return SAKUYA3_EVOL_GIF
+    if stage == 2:
+        if key == "t7":
+            return KISAMI_EVOL_GIF
+        cfg = EVOL_CONFIG.get(key)
+        if cfg and cfg.get("evol_gif"):
+            return cfg["evol_gif"]
+    return (CARDS_DATA.get(key) or {}).get("image")
+
+
+def build_evol_required_embed(player, idx, stage):
+    idx = max(0, min(idx, len(EVOL_ORDER) - 1))
+    key = EVOL_ORDER[idx]
+    max_stage = 3 if key == 18 else 2
+    stage = max(1, min(stage, max_stage))
+    rows, state = evol_req_data(player, key, stage)
+    stage_names = {1: "Ace 1 (thẻ gốc)", 2: "Ace 2 ⭐⭐", 3: "Ace 3 🌠"}
+    use_id = "18a3" if stage == 3 else disp_id(key)
+
+    if stage == 1:
+        status = "✅ **Đã sở hữu**" if state == "done" else "🔴 **Chưa sở hữu**"
+    else:
+        status = {
+            "done": "✅ **ĐÃ TIẾN HÓA**",
+            "locked": "🔒 **Đã tiến hóa nhưng đang bị KHÓA (thiếu Prestige)**",
+            "ready": f"🟢 **ĐỦ ĐIỀU KIỆN** — gõ `/evol {use_id}`",
+            "no": "🔴 **Chưa đủ điều kiện**",
+        }[state]
+    color = {"done": 0x10B981, "ready": 0x22C55E, "locked": 0xF59E0B, "no": 0xEF4444}[state]
+
+    embed = discord.Embed(
+        title=f"📋 {evol_tag(key)} {evol_name(key)}",
+        description=f"**{stage_names[stage]}**\nTrạng thái: {status}",
+        color=color
+    )
+    embed.add_field(name="📌 Điều kiện:", value="\n".join(x[1] for x in rows)[:1000], inline=False)
+    img = evol_stage_image(key, stage)
+    if img:
+        embed.set_image(url=img)
+    embed.set_footer(text=f"Nhân vật {idx + 1}/{len(EVOL_ORDER)} • ◀ ▶ đổi nhân vật • ❗ đổi Ace • # nhảy nhanh")
+    return embed
+
+
+class EvolRequiredView(discord.ui.View):
+    def __init__(self, user_id, idx=0, stage=1, show_jump=False):
+        super().__init__(timeout=300)
+        self.user_id = user_id
+        self.idx = idx
+        self.stage = stage
+        self.show_jump = show_jump
+        self._build()
+
+    def _build(self):
+        self.clear_items()
+        key = EVOL_ORDER[self.idx]
+        max_stage = 3 if key == 18 else 2
+
+        b_prev = discord.ui.Button(label="◀", style=discord.ButtonStyle.primary, row=0)
+        b_prev.callback = self.on_prev
+        self.add_item(b_prev)
+        b_cnt = discord.ui.Button(label=f"{self.idx + 1}/{len(EVOL_ORDER)}", style=discord.ButtonStyle.secondary, disabled=True, row=0)
+        self.add_item(b_cnt)
+        b_next = discord.ui.Button(label="▶", style=discord.ButtonStyle.primary, row=0)
+        b_next.callback = self.on_next
+        self.add_item(b_next)
+
+        nxt = self.stage % max_stage + 1
+        lbl = "❗ Về Ace 1" if nxt == 1 else f"❗ Xem điều kiện Ace {nxt}"
+        b_bang = discord.ui.Button(label=lbl, style=discord.ButtonStyle.success, row=1)
+        b_bang.callback = self.on_stage
+        self.add_item(b_bang)
+
+        b_jump = discord.ui.Button(label="# Nhảy nhanh", style=discord.ButtonStyle.primary if self.show_jump else discord.ButtonStyle.secondary, row=1)
+        b_jump.callback = self.on_jump
+        self.add_item(b_jump)
+
+        if self.show_jump:
+            opts = []
+            for i, k in enumerate(EVOL_ORDER):
+                opts.append(discord.SelectOption(label=f"{evol_tag(k)} {evol_name(k)}"[:100], value=str(i), default=(i == self.idx)))
+            sel = discord.ui.Select(placeholder="# Chọn nhân vật muốn xem...", options=opts, row=2)
+            sel.callback = self.on_select
+            self.add_item(sel)
+
+    def _embed(self):
+        player = get_player(self.user_id)
+        return build_evol_required_embed(player, self.idx, self.stage)
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải bảng của bạn! Hãy tự gõ `/evol required`.", ephemeral=True)
+            return False
+        return True
+
+    async def _refresh(self, interaction: discord.Interaction):
+        self._build()
+        await interaction.response.edit_message(embed=self._embed(), view=self)
+
+    async def on_prev(self, interaction: discord.Interaction):
+        self.idx = (self.idx - 1) % len(EVOL_ORDER)
+        self.stage = 1
+        await self._refresh(interaction)
+
+    async def on_next(self, interaction: discord.Interaction):
+        self.idx = (self.idx + 1) % len(EVOL_ORDER)
+        self.stage = 1
+        await self._refresh(interaction)
+
+    async def on_stage(self, interaction: discord.Interaction):
+        max_stage = 3 if EVOL_ORDER[self.idx] == 18 else 2
+        self.stage = self.stage % max_stage + 1
+        await self._refresh(interaction)
+
+    async def on_jump(self, interaction: discord.Interaction):
+        self.show_jump = not self.show_jump
+        await self._refresh(interaction)
+
+    async def on_select(self, interaction: discord.Interaction):
+        self.idx = int(interaction.data["values"][0])
+        self.stage = 1
+        await self._refresh(interaction)
+
+
+async def send_evol_required(ctx_or_interaction, user):
+    view = EvolRequiredView(user.id)
+    embed = view._embed()
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed, view=view)
+    else:
+        await ctx_or_interaction.send(embed=embed, view=view)
+        
+@bot.tree.command(name="evol", description="Tiến hóa nhân vật lên Ace 2/3 (gõ 'required' để xem điều kiện)")
+@app_commands.describe(id_hoac_ten="Nhập ID hoặc tên nhân vật (hoặc 'required' để xem điều kiện tiến hóa)")
+@app_commands.autocomplete(id_hoac_ten=evol_autocomplete)
 async def slash_evol(interaction: discord.Interaction, id_hoac_ten: str = None):
     await handle_evol(interaction, id_hoac_ten)
 
 @bot.command(name="evol", aliases=["tienhoa", "ace2"])
-async def prefix_evol(ctx, id_hoac_ten: str = None):
+async def prefix_evol(ctx, *, id_hoac_ten: str = None):
     await handle_evol(ctx, id_hoac_ten)
 # ==============================================================================
 # TOUHOU PULL GALLERY: BẢNG ẢNH 5x2 (10 THẺ/TRANG), NÚT CHUYỂN TRANG, TỐI ĐA 40 PULL
@@ -13735,7 +14026,7 @@ async def handle_help(ctx_or_interaction):
             "• `/card_info` : Xem chi tiết sức mạnh, thông tin nhân vật.\n"
             "• `/collection` : Xem chi tiết bộ sưu tập của bạn.\n"
             "• `/team` : Xem chi tiết và sắp xếp đội hình.\n"
-            "• `/evol` : Mở bảng tiến hóa nhân vật.\n"
+            "• `/evol <id/tên>` : Tiến hóa nhân vật (gõ `/evol required` để xem điều kiện).\n"
             "• `/trade` : Trade những lá bài.\n"
             "• `/t shards` : Kiểm tra số mảnh thẻ nhóm đặc biệt."
         ),
