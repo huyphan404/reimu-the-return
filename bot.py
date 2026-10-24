@@ -1848,6 +1848,8 @@ def get_player(user_id, username="Visitor"):
         data["story"].setdefault("stage2_completed", False)
     if "tokens" not in data:
         data["tokens"] = 0
+    if "xu" not in data:
+        data["xu"] = 0
     if "prestige" not in data:
         data["prestige"] = 0
     
@@ -8813,6 +8815,15 @@ async def _handle_pull_inner(ctx_or_interaction, count: int = 1):
         await _pull_reply(ctx_or_interaction, msg, ephemeral=True)
         return        
 
+    _st_free = get_storage_free(player)
+    if count > _st_free:
+        msg = (
+            f"📦 **Kho chứa đã đầy!** ({get_storage_used(player)}/{get_storage_cap(player)} slot, còn trống **{_st_free}**)\n"
+            f"Bạn định quay **{count}** lượt. Hãy dùng `/sac` để quy đổi thẻ thừa ra Xu, hoặc mua thêm slot ở `/shop`."
+        )
+        await _pull_reply(ctx_or_interaction, msg, ephemeral=True)
+        return
+
     needed = count
     free_used = min(player["free_pulls_remaining"], needed)
     player["free_pulls_remaining"] -= free_used
@@ -8870,13 +8881,34 @@ async def handle_daily(ctx_or_interaction):
         else: await ctx_or_interaction.send(msg)
         return
 
+    # --- Streak: liền kề hôm qua thì +1, đứt thì về 1. Chu kỳ 7 ngày rồi reset phần quà ---
+    if player.get("last_daily_date") == get_yesterday_vn():
+        player["daily_streak"] = player.get("daily_streak", 0) + 1
+    else:
+        player["daily_streak"] = 1
+    streak = player["daily_streak"]
+    step = (streak - 1) % 7                 # 0..6
+    xp_pct = 5 + 2 * step                   # 5%,7%,9%...17%
+    xu_gain = 15 * (step + 1)               # 15,30,45...105
+
     player["last_daily_date"] = today
     player["pull_tickets"] += 1.0
+    player["xu"] = player.get("xu", 0) + xu_gain
+    xp_gain, _old_l, _new_l = grant_xp_percent(player, xp_pct)
     dq_notifs = update_daily_quest_progress(player, "daily", 1)
     save_player(player)
+    _lvl_up = f"\n🌟 **LÊN CẤP {_new_l}!**" if _new_l > _old_l else ""
+    _next_note = "🔁 Ngày mai phần quà sẽ **reset** về mức đầu!" if step == 6 else f"➡️ Ngày mai: **+{5 + 2 * (step + 1)}% XP** & **+{15 * (step + 2)} Xu**"
     embed = discord.Embed(
         title="🎁 ĐIỂM DANH HÀNG NGÀY / DAILY REWARD",
-        description=f"Chúc mừng **{user.display_name}** đã viếng đền Hakurei!\nBạn nhận được: **+1 Lượt Pull** 🎟️\nTổng vé pull hiện có: **{player['pull_tickets']:.2f}**",
+        description=(
+            f"Chúc mừng **{user.display_name}** đã viếng đền Hakurei!\n"
+            f"🔥 **Streak:** ngày **{step + 1}/7** (chuỗi liên tục: {streak} ngày)\n\n"
+            f"• 🎟️ **+1 Lượt Pull** (Tổng: **{player['pull_tickets']:.2f}**)\n"
+            f"• ✨ **+{xp_pct}% XP cấp** = **+{xp_gain:,} XP**{_lvl_up}\n"
+            f"• {XU_EMOJI} **+{xu_gain} Xu công đức** (Tổng: **{player['xu']:,}**)\n\n"
+            f"{_next_note}"
+        ),
         color=0xF59E0B
     )
     if dq_notifs:
@@ -9135,6 +9167,17 @@ async def handle_collection(ctx_or_interaction):
         desc_text += "\n\n🔮 **THẺ ĐẶC BIỆT (NHÓM T - ĐỔI TỪ MẢNH SHARDS):**\n" + "\n".join(t_lines)
 
     embed = discord.Embed(title=f"📖 BỘ SƯU TẬP THẺ TOUHOU ({owned}/{TOTAL_STD_CARDS})", description=desc_text, color=0x8B5CF6)
+    _su, _sc = get_storage_used(player), get_storage_cap(player)
+    embed.add_field(
+        name="📦 KHO CHỨA (STORAGE):",
+        value=(
+            f"`{get_hp_bar(min(_su, _sc), _sc)}` **{_su}/{_sc}** slot "
+            f"{'⚠️ **ĐẦY!**' if _su >= _sc else ''}\n"
+            f"• Prestige {player.get('prestige', 0)} + {player.get('storage_buys', 0)} lần nâng cấp shop\n"
+            f"• Dùng `/sac` để đổi thẻ thừa ra {XU_EMOJI} Xu, `/shop` để mua thêm slot."
+        ),
+        inline=False
+    )
 
     tut = player.get("tutorial", {})
     if tut.get("active") and tut.get("step") == "collection":
@@ -10932,6 +10975,11 @@ async def handle_battle(ctx_or_interaction):
         gained_xp = random.randint(30, 50)
 
     p_mult = get_prestige_xp_multiplier(player.get("prestige", 0))
+    potion_note = ""
+    if player.get("potion_until", 0.0) > now:
+        p_mult += POTION_BONUS_MULT          # cộng thẳng: 3.5x -> 6.5x
+        _left = int(player["potion_until"] - now)
+        potion_note = f"Đang có hiệu lực: XP nhân **x{p_mult:g}** (còn {_left // 60} phút {_left % 60} giây)"
     gained_xp = int(gained_xp * p_mult)
 
     old_lvl = player["level"]
@@ -10985,6 +11033,8 @@ async def handle_battle(ctx_or_interaction):
         value=f"{'🏆 **CHIẾN THẮNG!**' if win else '💀 **THẤT BẠI!**'}\nNhận: **+{gained_xp} XP** ({'Thắng +100-200 XP' if win else 'Thua +30-50 XP'} | Tổng: {player['xp']:,} XP | Cấp: Lv.{cur_lvl}: {xp_in_lvl}/{needed_xp} XP){lvl_up_str}",
         inline=False
     )
+    if potion_note:
+        embed.add_field(name="🧪 Magical Potion:", value=potion_note, inline=False)
     if tut_completed:
         embed.add_field(
             name="🎉 HOÀN THÀNH NHIỆM VỤ TÂN THỦ!",
@@ -13825,6 +13875,10 @@ class TokenBuyCardModal(discord.ui.Modal):
             await interaction.response.send_message(f"❌ Bạn không đủ tokens! (Cần {total_cost:,} tokens, hiện có {cur_tokens:,} tokens)", ephemeral=True)
             return
 
+        _free_slot = get_storage_free(self.player)
+        if qty > _free_slot:
+            await interaction.response.send_message(f"📦 Kho chứa không đủ chỗ! (Còn trống {_free_slot} slot, bạn mua {qty}). Dùng `/sac` hoặc `/shop` để mở rộng.", ephemeral=True)
+            return
         self.player["tokens"] = cur_tokens - total_cost
         cid_str = str(card["id"])
         inv = self.player.setdefault("inventory", {})
@@ -13874,6 +13928,10 @@ class TokenRandomModal(discord.ui.Modal):
             await interaction.response.send_message(f"❌ Bạn không đủ tokens! (Cần {total_cost:,} tokens, hiện có {cur_tokens:,} tokens)", ephemeral=True)
             return
 
+        _free_slot = get_storage_free(self.player)
+        if qty > _free_slot:
+            await interaction.response.send_message(f"📦 Kho chứa không đủ chỗ! (Còn trống {_free_slot} slot, bạn quay {qty}). Dùng `/sac` hoặc `/shop` để mở rộng.", ephemeral=True)
+            return
         self.player["tokens"] = cur_tokens - total_cost
         results = []
         last_card = None
@@ -14030,7 +14088,10 @@ async def handle_help(ctx_or_interaction):
     embed.add_field(
         name="🎁 HỖ TRỢ: PHẦN THƯỞNG & VẬT PHẨM",
         value=(
-            "• `/daily` : Nhận thưởng hằng ngày.\n"
+            "• `/daily` : Nhận thưởng hằng ngày (vé + % XP + Xu, có streak 7 ngày).\n"
+            "• `/view` : Xem hồ sơ của bạn hoặc người khác (trận thắng, Xu, pull, prestige).\n"
+            "• `/sac` : Quy đổi thẻ thừa ra Xu công đức.\n"
+            "• `/shop` : Kirisame Magic Shop (Potion, thẻ S, kho chứa, Quả Lọ).\n"
             "• `/quest` : Nhiệm vụ ngày, thêm lượt quay và phần thưởng.\n"
             "• `/boss_status` : Kiểm tra tình trạng spawn rate Boss.\n"
             "• `/prestige` : Chuyển sinh, đổi cấp độ lấy phần thưởng.\n"
@@ -14084,7 +14145,7 @@ async def prefix_prestige(ctx):
 async def slash_token(interaction: discord.Interaction):
     await handle_token_shop(interaction)
 
-@bot.command(name="token", aliases=["tokens", "shop"])
+@bot.command(name="token", aliases=["tokens"])
 async def prefix_token(ctx):
     await handle_token_shop(ctx)
 
@@ -14385,6 +14446,13 @@ async def handle_item_use(ctx_or_interaction, item_id: str):
         return
     if clean_id in ["ruong", "ruong_halloween", "ruong_halloween_e", "chest"]:
         clean_id = "ruong_halloween_e"
+    if clean_id in ["potion", "magical", "magic_potion", "thuoc"]:
+        clean_id = "magical_potion"
+    elif clean_id in ["qualo", "lo"]:
+        clean_id = "qua_lo"
+    if clean_id in ("magical_potion", "qua_lo"):
+        await use_shop_item(ctx_or_interaction, player, clean_id)
+        return
 
     cnt = p_items.get(clean_id, 0)
     if cnt <= 0:
@@ -14530,7 +14598,9 @@ class ItemGroup(app_commands.Group, name="item", description="Quản lý kho v�
     @app_commands.choices(item_id=[
         app_commands.Choice(name="Rương Halloween Ma Quái [E] (ruong_halloween_e)", value="ruong_halloween_e"),
         app_commands.Choice(name="Giáp Gaia 🛡️ (giap_gaia)", value="giap_gaia"),
-        app_commands.Choice(name="Nanh Fenrir 🐺 (nanh_fenrir)", value="nanh_fenrir")
+        app_commands.Choice(name="Nanh Fenrir 🐺 (nanh_fenrir)", value="nanh_fenrir"),
+        app_commands.Choice(name="Magical Potion 🧪 (magical_potion)", value="magical_potion"),
+        app_commands.Choice(name="Quả Lọ 🏺 (qua_lo)", value="qua_lo")
     ])
     async def slash_item_use_cmd(self, interaction: discord.Interaction, item_id: str):
         await handle_item_use(interaction, item_id)
@@ -14544,7 +14614,9 @@ class ItemGroup(app_commands.Group, name="item", description="Quản lý kho v�
         app_commands.Choice(name="Đĩa Ký Ức Jotaro 💿 (dia_ky_uc_jotaro)", value="dia_ky_uc_jotaro"),
         app_commands.Choice(name="Quạt Giấy 🪭 (quat_giay)", value="quat_giay"),
         app_commands.Choice(name="Nanh Fenrir 🐺 (nanh_fenrir)", value="nanh_fenrir"),
-        app_commands.Choice(name="Giáp Gaia 🛡️ (giap_gaia)", value="giap_gaia")
+        app_commands.Choice(name="Giáp Gaia 🛡️ (giap_gaia)", value="giap_gaia"),
+        app_commands.Choice(name="Magical Potion 🧪 (magical_potion)", value="magical_potion"),
+        app_commands.Choice(name="Quả Lọ 🏺 (qua_lo)", value="qua_lo")
     ])
     async def slash_item_trade_cmd(self, interaction: discord.Interaction, user: discord.Member, vat_pham: str, so_luong: int = 1):
         await handle_item_trade(interaction, user, vat_pham, so_luong)
@@ -18281,6 +18353,467 @@ async def prefix_shard_trade(ctx, user: Union[discord.Member, discord.User] = No
             pass
     await handle_shard_trade(ctx, user, your, their)
     
+# ==============================================================================
+# [UPDATE XU CÔNG ĐỨC] /view • /sac • /shop • STORAGE • POTION • QUẢ LỌ
+# ==============================================================================
+XU_NAME = "Xu công đức"
+XU_EMOJI = "🪙"
+
+SAC_VALUES = {"SS": 10000, "S": 5000, "A": 2500, "B": 1250, "C": 625}
+
+# Kho chứa theo Prestige (P0 tự đặt 250, đổi số này nếu muốn). P5+ = 1000
+STORAGE_BASE_BY_PRESTIGE = {0: 250, 1: 300, 2: 350, 3: 400, 4: 500}
+STORAGE_BASE_MAX = 1000
+STORAGE_SHOP_SLOT = 50
+STORAGE_SHOP_PRICES = [8000, 50000, 100000, 150000]   # tối đa 4 lần
+
+SHOP_BG = "https://static2.klipy.com/ii/e293a233a303a98e471f78d04e13a1b0/fc/51/IfnDrVf7.gif"
+SHOP_MAX_QTY = 25
+POTION_PRICE = 22000
+POTION_BONUS_MULT = 3.0
+POTION_DURATION = 10 * 60
+S_CARD_PRICE = 12000
+QUA_LO_PRICE = 25000
+QUA_LO_XP_PCT = 40
+
+ITEMS_DATABASE["magical_potion"] = {
+    "id": "magical_potion", "name": "Magical Potion 🧪", "usable": True, "tradeable": True,
+    "desc": f"Cộng thêm **+{POTION_BONUS_MULT:g}x XP** cho `/battle` trong 10 phút (cộng thẳng vào hệ số Prestige, VD 3.5x -> 6.5x). Dùng `/item use`."
+}
+ITEMS_DATABASE["qua_lo"] = {
+    "id": "qua_lo", "name": "Quả Lọ 🏺", "usable": True, "tradeable": True,
+    "desc": f"Cộng ngay **{QUA_LO_XP_PCT}% XP** yêu cầu để lên cấp hiện tại. Dùng `/item use`."
+}
+
+
+# ---------------------------- HÀM HỖ TRỢ ----------------------------
+def get_yesterday_vn() -> str:
+    return (datetime.now(VN_TZ) - timedelta(days=1)).strftime("%Y-%m-%d")
+
+def grant_xp_percent(player: dict, pct: float):
+    """Cộng XP = pct% x lượng XP cần để lên cấp hiện tại. Trả về (xp_cộng, cấp_cũ, cấp_mới).
+    Ở cấp tối đa thì không cộng được (trả về 0)."""
+    prestige = player.get("prestige", 0)
+    old_xp = player.get("xp", 0)
+    lvl, _in_lvl, needed, _r = get_level_progress(old_xp, prestige)
+    if needed <= 0:
+        return 0, lvl, lvl
+    gain = int(needed * pct / 100.0)
+    player["xp"] = old_xp + gain
+    return gain, lvl, calculate_level_from_xp(player["xp"], prestige)
+
+def get_storage_cap(player: dict) -> int:
+    base = STORAGE_BASE_BY_PRESTIGE.get(int(player.get("prestige", 0)), STORAGE_BASE_MAX)
+    buys = max(0, min(len(STORAGE_SHOP_PRICES), int(player.get("storage_buys", 0))))
+    return base + buys * STORAGE_SHOP_SLOT
+
+def get_storage_used(player: dict) -> int:
+    inv = player.get("inventory") or {}
+    return sum(int(v) for v in inv.values() if isinstance(v, (int, float)) and v > 0)
+
+def get_storage_free(player: dict) -> int:
+    return max(0, get_storage_cap(player) - get_storage_used(player))
+
+
+# ---------------------------- DÙNG MAGICAL POTION / QUẢ LỌ ----------------------------
+async def use_shop_item(ctx_or_interaction, player: dict, item_id: str):
+    p_items = player.setdefault("items", {})
+    if p_items.get(item_id, 0) <= 0:
+        await _eq_send(ctx_or_interaction, content=f"❌ Bạn không có `{item_id}` trong kho đồ!", ephemeral=True)
+        return
+
+    if item_id == "magical_potion":
+        now = time.time()
+        base = max(now, player.get("potion_until", 0.0))
+        player["potion_until"] = base + POTION_DURATION
+        p_items[item_id] -= 1
+        save_player(player)
+        left = int(player["potion_until"] - now)
+        mult = get_prestige_xp_multiplier(player.get("prestige", 0)) + POTION_BONUS_MULT
+        embed = discord.Embed(
+            title="🧪 ĐÃ UỐNG MAGICAL POTION!",
+            description=(
+                f"✨ XP của `/battle` hiện nhân **x{mult:g}** (Prestige x{get_prestige_xp_multiplier(player.get('prestige', 0)):g} + {POTION_BONUS_MULT:g}).\n"
+                f"⏱️ Thời gian còn lại: **{left // 60} phút {left % 60} giây**\n"
+                f"🎒 Potion còn lại: `{p_items[item_id]}`"
+            ),
+            color=0xA855F7
+        )
+        await _eq_send(ctx_or_interaction, embed=embed)
+        return
+
+    # --- Quả Lọ ---
+    gain, old_l, new_l = grant_xp_percent(player, QUA_LO_XP_PCT)
+    if gain <= 0:
+        await _eq_send(ctx_or_interaction, content="⚠️ Bạn đã ở **cấp tối đa** của Prestige hiện tại, không thể dùng Quả Lọ (vật phẩm không bị mất).", ephemeral=True)
+        return
+    p_items[item_id] -= 1
+    save_player(player)
+    cur_l, xp_in, needed, _ = get_level_progress(player["xp"], player.get("prestige", 0))
+    lvl_txt = f"\n🌟 **LÊN CẤP {new_l}!**" if new_l > old_l else ""
+    embed = discord.Embed(
+        title="🏺 ĐÃ DÙNG QUẢ LỌ!",
+        description=(
+            f"✨ **+{QUA_LO_XP_PCT}% XP cấp** = **+{gain:,} XP**{lvl_txt}\n"
+            f"📊 Tiến trình: Lv.{cur_l} — **{xp_in:,}/{needed:,} XP**\n"
+            f"🎒 Quả Lọ còn lại: `{p_items[item_id]}`"
+        ),
+        color=0xF59E0B
+    )
+    await _eq_send(ctx_or_interaction, embed=embed)
+
+
+# ---------------------------- /view ----------------------------
+async def handle_view(ctx_or_interaction, target=None):
+    author = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    target = target or author
+    if getattr(target, "bot", False):
+        await _eq_send(ctx_or_interaction, content="🤖 Bot không có hồ sơ người chơi!", ephemeral=True)
+        return
+    p = get_player(target.id, target.display_name)
+    prestige = p.get("prestige", 0)
+    won, total = p.get("battles_won", 0), p.get("battles_total", 0)
+    rate = (won / total * 100) if total > 0 else 0.0
+    lvl, xp_in, needed, _ = get_level_progress(p.get("xp", 0), prestige)
+    left = int(p.get("potion_until", 0.0) - time.time())
+    potion = f"🧪 Potion còn **{left // 60}p{left % 60:02d}s**" if left > 0 else "🧪 Không có buff"
+
+    embed = discord.Embed(title=f"📋 HỒ SƠ NGƯỜI CHƠI: {target.display_name.upper()}", color=0x3B82F6)
+    try:
+        embed.set_thumbnail(url=target.display_avatar.url)
+    except Exception:
+        pass
+    embed.add_field(name="⭐ Cấp độ", value=f"**Lv.{lvl}**" + (f" ({xp_in:,}/{needed:,} XP)" if needed > 0 else " (MAX)"), inline=True)
+    embed.add_field(name="👑 Prestige", value=f"**P{prestige}** (x{get_prestige_xp_multiplier(prestige):g} XP)", inline=True)
+    embed.add_field(name="🏆 Trận thắng", value=f"**{won:,}** / {total:,} trận ({rate:.1f}%)", inline=True)
+    embed.add_field(name=f"{XU_EMOJI} {XU_NAME}", value=f"**{p.get('xu', 0):,}** xu", inline=True)
+    embed.add_field(name="🎟️ Lượt Pull", value=f"**{p.get('pull_tickets', 0):.2f}** vé + {p.get('free_pulls_remaining', 0)}/5 free", inline=True)
+    embed.add_field(name="💎 Tokens", value=f"**{p.get('tokens', 0):,}**", inline=True)
+    embed.add_field(name="📦 Kho chứa", value=f"**{get_storage_used(p)}/{get_storage_cap(p)}** slot", inline=True)
+    embed.add_field(name="🔥 Daily streak", value=f"**{p.get('daily_streak', 0)}** ngày", inline=True)
+    embed.add_field(name="🧪 Buff", value=potion, inline=True)
+    embed.set_footer(text="Dùng /view @người_khác để xem hồ sơ người khác")
+    await _eq_send(ctx_or_interaction, embed=embed)
+
+@bot.tree.command(name="view", description="Xem hồ sơ: trận thắng, Xu, pull, prestige (có thể xem người khác)")
+@app_commands.describe(nguoi_dung="Người muốn xem (để trống = chính bạn)")
+async def slash_view(interaction: discord.Interaction, nguoi_dung: Optional[Union[discord.Member, discord.User]] = None):
+    await handle_view(interaction, nguoi_dung)
+
+@bot.command(name="view", aliases=["profile", "hoso"])
+async def prefix_view(ctx, member: Optional[discord.Member] = None):
+    await handle_view(ctx, member)
+
+
+# ---------------------------- /sac ----------------------------
+def sac_validate(player: dict, cid, qty: int):
+    """Trả về (lỗi|None, số_lượng_thực, giá_mỗi_thẻ). Luôn giữ lại 1 thẻ."""
+    card = CARDS_DATA.get(cid)
+    if not card:
+        return "❌ Không tìm thấy thẻ bài này!", 0, 0
+    value = SAC_VALUES.get(card["rank"])
+    if not value:
+        return f"❌ Thẻ **[{card['rank']}] {card['name']}** thuộc nhóm đặc biệt, không thể quy đổi ra Xu!", 0, 0
+    if is_card_locked(player, cid):
+        return f"🔒 Thẻ **{card['name']}** đang bị khóa, không thể quy đổi!", 0, 0
+    owned = player.get("inventory", {}).get(str(cid), 0)
+    surplus = owned - 1
+    if surplus <= 0:
+        return f"⚠️ Bạn chỉ có **{owned}** lá **{card['name']}**. Phải giữ lại ít nhất 1 lá nên không có thẻ thừa để quy đổi!", 0, 0
+    real = surplus if qty <= 0 else qty
+    if real > surplus:
+        return f"❌ Bạn chỉ có **{surplus}** thẻ thừa của **{card['name']}** (có {owned}, giữ lại 1)!", 0, 0
+    return None, real, value
+
+class SacConfirmView(discord.ui.View):
+    def __init__(self, user, cid, qty):
+        super().__init__(timeout=60)
+        self.user = user
+        self.cid = cid
+        self.qty = qty
+
+    @discord.ui.button(label="✅ Xác Nhận Quy Đổi", style=discord.ButtonStyle.success)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên của bạn!", ephemeral=True)
+            return
+        for child in self.children:
+            child.disabled = True
+        player = get_player(self.user.id, self.user.display_name)   # đọc lại dữ liệu mới nhất
+        err, real, value = sac_validate(player, self.cid, self.qty)
+        if err:
+            await interaction.response.edit_message(content=err, embed=None, view=self)
+            self.stop()
+            return
+        card = CARDS_DATA[self.cid]
+        gain = real * value
+        player["inventory"][str(self.cid)] -= real
+        player["xu"] = player.get("xu", 0) + gain
+        save_player(player)
+        embed = discord.Embed(
+            title="♻️ QUY ĐỔI THẺ THÀNH CÔNG!",
+            description=(
+                f"🎴 Đã quy đổi **{real}x [{card['rank']}] #{disp_id(card['id'])} {card['name']}**\n"
+                f"{XU_EMOJI} **+{gain:,} Xu công đức** (Tổng: **{player['xu']:,}**)\n"
+                f"📦 Kho chứa: **{get_storage_used(player)}/{get_storage_cap(player)}** slot"
+            ),
+            color=0x10B981
+        )
+        await interaction.response.edit_message(content=None, embed=embed, view=self)
+        self.stop()
+
+    @discord.ui.button(label="❌ Hủy", style=discord.ButtonStyle.secondary)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên của bạn!", ephemeral=True)
+            return
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(content="🚫 Đã hủy quy đổi.", embed=None, view=self)
+        self.stop()
+
+async def handle_sac(ctx_or_interaction, id_the, so_luong: int = 1):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    if not id_the:
+        await _eq_send(ctx_or_interaction, content=(
+            "💡 Cú pháp: `/sac id_the:<ID hoặc tên> so_luong:<số>` (`so_luong:0` = quy đổi toàn bộ thẻ thừa)\n"
+            f"Giá: SS **{SAC_VALUES['SS']:,}** | S **{SAC_VALUES['S']:,}** | A **{SAC_VALUES['A']:,}** | "
+            f"B **{SAC_VALUES['B']:,}** | C **{SAC_VALUES['C']:,}** {XU_EMOJI}/thẻ. Luôn giữ lại 1 lá."), ephemeral=True)
+        return
+    player = get_player(user.id, user.display_name)
+    cid = normalize_user_card_input(id_the)
+    if cid is None or cid not in CARDS_DATA:
+        await _eq_send(ctx_or_interaction, content=f"❌ Không tìm thấy thẻ `{id_the}`!", ephemeral=True)
+        return
+    err, real, value = sac_validate(player, cid, so_luong)
+    if err:
+        await _eq_send(ctx_or_interaction, content=err, ephemeral=True)
+        return
+    card = CARDS_DATA[cid]
+    warn = ""
+    if cid in EVOL_CONFIG and not is_card_ace2(player, cid):
+        need = EVOL_CONFIG[cid].get("required_cards", 0)
+        if need:
+            warn = f"\n⚠️ **Lưu ý:** thẻ này cần **{need}** lá để tiến hóa Ace 2. Quy đổi sẽ làm bạn mất nguyên liệu tiến hóa!"
+    embed = discord.Embed(
+        title="♻️ XÁC NHẬN QUY ĐỔI THẺ THỪA",
+        description=(
+            f"🎴 **{real}x [{card['rank']}] #{disp_id(card['id'])} {card['name']}** × {value:,} {XU_EMOJI}\n"
+            f"💰 Nhận: **+{real * value:,} Xu công đức**\n"
+            f"📦 Thẻ còn lại sau khi quy đổi: **{player['inventory'].get(str(cid), 0) - real}** lá{warn}"
+        ),
+        color=0xF59E0B
+    )
+    embed.set_thumbnail(url=card["image"])
+    view = SacConfirmView(user, cid, so_luong)
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed, view=view)
+    else:
+        await ctx_or_interaction.send(embed=embed, view=view)
+
+@bot.tree.command(name="sac", description="Quy đổi thẻ bài thừa ra Xu công đức (luôn giữ lại 1 lá)")
+@app_commands.describe(id_the="ID hoặc tên thẻ (VD: 25 hoặc rumia)", so_luong="Số lượng (mặc định 1, nhập 0 = quy đổi toàn bộ thẻ thừa)")
+async def slash_sac(interaction: discord.Interaction, id_the: str, so_luong: int = 1):
+    await handle_sac(interaction, id_the, so_luong)
+
+@bot.command(name="sac")
+async def prefix_sac(ctx, id_the: str = None, so_luong: int = 1):
+    await handle_sac(ctx, id_the, so_luong)
+
+
+# ---------------------------- /shop (KIRISAME MAGIC SHOP) ----------------------------
+def _parse_qty(raw: str):
+    try:
+        q = int(str(raw).strip())
+        if 1 <= q <= SHOP_MAX_QTY:
+            return q
+    except ValueError:
+        pass
+    return None
+
+class ShopQtyModal(discord.ui.Modal):
+    """Mua Magical Potion / Quả Lọ."""
+    def __init__(self, item_key: str):
+        self.item_key = item_key
+        self.name, self.price = ("Magical Potion", POTION_PRICE) if item_key == "magical_potion" else ("Quả Lọ", QUA_LO_PRICE)
+        super().__init__(title=f"Mua {self.name} ({self.price:,} xu/cái)"[:45])
+        self.qty_input = discord.ui.TextInput(
+            label=f"Số lượng (tối đa {SHOP_MAX_QTY}):", default="1",
+            required=True, min_length=1, max_length=2
+        )
+        self.add_item(self.qty_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        qty = _parse_qty(self.qty_input.value)
+        if qty is None:
+            await interaction.response.send_message(f"❌ Số lượng phải từ 1 đến {SHOP_MAX_QTY}!", ephemeral=True)
+            return
+        player = get_player(interaction.user.id, interaction.user.display_name)
+        total = self.price * qty
+        if player.get("xu", 0) < total:
+            await interaction.response.send_message(f"❌ Không đủ Xu! (Cần {total:,}, bạn có {player.get('xu', 0):,})", ephemeral=True)
+            return
+        player["xu"] -= total
+        items = player.setdefault("items", {})
+        items[self.item_key] = items.get(self.item_key, 0) + qty
+        save_player(player)
+        await interaction.response.send_message(
+            f"✅ Marisa: *\"Cảm ơn nha~\"*\nĐã mua **{qty}x {self.name}** (-{total:,} {XU_EMOJI}). "
+            f"Số dư: **{player['xu']:,}** xu • Kho còn: `{items[self.item_key]}` • Dùng `/item use`."
+        )
+
+class ShopBuyCardModal(discord.ui.Modal, title="Mua Thẻ S (12,000 xu/thẻ)"):
+    def __init__(self):
+        super().__init__()
+        self.card_input = discord.ui.TextInput(label="ID thẻ hạng S hoặc tên nhân vật:", placeholder="VD: 9 hoặc flandre", required=True, min_length=1, max_length=30)
+        self.qty_input = discord.ui.TextInput(label=f"Số lượng (tối đa {SHOP_MAX_QTY}):", default="1", required=True, min_length=1, max_length=2)
+        self.add_item(self.card_input)
+        self.add_item(self.qty_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        cid = normalize_user_card_input(self.card_input.value.strip())
+        if cid is None or cid not in CARDS_DATA:
+            await interaction.response.send_message(f"❌ Không tìm thấy thẻ `{self.card_input.value}`!", ephemeral=True)
+            return
+        card = CARDS_DATA[cid]
+        if card["rank"] != "S":
+            await interaction.response.send_message(f"❌ **{card['name']}** là hạng [{card['rank']}], shop chỉ bán thẻ hạng **S**!", ephemeral=True)
+            return
+        qty = _parse_qty(self.qty_input.value)
+        if qty is None:
+            await interaction.response.send_message(f"❌ Số lượng phải từ 1 đến {SHOP_MAX_QTY}!", ephemeral=True)
+            return
+        player = get_player(interaction.user.id, interaction.user.display_name)
+        if is_card_locked(player, cid):
+            await interaction.response.send_message("🔒 Thẻ này đang bị khóa, không thể mua!", ephemeral=True)
+            return
+        free = get_storage_free(player)
+        if qty > free:
+            await interaction.response.send_message(f"📦 Kho chứa không đủ chỗ! (Còn trống {free}, bạn mua {qty}). Dùng `/sac` hoặc mua thêm slot.", ephemeral=True)
+            return
+        total = S_CARD_PRICE * qty
+        if player.get("xu", 0) < total:
+            await interaction.response.send_message(f"❌ Không đủ Xu! (Cần {total:,}, bạn có {player.get('xu', 0):,})", ephemeral=True)
+            return
+        player["xu"] -= total
+        inv = player.setdefault("inventory", {})
+        inv[str(cid)] = inv.get(str(cid), 0) + qty
+        unl = player.setdefault("unlocked_cards", [])
+        if cid not in unl:
+            unl.append(cid)
+        save_player(player)
+        await interaction.response.send_message(
+            f"✅ Đã mua **{qty}x [S] #{disp_id(card['id'])} {card['name']}** (-{total:,} {XU_EMOJI}). "
+            f"Số dư: **{player['xu']:,}** xu • Kho chứa: **{get_storage_used(player)}/{get_storage_cap(player)}**"
+        )
+
+class ShopView(discord.ui.View):
+    def __init__(self, user):
+        super().__init__(timeout=180)
+        self.user = user
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên shop của bạn! Hãy tự gõ `/shop`.", ephemeral=True)
+            return False
+        return True
+
+    @discord.ui.button(label="⋯ 1. Magical Potion", style=discord.ButtonStyle.primary, row=0)
+    async def btn_potion(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ShopQtyModal("magical_potion"))
+
+    @discord.ui.button(label="⋯ 2. Thẻ S", style=discord.ButtonStyle.danger, row=0)
+    async def btn_card(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ShopBuyCardModal())
+
+    @discord.ui.button(label="⋯ 3. Kho Storage", style=discord.ButtonStyle.success, row=1)
+    async def btn_storage(self, interaction: discord.Interaction, button: discord.ui.Button):
+        player = get_player(interaction.user.id, interaction.user.display_name)
+        buys = int(player.get("storage_buys", 0))
+        if buys >= len(STORAGE_SHOP_PRICES):
+            await interaction.response.send_message(f"✅ Bạn đã mua tối đa kho chứa ({len(STORAGE_SHOP_PRICES)}/{len(STORAGE_SHOP_PRICES)})!", ephemeral=True)
+            return
+        price = STORAGE_SHOP_PRICES[buys]
+        if player.get("xu", 0) < price:
+            await interaction.response.send_message(f"❌ Không đủ Xu! (Cần {price:,}, bạn có {player.get('xu', 0):,})", ephemeral=True)
+            return
+        player["xu"] -= price
+        player["storage_buys"] = buys + 1
+        save_player(player)
+        await interaction.response.send_message(
+            f"✅ Marisa: *\"Kho rộng hơn rồi nhé~\"*\nĐã mua **+{STORAGE_SHOP_SLOT} slot** (lần {buys + 1}/{len(STORAGE_SHOP_PRICES)}, -{price:,} {XU_EMOJI}). "
+            f"Kho chứa: **{get_storage_used(player)}/{get_storage_cap(player)}** • Số dư: **{player['xu']:,}** xu"
+        )
+
+    @discord.ui.button(label="⋯ 4. Quả Lọ", style=discord.ButtonStyle.secondary, row=1)
+    async def btn_qualo(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(ShopQtyModal("qua_lo"))
+
+async def handle_shop(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    buys = int(player.get("storage_buys", 0))
+    if buys >= len(STORAGE_SHOP_PRICES):
+        storage_line = f"✅ Đã mua tối đa ({buys}/{len(STORAGE_SHOP_PRICES)})"
+    else:
+        storage_line = f"**{STORAGE_SHOP_PRICES[buys]:,}** xu (lần {buys + 1}/{len(STORAGE_SHOP_PRICES)})"
+    prices = " → ".join(f"{p:,}" for p in STORAGE_SHOP_PRICES)
+
+    embed = discord.Embed(
+        title="🧙‍♀️ KIRISAME MAGIC SHOP",
+        description=(
+            "🌟 **Marisa:** *\"My My, mua chút gì đi\"*\n\n"
+            f"{XU_EMOJI} **Số dư:** **{player.get('xu', 0):,}** {XU_NAME}\n"
+            f"📦 **Kho chứa:** {get_storage_used(player)}/{get_storage_cap(player)} slot\n"
+            "━━━━━━━━━━━━━━━━━━━━━━\n*Bấm nút ⋯ bên dưới để mua (tối đa 25/lần)*"
+        ),
+        color=0xF59E0B
+    )
+    embed.set_image(url=SHOP_BG)
+    embed.add_field(name=f"🧪 1. Magical Potion — {POTION_PRICE:,} xu/cái",
+                    value=f"Buff **+{POTION_BONUS_MULT:g}x XP** cho `/battle` trong 10 phút (cộng thẳng, VD 3.5x → 6.5x).\n`/item use` để dùng • trade được qua `/item trade`", inline=False)
+    embed.add_field(name=f"⭐ 2. Thẻ hạng S — {S_CARD_PRICE:,} xu/thẻ",
+                    value="Chọn ID và số lượng, chỉ hiện thông báo đã mua.", inline=False)
+    embed.add_field(name="📦 3. Kho chứa Storage (+50 slot/lần)",
+                    value=f"Giá lần tới: {storage_line}\nBảng giá: {prices} xu (tối đa 4 lần)", inline=False)
+    embed.add_field(name=f"🏺 4. Quả Lọ — {QUA_LO_PRICE:,} xu/lọ",
+                    value=f"Cộng ngay **{QUA_LO_XP_PCT}% XP** yêu cầu lên cấp.\n`/item use` để dùng • trade được qua `/item trade`", inline=False)
+    embed.set_footer(text="Marisa Shop sẽ cập nhật thêm trong tương lai, uhe~~")
+    view = ShopView(user)
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed, view=view)
+    else:
+        await ctx_or_interaction.send(embed=embed, view=view)
+
+@bot.tree.command(name="shop", description="Kirisame Magic Shop: mua Potion, thẻ S, kho chứa, Quả Lọ bằng Xu công đức")
+async def slash_shop(interaction: discord.Interaction):
+    await handle_shop(interaction)
+
+@bot.command(name="shop", aliases=["marisashop"])
+async def prefix_shop(ctx):
+    await handle_shop(ctx)
+
+
+# ---------------------------- ADMIN: CẤP XU ----------------------------
+@bot.tree.command(name="admin_xu_add", description="[CHỦ BOT DUY NHẤT] Cấp Xu công đức cho người chơi")
+@app_commands.describe(so_luong="Số xu cần cấp", nguoi_dung="Người nhận (để trống = bản thân)")
+async def slash_admin_xu_add(interaction: discord.Interaction, so_luong: int, nguoi_dung: Optional[Union[discord.Member, discord.User]] = None):
+    if not is_authorized_admin(interaction.user.id):
+        await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!**", ephemeral=True)
+        return
+    if so_luong <= 0:
+        await interaction.response.send_message("❌ Số lượng phải lớn hơn 0!", ephemeral=True)
+        return
+    target = nguoi_dung or interaction.user
+    tp = get_player(target.id, target.display_name)
+    tp["xu"] = tp.get("xu", 0) + so_luong
+    save_player(tp)
+    await interaction.response.send_message(f"{XU_EMOJI} Đã cấp **+{so_luong:,} Xu** cho {target.mention} (Tổng: **{tp['xu']:,}**)!")
+
+import sys
+
+def start_bot_safely():
+
 import sys
 
 def start_bot_safely():
