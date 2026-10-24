@@ -18810,6 +18810,104 @@ async def slash_admin_xu_add(interaction: discord.Interaction, so_luong: int, ng
     save_player(tp)
     await interaction.response.send_message(f"{XU_EMOJI} Đã cấp **+{so_luong:,} Xu** cho {target.mention} (Tổng: **{tp['xu']:,}**)!")
 
+# ==============================================================================
+# LỆNH ADMIN: /admin_coin remove & /admin_coin add (QUẢN LÝ / CÂN BẰNG XU CÔNG ĐỨC)
+# ==============================================================================
+class AdminCoinGroup(app_commands.Group, name="admin_coin", description="[CHỦ BOT DUY NHẤT] Quản lý Xu công đức / Coin người chơi"):
+    @app_commands.command(name="remove", description="[CHỦ BOT DUY NHẤT] Thu hồi / trừ Xu công đức của người chơi để cân bằng game")
+    @app_commands.describe(
+        nguoi_dung="Người chơi bị trừ xu",
+        so_luong="Số xu cần trừ (nhập 0 để trừ sạch toàn bộ về 0)"
+    )
+    async def remove(self, interaction: discord.Interaction, nguoi_dung: Union[discord.Member, discord.User], so_luong: int = 0):
+        if not is_authorized_admin(interaction.user.id):
+            await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ duy nhất chủ sở hữu Bot mới có quyền.", ephemeral=True)
+            return
+        if so_luong < 0:
+            await interaction.response.send_message("❌ Số lượng xu cần trừ không được là số âm!", ephemeral=True)
+            return
+
+        tp = get_player(nguoi_dung.id, nguoi_dung.display_name)
+        cur_xu = tp.get("xu", 0)
+
+        if cur_xu <= 0:
+            await interaction.response.send_message(f"⚠️ {nguoi_dung.mention} hiện đang có **0 Xu**, không có xu để trừ!", ephemeral=True)
+            return
+
+        if so_luong == 0 or so_luong >= cur_xu:
+            removed = cur_xu
+            tp["xu"] = 0
+            note = "*(Đã trừ sạch toàn bộ số xu hiện có)*"
+        else:
+            removed = so_luong
+            tp["xu"] = cur_xu - so_luong
+            note = ""
+
+        save_player(tp)
+        embed = discord.Embed(
+            title="⚖️ [ADMIN] ĐÃ THU HỒI / TRỪ XU THÀNH CÔNG!",
+            description=(
+                f"👑 **Admin thực hiện:** {interaction.user.mention}\n"
+                f"👤 **Người chơi:** {nguoi_dung.mention}\n"
+                f"➖ **Số xu đã trừ:** **-{removed:,} {XU_NAME}** {note}\n"
+                f"💰 **Số dư còn lại:** **`{tp['xu']:,}` {XU_NAME}**"
+            ),
+            color=0xDC2626
+        )
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name="add", description="[CHỦ BOT DUY NHẤT] Cấp Xu công đức cho người chơi")
+    @app_commands.describe(so_luong="Số xu cần cấp", nguoi_dung="Người nhận (để trống = bản thân)")
+    async def add(self, interaction: discord.Interaction, so_luong: int, nguoi_dung: Optional[Union[discord.Member, discord.User]] = None):
+        if not is_authorized_admin(interaction.user.id):
+            await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!**", ephemeral=True)
+            return
+        if so_luong <= 0:
+            await interaction.response.send_message("❌ Số lượng phải lớn hơn 0!", ephemeral=True)
+            return
+        target = nguoi_dung or interaction.user
+        tp = get_player(target.id, target.display_name)
+        tp["xu"] = tp.get("xu", 0) + so_luong
+        save_player(tp)
+        await interaction.response.send_message(f"{XU_EMOJI} Đã cấp **+{so_luong:,} Xu** cho {target.mention} (Tổng: **{tp['xu']:,}**)!")
+
+bot.tree.add_command(AdminCoinGroup())
+
+# Hỗ trợ thêm Slash Command trực tiếp và Prefix command !admin_coin remove
+@bot.tree.command(name="admin_coin_remove", description="[CHỦ BOT DUY NHẤT] Thu hồi / trừ Xu công đức của người chơi")
+@app_commands.describe(nguoi_dung="Người chơi bị trừ xu", so_luong="Số xu cần trừ (nhập 0 để trừ hết)")
+async def slash_admin_coin_remove(interaction: discord.Interaction, nguoi_dung: Union[discord.Member, discord.User], so_luong: int = 0):
+    await AdminCoinGroup().remove.callback(AdminCoinGroup(), interaction, nguoi_dung, so_luong)
+
+@bot.group(name="admin_coin", invoke_without_command=True)
+async def prefix_admin_coin_group(ctx):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send("⛔ Từ chối quyền truy cập! Lệnh dành riêng cho chủ bot.")
+        return
+    await ctx.send("💡 Cú pháp: `!admin_coin remove @User [số_lượng (0 = trừ hết)]` hoặc `!admin_coin add <số_lượng> [@User]`")
+
+@prefix_admin_coin_group.command(name="remove")
+async def prefix_admin_coin_remove(ctx, member: discord.Member, so_luong: int = 0):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send("⛔ Từ chối quyền truy cập!")
+        return
+    if so_luong < 0:
+        await ctx.send("❌ Số lượng xu không được là số âm!")
+        return
+    tp = get_player(member.id, member.display_name)
+    cur_xu = tp.get("xu", 0)
+    if cur_xu <= 0:
+        await ctx.send(f"⚠️ {member.mention} hiện đang có **0 Xu**, không có xu để trừ!")
+        return
+    if so_luong == 0 or so_luong >= cur_xu:
+        removed = cur_xu
+        tp["xu"] = 0
+    else:
+        removed = so_luong
+        tp["xu"] = cur_xu - so_luong
+    save_player(tp)
+    await ctx.send(f"⚖️ Đã trừ **-{removed:,} Xu** của {member.mention}! (Còn lại: **{tp['xu']:,} Xu**)")
+    
 import sys
 
 def start_bot_safely():
