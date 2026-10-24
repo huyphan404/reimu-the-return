@@ -60,20 +60,13 @@ load_dotenv()
 AUTHORIZED_ADMIN_ID = 1502579398560317441
 
 def is_authorized_admin(user_or_id) -> bool:
+    """CHỈ cho phép đúng 1 ID duy nhất (AUTHORIZED_ADMIN_ID). Không xét quyền server."""
     try:
         if isinstance(user_or_id, (int, str)):
             return int(user_or_id) == AUTHORIZED_ADMIN_ID
         uid = getattr(user_or_id, "id", None)
-        if uid and int(uid) == AUTHORIZED_ADMIN_ID:
-            return True
-        guild_perms = getattr(user_or_id, "guild_permissions", None)
-        if guild_perms and (guild_perms.administrator or guild_perms.manage_guild):
-            return True
-        guild = getattr(user_or_id, "guild", None)
-        if guild and getattr(guild, "owner_id", None) == uid:
-            return True
-        return False
-    except (ValueError, TypeError, Exception):
+        return uid is not None and int(uid) == AUTHORIZED_ADMIN_ID
+    except (ValueError, TypeError):
         return False
 
 # ==============================================================================
@@ -7015,7 +7008,7 @@ def execute_single_pull(player):
 # ==============================================================================
 @bot.tree.command(name="admin_set_level", description="[CHỦ BOT DUY NHẤT] Đặt cấp độ cho người chơi (đồng bộ XP chuẩn xác không bug)")
 @app_commands.describe(nguoi_dung="Chọn người chơi", cap_do="Cấp độ từ 1 đến 100")
-async def slash_admin_set_level(interaction: discord.Interaction, nguoi_dung: discord.Member, cap_do: int):
+async def slash_admin_set_level(interaction: discord.Interaction, nguoi_dung: Union[discord.Member, discord.User], cap_do: int):
     if not is_authorized_admin(interaction.user.id):
         await interaction.response.send_message(f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}>) mới có quyền.", ephemeral=True)
         return
@@ -7049,7 +7042,7 @@ async def prefix_admin_set_level(ctx, member: discord.Member, level: int):
 
 @bot.tree.command(name="admin_confiscate", description="[CHỦ BOT DUY NHẤT] Tước đoạt thẻ bài của người chơi (trừng phạt cheat bẩn)")
 @app_commands.describe(nguoi_dung="Người chơi bị xử phạt", id_the="ID thẻ từ 1-27 (hoặc nhập 0 để tịch thu TOÀN BỘ)", so_luong="Số lượng thẻ (0 = tịch thu hết)")
-async def slash_admin_confiscate(interaction: discord.Interaction, nguoi_dung: discord.Member, id_the: int = 0, so_luong: int = 0):
+async def slash_admin_confiscate(interaction: discord.Interaction, nguoi_dung: Union[discord.Member, discord.User], id_the: int = 0, so_luong: int = 0):
     if not is_authorized_admin(interaction.user.id):
         await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!**", ephemeral=True)
         return
@@ -7136,7 +7129,7 @@ async def prefix_admin_confiscate(ctx, member: discord.Member, card_id: int = 0,
 
 @bot.tree.command(name="admin_add_card", description="[CHỦ BOT DUY NHẤT] Cấp thẻ nhân vật Touhou vào kho đồ người chơi")
 @app_commands.describe(id_the="ID thẻ (1-27 hoặc t1)", so_luong="Số lượng thẻ (mặc định: 1)", nguoi_dung="Người nhận (để trống nếu tự cấp cho bản thân)")
-async def slash_admin_add_card(interaction: discord.Interaction, id_the: str, so_luong: int = 1, nguoi_dung: discord.Member = None):
+async def slash_admin_add_card(interaction: discord.Interaction, id_the: str, so_luong: int = 1, nguoi_dung: Union[discord.Member, discord.User] = None):
     if not is_authorized_admin(interaction.user.id):
         await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!**", ephemeral=True)
         return
@@ -7189,7 +7182,7 @@ async def prefix_admin_add_card(ctx, card_id: str, quantity: int = 1, member: di
 
 @bot.tree.command(name="admin_add_shard", description="[CHỦ BOT DUY NHẤT] Cấp mảnh đặc biệt (shards) cho người chơi")
 @app_commands.describe(loai_shard="Loại mảnh (mặc định: seiki)", so_luong="Số lượng mảnh (mặc định: 10)", nguoi_dung="Người nhận (để trống nếu tự cấp cho bản thân)")
-async def slash_admin_add_shard(interaction: discord.Interaction, loai_shard: str = "seiki", so_luong: int = 10, nguoi_dung: discord.Member = None):
+async def slash_admin_add_shard(interaction: discord.Interaction, loai_shard: str = "seiki", so_luong: int = 10, nguoi_dung: Union[discord.Member, discord.User] = None):
     if not is_authorized_admin(interaction.user.id):
         await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!**", ephemeral=True)
         return
@@ -7315,7 +7308,7 @@ def do_remove_shard(target_player: dict, s_key: str, so_luong: int):
     app_commands.Choice(name="Kisami Shards (kisami)", value="kisami"),
     app_commands.Choice(name="Thánh Lõi (thanh_loi)", value="thanh_loi")
 ])
-async def slash_admin_remove_shard(interaction: discord.Interaction, nguoi_dung: discord.Member, loai_shard: str, so_luong: int = 1):
+async def slash_admin_remove_shard(interaction: discord.Interaction, nguoi_dung: Union[discord.Member, discord.User], loai_shard: str, so_luong: int = 1):
     if not is_authorized_admin(interaction.user.id):
         await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Lệnh chỉ dành cho chủ sở hữu bot.", ephemeral=True)
         return
@@ -7376,7 +7369,7 @@ async def prefix_admin_remove_shard(ctx, member: discord.Member = None, loai_sha
 
 @bot.tree.command(name="admin_lock", description="[CHỦ BOT DUY NHẤT] Khóa lá bài đã sở hữu của người chơi (chỉ mở khi pull ra lại)")
 @app_commands.describe(nguoi_dung="Người chơi bị khóa thẻ", id_the="ID lá bài từ 1-27")
-async def slash_admin_lock(interaction: discord.Interaction, nguoi_dung: discord.Member, id_the: int):
+async def slash_admin_lock(interaction: discord.Interaction,nguoi_dung: Union[discord.Member, discord.User], id_the: int):
     if not is_authorized_admin(interaction.user.id):
         await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ chủ bot mới có quyền khóa thẻ.", ephemeral=True)
         return
@@ -7472,7 +7465,7 @@ async def prefix_admin_lock(ctx, member: discord.Member, card_id: int):
 
 @bot.tree.command(name="admin_reset_quest", description="[CHỦ BOT DUY NHẤT] Làm mới thủ công 3/3 Nhiệm Vụ Ngày cho người chơi (hoặc chính mình)")
 @app_commands.describe(nguoi_dung="Chọn người chơi muốn reset nhiệm vụ (để trống = bản thân)")
-async def slash_admin_reset_quest(interaction: discord.Interaction, nguoi_dung: Optional[discord.Member] = None):
+async def slash_admin_reset_quest(interaction: discord.Interaction, nguoi_dung: Optional[Union[discord.Member, discord.User]] = None):
     if not is_authorized_admin(interaction.user.id):
         await interaction.response.send_message(f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}>) mới có quyền.", ephemeral=True)
         return
@@ -14028,7 +14021,8 @@ async def handle_help(ctx_or_interaction):
             "• `/team` : Xem chi tiết và sắp xếp đội hình.\n"
             "• `/evol <id/tên>` : Tiến hóa nhân vật (gõ `/evol required` để xem điều kiện).\n"
             "• `/trade` : Trade những lá bài.\n"
-            "• `/t shards` : Kiểm tra số mảnh thẻ nhóm đặc biệt."
+            "• `/t shards` : Kiểm tra số mảnh thẻ nhóm đặc biệt.\n"
+            "• `/shard trade` : Trade các loại mảnh (shards) với người chơi khác."
         ),
         inline=False
     )
@@ -14096,7 +14090,7 @@ async def prefix_token(ctx):
 
 @bot.tree.command(name="admin_token_add", description="[CHỦ BOT DUY NHẤT] Cấp Tokens cho người chơi hoặc bản thân")
 @app_commands.describe(so_luong="Số lượng tokens cần cấp", nguoi_dung="Người nhận tokens (để trống nếu tự cấp)")
-async def slash_admin_token_add(interaction: discord.Interaction, so_luong: int, nguoi_dung: Optional[discord.Member] = None):
+async def slash_admin_token_add(interaction: discord.Interaction, so_luong: int, nguoi_dung: Optional[Union[discord.Member, discord.User]] = None):
     if not is_authorized_admin(interaction.user.id):
         await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Lệnh chỉ dành cho chủ sở hữu bot.", ephemeral=True)
         return
@@ -14686,7 +14680,7 @@ class AdminGiveGroup(app_commands.Group, name="admin_give", description="[CHỦ 
         app_commands.Choice(name="Nanh Fenrir 🐺", value="nanh_fenrir"),
         app_commands.Choice(name="Giáp Gaia 🛡️", value="giap_gaia")
     ])
-    async def slash_admin_give_item(self, interaction: discord.Interaction, vat_pham: str, so_luong: int = 1, nguoi_dung: Optional[discord.Member] = None):
+    async def slash_admin_give_item(self, interaction: discord.Interaction, vat_pham: str, so_luong: int = 1, nguoi_dung: Optional[Union[discord.Member, discord.User]] = None):
         if not is_authorized_admin(interaction.user.id):
             await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Lệnh chỉ dành riêng cho Admin.", ephemeral=True)
             return
@@ -17997,6 +17991,296 @@ async def slash_weapond(interaction: discord.Interaction):
 async def prefix_weapond(ctx):
     player = get_player(ctx.author.id, ctx.author.display_name)
     await handle_equip_item(ctx, player, "nanh_fenrir")
+
+# ==============================================================================
+# [UPDATE SHARD TRADE] /shard trade your: their:  (TRAO ĐỔI MẢNH GIỮA 2 NGƯỜI CHƠI)
+# ==============================================================================
+SHARD_TRADE_KEYS = ["seiki", "mahoraga", "kizuna", "fateria", "jotaro", "kanae", "kisami", "thanh_loi"]
+SHARD_EMOJIS = {
+    "seiki": "🔮", "mahoraga": "🔱", "kizuna": "🩸", "fateria": "⏳",
+    "jotaro": "⏱️", "kanae": "🌸", "kisami": "☠️", "thanh_loi": "👑"
+}
+
+def get_shard_count(player: dict, key: str) -> int:
+    """Số mảnh hiện có. Thánh Lõi nằm ở cả items lẫn shards nên lấy số lớn hơn."""
+    shards = player.get("shards", {}) or {}
+    if key == "thanh_loi":
+        items = player.get("items", {}) or {}
+        return max(shards.get("thanh_loi", 0), items.get("thanh_loi", 0))
+    return shards.get(key, 0)
+
+def set_shard_count(player: dict, key: str, value: int):
+    value = max(0, int(value))
+    player.setdefault("shards", {})[key] = value
+    if key == "thanh_loi":
+        player.setdefault("items", {})["thanh_loi"] = value
+
+def format_shard_stock(player: dict) -> str:
+    return "\n".join(
+        f"{SHARD_EMOJIS.get(k, '💎')} {SHARD_DISPLAY_NAMES.get(k, k)}: `{get_shard_count(player, k)}`"
+        for k in SHARD_TRADE_KEYS
+    )
+
+def parse_shard_offer(offer_str: str):
+    """'seiki:5, kizuna:2' -> ({'seiki': 5, 'kizuna': 2}, None)"""
+    if not offer_str or not offer_str.strip():
+        return None, "Danh sách mảnh trao đổi không được để trống!"
+    items = [x.strip() for x in re.split(r"[,;]+", offer_str) if x.strip()]
+    if not items:
+        return None, "Không tìm thấy loại mảnh nào trong mục trao đổi!"
+    result = {}
+    for item in items:
+        if ":" in item:
+            name_part, qty_part = item.rsplit(":", 1)
+        else:
+            words = item.split()
+            if len(words) > 1 and words[-1].isdigit():
+                name_part, qty_part = " ".join(words[:-1]), words[-1]
+            else:
+                name_part, qty_part = item, "1"
+        try:
+            qty = int(qty_part.strip())
+        except ValueError:
+            return None, f"Số lượng không hợp lệ trong `{item}`! Cú pháp: `loại_mảnh:số_lượng` (VD: `seiki:5`)."
+        if qty <= 0:
+            return None, f"Số lượng phải lớn hơn 0 (bạn nhập `{qty}`)!"
+        raw = name_part.strip().lower().replace("#", "").replace(" ", "_")
+        key = normalize_shard_key(raw)
+        if not key or key not in SHARD_TRADE_KEYS:
+            return None, (f"Không có loại mảnh `{name_part.strip()}`! Hợp lệ: "
+                          "`seiki`, `mahoraga`, `kizuna`, `fateria`, `jotaro`, `kanae`, `kisami`, `thanh_loi`.")
+        result[key] = result.get(key, 0) + qty
+    return result, None
+
+def _shard_offer_lines(offer: dict, player: dict) -> str:
+    return "\n".join(
+        f"• {qty}x {SHARD_EMOJIS.get(k, '💎')} **{SHARD_DISPLAY_NAMES.get(k, k)}** (Kho: {get_shard_count(player, k)})"
+        for k, qty in offer.items()
+    )
+
+class ShardTradeConfirmationView(discord.ui.View):
+    def __init__(self, initiator, target, offer_give: dict, offer_receive: dict):
+        super().__init__(timeout=120)
+        self.initiator = initiator
+        self.target = target
+        self.offer_give = offer_give
+        self.offer_receive = offer_receive
+        self.confirmed_users = set()
+        self.done = False
+        self.msg = None
+
+    async def _fail(self, interaction: discord.Interaction, text: str):
+        self.done = True
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(content=text, view=self)
+        self.stop()
+
+    @discord.ui.button(label="✅ Đồng Ý Xác Nhận (0/2)", style=discord.ButtonStyle.success, emoji="🤝")
+    async def confirm_trade(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id not in (self.initiator.id, self.target.id):
+            await interaction.response.send_message("❌ Bạn không tham gia phiên giao dịch này!", ephemeral=True)
+            return
+        if self.done:
+            await interaction.response.send_message("⚠️ Giao dịch này đã kết thúc!", ephemeral=True)
+            return
+        if interaction.user.id in self.confirmed_users:
+            await interaction.response.send_message("⏳ Bạn đã xác nhận rồi! Đang chờ đối phương...", ephemeral=True)
+            return
+
+        self.confirmed_users.add(interaction.user.id)
+        button.label = f"✅ Đồng Ý Xác Nhận ({len(self.confirmed_users)}/2)"
+
+        if len(self.confirmed_users) < 2:
+            other = self.target if interaction.user.id == self.initiator.id else self.initiator
+            await interaction.response.edit_message(
+                content=f"🔔 **{interaction.user.display_name}** đã xác nhận (1/2)! Đang đợi **{other.mention}** xác nhận...",
+                view=self
+            )
+            return
+
+        # ---- Đủ 2/2: đọc lại dữ liệu mới nhất & kiểm tra lần cuối ----
+        p_a = get_player(self.initiator.id, self.initiator.display_name)
+        p_b = get_player(self.target.id, self.target.display_name)
+
+        for key, qty in self.offer_give.items():
+            if get_shard_count(p_a, key) < qty:
+                await self._fail(interaction, f"❌ **Giao dịch thất bại!** {self.initiator.display_name} không còn đủ {qty}x {SHARD_DISPLAY_NAMES[key]}.")
+                return
+        for key, qty in self.offer_receive.items():
+            if get_shard_count(p_b, key) < qty:
+                await self._fail(interaction, f"❌ **Giao dịch thất bại!** {self.target.display_name} không còn đủ {qty}x {SHARD_DISPLAY_NAMES[key]}.")
+                return
+
+        # ---- Chuyển mảnh ----
+        for key, qty in self.offer_give.items():
+            set_shard_count(p_a, key, get_shard_count(p_a, key) - qty)
+            set_shard_count(p_b, key, get_shard_count(p_b, key) + qty)
+        for key, qty in self.offer_receive.items():
+            set_shard_count(p_b, key, get_shard_count(p_b, key) - qty)
+            set_shard_count(p_a, key, get_shard_count(p_a, key) + qty)
+        save_player(p_a)
+        save_player(p_b)
+
+        self.done = True
+        for child in self.children:
+            child.disabled = True
+
+        embed = discord.Embed(
+            title="🎉 GIAO DỊCH MẢNH (SHARDS) THÀNH CÔNG (2/2 ĐÃ XÁC NHẬN)!",
+            description=f"✨ Trao đổi mảnh giữa **{self.initiator.mention}** và **{self.target.mention}** đã hoàn tất!",
+            color=0x10B981
+        )
+        embed.add_field(
+            name=f"📦 {self.initiator.display_name} (sau giao dịch):",
+            value=f"📤 Gửi đi:\n{_shard_offer_lines(self.offer_give, p_a)}\n📥 Nhận về:\n{_shard_offer_lines(self.offer_receive, p_a)}",
+            inline=False
+        )
+        embed.add_field(
+            name=f"📦 {self.target.display_name} (sau giao dịch):",
+            value=f"📤 Gửi đi:\n{_shard_offer_lines(self.offer_receive, p_b)}\n📥 Nhận về:\n{_shard_offer_lines(self.offer_give, p_b)}",
+            inline=False
+        )
+        await interaction.response.edit_message(
+            content=f"✅ **GIAO DỊCH MẢNH HOÀN TẤT!** {self.initiator.mention} ⇄ {self.target.mention}",
+            embed=embed, view=self
+        )
+        self.stop()
+
+    @discord.ui.button(label="❌ Từ Chối / Hủy Bỏ", style=discord.ButtonStyle.danger, emoji="🚫")
+    async def cancel_trade(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id not in (self.initiator.id, self.target.id):
+            await interaction.response.send_message("❌ Bạn không tham gia phiên giao dịch này!", ephemeral=True)
+            return
+        self.done = True
+        for child in self.children:
+            child.disabled = True
+        canceller = self.initiator.display_name if interaction.user.id == self.initiator.id else self.target.display_name
+        embed = discord.Embed(
+            title="🚫 GIAO DỊCH MẢNH ĐÃ BỊ HỦY BỎ",
+            description=f"Phiên trao đổi mảnh đã bị từ chối hoặc hủy bởi **{canceller}**.",
+            color=0xEF4444
+        )
+        await interaction.response.edit_message(content=None, embed=embed, view=self)
+        self.stop()
+
+    async def on_timeout(self):
+        self.done = True
+        for child in self.children:
+            child.disabled = True
+        if self.msg:
+            try:
+                await self.msg.edit(content="⏰ **Hết thời gian chờ (2 phút). Giao dịch mảnh đã tự động hủy.**", view=self)
+            except Exception:
+                pass
+
+async def handle_shard_trade(ctx_or_interaction, user, your: str = None, their: str = None):
+    author = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+
+    if user is None:
+        await send_trade_msg(ctx_or_interaction, content="⚠️ Hãy gắn thẻ người bạn muốn trade mảnh! Ví dụ: `/shard trade user:@Ai đó your:seiki:5 their:kizuna:2`", ephemeral=True)
+        return
+    if getattr(user, "bot", False):
+        await send_trade_msg(ctx_or_interaction, content="🤖 Không thể trade mảnh với Bot!", ephemeral=True)
+        return
+    if user.id == author.id:
+        await send_trade_msg(ctx_or_interaction, content="🤡 Bạn không thể tự trade mảnh với chính mình!", ephemeral=True)
+        return
+
+    p_a = get_player(author.id, getattr(author, "display_name", str(author)))
+    p_b = get_player(user.id, getattr(user, "display_name", str(user)))
+    a_name = getattr(author, "display_name", str(author))
+    b_name = getattr(user, "display_name", str(user))
+
+    # Không nhập your/their -> hiện hướng dẫn + kho mảnh 2 bên
+    if not your or not their:
+        guide = discord.Embed(
+            title="🤝 HỆ THỐNG TRAO ĐỔI MẢNH (SHARD TRADE)",
+            description=(
+                f"**Giao dịch giữa {author.mention} và {user.mention}:**\n\n"
+                "📌 **Cú pháp:** `/shard trade user:@Ai đó your:<mảnh:số_lượng> their:<mảnh:số_lượng>`\n"
+                "*(VD: `/shard trade user:@Ai đó your:seiki:5, kizuna:2 their:fateria:3`)*\n\n"
+                "💎 **Loại mảnh hợp lệ:** `seiki`, `mahoraga`, `kizuna`, `fateria`, `jotaro`, `kanae`, `kisami`, `thanh_loi`\n"
+                "🛡️ Cả 2 bên đều phải gửi mảnh cho nhau, và cả 2 phải bấm xác nhận **(2/2)** trong 2 phút."
+            ),
+            color=0x3B82F6
+        )
+        guide.add_field(name=f"🎒 Kho mảnh của {a_name}:", value=format_shard_stock(p_a), inline=True)
+        guide.add_field(name=f"🎒 Kho mảnh của {b_name}:", value=format_shard_stock(p_b), inline=True)
+        await send_trade_msg(ctx_or_interaction, embed=guide)
+        return
+
+    offer_a, err_a = parse_shard_offer(your)
+    if err_a:
+        await send_trade_msg(ctx_or_interaction, content=f"⚠️ **Mục [your] không hợp lệ:** {err_a}", ephemeral=True)
+        return
+    offer_b, err_b = parse_shard_offer(their)
+    if err_b:
+        await send_trade_msg(ctx_or_interaction, content=f"⚠️ **Mục [their] không hợp lệ:** {err_b}", ephemeral=True)
+        return
+
+    for key, qty in offer_a.items():
+        have = get_shard_count(p_a, key)
+        if have < qty:
+            await send_trade_msg(ctx_or_interaction, content=f"❌ Bạn (**{a_name}**) không đủ **{qty}x {SHARD_DISPLAY_NAMES[key]}**! (Hiện có: {have})", ephemeral=True)
+            return
+    for key, qty in offer_b.items():
+        have = get_shard_count(p_b, key)
+        if have < qty:
+            await send_trade_msg(ctx_or_interaction, content=f"❌ Đối phương (**{b_name}**) không đủ **{qty}x {SHARD_DISPLAY_NAMES[key]}**! (Hiện có: {have})", ephemeral=True)
+            return
+
+    view = ShardTradeConfirmationView(author, user, offer_a, offer_b)
+    embed = discord.Embed(
+        title="🤝 LỜI ĐỀ NGHỊ TRAO ĐỔI MẢNH (SHARDS)",
+        description=(
+            f"🔥 **{author.mention}** gửi đề nghị trao đổi mảnh tới **{user.mention}**!\n"
+            "*(Cả hai kiểm tra kỹ rồi cùng bấm **Đồng Ý Xác Nhận (2/2)**)*"
+        ),
+        color=0xF59E0B
+    )
+    embed.add_field(name=f"📤 {a_name} gửi đi:", value=_shard_offer_lines(offer_a, p_a), inline=True)
+    embed.add_field(name=f"📥 {b_name} gửi lại:", value=_shard_offer_lines(offer_b, p_b), inline=True)
+    embed.set_footer(text="Giao dịch tự hủy sau 2 phút nếu không đủ 2/2 xác nhận.")
+    msg_obj = await send_trade_msg(ctx_or_interaction, content=f"{user.mention}", embed=embed, view=view)
+    view.msg = msg_obj
+
+
+class ShardTradeGroup(app_commands.Group, name="shard", description="Giao dịch mảnh (shards) giữa người chơi"):
+    @app_commands.command(name="trade", description="Trao đổi mảnh (shards) với người chơi khác (xác nhận 2/2)")
+    @app_commands.describe(
+        user="Người chơi bạn muốn trade mảnh",
+        your="Mảnh bạn đưa ra (VD: seiki:5, kizuna:2)",
+        their="Mảnh đối phương đưa ra (VD: fateria:3)"
+    )
+    async def slash_shard_trade_cmd(self, interaction: discord.Interaction,
+                                    user: Union[discord.Member, discord.User],
+                                    your: str = None, their: str = None):
+        try:
+            await handle_shard_trade(interaction, user, your, their)
+        except Exception as e:
+            print(f"Lỗi shard trade: {e}", flush=True)
+            try:
+                await interaction.followup.send(f"❌ Lỗi khi xử lý trade mảnh: {e}", ephemeral=True)
+            except Exception:
+                pass
+
+bot.tree.add_command(ShardTradeGroup())
+
+# Prefix (không đặt tên "shard" vì alias đó đã bị lệnh !shards chiếm)
+@bot.command(name="shardtrade", aliases=["tradeshard", "trade_shard"])
+async def prefix_shard_trade(ctx, user: Union[discord.Member, discord.User] = None, *, offers: str = None):
+    your = their = None
+    if offers and "your:" in offers.lower() and "their:" in offers.lower():
+        try:
+            low = offers.lower()
+            i = low.index("their:")
+            your = offers[:i].replace("your:", "").replace("Your:", "").strip()
+            their = offers[i + len("their:"):].strip()
+        except Exception:
+            pass
+    await handle_shard_trade(ctx, user, your, their)
+    
 import sys
 
 def start_bot_safely():
