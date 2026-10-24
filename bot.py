@@ -18813,10 +18813,6 @@ async def slash_admin_xu_add(interaction: discord.Interaction, so_luong: int, ng
 import sys
 
 def start_bot_safely():
-
-import sys
-
-def start_bot_safely():
     retry_delay = 60
     while True:
         try:
