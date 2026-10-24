@@ -13806,6 +13806,7 @@ async def handle_prestige(ctx_or_interaction):
             f"• 🔓 **Phần thưởng mở giới hạn cấp:** Mở giới hạn lên **Lv.{get_max_level(p_info['next_p'])}**!\n"
             f"• ⚡ **Đặc quyền mở rộng:** Tăng hệ số nhận kinh nghiệm lên **x{p_info['xp_mult']:g} XP**!\n"
             f"• ⚠️ **Lưu ý cốt lõi:** Khi chuyển sinh, cấp độ sẽ đặt lại về **Lv.0** và **toàn bộ vé pull tích lũy cũ sẽ được làm mới** thành số vé thưởng mới!\n"
+            f"• 📦 **Sức chứa kho mới:** Nâng trần kho thẻ lên **{STORAGE_BASE_BY_PRESTIGE.get(p_info['next_p'], STORAGE_BASE_MAX):,}** slot!\n"
             f"• 📌 **Trạng thái:** {status_str}"
         ),
         color=0xF59E0B if req_ok else 0x3B82F6
@@ -18361,11 +18362,11 @@ XU_EMOJI = "🪙"
 
 SAC_VALUES = {"SS": 10000, "S": 5000, "A": 2500, "B": 1250, "C": 625}
 
-# Kho chứa theo Prestige (P0 tự đặt 250, đổi số này nếu muốn). P5+ = 1000
-STORAGE_BASE_BY_PRESTIGE = {0: 250, 1: 300, 2: 350, 3: 400, 4: 500}
-STORAGE_BASE_MAX = 1000
+# Kho chứa theo Prestige (P0: 300 thẻ, P1: 500, P2: 550, P3: 700, P4: 1000, P5+ = 2000)
+STORAGE_BASE_BY_PRESTIGE = {0: 400, 1: 500, 2: 550, 3: 700, 4: 1000, 5: 2000}
+STORAGE_BASE_MAX = 2000
 STORAGE_SHOP_SLOT = 50
-STORAGE_SHOP_PRICES = [8000, 50000, 100000, 150000]   # tối đa 4 lần
+STORAGE_SHOP_PRICES = [8000, 50000, 100000, 150000]   # tối đa 4 lần (+50 slot/lần)
 
 SHOP_BG = "https://static2.klipy.com/ii/e293a233a303a98e471f78d04e13a1b0/fc/51/IfnDrVf7.gif"
 SHOP_MAX_QTY = 25
