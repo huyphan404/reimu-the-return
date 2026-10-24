@@ -18909,6 +18909,89 @@ async def prefix_admin_coin_remove(ctx, member: discord.Member, so_luong: int = 
     save_player(tp)
     await ctx.send(f"⚖️ Đã trừ **-{removed:,} Xu** của {member.mention}! (Còn lại: **{tp['xu']:,} Xu**)")
     
+# ==============================================================================
+# LỆNH ADMIN: /admin_remove all_card - XOÁ SẠCH TOÀN BỘ THẺ THƯỜNG (KHÔNG ĐỤNG THẺ BỊ KHÓA)
+# ==============================================================================
+def do_remove_all_normal_cards(target_player: dict):
+    """Xoá toàn bộ thẻ thường (ID số 1-31) trong kho. Bỏ qua thẻ bị Admin khóa và thẻ nhóm T.
+    Trả về (tổng_lá_đã_xoá, số_loại_thẻ_đã_xoá, số_loại_thẻ_bị_khóa_được_giữ)."""
+    inv = target_player.get("inventory", {}) or {}
+    team = target_player.get("team", []) or []
+    total_removed = 0
+    kinds_removed = 0
+    kept_locked = 0
+
+    for key in list(inv.keys()):
+        cid = normalize_card_id(key)
+        if not isinstance(cid, int) or cid not in CARDS_DATA:
+            continue  # bỏ qua thẻ nhóm T (t1, t2, ...) hoặc key lạ
+        cnt = inv.get(key, 0)
+        if cnt <= 0:
+            continue
+        if is_card_locked(target_player, cid):
+            kept_locked += 1
+            continue
+        total_removed += cnt
+        kinds_removed += 1
+        del inv[key]
+        if cid in team:
+            team.remove(cid)
+
+    target_player["inventory"] = inv
+    target_player["team"] = team
+    return total_removed, kinds_removed, kept_locked
+
+
+class AdminRemoveGroup(app_commands.Group, name="admin_remove", description="[CHỦ BOT DUY NHẤT] Xoá dữ liệu người chơi"):
+    @app_commands.command(name="all_card", description="[CHỦ BOT DUY NHẤT] Xoá sạch toàn bộ thẻ thường của người chơi (không đụng thẻ bị khóa)")
+    @app_commands.describe(nguoi_dung="Người chơi bị xoá toàn bộ thẻ thường")
+    async def all_card(self, interaction: discord.Interaction, nguoi_dung: Union[discord.Member, discord.User]):
+        if not is_authorized_admin(interaction.user.id):
+            await interaction.response.send_message("⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ chủ sở hữu Bot mới có quyền.", ephemeral=True)
+            return
+        target = get_player(nguoi_dung.id, nguoi_dung.display_name)
+        total, kinds, kept = do_remove_all_normal_cards(target)
+        if total <= 0:
+            await interaction.response.send_message(f"⚠️ {nguoi_dung.mention} không có thẻ thường nào để xoá!", ephemeral=True)
+            return
+        save_player(target)
+        embed = discord.Embed(
+            title="🗑️ [ADMIN] ĐÃ XOÁ SẠCH TOÀN BỘ THẺ THƯỜNG!",
+            description=(
+                f"👑 **Admin:** {interaction.user.mention}\n"
+                f"👤 **Đối tượng:** {nguoi_dung.mention}\n"
+                f"📦 **Đã xoá:** **{total:,} lá** ({kinds} loại thẻ)\n"
+                f"🔒 **Thẻ bị khóa được giữ nguyên:** {kept} loại\n"
+                f"🛡️ Thẻ nhóm T (t1-t7) không bị ảnh hưởng. Các thẻ bị xoá đã được gỡ khỏi đội hình."
+            ),
+            color=0xDC2626
+        )
+        await interaction.response.send_message(embed=embed)
+
+bot.tree.add_command(AdminRemoveGroup())
+
+@bot.group(name="admin_remove", invoke_without_command=True)
+async def prefix_admin_remove_group(ctx):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send("⛔ Từ chối quyền truy cập! Lệnh dành riêng cho chủ bot.")
+        return
+    await ctx.send("💡 Cú pháp: `!admin_remove all_card @User`")
+
+@prefix_admin_remove_group.command(name="all_card")
+async def prefix_admin_remove_all_card(ctx, member: discord.Member = None):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send("⛔ Từ chối quyền truy cập!")
+        return
+    if member is None:
+        await ctx.send("💡 Cú pháp: `!admin_remove all_card @User`")
+        return
+    target = get_player(member.id, member.display_name)
+    total, kinds, kept = do_remove_all_normal_cards(target)
+    if total <= 0:
+        await ctx.send(f"⚠️ {member.mention} không có thẻ thường nào để xoá!")
+        return
+    save_player(target)
+    await ctx.send(f"🗑️ Đã xoá **{total:,} lá** ({kinds} loại) thẻ thường của {member.mention}! (Giữ lại {kept} loại thẻ bị khóa)")
 import sys
 
 def start_bot_safely():
