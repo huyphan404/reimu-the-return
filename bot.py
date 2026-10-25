@@ -5853,7 +5853,7 @@ async def spawn_event_boss_raid(channel, author, boss_key="kizuna", is_admin=Fal
             name="🔮 Kỹ Năng Phase 1 & Phase 2:",
             value=(
                 "• 🌀 **Fuga (Nội tại):** Cứ mỗi **7 lượt**, tích đủ sẽ gây đúng **10,000 DMG** lên toàn bộ tiền tuyến!\n"
-                "• ⚔️ **Trảm kích (25%):** **4,545 DMG** lên toàn bộ đơn vị tiền tuyến!\n"
+                "• ⚔️ **Trảm kích (25%):** **×1.5 sát thương (Phase 1) / ×2 sát thương (Phase 2)** lên toàn bộ đơn vị tiền tuyến!\n"
                 "• 🩸 **Bát (20%):** Gây **50% máu tối đa** lên **2 đơn vị ngẫu nhiên**!\n"
                 "• 🏯 **Bành trướng lãnh địa - Phục Ma Ngự Trù Tử (10%, tối đa 2 lần/phase):** Trong **3 turn** liên tục gây **1,000 DMG + 10% máu tối đa** lên mọi thẻ tiền tuyến (kể cả thẻ mới vào sân)!"
             ),
@@ -19245,7 +19245,8 @@ SUKUNA_BOSS_PHASE2_CONFIG = {
 }
 SUKUNA_FUGA_INTERVAL = 7
 SUKUNA_FUGA_DMG = 10000
-SUKUNA_SLASH_DMG = 4545
+SUKUNA_SLASH_MULT_P1 = 1.5   # Phase 1: 1.5x sát thương gốc của Boss (8,000 -> 12,000 DMG/đơn vị)
+SUKUNA_SLASH_MULT_P2 = 2.0   # Phase 2: 2x sát thương gốc của Boss (10,000 -> 20,000 DMG/đơn vị)
 SUKUNA_DOMAIN_FLAT = 1000
 SUKUNA_DOMAIN_PCT = 0.10
 SUKUNA_DOMAIN_MAX = 2
@@ -19468,9 +19469,11 @@ async def _sk_run_phase(channel, battle_msg, combatants, phase, all_turns):
                     do_normal = False
                     if chosen == "slash":
                         B["gif"] = SUKUNA_GIF_SLASH
-                        action_log += f"⚔️ **[KỸ NĂNG] Sukuna** tung **Trảm kích (25%)**! Gây **{SUKUNA_SLASH_DMG:,} DMG** lên **TỪNG** đơn vị trong {n} thẻ tiền tuyến!"
+                        slash_mult = SUKUNA_SLASH_MULT_P1 if phase == 1 else SUKUNA_SLASH_MULT_P2
+                        slash_dmg = int(power * slash_mult)
+                        action_log += f"⚔️ **[KỸ NĂNG] Sukuna** tung **Trảm kích (25%)**! Gây **{slash_dmg:,} DMG** ({slash_mult:g}x sát thương) lên **TỪNG** đơn vị trong {n} thẻ tiền tuyến!"
                         for c in active:
-                            _sk_hit(c, c["team_cards"][c["current_card_index"]], SUKUNA_SLASH_DMG, B, hit_logs, rounds)
+                            _sk_hit(c, c["team_cards"][c["current_card_index"]], slash_dmg, B, hit_logs, rounds)
                     elif chosen == "hachi":
                         B["gif"] = SUKUNA_GIF_HACHI
                         targets = random.sample(active, min(2, len(active)))
@@ -19748,16 +19751,18 @@ T8_SHARDS_UNLOCK = 10            # Ace 1: khấu trừ 10 Sukuna Finger
 T8_SHARDS_ACE2 = 5               # Ace 2: khấu trừ 5 Sukuna Finger
 T8_ACE2_PRESTIGE = 3
 T8_FUGA_INTERVAL = 4             # mỗi 4 lượt
-T8_FUGA_MULT = 3.5
+T8_FUGA_MULT = 3.0
 T8_A1_SLASH_MULT, T8_A1_SLASH_MAX = 2.0, 2
 T8_A1_BAT_PCT = 0.20
 T8_A1_DOMAIN_CHANCE, T8_A1_DOMAIN_PCT, T8_A1_DOMAIN_TURNS = 0.15, 0.03, 2
-T8_A2_SLASH_DMG = 4545
-T8_A2_SLASH_MAX = 2              # 0 = không giới hạn lần (theo mô tả Ace 2). Muốn giới hạn thì đổi số này
+T8_A2_SLASH_DMG = 2.2
+T8_A2_SLASH_MAX = 2              # tối đa 2 lần/trận
 T8_A2_AGITO_CHANCE, T8_A2_AGITO_RATIO = 0.50, 0.25
-T8_A2_MAHO_CHANCE, T8_A2_MAHO_RATIO = 0.20, 0.50
+T8_A2_MAHO_CHANCE, T8_A2_MAHO_RATIO = 0.30, 0.50
 T8_A2_DOMAIN_CHANCE, T8_A2_DOMAIN_PCT, T8_A2_DOMAIN_TURNS = 0.10, 0.05, 3
-T8_DOMAIN_FLAT = 1000
+T8_DOMAIN_FLAT = 1000            # (không còn dùng, giữ lại cho đỡ lỗi)
+T8_A1_DOMAIN_MULT = 1.2          # Ace 1: 1.2x sát thương (ATK của Sukuna)
+T8_A2_DOMAIN_MULT = 1.5          # Ace 2: 1.5x sát thương
 T8_DOMAIN_MAX = 2
 T8_TANK_ORDER = ("agito", "maho")     # Agito tank cho Mahoraga, Mahoraga tank cho Sukuna
 T8_RAID_TRUE_CAP_PCT = 0.25           # trần sát thương % máu (Bát + Lãnh địa) cộng dồn lên Boss trong Raid
@@ -19767,7 +19772,7 @@ CARDS_DATA["t8"] = {
     "id": "t8", "name": "Ryomen Sukuna", "rank": "T", "power": 650, "hp": 7000,
     "image": T8_UNLOCK_GIF, "unlock_gif": T8_UNLOCK_GIF,
     "passive": {"name": "Fuga", "gif": T8_FUGA_GIF,
-                "desc": "Cứ mỗi 4 lượt chiến đấu, tích đủ Fuga: đòn đánh gây ×3.5 sát thương"},
+                "desc": "Cứ mỗi 4 lượt chiến đấu, tích đủ Fuga: đòn đánh gây ×3.0 sát thương"},
     "skills": {
         "tram_kich": {"name": "Trảm kích", "chance": 0.25, "gif": T8_SLASH_GIF},
         "bat": {"name": "Bát", "chance": 0.20, "gif": T8_BAT_GIF},
@@ -19793,7 +19798,7 @@ EVOL_CONFIG["t8"] = {
     "required_cards": 0, "required_pulls": 0, "required_shards": T8_SHARDS_ACE2,
     "evol_gif": T8_EVOL_GIF,
     "skill_name": "Fuga • Trảm kích • Agito! • Mahoraga! • Phục Ma Ngự Trù Tử",
-    "skill_desc": "Ace 2 của Sukuna: triệu hồi Agito / Mahoraga tank đòn, Trảm kích 4,545 DMG diện rộng, lãnh địa 5% máu.",
+    "skill_desc": "Ace 2 của Sukuna: triệu hồi Agito / Mahoraga tank đòn, Trảm kích ×2.2 sát thương (tối đa 2 lần), lãnh địa 1.5x sát thương + 5% máu.",
     "bonus_power": 300, "bonus_hp": 300
 }
 
@@ -19881,11 +19886,13 @@ def t8_combat_turn(card: dict, target_max_hp, target_name: str, is_ace2: bool = 
     # 2. Lãnh địa đang duy trì
     def _tick():
         pct = st.get("domain_pct", T8_A1_DOMAIN_PCT)
+        dmult = st.get("domain_mult", T8_A1_DOMAIN_MULT)
+        flat = int(self_pow * dmult)
         extra = cap(int(target_max_hp * pct), "Lãnh địa (Sukuna)")
-        d = T8_DOMAIN_FLAT + extra
+        d = flat + extra
         res["bonus"] += d
         res["gif"] = res["gif"] or T8_DOMAIN_GIF
-        logs.append(f"🏯 **{tag}** - **Phục Ma Ngự Trù Tử**: {target_name} chịu **{d:,} DMG** ({T8_DOMAIN_FLAT:,} + {int(pct * 100)}% máu tối đa)!")
+        logs.append(f"🏯 **{tag}** - **Phục Ma Ngự Trù Tử**: {target_name} chịu **{d:,} DMG** ({dmult:g}x sát thương = {flat:,} + {int(pct * 100)}% máu tối đa)!")
 
     ticked = False
     if st.get("domain_left", 0) > 0:
@@ -19931,8 +19938,8 @@ def t8_combat_turn(card: dict, target_max_hp, target_name: str, is_ace2: bool = 
                 st["slash"] = st.get("slash", 0) + 1
                 res["gif"] = T8_SLASH_GIF
                 if is_ace2:
-                    res["bonus"] += T8_A2_SLASH_DMG
-                    logs.append(f"⚔️ **{tag}** tung **Trảm kích** (25%)! +**{T8_A2_SLASH_DMG:,} DMG** lên toàn bộ đơn vị tiền tuyến của {target_name}!")
+                    res["multiplier"] = T8_A2_SLASH_MULT
+                    logs.append(f"⚔️ **{tag}** tung **Trảm kích** (25%)! **×{T8_A2_SLASH_MULT:g} sát thương** lên {target_name} *(Lần {st['slash']}/{T8_A2_SLASH_MAX})*")
                 else:
                     res["multiplier"] = T8_A1_SLASH_MULT
                     logs.append(f"⚔️ **{tag}** tung **Trảm kích** (25%)! **×{T8_A1_SLASH_MULT:g} sát thương** *(Lần {st['slash']}/{T8_A1_SLASH_MAX})*")
@@ -19946,10 +19953,12 @@ def t8_combat_turn(card: dict, target_max_hp, target_name: str, is_ace2: bool = 
                 st["domain_uses"] = st.get("domain_uses", 0) + 1
                 pct = T8_A2_DOMAIN_PCT if is_ace2 else T8_A1_DOMAIN_PCT
                 turns = T8_A2_DOMAIN_TURNS if is_ace2 else T8_A1_DOMAIN_TURNS
+                dmult = T8_A2_DOMAIN_MULT if is_ace2 else T8_A1_DOMAIN_MULT
                 st["domain_pct"] = pct
+                st["domain_mult"] = dmult
                 st["domain_left"] = turns
                 res["gif"] = T8_DOMAIN_GIF
-                logs.append(f"🏯 **{tag}** mở **Bành trướng lãnh địa - Phục Ma Ngự Trù Tử** *(lần {st['domain_uses']}/{T8_DOMAIN_MAX})*! Kéo dài **{turns} turn**: mỗi turn {T8_DOMAIN_FLAT:,} DMG + {int(pct * 100)}% máu tối đa, kể cả thẻ mới vào sân!")
+                logs.append(f"🏯 **{tag}** mở **Bành trướng lãnh địa - Phục Ma Ngự Trù Tử** *(lần {st['domain_uses']}/{T8_DOMAIN_MAX})*! Kéo dài **{turns} turn**: mỗi turn {dmult:g}x sát thương + {int(pct * 100)}% máu tối đa, kể cả thẻ mới vào sân!")
                 _tick()
                 st["domain_left"] -= 1
             elif key in ("agito", "maho"):
@@ -19958,7 +19967,7 @@ def t8_combat_turn(card: dict, target_max_hp, target_name: str, is_ace2: bool = 
                     ratio, name, chance_txt = T8_A2_AGITO_RATIO, "Khảm Hợp Thú Agito", "50%"
                 else:
                     st["maho_used"] = True
-                    ratio, name, chance_txt = T8_A2_MAHO_RATIO, "Mahoraga (Triệu Hồi)", "20%"
+                    ratio, name, chance_txt = T8_A2_MAHO_RATIO, "Mahoraga (Triệu Hồi)", "30%"
                 s_atk = max(1, int(self_pow * ratio))
                 s_hp = max(1, int(self_max * ratio))
                 card.setdefault("t8_sum", {})[key] = {"name": name, "atk": s_atk, "hp": s_hp, "max_hp": s_hp}
@@ -20150,11 +20159,11 @@ def execute_sukuna_ace2(player):
         title="🌟 TIẾN HÓA THÀNH CÔNG: [#t8] RYOMEN SUKUNA - ACE 2 ⭐⭐!",
         description=(
             "👹 **NGUYỀN VƯƠNG THỨC TỈNH - BỘ KỸ NĂNG ACE 2:**\n\n"
-            "🔥 **Fuga (Nội tại):** Mỗi 4 lượt, đòn đánh ×3.5 sát thương\n"
+            "🔥 **Fuga (Nội tại):** Mỗi 4 lượt, đòn đánh ×3.0 sát thương\n"
             "⚔️ **Trảm kích (25%):** 4,545 DMG lên toàn bộ đơn vị tiền tuyến địch\n"
             "🐲 **Agito! (50%, 1 lần):** Khảm hợp thú 25% chỉ số, đánh thường & tank 100% đòn\n"
-            "🐲 **Mahoraga! (20%, 1 lần):** Mahoraga 50% chỉ số, đánh thường & tank 100% đòn\n"
-            "🏯 **Phục Ma Ngự Trù Tử (10%, tối đa 2 lần):** 3 turn, mỗi turn 1,000 DMG + 5% máu tối đa\n\n"
+            "🐲 **Mahoraga! (30%, 1 lần):** Mahoraga 50% chỉ số, đánh thường & tank 100% đòn\n"
+            "🏯 **Phục Ma Ngự Trù Tử (10%, tối đa 2 lần):** 3 turn, mỗi turn 1,5x DMG + 5% máu tối đa\n\n"
             f"📉 **Chi phí:** {T8_SHARDS_ACE2} Sukuna Finger (còn `{shards['sukuna']}`)\n"
             "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn!"
         ),
@@ -20291,19 +20300,19 @@ class SukunaCardView(discord.ui.View):
         )
         if ace:
             skills = (
-                "🔥 **Fuga (Nội tại):** Mỗi 4 lượt, đòn đánh ×3.5 sát thương.\n"
-                "⚔️ **Trảm kích (25%):** 4,545 sát thương lên toàn bộ đơn vị tiền tuyến địch.\n"
+                "🔥 **Fuga (Nội tại):** Mỗi 4 lượt, đòn đánh ×3.0 sát thương.\n"
+                "⚔️ **Trảm kích (25%):** 2,2x sát thương lên toàn bộ đơn vị tiền tuyến địch.\n"
                 "🐲 **Agito! (50% - 1 lần):** Triệu hồi khảm hợp thú 25% chỉ số Sukuna, đánh thường liên tục & tank 100% đòn.\n"
-                "🐲 **Mahoraga! (20% - 1 lần):** Triệu hồi Mahoraga 50% chỉ số Sukuna, đánh thường liên tục & tank 100% đòn.\n"
-                "🏯 **Phục Ma Ngự Trù Tử (10% - tối đa 2 lần):** 3 turn, mỗi turn 1,000 DMG + 5% máu tối đa, kể cả thẻ mới vào sân.\n"
+                "🐲 **Mahoraga! (30% - 1 lần):** Triệu hồi Mahoraga 50% chỉ số Sukuna, đánh thường liên tục & tank 100% đòn.\n"
+                "🏯 **Phục Ma Ngự Trù Tử (10% - tối đa 2 lần):** 3 turn, mỗi turn 1,5x DMG + 5% máu tối đa, kể cả thẻ mới vào sân.\n"
                 "*(Thứ tự tank: Agito → Mahoraga → Sukuna)*"
             )
         else:
             skills = (
-                "🔥 **Fuga (Nội tại):** Mỗi 4 lượt, đòn đánh ×3.5 sát thương.\n"
+                "🔥 **Fuga (Nội tại):** Mỗi 4 lượt, đòn đánh ×3.0 sát thương.\n"
                 "⚔️ **Trảm kích (25%):** ×2 sát thương (tối đa 2 lần).\n"
                 "🩸 **Bát (20%):** Gây 20% máu tối đa kẻ địch (tối đa 1 lần).\n"
-                "🏯 **Phục Ma Ngự Trù Tử (15%, tối đa 2 lần):** 2 turn, mỗi turn 1,000 DMG + 3% máu tối đa, kể cả thẻ mới vào sân."
+                "🏯 **Phục Ma Ngự Trù Tử (15%, tối đa 2 lần):** 2 turn, mỗi turn 1,2x DMG + 3% máu tối đa, kể cả thẻ mới vào sân."
             )
         embed.add_field(name="🔮 KỸ NĂNG:", value=skills, inline=False)
         if player:
