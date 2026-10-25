@@ -10975,7 +10975,7 @@ async def handle_battle(ctx_or_interaction):
             turn_actions.append("🎲 **[Lượt ra đòn]** Hiệp này **bạn** ra đòn trước!")
         else:
             turn_actions.append(f"🎲 **[Lượt ra đòn]** Hiệp này **{opp_name}** ra đòn trước!")
-for _side in _atk_order:
+        for _side in _atk_order:
             if _side == "player" and pc["current_hp"] <= 0:
                 continue
             if _side == "opp" and oc["current_hp"] <= 0:
