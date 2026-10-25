@@ -10975,7 +10975,7 @@ async def handle_battle(ctx_or_interaction):
             turn_actions.append("🎲 **[Lượt ra đòn]** Hiệp này **bạn** ra đòn trước!")
         else:
             turn_actions.append(f"🎲 **[Lượt ra đòn]** Hiệp này **{opp_name}** ra đòn trước!")
-        for _side in _atk_order:
+for _side in _atk_order:
             if _side == "player" and pc["current_hp"] <= 0:
                 continue
             if _side == "opp" and oc["current_hp"] <= 0:
@@ -11009,63 +11009,64 @@ async def handle_battle(ctx_or_interaction):
             elif _side == "player":
                 turn_actions.append(f"❄️ **{pc['name']}** bị đóng băng nên không thể ra đòn!")
 
-
-        elif not stunned_oc:
-            pc_invul = p_t4_save_invul or p_kasen_guard or (str(pc["cid"]).lower() == "t1" and bool(pc.get("is_ace2")) and bool(_t1.get("invul", False)))
-            if p_wg_active:
-                pc_invul = True
-                ref_dmg = int(curr_oc_power * 0.60)
-                oc["current_hp"] = max(0, oc["current_hp"] - ref_dmg)
-                if not turn_image:
-                    turn_image = T3_WONDER_GUARD_GIF
-                msg_wg_dmg = (
-                    f"🛡️ **[Wonder Guard Duy Trì]** **{pc['name']}** MIỄN TOÀN BỘ **{curr_oc_power:,} DMG** từ **{oc['name']}** "
-                    f"và **PHẢN LẠI {ref_dmg:,} DMG (60%)**! *(Còn {p_t3_state['wonder_guard_turns']} lượt)*"
-                )
-                battle_logs.append(msg_wg_dmg)
-                turn_actions.append(msg_wg_dmg)
-            if not pc_invul and pc["cid"] == 15 and pc["is_ace2"] and not p_reimu:
-                if random.random() < 0.40:
-                    p_reimu = True
+            # ✅ ĐÃ SỬA: Thụt lề 12 spaces và kiểm tra _side == "opp"
+            if _side == "opp" and not stunned_oc:
+                pc_invul = p_t4_save_invul or p_kasen_guard or (str(pc["cid"]).lower() == "t1" and bool(pc.get("is_ace2")) and bool(_t1.get("invul", False)))
+                if p_wg_active:
                     pc_invul = True
-                    oc["current_hp"] = max(0, oc["current_hp"] - pc["power"])
-                    turn_actions.append(f"🌸 **[Ace 2] [#15] reimu** phản đòn **1x ATK**, gây **{pc['power']:,} DMG** lên **{oc['name']}**!")
+                    ref_dmg = int(curr_oc_power * 0.60)
+                    oc["current_hp"] = max(0, oc["current_hp"] - ref_dmg)
                     if not turn_image:
-                        turn_image = EVOL_CONFIG[15]["skill_gif"]
-                    msg_skill = f"🛡️ **[Ace 2] [#15] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
-                    battle_logs.append(msg_skill)
-                    turn_actions.append(msg_skill)
-            if not pc_invul and str(pc["cid"]).lower() == "t1" and not p_seiki_seal and p_seiki_used_turn != r_cnt and not pc.get("is_ace2"):
-                seal_chance = 0.50 if pc.get("is_ace2") else 0.40
-                if random.random() < seal_chance:
-                    p_seiki_seal = True
-                    p_seiki_used_turn = r_cnt
-                    pc_invul = True
-                    if not turn_image:
-                        turn_image = T1_SEAL_GIF
-                    title_t1 = "[Ace 2] [#t1] Seiki" if pc.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
-                    pct_t1 = "50%" if pc.get("is_ace2") else "40%"
-                    msg_skill = f"🛡️ **{title_t1}** ({user.display_name}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
-                    battle_logs.append(msg_skill)
-                    turn_actions.append(msg_skill)
-            if not pc_invul:
-                if pc["cid"] == 4 and pc.get("is_ace2") and pc.get("erased_skill") != "yukari_gap" and curr_oc_power == oc["power"] and random.random() < 0.10:
-                    oc["current_hp"] = max(0, oc["current_hp"] - curr_oc_power)
-                    msg_gap = f"🌀 **[Ace 2] [#04] Yukari** ({user.display_name}) kích hoạt **Invisible Gap (10%)**! Miễn thương và phản lại 100% đòn đánh thường (**{curr_oc_power:,} DMG**) vào **{oc['name']}**!"
-                    battle_logs.append(msg_gap)
-                    turn_actions.append(msg_gap)
-                elif str(pc["cid"]).lower() == "t2":
-                    adapt_pct = min(0.90, p_mahoraga_turns * 0.05)
-                    actual_dmg = int(curr_oc_power * (1.0 - adapt_pct))
-                    pc["current_hp"] -= actual_dmg
-                    turn_actions.append(f"⚔️ **{oc['name']}** phản công gây **{curr_oc_power:,} DMG** nhưng **Mahoraga** Thích Nghi (-{int(adapt_pct*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!")
+                        turn_image = T3_WONDER_GUARD_GIF
+                    msg_wg_dmg = (
+                        f"🛡️ **[Wonder Guard Duy Trì]** **{pc['name']}** MIỄN TOÀN BỘ **{curr_oc_power:,} DMG** từ **{oc['name']}** "
+                        f"và **PHẢN LẠI {ref_dmg:,} DMG (60%)**! *(Còn {p_t3_state['wonder_guard_turns']} lượt)*"
+                    )
+                    battle_logs.append(msg_wg_dmg)
+                    turn_actions.append(msg_wg_dmg)
+                if not pc_invul and pc["cid"] == 15 and pc["is_ace2"] and not p_reimu:
+                    if random.random() < 0.40:
+                        p_reimu = True
+                        pc_invul = True
+                        oc["current_hp"] = max(0, oc["current_hp"] - pc["power"])
+                        turn_actions.append(f"🌸 **[Ace 2] [#15] reimu** phản đòn **1x ATK**, gây **{pc['power']:,} DMG** lên **{oc['name']}**!")
+                        if not turn_image:
+                            turn_image = EVOL_CONFIG[15]["skill_gif"]
+                        msg_skill = f"🛡️ **[Ace 2] [#15] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
+                        battle_logs.append(msg_skill)
+                        turn_actions.append(msg_skill)
+                if not pc_invul and str(pc["cid"]).lower() == "t1" and not p_seiki_seal and p_seiki_used_turn != r_cnt and not pc.get("is_ace2"):
+                    seal_chance = 0.50 if pc.get("is_ace2") else 0.40
+                    if random.random() < seal_chance:
+                        p_seiki_seal = True
+                        p_seiki_used_turn = r_cnt
+                        pc_invul = True
+                        if not turn_image:
+                            turn_image = T1_SEAL_GIF
+                        title_t1 = "[Ace 2] [#t1] Seiki" if pc.get("is_ace2") else "[Nhóm T] [#t1] Seiki"
+                        pct_t1 = "50%" if pc.get("is_ace2") else "40%"
+                        msg_skill = f"🛡️ **{title_t1}** ({user.display_name}) kích hoạt **Fantasy Seal** ({pct_t1})! MIỄN TOÀN BỘ SÁT THƯƠNG!"
+                        battle_logs.append(msg_skill)
+                        turn_actions.append(msg_skill)
+                if not pc_invul:
+                    if pc["cid"] == 4 and pc.get("is_ace2") and pc.get("erased_skill") != "yukari_gap" and curr_oc_power == oc["power"] and random.random() < 0.10:
+                        oc["current_hp"] = max(0, oc["current_hp"] - curr_oc_power)
+                        msg_gap = f"🌀 **[Ace 2] [#04] Yukari** ({user.display_name}) kích hoạt **Invisible Gap (10%)**! Miễn thương và phản lại 100% đòn đánh thường (**{curr_oc_power:,} DMG**) vào **{oc['name']}**!"
+                        battle_logs.append(msg_gap)
+                        turn_actions.append(msg_gap)
+                    elif str(pc["cid"]).lower() == "t2":
+                        adapt_pct = min(0.90, p_mahoraga_turns * 0.05)
+                        actual_dmg = int(curr_oc_power * (1.0 - adapt_pct))
+                        pc["current_hp"] -= actual_dmg
+                        turn_actions.append(f"⚔️ **{oc['name']}** phản công gây **{curr_oc_power:,} DMG** nhưng **Mahoraga** Thích Nghi (-{int(adapt_pct*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!")
+                    else:
+                        pc["current_hp"] -= curr_oc_power
+                        turn_actions.append(f"⚔️ **{oc['name']}** phản công gây **{curr_oc_power:,} DMG** lên **{pc['name']}**!")
                 else:
-                    pc["current_hp"] -= curr_oc_power
-                    turn_actions.append(f"⚔️ **{oc['name']}** phản công gây **{curr_oc_power:,} DMG** lên **{pc['name']}**!")
-            else:
-                turn_actions.append(f"🛡️ **{pc['name']}** miễn nhiễm toàn bộ đòn đánh của **{oc['name']}**!")
-        else:
-            turn_actions.append(f"❄️ **{oc['name']}** bị đóng băng nên không thể phản công!")
+                    turn_actions.append(f"🛡️ **{pc['name']}** miễn nhiễm toàn bộ đòn đánh của **{oc['name']}**!")
+            elif _side == "opp":
+                turn_actions.append(f"❄️ **{oc['name']}** bị đóng băng nên không thể phản công!")
+
         eq_fenrir_post(pc, oc, _eq_oc_mark, turn_actions)
         eq_gaia_post(pc, _eq_pc_mark, curr_oc_power, oc["power"], turn_actions)
 
