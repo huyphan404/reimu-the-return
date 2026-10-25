@@ -18610,7 +18610,7 @@ SHOP_MAX_QTY = 25
 POTION_PRICE = 22000
 POTION_BONUS_MULT = 3.0
 POTION_DURATION = 10 * 60
-S_CARD_PRICE = 12000
+S_CARD_PRICE = 20000
 QUA_LO_PRICE = 25000
 QUA_LO_XP_PCT = 40
 
@@ -18900,7 +18900,7 @@ class ShopQtyModal(discord.ui.Modal):
             f"Số dư: **{player['xu']:,}** xu • Kho còn: `{items[self.item_key]}` • Dùng `/item use`."
         )
 
-class ShopBuyCardModal(discord.ui.Modal, title="Mua Thẻ S (12,000 xu/thẻ)"):
+class ShopBuyCardModal(discord.ui.Modal, title="Mua Thẻ S (20,000 xu/thẻ)"):
     def __init__(self):
         super().__init__()
         self.card_input = discord.ui.TextInput(label="ID thẻ hạng S hoặc tên nhân vật:", placeholder="VD: 9 hoặc flandre", required=True, min_length=1, max_length=30)
