@@ -11009,7 +11009,7 @@ for _side in _atk_order:
             elif _side == "player":
                 turn_actions.append(f"❄️ **{pc['name']}** bị đóng băng nên không thể ra đòn!")
 
-            # ✅ ĐÃ SỬA: Thụt lề 12 spaces và kiểm tra _side == "opp"
+            # Nhánh đối thủ: thụt lề 12 spaces bên trong for
             if _side == "opp" and not stunned_oc:
                 pc_invul = p_t4_save_invul or p_kasen_guard or (str(pc["cid"]).lower() == "t1" and bool(pc.get("is_ace2")) and bool(_t1.get("invul", False)))
                 if p_wg_active:
@@ -11067,6 +11067,7 @@ for _side in _atk_order:
             elif _side == "opp":
                 turn_actions.append(f"❄️ **{oc['name']}** bị đóng băng nên không thể phản công!")
 
+        # 🟢 Đúng 8 khoảng trắng (ngang hàng với 'for' và 'if pc["current_hp"] <= 0:')
         eq_fenrir_post(pc, oc, _eq_oc_mark, turn_actions)
         eq_gaia_post(pc, _eq_pc_mark, curr_oc_power, oc["power"], turn_actions)
 
