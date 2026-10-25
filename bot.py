@@ -5867,9 +5867,16 @@ async def spawn_event_boss_raid(channel, author, boss_key="kizuna", is_admin=Fal
             ),
             inline=False
         )
+        embed.add_field(name="❤️ Máu Boss (HP):", value=f"• Phase 1: **{SUKUNA_BOSS_CONFIG['hp']:,} HP**\n• Phase 2 (Heian Form): **{SUKUNA_BOSS_PHASE2_CONFIG['hp']:,} HP**", inline=True)
+        embed.add_field(name="⚔️ Sức Mạnh:", value=f"• Phase 1: **{SUKUNA_BOSS_CONFIG['power']:,} DMG** (chia đều)\n• Phase 2: **{SUKUNA_BOSS_PHASE2_CONFIG['power']:,} DMG** (chia đều)", inline=True)
+        embed.add_field(name="🎒 Trang Bị Của Sukuna:", value="• 🐺 **Nanh Fenrir**: Đánh thường +30% sát thương lên thẻ dưới 50% HP\n• 🛡️ **Giáp Gaia**: Hồi 1,5% máu mỗi lần chịu đòn, giảm 5% sát thương skill", inline=False)
         embed.add_field(
-            name="🎁 Phần Thưởng Hạ Gục Boss (sau Phase 2):",
-            value="• 🎟️ **100%** nhận **30 Vé Pull**\n• 🫳 **5%** rơi **+1 Sukuna Finger**\n• ✨ **90%** nhận **+3,000 XP**\n• 🎯 Tính vào nhiệm vụ Event Boss",
+            name="🎁 Phần Thưởng Rơi Cả 2 Phase:",
+            value=(
+                "• 📦 **Phase 1:** 100% 30 Vé Pull | 5% Sukuna Finger 🫳 | 90% 3,000 XP\n"
+                "• 💎 **Phase 2:** 100% 30 Vé Pull | 7% Sukuna Finger 🫳 | 90% 3,500 XP\n"
+                "• 🎯 Tính vào tiến trình nhiệm vụ Event Boss"
+            ),
             inline=False
         )
         embed.add_field(
@@ -14477,8 +14484,10 @@ async def handle_event_info(ctx_or_interaction):
         name="👹 EVENT BOSS (dùng `/event raid` để chọn Boss):",
         value=(
             "• 🩸 **Kizuna - Huyết Ma Đế** (tối đa 6 người): 2 phase 50K / 75K HP.\n"
-            "• 👹 **Ryomen Sukuna - Nguyền Vương** (tối đa 10 người): Phase 1 110K HP • Phase 2 Heian Form 130K HP.\n"
-            "   └ Rơi: **30 Vé Pull** (100%) • **3,000 XP** (90%) • **Sukuna Finger 🫳** (5%)\n"
+            • 👹 **Ryomen Sukuna - Nguyền Vương** (tối đa 10 người): Phase 1 150K HP • Phase 2 Heian Form 200K HP / 10K DMG (Trang bị Nanh Fenrir 🐺 & Giáp Gaia 🛡️).
+               └ **Phase 1:** 30 Vé (100%), 5% Sukuna Finger 🫳, 3,000 XP (90%)
+               └ **Phase 2:** 30 Vé (100%), 7% Sukuna Finger 🫳, 3,500 XP (90%)
+                        "   └ Rơi: **30 Vé Pull** (100%) • **3,000 XP** (90%) • **Sukuna Finger 🫳** (5%)\n"
             "• ⏳ Hồi chiêu **1 tiếng** dùng chung, không mở 2 Boss cùng lúc.\n"
             "• 🎯 Hạ gục Kizuna (Phase 2) hoặc Sukuna đều tính vào nhiệm vụ Event Boss."
         ),
@@ -16544,7 +16553,8 @@ async def execute_prime_raid(channel, raid_data):
         "hp": max_hp, "max_hp": max_hp, "stunned": False, "mind": 0, "freeze": 0, "molten": 0,
         "erased": None, "fate": 0, "locked_now": False, "ice": 0, "gif": None,
         "true_cap": int(max_hp * 0.50), "true_accum": 0,
-        "boss_type": "han_seiki", "boss_name": cfg["name"], "active": []
+        "boss_type": "sukuna", "boss_name": cfg["name"], "active": [],
+        "eq_gaia": True
     }
 
     # --- Trang bị của Boss: Nanh Fenrir + Giáp Gaia ---
@@ -17963,6 +17973,8 @@ EQUIP_BOSS = {
     "han_seiki": ("nanh_fenrir", "giap_gaia"),
     "mahoraga": ("giap_gaia",),
     "fateria": ("nanh_fenrir",),
+    "sukuna": ("nanh_fenrir", "giap_gaia"),
+    "sukuna_phase2": ("nanh_fenrir", "giap_gaia"),
 }
 EQUIP_DROPS = {
     "han_seiki": (("nanh_fenrir", 0.02), ("giap_gaia", 0.01)),
@@ -19221,7 +19233,7 @@ SUKUNA_BOSS_CONFIG = {
     "id": "sukuna",
     "name": "Ryomen Sukuna - Nguyền Vương (Phase 1)",
     "image": SUKUNA_GIF_P1,
-    "hp": 110000,
+    "hp": 150000,
     "power": 8000,
     "max_players": 10,
 }
@@ -19229,8 +19241,8 @@ SUKUNA_BOSS_PHASE2_CONFIG = {
     "id": "sukuna_phase2",
     "name": "Ryomen Sukuna - Heian Form (Phase 2)",
     "image": SUKUNA_GIF_P2,
-    "hp": 130000,
-    "power": 8500,
+    "hp": 200000,
+    "power": 10000,
 }
 SUKUNA_FUGA_INTERVAL = 7
 SUKUNA_FUGA_DMG = 10000
@@ -19299,6 +19311,8 @@ def _sk_make_combatants(participants):
             "seal_used": False, "bong_used": False, "med_used": False,
             "mahoraga_adapt_turns": 0, "t3_state": {}, "t4_state": {}, "t5_state": {}, "t6_state": {}, "s3_state": {}
         })
+    for _c in combatants:
+        _c["eq_boss_fenrir"] = True
     return combatants
 
 
@@ -19387,6 +19401,11 @@ async def _sk_run_phase(channel, battle_msg, combatants, phase, all_turns):
             c["total_dmg"] += d
         B["hp"] = max(0, B["hp"] - round_dmg)
         player_atk_str = f"Toàn quân gây **{round_dmg:,} DMG** lên Sukuna!"
+        if B["hp"] > 0 and round_dmg > 0:
+            _bgh = int(max_hp * GAIA_HEAL_PCT)
+            _bold = B["hp"]
+            B["hp"] = min(max_hp, B["hp"] + _bgh)
+            boss_fx.append(f"🛡️ **[Giáp Gaia - Boss]** Sukuna chịu sát thương và hồi **+{B['hp'] - _bold:,} HP** (1,5% máu tối đa)!")
 
         # ---------- Người chơi cắt ngang / xóa kỹ năng của Boss ----------
         if B["erased"] == "domain" and domain_turns > 0:
@@ -19608,7 +19627,7 @@ async def execute_sukuna_raid(channel, raid_data):
     battle_msg = await channel.send(embed=init_embed)
     await asyncio.sleep(2.0)
 
-    all_turns = []
+all_turns = []
     hp1, r1, mx1 = await _sk_run_phase(channel, battle_msg, combatants, 1, all_turns)
     if hp1 > 0:
         fail = discord.Embed(
@@ -19620,37 +19639,8 @@ async def execute_sukuna_raid(channel, raid_data):
         await channel.send(embed=fail, view=OpenDetailsView(all_turns))
         return
 
-    # ---------- PHASE 2: HEIAN FORM ----------
-    p2 = SUKUNA_BOSS_PHASE2_CONFIG
-    alert = discord.Embed(
-        title="🚨 SUKUNA LỘ DIỆN THẬT SỰ - HEIAN FORM! (PHASE 2)",
-        description=(
-            "👹 *\"Ngươi làm ta thấy thú vị rồi đấy... Nào, bắt đầu thật sự thôi.\"*\n\n"
-            f"❤️ **Máu:** **`{p2['hp']:,} HP`** | ⚔️ **Sát thương:** **`{p2['power']:,} DMG`** (chia đều)\n"
-            "🗡️ **Kỹ năng mới:** *World Cutting Slash* — niệm chú 3 turn rồi chém 1 lá bài, bỏ qua mọi phòng ngự!\n\n"
-            "✨ **PHÉP MÀU THANH TẨY:** Toàn bộ thẻ bài của dũng giả được **hồi sinh và hồi 100% sinh lực**!"
-        ),
-        color=0x450A0A
-    )
-    alert.set_image(url=SUKUNA_GIF_P2)
-    battle_msg = await channel.send(embed=alert)
-    await asyncio.sleep(2.5)
-    _sk_reset_phase(combatants)
-
-    hp2, r2, mx2 = await _sk_run_phase(channel, battle_msg, combatants, 2, all_turns)
-    if hp2 > 0:
-        fail = discord.Embed(
-            title="❌ QUÂN ĐOÀN THẤT THỦ TRƯỚC SUKUNA HEIAN FORM (PHASE 2)!",
-            description=f"Phase 1: 🎉 hạ gục sau **{r1} hiệp**\nPhase 2: ❌ thất thủ sau **{r2} hiệp** — Sukuna còn **{hp2:,}/{mx2:,} HP**.",
-            color=0xEF4444
-        )
-        fail.set_thumbnail(url=p2["image"])
-        await channel.send(embed=fail, view=OpenDetailsView(all_turns))
-        return
-
-    # ---------- CHIẾN THẮNG: PHÁT THƯỞNG ----------
-    total_dmg = sum(c["total_dmg"] for c in combatants)
-    lines = []
+    # ---------- TRAO THƯỞNG PHASE 1 (HẠ GỤC PHASE 1) ----------
+    p1_rewards_data = {}
     for uid in participants:
         p = get_player(uid)
         old_lvl = p.get("level", 1)
@@ -19666,14 +19656,71 @@ async def execute_sukuna_raid(channel, raid_data):
         for n_ in update_event_quest_progress(p, "event_raid", 1):
             got.append(n_)
         save_player(p)
+        p1_rewards_data[uid] = {
+            "username": p["username"],
+            "items": got,
+            "new_level": p.get("level", 1),
+            "old_level": old_lvl
+        }
+
+    # ---------- PHASE 2: HEIAN FORM ----------
+    p2 = SUKUNA_BOSS_PHASE2_CONFIG
+    alert = discord.Embed(
+        title="🚨 SUKUNA LỘ DIỆN THẬT SỰ - HEIAN FORM! (PHASE 2)",
+        description=(
+            "👹 *\"Ngươi làm ta thấy thú vị rồi đấy... Nào, bắt đầu thật sự thôi.\"*\n\n"
+            f"❤️ **Máu:** **`{p2['hp']:,} HP`** | ⚔️ **Sát thương:** **`{p2['power']:,} DMG`** (chia đều)\n"
+            "🗡️ **Kỹ năng mới:** *World Cutting Slash* — niệm chú 3 turn rồi chém 1 lá bài, bỏ qua mọi phòng ngự!\n"
+            "🛡️ **Trang bị kích hoạt:** Nanh Fenrir 🐺 & Giáp Gaia 🛡️\n\n"
+            "✨ **PHÉP MÀU THANH TẨY:** Toàn bộ thẻ bài của dũng giả được **hồi sinh và hồi 100% sinh lực**!"
+        ),
+        color=0x450A0A
+    )
+    alert.set_image(url=SUKUNA_GIF_P2)
+    battle_msg = await channel.send(embed=alert)
+    await asyncio.sleep(2.5)
+    _sk_reset_phase(combatants)
+
+    hp2, r2, mx2 = await _sk_run_phase(channel, battle_msg, combatants, 2, all_turns)
+    if hp2 > 0:
+        fail = discord.Embed(
+            title="❌ QUÂN ĐOÀN THẤT THỦ TRƯỚC SUKUNA HEIAN FORM (PHASE 2)!",
+            description=(
+                f"**Phase 1:** 🎉 Hạ gục sau **{r1} hiệp** (Quà Phase 1 đã được bảo lưu trọn vẹn!)\n"
+                f"**Phase 2:** ❌ Thất thủ sau **{r2} hiệp** — Sukuna còn **{hp2:,}/{mx2:,} HP**."
+            ),
+            color=0xEF4444
+        )
+        fail.set_thumbnail(url=p2["image"])
+        p1_summary = [f"🏆 **{r['username']}**:\n   └ " + "\n   └ ".join(r["items"]) for r in p1_rewards_data.values()]
+        fail.add_field(name="📦 Phần Thưởng Phase 1 Đã Nhận:", value="\n".join(p1_summary), inline=False)
+        await channel.send(embed=fail, view=OpenDetailsView(all_turns))
+        return
+
+    # ---------- CHIẾN THẮNG PHASE 2: PHÁT THƯỞNG PHASE 2 ----------
+    total_dmg = sum(c["total_dmg"] for c in combatants)
+    p2_rewards_lines = []
+    for uid in participants:
+        p = get_player(uid)
+        old_lvl = p.get("level", 1)
+        p["pull_tickets"] += 30.0
+        got = ["🎟️ **+30 Vé Pull** (100%)"]
+        if random.random() < 0.07:  # 7% rơi Sukuna Finger ở Phase 2
+            sh = p.setdefault("shards", {})
+            sh["sukuna"] = sh.get("sukuna", 0) + 1
+            got.append(f"🫳 **+1 Sukuna Finger** (7% Cực Hiếm! Kho: {sh['sukuna']})")
+        if random.random() < 0.90:  # 90% nhận 3500 XP
+            p["xp"] = p.get("xp", 0) + 3500
+            got.append("✨ **+3,500 XP** (90%)")
+        save_player(p)
         new_lvl = p.get("level", 1)
         lvl_txt = f" 🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
-        lines.append(f"🏆 **{p['username']}**:{lvl_txt}\n   └ " + "\n   └ ".join(got))
+        p2_rewards_lines.append(f"🏆 **{p['username']}**:{lvl_txt}\n   └ " + "\n   └ ".join(got))
 
     final = discord.Embed(
-        title="🏆 KẾT QUẢ ĐẠI CHIẾN: RYOMEN SUKUNA - NGUYỀN VƯƠNG!",
+        title="🏆 KẾT QUẢ ĐẠI CHIẾN: RYOMEN SUKUNA - NGUYỀN VƯƠNG TOÀN THẮNG!",
         description=(
-            "🌸 **Reimu thở phào:** *\"Phù... cuối cùng cũng đánh bại được hắn. Nguyền khí đã tan hết rồi!\"*\n\n"
+            "🌸 **Reimu thở phào:** *\"Phù... cuối cùng cũng đánh bại được hắn ở cả 2 thể dạng. Nguyền khí đã tan biến hoàn toàn!\"*\n\n"
             f"**Phase 1:** 🎉 Hạ gục sau **{r1} hiệp**\n"
             f"**Phase 2:** 🎉 Hạ gục sau **{r2} hiệp**\n"
             f"💥 **Tổng Sát Thương:** **{total_dmg:,} DMG**"
@@ -19681,15 +19728,10 @@ async def execute_sukuna_raid(channel, raid_data):
         color=0x10B981
     )
     final.set_thumbnail(url=p2["image"])
-    chunk, chunk_len, idx = [], 0, 1
-    for ln in lines:
-        if chunk and chunk_len + len(ln) > 950:
-            final.add_field(name=f"🎁 Phần Thưởng (nhóm {idx}):", value="\n".join(chunk), inline=False)
-            chunk, chunk_len, idx = [], 0, idx + 1
-        chunk.append(_jt_cut(ln, 900))
-        chunk_len += len(ln) + 1
-    if chunk:
-        final.add_field(name=f"🎁 Phần Thưởng (nhóm {idx}):", value="\n".join(chunk), inline=False)
+
+    p1_summary = [f"🏆 **{r['username']}**:\n   └ " + "\n   └ ".join(r["items"]) for r in p1_rewards_data.values()]
+    final.add_field(name="📦 Phần Thưởng Phase 1 (100% 30 Vé, 5% Finger, 90% 3000 XP):", value="\n".join(p1_summary), inline=False)
+    final.add_field(name="💎 Phần Thưởng Phase 2 (100% 30 Vé, 7% Finger, 90% 3500 XP):", value="\n".join(p2_rewards_lines), inline=False)
     await channel.send(embed=final, view=OpenDetailsView(all_turns))
 
 # ==============================================================================
