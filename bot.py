@@ -5853,7 +5853,7 @@ async def spawn_event_boss_raid(channel, author, boss_key="kizuna", is_admin=Fal
             name="🔮 Kỹ Năng Phase 1 & Phase 2:",
             value=(
                 "• 🌀 **Fuga (Nội tại):** Cứ mỗi **7 lượt**, tích đủ sẽ gây đúng **10,000 DMG** lên toàn bộ tiền tuyến!\n"
-                "• ⚔️ **Trảm kích (25%):** **×1.5 sát thương (Phase 1) / ×2 sát thương (Phase 2)** lên toàn bộ đơn vị tiền tuyến!\n"
+                "• ⚔️ **Trảm kích (30%):** **×1.5 sát thương (Phase 1) / ×2 sát thương (Phase 2)** chia đều lên toàn bộ đơn vị tiền tuyến!\n"
                 "• 🩸 **Bát (20%):** Gây **50% máu tối đa** lên **2 đơn vị ngẫu nhiên**!\n"
                 "• 🏯 **Bành trướng lãnh địa - Phục Ma Ngự Trù Tử (10%, tối đa 2 lần/phase):** Trong **3 turn** liên tục gây **1,000 DMG + 10% máu tối đa** lên mọi thẻ tiền tuyến (kể cả thẻ mới vào sân)!"
             ),
@@ -19451,7 +19451,7 @@ async def _sk_run_phase(channel, battle_msg, combatants, phase, all_turns):
                     elif chant == 0 and not B["locked_now"]:
                         opts = []
                         if B["erased"] != "slash":
-                            opts.append(("slash", 0.25))
+                            opts.append(("slash", 0.30))
                         if B["erased"] != "hachi":
                             opts.append(("hachi", 0.20))
                         if B["erased"] != "domain" and domain_uses < SUKUNA_DOMAIN_MAX and domain_turns == 0:
@@ -19470,10 +19470,11 @@ async def _sk_run_phase(channel, battle_msg, combatants, phase, all_turns):
                     if chosen == "slash":
                         B["gif"] = SUKUNA_GIF_SLASH
                         slash_mult = SUKUNA_SLASH_MULT_P1 if phase == 1 else SUKUNA_SLASH_MULT_P2
-                        slash_dmg = int(power * slash_mult)
-                        action_log += f"⚔️ **[KỸ NĂNG] Sukuna** tung **Trảm kích (25%)**! Gây **{slash_dmg:,} DMG** ({slash_mult:g}x sát thương) lên **TỪNG** đơn vị trong {n} thẻ tiền tuyến!"
+                        total_slash_dmg = int(power * slash_mult)
+                        each_slash_dmg = max(100, total_slash_dmg // n)
+                        action_log += f"⚔️ **[KỸ NĂNG] Sukuna** tung **Trảm kích (30%)**! Gây tổng **{total_slash_dmg:,} DMG** ({slash_mult:g}x sát thương), chia đều **{each_slash_dmg:,} DMG** lên mỗi thẻ tiền tuyến ({n} lá)!"
                         for c in active:
-                            _sk_hit(c, c["team_cards"][c["current_card_index"]], slash_dmg, B, hit_logs, rounds)
+                            _sk_hit(c, c["team_cards"][c["current_card_index"]], each_slash_dmg, B, hit_logs, rounds)
                     elif chosen == "hachi":
                         B["gif"] = SUKUNA_GIF_HACHI
                         targets = random.sample(active, min(2, len(active)))
