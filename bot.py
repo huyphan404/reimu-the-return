@@ -14481,13 +14481,12 @@ async def handle_event_info(ctx_or_interaction):
     )
     embed.set_image(url=EVENT_CONFIG["banner"])
     embed.add_field(
-        name="👹 EVENT BOSS (dùng `/event raid` để chọn Boss):",
+            name="👹 EVENT BOSS (dùng `/event raid` để chọn Boss):",
         value=(
             "• 🩸 **Kizuna - Huyết Ma Đế** (tối đa 6 người): 2 phase 50K / 75K HP.\n"
-            • 👹 **Ryomen Sukuna - Nguyền Vương** (tối đa 10 người): Phase 1 150K HP • Phase 2 Heian Form 200K HP / 10K DMG (Trang bị Nanh Fenrir 🐺 & Giáp Gaia 🛡️).
-               └ **Phase 1:** 30 Vé (100%), 5% Sukuna Finger 🫳, 3,000 XP (90%)
-               └ **Phase 2:** 30 Vé (100%), 7% Sukuna Finger 🫳, 3,500 XP (90%)
-                        "   └ Rơi: **30 Vé Pull** (100%) • **3,000 XP** (90%) • **Sukuna Finger 🫳** (5%)\n"
+            "• 👹 **Ryomen Sukuna - Nguyền Vương** (tối đa 10 người): Phase 1 150K HP • Phase 2 Heian Form 200K HP / 10K DMG (Trang bị Nanh Fenrir 🐺 & Giáp Gaia 🛡️).\n"
+            "   └ **Phase 1:** 30 Vé (100%), 5% Sukuna Finger 🫳, 3,000 XP (90%)\n"
+            "   └ **Phase 2:** 30 Vé (100%), 7% Sukuna Finger 🫳, 3,500 XP (90%)\n"
             "• ⏳ Hồi chiêu **1 tiếng** dùng chung, không mở 2 Boss cùng lúc.\n"
             "• 🎯 Hạ gục Kizuna (Phase 2) hoặc Sukuna đều tính vào nhiệm vụ Event Boss."
         ),
@@ -19627,7 +19626,7 @@ async def execute_sukuna_raid(channel, raid_data):
     battle_msg = await channel.send(embed=init_embed)
     await asyncio.sleep(2.0)
 
-all_turns = []
+    all_turns = []
     hp1, r1, mx1 = await _sk_run_phase(channel, battle_msg, combatants, 1, all_turns)
     if hp1 > 0:
         fail = discord.Embed(
