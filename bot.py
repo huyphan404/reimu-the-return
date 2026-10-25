@@ -727,7 +727,7 @@ EVENT_CONFIG = {
         "battle": {"target": 100, "name": "Chiến đấu PvE (/battle) 100 lần"},
         "pvp": {"target": 100, "name": "Đại chiến PvP (/pvp) 100 lần"},
         "raid": {"target": 30, "name": "Đánh Boss Raid Thường 30 lần"},
-        "event_raid": {"target": 30, "name": "Đánh Event Boss Kizuna 30 lần"}
+        "event_raid": {"target": 30, "name": "Đánh Event Boss (Kizuna / Sukuna) 30 lần"}
     },
     "reward": {
         "thanh_loi": 1,
@@ -2159,6 +2159,8 @@ def apply_bong_khai_niem_boss(boss_type: str, phase: int, erased_skill_current: 
         pool = [("phan_chuyen", "Phản chuyển Niệm Bóng"), ("gan_ghep", "Gán ghép"), ("nhi_phan", "Nhị Phân Vô Cực khái niệm")]
     elif boss_type == "jotaro":
         pool = [("stand_barrage", "Stand Barrage"), ("skull_breaker", "Skull Breaker"), ("time_stop", "Time Stop")]
+    elif boss_type == "sukuna":
+        pool = [("slash", "Trảm kích"), ("hachi", "Bát"), ("domain", "Bành trướng lãnh địa"), ("wcs", "World Cutting Slash")]
     else:
         pool = [("di_hinh_bua_chu", "Dị Hình Bùa Chú")]
 
@@ -5698,65 +5700,54 @@ async def execute_raid(channel, raid_data):
 # ==============================================================================
 active_event_raid = None
 
+event_raid_busy = False   # True khi trận Event Boss (Kizuna/Sukuna) đang giao chiến
+
 class EventRaidJoinView(discord.ui.View):
     def __init__(self, raid_data):
         super().__init__(timeout=None)
         self.raid_data = raid_data
 
-    @discord.ui.button(label="⚔️ Tham Gia Diệt Huyết Ma Đế (Miễn Phí)", style=discord.ButtonStyle.danger, emoji="🩸")
+    @discord.ui.button(label="⚔️ Tham Gia Diệt Boss Event (Miễn Phí)", style=discord.ButtonStyle.danger, emoji="🩸")
     async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if self.raid_data.get("started") or self.raid_data.get("closed"):
+        rd = self.raid_data
+        max_p = rd.get("max_players", 6)
+        if rd.get("started") or rd.get("closed"):
             await interaction.response.send_message("Trận chiến đã bắt đầu hoặc thời gian chuẩn bị đã kết thúc!", ephemeral=True)
             return
 
         user_id = interaction.user.id
-        if user_id in self.raid_data["participants"]:
+        if user_id in rd["participants"]:
             await interaction.response.send_message("Bạn đã có tên trong danh sách xuất trận rồi!", ephemeral=True)
             return
-
-        if len(self.raid_data["participants"]) >= 6:
-            await interaction.response.send_message("Đội hình đã đủ 6 dũng giả!", ephemeral=True)
+        if len(rd["participants"]) >= max_p:
+            await interaction.response.send_message(f"Đội hình đã đủ {max_p} dũng giả!", ephemeral=True)
             return
 
         player = get_player(user_id, interaction.user.display_name)
-        has_any_card = len(player.get("team", [])) > 0 or any(cnt > 0 for cnt in player.get("inventory", {}).values())
-        if not has_any_card:
+        if not _prime_prepare_team(player):
             await interaction.response.send_message("⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` trước nhé!", ephemeral=True)
             return
 
-        current_team = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
-        if len(current_team) < 3:
-            owned_ids = get_owned_card_ids(player)
-            owned_ids.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
-            for cid in owned_ids:
-                if cid not in current_team: current_team.append(cid)
-                if len(current_team) >= 3: break
-            player["team"] = current_team
-            save_player(player)
+        rd["participants"].append(user_id)
+        rd["names"].append(interaction.user.display_name)
+        count = len(rd["participants"])
 
-        self.raid_data["participants"].append(user_id)
-        self.raid_data["names"].append(interaction.user.display_name)
-        count = len(self.raid_data["participants"])
-
-        await interaction.response.send_message(f"🔥 {interaction.user.mention} đã tham chiến diệt Event Boss Kizuna! ({count}/6 dũng giả)", ephemeral=False)
-
+        await interaction.response.send_message(
+            f"🔥 {interaction.user.mention} đã tham chiến diệt **{rd.get('boss_label', 'Event Boss')}**! ({count}/{max_p} dũng giả)",
+            ephemeral=False
+        )
         try:
             embed = interaction.message.embeds[0]
-            embed.set_field_at(
-                2,
-                name=f"👥 Người Tham Gia ({count}/6):",
-                value=", ".join(self.raid_data["names"]),
-                inline=False
-            )
+            embed.set_field_at(2, name=f"👥 Người Tham Gia ({count}/{max_p}):", value=", ".join(rd["names"]), inline=False)
             await interaction.message.edit(embed=embed, view=self)
         except Exception:
             pass
 
-        if count >= 6:
-            self.raid_data["start_event"].set()
+        if count >= max_p:
+            rd["start_event"].set()
 
 async def event_raid_timer_lifecycle(channel, raid_data, view):
-    global active_event_raid
+    global active_event_raid, event_raid_busy
     try:
         try:
             await asyncio.wait_for(raid_data["start_event"].wait(), timeout=120.0)
@@ -5773,43 +5764,64 @@ async def event_raid_timer_lifecycle(channel, raid_data, view):
             return
 
         participants = raid_data.get("participants", [])
+        boss_key = raid_data.get("boss_key", "kizuna")
         if participants:
             raid_data["started"] = True
             names_str = ", ".join(raid_data.get("names", []))
-            await channel.send(
-                f"⏰ **HẾT 2 PHÚT CHUẨN BỊ EVENT RAID!**\n"
-                f"⚔️ **{len(participants)} Dũng Giả** ({names_str}) đồng loạt tiến vào lâu đài huyết tộc!\n"
-                f"🩸 **Kizuna - Huyết Ma Đế** thức tỉnh sát khí ngập trời — **TRẬN CHIẾN BẮT ĐẦU!**"
-            )
+            if boss_key == "sukuna":
+                await channel.send(
+                    f"⏰ **HẾT 2 PHÚT CHUẨN BỊ EVENT RAID!**\n"
+                    f"⚔️ **{len(participants)} Dũng Giả** ({names_str}) đồng loạt tiến vào lãnh địa của nguyền vương!\n"
+                    f"👹 **Ryomen Sukuna** nhếch mép cười — **TRẬN CHIẾN BẮT ĐẦU!**"
+                )
+            else:
+                await channel.send(
+                    f"⏰ **HẾT 2 PHÚT CHUẨN BỊ EVENT RAID!**\n"
+                    f"⚔️ **{len(participants)} Dũng Giả** ({names_str}) đồng loạt tiến vào lâu đài huyết tộc!\n"
+                    f"🩸 **Kizuna - Huyết Ma Đế** thức tỉnh sát khí ngập trời — **TRẬN CHIẾN BẮT ĐẦU!**"
+                )
+            event_raid_busy = True
             try:
-                await execute_event_raid(channel, raid_data)
+                if boss_key == "sukuna":
+                    await execute_sukuna_raid(channel, raid_data)
+                else:
+                    await execute_event_raid(channel, raid_data)
             except Exception as e:
                 print(f"Lỗi khi thực thi Event Raid: {e}", flush=True)
                 try: await channel.send(f"⚠️ Sự cố kỹ thuật: `{e}`")
                 except Exception: pass
             finally:
                 active_event_raid = None
+                event_raid_busy = False
         else:
             raid_data["closed"] = True
             active_event_raid = None
-            await channel.send("🌌 Huyết Ma Đế Kizuna đã ẩn mình vào bóng tối vì không có ai dám nghênh chiến...")
+            if boss_key == "sukuna":
+                await channel.send("🌌 Ryomen Sukuna chán nản bỏ đi vì không có ai dám nghênh chiến...")
+            else:
+                await channel.send("🌌 Huyết Ma Đế Kizuna đã ẩn mình vào bóng tối vì không có ai dám nghênh chiến...")
     except asyncio.CancelledError:
         return
     except Exception as ex:
         print(f"Lỗi trong event_raid_timer_lifecycle: {ex}", flush=True)
         active_event_raid = None
+        event_raid_busy = False
 
-async def spawn_event_boss_raid(channel, author, is_admin=False):
+async def spawn_event_boss_raid(channel, author, boss_key="kizuna", is_admin=False):
     global active_event_raid
     if active_event_raid is not None:
         if active_event_raid.get("task") and not active_event_raid["task"].done():
             active_event_raid["task"].cancel()
         active_event_raid = None
 
+    is_sukuna = (boss_key == "sukuna")
     start_event = asyncio.Event()
     raid_data = {
         "channel_id": channel.id,
-        "boss_config": EVENT_BOSS_CONFIG,
+        "boss_key": "sukuna" if is_sukuna else "kizuna",
+        "boss_label": "Ryomen Sukuna" if is_sukuna else "Kizuna",
+        "boss_config": SUKUNA_BOSS_CONFIG if is_sukuna else EVENT_BOSS_CONFIG,
+        "max_players": 10 if is_sukuna else 6,
         "participants": [author.id],
         "names": [author.display_name],
         "created_timestamp": time.time(),
@@ -5822,48 +5834,92 @@ async def spawn_event_boss_raid(channel, author, is_admin=False):
     }
     active_event_raid = raid_data
 
-    title = "🚨 [ADMIN EVENT] TRIỆU HỒI EVENT BOSS: KIZUNA - HUYẾT MA ĐẾ!" if is_admin else "🚨 CẢNH BÁO EVENT BOSS: KIZUNA - HUYẾT MA ĐẾ GIÁNG LÂM!"
-    desc = (
-        f"👑 **Khởi xướng bởi:** {author.mention}\n\n"
-        "🏰 *Hoàng đế ma cà rồng cổ đại Kizuna đã thức tỉnh tại lâu đài huyết sắc!*\n"
-        "Mọi người hãy cùng liên minh tham gia đánh boss để nhận Kẹo Halloween 🍬, Vé Pull 🎟️ và Mảnh Kizuna 🩸!"
-    )
-    embed = discord.Embed(title=title, description=desc, color=0x991B1B)
-    embed.set_image(url=EVENT_BOSS_CONFIG["image"])
-    embed.add_field(name="❤️ Máu Boss (HP):", value="• Phase 1: **50,000 HP**\n• Phase 2 Thức Tỉnh: **75,000 HP**", inline=True)
-    embed.add_field(name="⚔️ Sức Mạnh:", value="• Phase 1: **3,000 DMG** (chia đều)\n• Phase 2: **7,000 DMG** (chia đều)", inline=True)
-    embed.add_field(name=f"👥 Người Tham Gia (1/6):", value=author.display_name, inline=False)
-    embed.add_field(
-        name="🔮 Kỹ Năng & Nội Tại Huyết Ma Đế:",
-        value=(
-            "• 🩸 **True vampire (100%):** Mỗi hiệp tự hồi **1,5% HP tối đa**!\n"
-            "• 💥 **Blood chain (20%):** Gây **1.5x sát thương chia đều** cho toàn bộ thẻ tiền tuyến!\n"
-            "• 🌑 **Dark chain (20%):** 1x sát thương chia đều kèm **15% Máu Tối Đa** của từng lá bài!\n"
-            "• 🛡️ **Wonder guard (Phase 2 - 15%):** Miễn thương và **phản 90% sát thương + hiệu ứng** trong 2 lượt!"
-        ),
-        inline=False
-    )
-    embed.add_field(
-        name="🎁 Phần Thưởng Rơi (Drop):",
-        value=(
-            "• **Phase 1:** 10% 20 vé, 40% 15 vé, 50% 10 vé | 30% 50 kẹo, 10% 100 kẹo | 2.5% Mảnh Kizuna\n"
-            "• **Phase 2:** 10% 20 vé, 40% 15 vé, 50% 10 vé | 50% 120 kẹo, 30% 70 kẹo | 7% Mảnh Kizuna"
-        ),
-        inline=False
-    )
-    embed.add_field(
-        name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
-        value="Có **2 phút (120 giây)** để bấm nút **\'Tham Gia\'** bên dưới! Đủ 6 người hoặc hết giờ sẽ tự động khai màn trận chiến!",
-        inline=False
-    )
-    embed.set_footer(text="Phòng chờ Event Raid • Tối đa 6 dũng giả tham chiến")
+    if is_sukuna:
+        title = "🚨 [ADMIN EVENT] TRIỆU HỒI EVENT BOSS: RYOMEN SUKUNA - NGUYỀN VƯƠNG!" if is_admin else "🚨 CẢNH BÁO EVENT BOSS: RYOMEN SUKUNA - NGUYỀN VƯƠNG GIÁNG LÂM!"
+        embed = discord.Embed(
+            title=title,
+            description=(
+                f"👑 **Khởi xướng bởi:** {author.mention}\n\n"
+                "👹 *Vua của các nguyền chú đã thức tỉnh giữa đêm Halloween! Hắn không đến để chơi đùa...*\n"
+                "Cùng liên minh tối đa **10 dũng giả** để hạ gục hắn nhận **Vé Pull 🎟️, XP ✨ và Sukuna Finger 🫳**!"
+            ),
+            color=0x7F1D1D
+        )
+        embed.set_image(url=SUKUNA_GIF_P1)
+        embed.add_field(name="❤️ Máu Boss (HP):", value=f"• Phase 1: **{SUKUNA_BOSS_CONFIG['hp']:,} HP**\n• Phase 2 (Heian Form): **{SUKUNA_BOSS_PHASE2_CONFIG['hp']:,} HP**", inline=True)
+        embed.add_field(name="⚔️ Sức Mạnh:", value=f"• Phase 1: **{SUKUNA_BOSS_CONFIG['power']:,} DMG** (chia đều)\n• Phase 2: **{SUKUNA_BOSS_PHASE2_CONFIG['power']:,} DMG** (chia đều)", inline=True)
+        embed.add_field(name="👥 Người Tham Gia (1/10):", value=author.display_name, inline=False)
+        embed.add_field(
+            name="🔮 Kỹ Năng Phase 1 & Phase 2:",
+            value=(
+                "• 🌀 **Fuga (Nội tại):** Cứ mỗi **7 lượt**, tích đủ sẽ gây đúng **10,000 DMG** lên toàn bộ tiền tuyến!\n"
+                "• ⚔️ **Trảm kích (25%):** **4,545 DMG** lên toàn bộ đơn vị tiền tuyến!\n"
+                "• 🩸 **Bát (20%):** Gây **50% máu tối đa** lên **2 đơn vị ngẫu nhiên**!\n"
+                "• 🏯 **Bành trướng lãnh địa - Phục Ma Ngự Trù Tử (10%, tối đa 2 lần/phase):** Trong **3 turn** liên tục gây **1,000 DMG + 10% máu tối đa** lên mọi thẻ tiền tuyến (kể cả thẻ mới vào sân)!"
+            ),
+            inline=False
+        )
+        embed.add_field(
+            name="🐉 Phase 2 - Kỹ năng bổ sung:",
+            value=(
+                "• 🗡️ **World Cutting Slash (10%):** Niệm chú 3 turn (**Vảy rồng → Phản chấn → Song tinh!**) vừa niệm vừa đánh thường. "
+                "Turn 4 tung nhát trảm thế giới: **hạ gục 1 lá bài bất kỳ, bỏ qua mọi phòng ngự**!"
+            ),
+            inline=False
+        )
+        embed.add_field(
+            name="🎁 Phần Thưởng Hạ Gục Boss (sau Phase 2):",
+            value="• 🎟️ **100%** nhận **30 Vé Pull**\n• 🫳 **5%** rơi **+1 Sukuna Finger**\n• ✨ **90%** nhận **+3,000 XP**\n• 🎯 Tính vào nhiệm vụ Event Boss",
+            inline=False
+        )
+        embed.add_field(
+            name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
+            value="Có **2 phút (120 giây)** để bấm **'Tham Gia'** bên dưới! Đủ 10 người hoặc hết giờ sẽ tự động khai màn!",
+            inline=False
+        )
+        embed.set_footer(text="Phòng chờ Event Raid • Tối đa 10 dũng giả tham chiến")
+    else:
+        title = "🚨 [ADMIN EVENT] TRIỆU HỒI EVENT BOSS: KIZUNA - HUYẾT MA ĐẾ!" if is_admin else "🚨 CẢNH BÁO EVENT BOSS: KIZUNA - HUYẾT MA ĐẾ GIÁNG LÂM!"
+        desc = (
+            f"👑 **Khởi xướng bởi:** {author.mention}\n\n"
+            "🏰 *Hoàng đế ma cà rồng cổ đại Kizuna đã thức tỉnh tại lâu đài huyết sắc!*\n"
+            "Mọi người hãy cùng liên minh tham gia đánh boss để nhận Kẹo Halloween 🍬, Vé Pull 🎟️ và Mảnh Kizuna 🩸!"
+        )
+        embed = discord.Embed(title=title, description=desc, color=0x991B1B)
+        embed.set_image(url=EVENT_BOSS_CONFIG["image"])
+        embed.add_field(name="❤️ Máu Boss (HP):", value="• Phase 1: **50,000 HP**\n• Phase 2 Thức Tỉnh: **75,000 HP**", inline=True)
+        embed.add_field(name="⚔️ Sức Mạnh:", value="• Phase 1: **3,000 DMG** (chia đều)\n• Phase 2: **7,000 DMG** (chia đều)", inline=True)
+        embed.add_field(name="👥 Người Tham Gia (1/6):", value=author.display_name, inline=False)
+        embed.add_field(
+            name="🔮 Kỹ Năng & Nội Tại Huyết Ma Đế:",
+            value=(
+                "• 🩸 **True vampire (100%):** Mỗi hiệp tự hồi **1,5% HP tối đa**!\n"
+                "• 💥 **Blood chain (20%):** Gây **1.5x sát thương chia đều** cho toàn bộ thẻ tiền tuyến!\n"
+                "• 🌑 **Dark chain (20%):** 1x sát thương chia đều kèm **15% Máu Tối Đa** của từng lá bài!\n"
+                "• 🛡️ **Wonder guard (Phase 2 - 15%):** Miễn thương và **phản 90% sát thương + hiệu ứng** trong 2 lượt!"
+            ),
+            inline=False
+        )
+        embed.add_field(
+            name="🎁 Phần Thưởng Rơi (Drop):",
+            value=(
+                "• **Phase 1:** 10% 20 vé, 40% 15 vé, 50% 10 vé | 30% 50 kẹo, 10% 100 kẹo | 2.5% Mảnh Kizuna\n"
+                "• **Phase 2:** 10% 20 vé, 40% 15 vé, 50% 10 vé | 50% 120 kẹo, 30% 70 kẹo | 7% Mảnh Kizuna"
+            ),
+            inline=False
+        )
+        embed.add_field(
+            name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
+            value="Có **2 phút (120 giây)** để bấm nút **'Tham Gia'** bên dưới! Đủ 6 người hoặc hết giờ sẽ tự động khai màn trận chiến!",
+            inline=False
+        )
+        embed.set_footer(text="Phòng chờ Event Raid • Tối đa 6 dũng giả tham chiến")
 
     view = EventRaidJoinView(raid_data)
     raid_data["view"] = view
     msg = await channel.send(embed=embed, view=view)
     raid_data["msg"] = msg
-    task = asyncio.create_task(event_raid_timer_lifecycle(channel, raid_data, view))
-    raid_data["task"] = task
+    raid_data["task"] = asyncio.create_task(event_raid_timer_lifecycle(channel, raid_data, view))
 
 # ==============================================================================
 # HÀM CHIẾN ĐẤU EVENT BOSS KIZUNA (ĐẦY ĐỦ KỸ NĂNG & GIF THẺ T VÀ THẺ ACE 2)
@@ -6089,6 +6145,23 @@ async def execute_event_raid(channel, raid_data):
                     if not turn_image: turn_image = EVOL_CONFIG[13]["skill_gif"]
                     utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho** ({c['username']}) tung **Nuclear Spell Card (×3.5)**! Giáng **{card_dmg:,} DMG** & nung đất 3 lượt!"
 
+            # ===== [FIX] THẺ T5 JOTARO & T6 KANAE =====
+            if str(ac["cid"]).lower() == "t5":
+                _t5 = t5_combat_turn(c.setdefault("t3_state", {}).setdefault("t5", {}), ac, is_ace2=ac.get("is_ace2", False))
+                card_dmg = int(card_dmg * _t5["multiplier"])
+                if _t5["stun"] or _t5["confuse"]:
+                    boss_stunned = True
+                if _t5["gif"] and not turn_image:
+                    turn_image = _t5["gif"]
+                if _t5["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _t5["logs"])
+            if str(ac["cid"]).lower() == "t6":
+                _t6 = t6_combat_turn(c.setdefault("t6_state", {}), ac, card_dmg)
+                card_dmg = _t6["damage"]
+                if _t6["gif"] and not turn_image:
+                    turn_image = _t6["gif"]
+                if _t6["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _t6["logs"]) 
             # KỸ NĂNG THẺ T1 SEIKI
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
@@ -6605,6 +6678,23 @@ async def execute_event_raid(channel, raid_data):
                         boss_molten_ground_turns = 3
                         utsuho_notif = f"☢️ **[Ace 2] [#13] Utsuho** ({c['username']}) tung **Nuclear Spell Card (×3.5)**! Giáng **{card_dmg:,} DMG** & nung đất 3 lượt!"
 
+            # ===== [FIX] THẺ T5 JOTARO & T6 KANAE =====
+            if str(ac["cid"]).lower() == "t5":
+                _t5 = t5_combat_turn(c.setdefault("t3_state", {}).setdefault("t5", {}), ac, is_ace2=ac.get("is_ace2", False))
+                card_dmg = int(card_dmg * _t5["multiplier"])
+                if (_t5["stun"] or _t5["confuse"]) and not boss_wg_active:
+                    boss_stunned = True
+                if _t5["gif"] and not turn_image:
+                    turn_image = _t5["gif"]
+                if _t5["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _t5["logs"])
+            if str(ac["cid"]).lower() == "t6":
+                _t6 = t6_combat_turn(c.setdefault("t6_state", {}), ac, card_dmg)
+                card_dmg = _t6["damage"]
+                if _t6["gif"] and not turn_image:
+                    turn_image = _t6["gif"]
+                if _t6["logs"]:
+                    t3_notif = (t3_notif + "\n" if t3_notif else "") + "\n".join(f"({c['username']}) {l}" for l in _t6["logs"])
             # KỸ NĂNG THẺ T1 SEIKI
             if str(ac["cid"]).lower() == "t1":
                 if ac.get("is_ace2"):
@@ -7259,7 +7349,8 @@ SHARD_DISPLAY_NAMES = {
     "thanh_loi": "Thánh Lõi",
     "jotaro": "Jotaro Shards",
     "kanae": "Kanae Shards",
-    "kisami": "Kisami Shards"
+    "kisami": "Kisami Shards",
+    "sukuna": "Sukuna Finger"
 }
 
 def normalize_shard_key(raw: str):
@@ -7278,6 +7369,8 @@ def normalize_shard_key(raw: str):
         return "kanae"
     if s in ["kisami", "t7", "mikawa", "kisami_shard"]:
         return "kisami"
+    if s in ["sukuna", "finger", "sukuna_finger", "ngontay", "ngon_tay"]:
+        return "sukuna"
     if s in ["jotaro", "t5", "kujo", "jotaro_shard"]:
         return "jotaro"    
     return None
@@ -7308,6 +7401,7 @@ def do_remove_shard(target_player: dict, s_key: str, so_luong: int):
     app_commands.Choice(name="Jotaro Shards (jotaro)", value="jotaro"),
     app_commands.Choice(name="Kanae Shards (kanae)", value="kanae"),
     app_commands.Choice(name="Kisami Shards (kisami)", value="kisami"),
+    app_commands.Choice(name="Sukuna Finger (sukuna)", value="sukuna"),
     app_commands.Choice(name="Thánh Lõi (thanh_loi)", value="thanh_loi")
 ])
 async def slash_admin_remove_shard(interaction: discord.Interaction, nguoi_dung: Union[discord.Member, discord.User], loai_shard: str, so_luong: int = 1):
@@ -9499,6 +9593,12 @@ async def handle_view_shards(ctx_or_interaction):
             f"• Đổi thẻ Ace 1: `/t translate loai_shard:kisami` khi đủ {KISAMI_SHARDS_UNLOCK} mảnh\n"
             f"• Ace 2: cần thêm **{KISAMI_SHARDS_ACE2} mảnh** + Seiki Ace 2 + Prestige {KISAMI_ACE2_PRESTIGE}+"
         ),
+        inline=False
+    )
+    sukuna_fingers = shards_dict.get("sukuna", 0)
+    embed.add_field(
+        name="🫳 Sukuna Finger (Event Halloween):",
+        value=f"• Hiện có: **`{sukuna_fingers}` ngón tay**\n• Nguồn rơi: **5%** khi hạ gục Event Boss **Ryomen Sukuna**",
         inline=False
     )
     kanae_shards = shards_dict.get("kanae", 0)
@@ -14328,7 +14428,7 @@ async def handle_event_info(ctx_or_interaction):
         title="🎃 HALLOWEEN EVENT 2026 - LỄ HỘI KẸO MA QUÁI",
         description=(
             f"🧙‍♀️ **{EVENT_CONFIG['quote']}**\n\n"
-            f"📅 **Thời gian diễn ra:** `02/10/2026` ➔ `30/10/2026`\n"
+            f"📅 **Thời gian diễn ra:** `25/10/2026` ➔ `10/11/2026`\n"
             f"🍬 **Số Kẹo của bạn:** **`{candies:,}` Kẹo**\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
             f"🎯 **TIẾN TRÌNH NHIỆM VỤ SỰ KIỆN (EVENT QUESTS):**\n"
@@ -14344,6 +14444,17 @@ async def handle_event_info(ctx_or_interaction):
         color=0xF97316
     )
     embed.set_image(url=EVENT_CONFIG["banner"])
+    embed.add_field(
+        name="👹 EVENT BOSS (dùng `/event raid` để chọn Boss):",
+        value=(
+            "• 🩸 **Kizuna - Huyết Ma Đế** (tối đa 6 người): 2 phase 50K / 75K HP.\n"
+            "• 👹 **Ryomen Sukuna - Nguyền Vương** (tối đa 10 người): Phase 1 110K HP • Phase 2 Heian Form 130K HP.\n"
+            "   └ Rơi: **30 Vé Pull** (100%) • **3,000 XP** (90%) • **Sukuna Finger 🫳** (5%)\n"
+            "• ⏳ Hồi chiêu **1 tiếng** dùng chung, không mở 2 Boss cùng lúc.\n"
+            "• 🎯 Hạ gục Kizuna (Phase 2) hoặc Sukuna đều tính vào nhiệm vụ Event Boss."
+        ),
+        inline=False
+    )
     embed.set_footer(text="Dùng /event shop để đổi Kẹo lấy quà • Dùng /event raid để mở phòng săn Boss!")
     
     if isinstance(ctx_or_interaction, discord.Interaction):
@@ -14381,35 +14492,108 @@ async def handle_event_shop(ctx_or_interaction):
     else:
         await ctx_or_interaction.send(embed=embed, view=view)
 
-# --- HÀM XỬ LÝ /EVENT RAID (MỞ PHÒNG CHỜ 2 PHÚT CHO TẤT CẢ PLAYER) ---
+# --- HÀM XỬ LÝ /EVENT RAID: CHỌN 1 TRONG 2 BOSS (KIZUNA / SUKUNA) ---
+def _event_raid_block_reason(player, is_adm):
+    """Trả về chuỗi lý do bị chặn, hoặc None nếu được phép mở raid."""
+    if event_raid_busy:
+        return "🚨 Một trận Event Boss đang giao chiến! Hãy đợi trận hiện tại kết thúc."
+    if active_event_raid is not None and not is_adm:
+        return "🚨 Đang có phòng chờ Event Boss mở sẵn! Hãy bấm **Tham Gia** ở phòng đó (Kizuna và Sukuna không thể mở cùng lúc)."
+    now = time.time()
+    last_t = player.get("last_event_raid_time", 0.0)
+    if not is_adm and (now - last_t < 3600):
+        rem = int(3600 - (now - last_t))
+        return f"⏳ Bạn vừa triệu hồi Event Boss gần đây, vui lòng nghỉ ngơi thêm **{rem // 60} phút {rem % 60} giây** nữa! *(Hồi chiêu 1 tiếng dùng chung cho Kizuna và Sukuna)*"
+    return None
+
+class EventBossSelectView(discord.ui.View):
+    def __init__(self, user, is_admin):
+        super().__init__(timeout=60)
+        self.user = user
+        self.is_admin = is_admin
+        self.msg = None
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải bảng chọn Boss của bạn! Hãy tự gõ `/event raid`.", ephemeral=True)
+            return False
+        return True
+
+    async def _pick(self, interaction: discord.Interaction, boss_key: str):
+        player = get_player(self.user.id, self.user.display_name)
+        reason = _event_raid_block_reason(player, self.is_admin)
+        if reason:
+            await interaction.response.send_message(reason, ephemeral=True)
+            return
+        if not _prime_prepare_team(player):
+            await interaction.response.send_message("⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` trước nhé!", ephemeral=True)
+            return
+        player["last_event_raid_time"] = time.time()
+        save_player(player)
+
+        for child in self.children:
+            child.disabled = True
+        label = "Ryomen Sukuna - Nguyền Vương" if boss_key == "sukuna" else "Kizuna - Huyết Ma Đế"
+        await interaction.response.edit_message(
+            content=f"🎃 **{self.user.display_name}** đã kích hoạt nghi lễ mở phòng đại chiến **Event Boss {label}**!",
+            embed=None, view=self
+        )
+        self.stop()
+        await spawn_event_boss_raid(interaction.channel, self.user, boss_key, is_admin=self.is_admin)
+
+    @discord.ui.button(label="🩸 Kizuna - Huyết Ma Đế (tối đa 6 người)", style=discord.ButtonStyle.danger, row=0)
+    async def pick_kizuna(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self._pick(interaction, "kizuna")
+
+    @discord.ui.button(label="👹 Ryomen Sukuna - Nguyền Vương (tối đa 10 người)", style=discord.ButtonStyle.primary, row=1)
+    async def pick_sukuna(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self._pick(interaction, "sukuna")
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        if self.msg:
+            try:
+                await self.msg.edit(content="⌛ Hết thời gian chọn Boss.", view=self)
+            except Exception:
+                pass
+
 async def handle_event_raid_open(ctx_or_interaction):
     if not await check_event_is_active(ctx_or_interaction):
         return
-    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    is_inter = isinstance(ctx_or_interaction, discord.Interaction)
+    user = ctx_or_interaction.user if is_inter else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
-    now = time.time()
-    last_t = player.get("last_event_raid_time", 0.0)
-
     is_adm = is_authorized_admin(user.id)
-    if not is_adm and (now - last_t < 3600):
-        rem = int(3600 - (now - last_t))
-        msg = f"⏳ Bạn vừa triệu hồi Event Boss gần đây, vui lòng nghỉ ngơi thêm **{rem // 60} phút {rem % 60} giây** nữa!"
-        if isinstance(ctx_or_interaction, discord.Interaction):
-            await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+
+    reason = _event_raid_block_reason(player, is_adm)
+    if reason:
+        if is_inter:
+            await ctx_or_interaction.response.send_message(reason, ephemeral=True)
         else:
-            await ctx_or_interaction.send(msg)
+            await ctx_or_interaction.send(reason)
         return
 
-    player["last_event_raid_time"] = now
-    save_player(player)
-
-    channel = ctx_or_interaction.channel
-    if isinstance(ctx_or_interaction, discord.Interaction):
-        await ctx_or_interaction.response.send_message(f"🎃 **{user.display_name}** đã kích hoạt nghi lễ mở phòng đại chiến **Event Boss Kizuna - Huyết Ma Đế**!", ephemeral=False)
+    embed = discord.Embed(
+        title="🎃 CHỌN EVENT BOSS HALLOWEEN 2026",
+        description=(
+            "Hãy chọn 1 trong 2 Boss để mở phòng chờ (2 phút):\n\n"
+            "🩸 **Kizuna - Huyết Ma Đế** — tối đa **6** người • 2 phase (50K / 75K HP)\n"
+            "👹 **Ryomen Sukuna - Nguyền Vương** — tối đa **10** người • 2 phase (110K / 130K HP)\n\n"
+            "⏳ Hồi chiêu **1 tiếng** dùng chung. Kizuna và Sukuna **không thể mở cùng lúc**."
+        ),
+        color=0xF97316
+    )
+    embed.set_image(url=EVENT_CONFIG["banner"])
+    view = EventBossSelectView(user, is_adm)
+    if is_inter:
+        await ctx_or_interaction.response.send_message(embed=embed, view=view)
+        try:
+            view.msg = await ctx_or_interaction.original_response()
+        except Exception:
+            pass
     else:
-        await ctx_or_interaction.send(f"🎃 **{user.display_name}** đã kích hoạt nghi lễ mở phòng đại chiến **Event Boss Kizuna - Huyết Ma Đế**!")
-
-    await spawn_event_boss_raid(channel, user, is_admin=is_adm)
+        view.msg = await ctx_or_interaction.send(embed=embed, view=view)
 
 # --- HÀM XỬ LÝ /ITEM CHECK (XEM KHO VẬT PHẨM) ---
 async def handle_item_check(ctx_or_interaction):
@@ -17536,7 +17720,7 @@ def t7_jt_attack(c, ac, dmg, B, notes):
     try:
         if str(ac.get("cid")).lower() != "t7":
             return dmg
-        cfg = PRIME_BOSS_CONFIG if B.get("boss_type") == "han_seiki" else JOTARO_BOSS_CONFIG
+        cfg = PRIME_BOSS_CONFIG if B.get("boss_type") == "han_seiki" else (SUKUNA_BOSS_CONFIG if B.get("boss_type") == "sukuna" else JOTARO_BOSS_CONFIG)
         st = c.setdefault("t3_state", {}).setdefault("t7", {})
         r = t7_combat_turn(st, ac, B["max_hp"], cfg["power"], "Boss", is_ace2=bool(ac.get("is_ace2")))
         dmg = int(dmg * r["multiplier"]) + r["bonus"]
@@ -18068,10 +18252,10 @@ async def prefix_weapond(ctx):
 # ==============================================================================
 # [UPDATE SHARD TRADE] /shard trade your: their:  (TRAO ĐỔI MẢNH GIỮA 2 NGƯỜI CHƠI)
 # ==============================================================================
-SHARD_TRADE_KEYS = ["seiki", "mahoraga", "kizuna", "fateria", "jotaro", "kanae", "kisami", "thanh_loi"]
+SHARD_TRADE_KEYS = ["seiki", "mahoraga", "kizuna", "fateria", "jotaro", "kanae", "kisami", "sukuna", "thanh_loi"]
 SHARD_EMOJIS = {
     "seiki": "🔮", "mahoraga": "🔱", "kizuna": "🩸", "fateria": "⏳",
-    "jotaro": "⏱️", "kanae": "🌸", "kisami": "☠️", "thanh_loi": "👑"
+    "jotaro": "⏱️", "kanae": "🌸", "kisami": "☠️", "sukuna": "🫳", "thanh_loi": "👑"
 }
 
 def get_shard_count(player: dict, key: str) -> int:
@@ -18992,6 +19176,492 @@ async def prefix_admin_remove_all_card(ctx, member: discord.Member = None):
         return
     save_player(target)
     await ctx.send(f"🗑️ Đã xoá **{total:,} lá** ({kinds} loại) thẻ thường của {member.mention}! (Giữ lại {kept} loại thẻ bị khóa)")
+# ==============================================================================
+# [UPDATE HALLOWEEN] EVENT BOSS RYOMEN SUKUNA - NGUYỀN VƯƠNG
+# ==============================================================================
+SUKUNA_GIF_P1 = "https://static2.klipy.com/ii/bea85337777ad0e23e63683391435543/ad/29/gNraHQ4k.gif"
+SUKUNA_GIF_FUGA = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/f2/7b/ESERnfwlXJTEyAwm.gif"
+SUKUNA_GIF_SLASH = "https://static2.klipy.com/ii/c44064a00e4b7451969381d90dea1769/b4/48/pA54GCKj.gif"
+SUKUNA_GIF_HACHI = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/b8/cb/yziPD6jQGe0kGSprK.gif"
+SUKUNA_GIF_DOMAIN_P1 = "https://static2.klipy.com/ii/84b4c0b02782dda9051003f9e36484ec/2d/76/pL5zyul8.gif"
+SUKUNA_GIF_P2 = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/44/2c/Lj0EqJGqhHPFpWZtw.gif"
+SUKUNA_GIF_DOMAIN_P2 = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/e1/e8/JRL4P5c1XEWRuePbO.gif"
+SUKUNA_GIF_WCS = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/e5/9f/azGTsfz6b2jxNV5.gif"
+
+SUKUNA_BOSS_CONFIG = {
+    "id": "sukuna",
+    "name": "Ryomen Sukuna - Nguyền Vương (Phase 1)",
+    "image": SUKUNA_GIF_P1,
+    "hp": 110000,
+    "power": 8000,
+    "max_players": 10,
+}
+SUKUNA_BOSS_PHASE2_CONFIG = {
+    "id": "sukuna_phase2",
+    "name": "Ryomen Sukuna - Heian Form (Phase 2)",
+    "image": SUKUNA_GIF_P2,
+    "hp": 130000,
+    "power": 8500,
+}
+SUKUNA_FUGA_INTERVAL = 7
+SUKUNA_FUGA_DMG = 10000
+SUKUNA_SLASH_DMG = 4545
+SUKUNA_DOMAIN_FLAT = 1000
+SUKUNA_DOMAIN_PCT = 0.10
+SUKUNA_DOMAIN_MAX = 2
+SUKUNA_CHANT_NAMES = {1: "Vảy rồng", 2: "Phản chấn", 3: "Song tinh!"}
+SUKUNA_MAX_ROUNDS = 60
+
+
+def _sk_hit(c, ac, dmg, B, logs, rnd, normal=False, exact=False):
+    """Boss đánh 1 thẻ. exact=True: sát thương 'đúng' (không bị Mahoraga Thích Nghi giảm)."""
+    if exact and str(ac["cid"]).lower() == "t2":
+        ac["current_hp"] -= dmg
+        return
+    _jt_boss_hit(c, ac, dmg, B, logs, rnd, normal=normal)
+
+
+def _sk_domain_tick(active, B, hit_logs, rnd):
+    for c in active:
+        ac = c["team_cards"][c["current_card_index"]]
+        _sk_hit(c, ac, SUKUNA_DOMAIN_FLAT + int(ac["max_hp"] * SUKUNA_DOMAIN_PCT), B, hit_logs, rnd)
+
+
+def _sk_make_combatants(participants):
+    combatants = []
+    for uid in participants:
+        p = get_player(uid)
+        lvl_pwr = get_level_atk_buff(p["level"])
+        lvl_hp = get_level_hp_buff(p["level"])
+        team_cids = [cid for cid in p.get("team", []) if cid in CARDS_DATA and not is_card_locked(p, cid)]
+        if len(team_cids) < 3:
+            owned_ids = get_owned_card_ids(p)
+            owned_ids.sort(key=lambda x: CARDS_DATA[x]["power"], reverse=True)
+            for cid in owned_ids:
+                if cid not in team_cids:
+                    team_cids.append(cid)
+                if len(team_cids) >= 3:
+                    break
+            p["team"] = team_cids
+            save_player(p)
+        team_cards = []
+        for cid in team_cids[:3]:
+            card = CARDS_DATA.get(cid)
+            if card:
+                is_ace = is_card_ace2(p, cid)
+                cp = card["power"] + lvl_pwr + (ACE_POWER_BUFF if is_ace else 0)
+                ch = card["hp"] + lvl_hp + (ACE_HP_BUFF if is_ace else 0)
+                team_cards.append({
+                    "cid": cid,
+                    "name": f"[Ace 2 ⭐⭐] #{disp_id(card['id'])} {card['name']}" if is_ace else f"{format_card_id(card['id'])} {card['name']}",
+                    "base_name": card["name"], "rank": card["rank"],
+                    "power": cp, "max_hp": ch, "current_hp": ch, "is_ace2": is_ace
+                })
+        apply_sakuya_ace3_to_cards(p, team_cards)
+        combatants.append({
+            "uid": uid, "username": p["username"], "level": p["level"],
+            "team_cards": team_cards, "current_card_index": 0,
+            "is_alive": len(team_cards) > 0, "total_dmg": 0,
+            "yukari_station_used": False, "yukari_lastword_used": False,
+            "sakuya_stun_used": False, "reimu_invul_used": False, "marisa_spark_used": False,
+            "flandre_used": False, "reisen_used": False, "cirno_freeze_used": False,
+            "seiki_seal_used": False, "seiki_spark_used": False, "seiki_heal_used": False,
+            "seiki_used_turn": -1, "seiki_invul_turn": -1, "t4_invul_turn": -1, "used_turn": -1,
+            "seal_used": False, "bong_used": False, "med_used": False,
+            "mahoraga_adapt_turns": 0, "t3_state": {}, "t4_state": {}, "t5_state": {}, "t6_state": {}, "s3_state": {}
+        })
+    return combatants
+
+
+def _sk_reset_phase(combatants):
+    """Sang Phase 2: hồi sinh + hồi 100% máu toàn bộ thẻ, reset cờ kỹ năng."""
+    for c in combatants:
+        c["current_card_index"] = 0
+        c["is_alive"] = len(c["team_cards"]) > 0
+        c["death_round"] = None
+        for k in ("yukari_station_used", "yukari_lastword_used", "sakuya_stun_used", "reimu_invul_used",
+                  "marisa_spark_used", "flandre_used", "reisen_used", "cirno_freeze_used",
+                  "seiki_seal_used", "seiki_spark_used", "seiki_heal_used", "seal_used", "bong_used", "med_used"):
+            c[k] = False
+        c["reimu_paid"] = False
+        c["seiki_used_turn"] = -1
+        c["used_turn"] = -1
+        c["seiki_invul_turn"] = -1
+        c["t4_invul_turn"] = -1
+        c["t3_state"] = {}
+        c["t4_state"] = {}
+        c["t5_state"] = {}
+        c.pop("kasen_guard", None)
+        reset_sakuya3_phase(c)
+        for card in c["team_cards"]:
+            card["current_hp"] = card["max_hp"]
+
+
+async def _sk_run_phase(channel, battle_msg, combatants, phase, all_turns):
+    cfg = SUKUNA_BOSS_CONFIG if phase == 1 else SUKUNA_BOSS_PHASE2_CONFIG
+    max_hp = cfg["hp"]
+    power = cfg["power"]
+    color = 0x7F1D1D if phase == 1 else 0x450A0A
+    domain_gif = SUKUNA_GIF_DOMAIN_P1 if phase == 1 else SUKUNA_GIF_DOMAIN_P2
+    B = {
+        "hp": max_hp, "max_hp": max_hp, "stunned": False, "mind": 0, "freeze": 0, "molten": 0,
+        "erased": None, "fate": 0, "locked_now": False, "ice": 0, "gif": None,
+        "true_cap": int(max_hp * 0.50), "true_accum": 0,
+        "boss_type": "sukuna", "boss_name": cfg["name"], "active": []
+    }
+    fuga_count = 0
+    domain_turns = 0
+    domain_uses = 0
+    chant = 0          # số turn niệm chú World Cutting Slash đã hoàn thành (0 = không niệm)
+    rounds = 0
+
+    while B["hp"] > 0 and rounds < SUKUNA_MAX_ROUNDS:
+        active = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
+        if not active:
+            break
+        rounds += 1
+        front = [c["team_cards"][c["current_card_index"]] for c in active]
+        n = len(front)
+        B["stunned"] = False
+        B["gif"] = None
+        B["active"] = active
+        B["locked_now"] = B["fate"] > 0
+        if B["fate"] > 0:
+            B["fate"] -= 1
+        notes = []
+        boss_fx = []
+
+        # ---------- Debuff đang đè lên Boss ----------
+        if B["mind"] > 0:
+            B["mind"] -= 1
+            if random.random() < 0.20:
+                B["hp"] = max(0, B["hp"] - power)
+                boss_fx.append(f"🌀 **[Red Eye Mind]** Boss mất kiểm soát, tự gây **{power:,} DMG** lên bản thân! (Còn {B['mind']} lượt)")
+        if B["molten"] > 0:
+            B["molten"] -= 1
+            applied, B["true_accum"], _cap = apply_raid_true_damage(int(max_hp * 0.02), B["true_accum"], B["true_cap"], "Bỏng Mặt Đất (Utsuho)")
+            if applied > 0:
+                B["hp"] = max(0, B["hp"] - applied)
+                boss_fx.append(f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Boss **{applied:,} DMG**! (Còn {B['molten']} lượt)")
+        if B["freeze"] > 0:
+            B["freeze"] -= 1
+            if random.random() < 0.45:
+                B["stunned"] = True
+                boss_fx.append(f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%)! (Còn {B['freeze']} lượt duy trì)")
+
+        # ---------- Lượt đánh của người chơi (hỗ trợ TOÀN BỘ lá bài) ----------
+        round_dmg = 0
+        for c in active:
+            ac = c["team_cards"][c["current_card_index"]]
+            d = _jt_player_attack(c, ac, rounds, B, notes)
+            round_dmg += d
+            c["total_dmg"] += d
+        B["hp"] = max(0, B["hp"] - round_dmg)
+        player_atk_str = f"Toàn quân gây **{round_dmg:,} DMG** lên Sukuna!"
+
+        # ---------- Người chơi cắt ngang / xóa kỹ năng của Boss ----------
+        if B["erased"] == "domain" and domain_turns > 0:
+            domain_turns = 0
+            boss_fx.append("🌑 **[Bóng Khái Niệm]** Lãnh địa của Sukuna bị xóa sổ!")
+        if B["erased"] == "wcs" and chant > 0:
+            chant = 0
+            boss_fx.append("🌑 **[Bóng Khái Niệm]** Chú ngữ World Cutting Slash bị xóa sổ!")
+        if B["locked_now"] and chant > 0:
+            chant = 0
+            boss_fx.append("⛓️ **[Fate loop]** Chú ngữ World Cutting Slash bị cắt ngang!")
+
+        # ---------- Hành động của Boss ----------
+        action_log = ""
+        hit_logs = []
+        forced_kills = []
+        if B["hp"] <= 0:
+            action_log = "💥 **Ryomen Sukuna đã bị đánh bại! Nguyền vương gục ngã!**"
+        else:
+            # Lãnh địa đang duy trì (sát thương đồng loạt, kể cả thẻ mới vào sân)
+            if domain_turns > 0:
+                domain_turns -= 1
+                _sk_domain_tick(active, B, hit_logs, rounds)
+                B["gif"] = domain_gif
+                boss_fx.append(f"🏯 **[Phục Ma Ngự Trù Tử]** Lãnh địa đang duy trì! Mỗi thẻ tiền tuyến chịu **{SUKUNA_DOMAIN_FLAT:,} DMG + 10% máu tối đa**! (Còn {domain_turns} turn)")
+
+            if B["stunned"]:
+                action_log = "❄️ Sukuna bị ngưng động/bối rối, không thể ra đòn trong hiệp này!"
+            else:
+                ice_block = False
+                if B["ice"] > 0:
+                    B["ice"] -= 1
+                    if random.random() < 0.40:
+                        ice_block = True
+                if ice_block:
+                    action_log = "❄️ **[Ice spear]** Giáo băng cầm chân Sukuna, Boss không thể tấn công lượt này!"
+                else:
+                    chosen = None
+                    if B["locked_now"]:
+                        action_log = "⛓️ **[Fate loop]** Kỹ năng của Sukuna đang bị khóa, chỉ có thể đánh thường!\n"
+                    if chant == 3:
+                        chosen = "wcs_slash"
+                    elif chant == 0 and not B["locked_now"]:
+                        opts = []
+                        if B["erased"] != "slash":
+                            opts.append(("slash", 0.25))
+                        if B["erased"] != "hachi":
+                            opts.append(("hachi", 0.20))
+                        if B["erased"] != "domain" and domain_uses < SUKUNA_DOMAIN_MAX and domain_turns == 0:
+                            opts.append(("domain", 0.10))
+                        if phase == 2 and B["erased"] != "wcs":
+                            opts.append(("wcs", 0.10))
+                        roll = random.random()
+                        acc = 0.0
+                        for key, ch in opts:
+                            acc += ch
+                            if roll < acc:
+                                chosen = key
+                                break
+
+                    do_normal = False
+                    if chosen == "slash":
+                        B["gif"] = SUKUNA_GIF_SLASH
+                        action_log += f"⚔️ **[KỸ NĂNG] Sukuna** tung **Trảm kích (25%)**! Gây **{SUKUNA_SLASH_DMG:,} DMG** lên **TỪNG** đơn vị trong {n} thẻ tiền tuyến!"
+                        for c in active:
+                            _sk_hit(c, c["team_cards"][c["current_card_index"]], SUKUNA_SLASH_DMG, B, hit_logs, rounds)
+                    elif chosen == "hachi":
+                        B["gif"] = SUKUNA_GIF_HACHI
+                        targets = random.sample(active, min(2, len(active)))
+                        names = ", ".join(f"**{t['team_cards'][t['current_card_index']]['name']}** ({t['username']})" for t in targets)
+                        action_log += f"🩸 **[KỸ NĂNG] Sukuna** tung **Bát (20%)**! Xẻ đôi {names}, mỗi mục tiêu mất **50% máu tối đa**!"
+                        for t in targets:
+                            tac = t["team_cards"][t["current_card_index"]]
+                            _sk_hit(t, tac, int(tac["max_hp"] * 0.50), B, hit_logs, rounds)
+                    elif chosen == "domain":
+                        domain_uses += 1
+                        domain_turns = 3
+                        B["gif"] = domain_gif
+                        action_log += (
+                            f"🏯 **[KỸ NĂNG] Sukuna** mở **Bành trướng lãnh địa - Phục Ma Ngự Trù Tử (10%)** *(lần {domain_uses}/{SUKUNA_DOMAIN_MAX})*! "
+                            f"Lãnh địa kéo dài **3 turn**, mỗi turn gây **{SUKUNA_DOMAIN_FLAT:,} DMG + 10% máu tối đa** lên mọi thẻ tiền tuyến!"
+                        )
+                        _sk_domain_tick(active, B, hit_logs, rounds)
+                        domain_turns -= 1
+                        boss_fx.append(f"🏯 **[Phục Ma Ngự Trù Tử]** Lãnh địa bao trùm chiến trường ngay lập tức! (Còn {domain_turns} turn)")
+                    elif chosen == "wcs_slash":
+                        chant = 0
+                        B["gif"] = SUKUNA_GIF_WCS
+                        tc = random.choice(active)
+                        tac = tc["team_cards"][tc["current_card_index"]]
+                        tac["current_hp"] = 0
+                        forced_kills.append(tac)
+                        action_log += (
+                            f"🗡️ **[KỸ NĂNG TỐI THƯỢNG] Sukuna** hoàn tất chú ngữ và tung **NHÁT TRẢM THẾ GIỚI (World Cutting Slash)**! "
+                            f"**{tac['name']}** ({tc['username']}) bị **CHẺ ĐÔI TỨC THÌ**, bỏ qua mọi phòng ngự!"
+                        )
+                    else:
+                        if chosen == "wcs":
+                            chant = 1
+                            B["gif"] = SUKUNA_GIF_WCS
+                            action_log += f"🐉 **[KỸ NĂNG] Sukuna** bắt đầu niệm **World Cutting Slash (10%)**: *\"{SUKUNA_CHANT_NAMES[1]}\"* (1/3)...\n"
+                        elif chant in (1, 2):
+                            chant += 1
+                            B["gif"] = SUKUNA_GIF_WCS
+                            action_log += f"🐉 **[World Cutting Slash]** Sukuna tiếp tục niệm: *\"{SUKUNA_CHANT_NAMES[chant]}\"* ({chant}/3)...\n"
+                        do_normal = True
+
+                    if do_normal:
+                        each = max(100, power // n)
+                        action_log += f"⚔️ Sukuna đánh thường tổng **{power:,} DMG**, chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!"
+                        for c in active:
+                            _sk_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds, normal=True)
+
+            # ----- Nội tại FUGA: tích đủ 7 lượt -----
+            fuga_count += 1
+            if fuga_count >= SUKUNA_FUGA_INTERVAL:
+                if B["stunned"]:
+                    boss_fx.append("🌀 **[Fuga]** Đã tích đủ nhưng Sukuna đang bị ngưng động — Fuga sẽ bùng nổ ở lượt kế tiếp!")
+                else:
+                    fuga_count = 0
+                    B["gif"] = SUKUNA_GIF_FUGA
+                    for c in active:
+                        _sk_hit(c, c["team_cards"][c["current_card_index"]], SUKUNA_FUGA_DMG, B, hit_logs, rounds, exact=True)
+                    boss_fx.append(f"🔥 **[Nội tại - FUGA]** Mũi tên lửa bùng nổ! Gây đúng **{SUKUNA_FUGA_DMG:,} DMG** lên toàn bộ {n} thẻ tiền tuyến!")
+
+        # ---------- Dọn hiệu ứng bảo hộ, rồi áp lại nhát trảm thế giới (bỏ qua phòng thủ) ----------
+        action_log += t7_raid_after_boss(active, action_log); kasen_restore_guard(active)
+        tick_wonder_guard(active)
+        restore_t4_save_loop(active, rounds)
+        for tac in forced_kills:
+            tac["current_hp"] = 0
+
+        # ---------- Thay thẻ / đổi sát thương ----------
+        push_logs = []
+        for c in active:
+            ac = c["team_cards"][c["current_card_index"]]
+            if ac["current_hp"] <= 0:
+                ac["current_hp"] = 0
+                trade = ac["power"]
+                B["hp"] = max(0, B["hp"] - trade)
+                c["total_dmg"] += trade
+                push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{ac['name']}** ({c['username']}) trước khi gục đã đổi **{trade:,} DMG** lên Boss!")
+                _g = sakuya3_raid_revive(c, push_logs)
+                if _g:
+                    B["gif"] = _g
+                    continue
+                c["current_card_index"] += 1
+                if c["current_card_index"] < len(c["team_cards"]):
+                    push_logs.append(f"💀 **{ac['name']}** gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
+                else:
+                    c["is_alive"] = False
+                    push_logs.append(f"☠️ **{c['username']}** đã hết thẻ bài và tử trận!")
+
+        # ---------- Embed ----------
+        desc = (
+            f"❤️ **Máu Boss:** `{get_hp_bar(B['hp'], max_hp)}` **{B['hp']:,}/{max_hp:,} HP**\n"
+            f"🌀 Fuga: **{fuga_count}/{SUKUNA_FUGA_INTERVAL}** | 🏯 Lãnh địa: **{domain_turns}** turn"
+            + (f" | 🐉 Niệm chú: **{chant}/3**" if chant else "")
+        )
+        fields = [("💥 Tiền Tuyến Tấn Công:", _jt_cut(player_atk_str, 300), False)]
+        if notes:
+            fields.append(("✨ Kỹ Năng Thẻ Bài:", _jt_cut("\n".join(notes), 900), False))
+        if boss_fx:
+            fields.append(("🌀 Hiệu Ứng / Passive Boss:", _jt_cut("\n".join(boss_fx), 700), False))
+        fields.append(("👺 Phản Kích Của Boss:", _jt_cut(action_log, 1000), False))
+        if hit_logs:
+            fields.append(("🛡️ Phản Ứng Phòng Thủ:", _jt_cut("\n".join(hit_logs), 700), False))
+        if push_logs:
+            fields.append(("🔄 Thay Đổi Tiền Tuyến:", _jt_cut("\n".join(push_logs), 600), False))
+        fields.append(("🛡️ Tình Trạng Tiền Tuyến:", _jt_cut(_pr_status_lines(combatants), 800), False))
+
+        round_embed = discord.Embed(title=f"👹 HIỆP {rounds} - RYOMEN SUKUNA (PHASE {phase})", description=desc, color=color)
+        for fname, fval, finl in fields:
+            round_embed.add_field(name=fname, value=fval, inline=finl)
+        if B["gif"]:
+            round_embed.set_image(url=B["gif"])
+        else:
+            round_embed.set_thumbnail(url=cfg["image"])
+
+        all_turns.append({
+            "round": rounds, "phase": phase,
+            "title": f"Phase {phase} - Hiệp {rounds}: Ryomen Sukuna",
+            "short_label": f"P{phase} - H{rounds}",
+            "short_desc": f"Boss còn {B['hp']:,} HP",
+            "desc": f"👹 **{cfg['name']}**\n{desc}",
+            "color": color,
+            "image": B["gif"],
+            "fields": fields
+        })
+        try:
+            await battle_msg.edit(embed=round_embed)
+        except Exception:
+            pass
+        if B["hp"] <= 0:
+            break
+        await asyncio.sleep(3.0)
+
+    return B["hp"], rounds, max_hp
+
+
+async def execute_sukuna_raid(channel, raid_data):
+    participants = raid_data["participants"]
+    if not participants:
+        await channel.send("👹 Ryomen Sukuna đã bỏ đi vì không có ai nghênh chiến...")
+        return
+
+    combatants = _sk_make_combatants(participants)
+    p1 = SUKUNA_BOSS_CONFIG
+    init_embed = discord.Embed(
+        title="⚔️ ĐẠI CHIẾN BẮT ĐẦU: RYOMEN SUKUNA - NGUYỀN VƯƠNG (PHASE 1)",
+        description=(
+            "🌸 **Reimu:** *\"Nguyền khí này... không phải thứ của Gensokyo! Tất cả cẩn thận, hắn rất nguy hiểm!\"*\n\n"
+            f"🔥 **{len(combatants)} Dũng Giả** đã dàn trận nghênh chiến! Theo dõi từng hiệp trực tiếp bên dưới!"
+        ),
+        color=0x7F1D1D
+    )
+    init_embed.set_thumbnail(url=p1["image"])
+    init_embed.add_field(name=f"❤️ Máu {p1['name']}:", value=f"`{get_hp_bar(p1['hp'], p1['hp'])}` **{p1['hp']:,}/{p1['hp']:,} HP**", inline=False)
+    battle_msg = await channel.send(embed=init_embed)
+    await asyncio.sleep(2.0)
+
+    all_turns = []
+    hp1, r1, mx1 = await _sk_run_phase(channel, battle_msg, combatants, 1, all_turns)
+    if hp1 > 0:
+        fail = discord.Embed(
+            title="❌ QUÂN ĐOÀN THẤT THỦ TRƯỚC RYOMEN SUKUNA (PHASE 1)!",
+            description=f"Toàn bộ dũng giả đã gục ngã sau {r1} hiệp!\nSukuna còn **{hp1:,}/{mx1:,} HP**.",
+            color=0xEF4444
+        )
+        fail.set_thumbnail(url=p1["image"])
+        await channel.send(embed=fail, view=OpenDetailsView(all_turns))
+        return
+
+    # ---------- PHASE 2: HEIAN FORM ----------
+    p2 = SUKUNA_BOSS_PHASE2_CONFIG
+    alert = discord.Embed(
+        title="🚨 SUKUNA LỘ DIỆN THẬT SỰ - HEIAN FORM! (PHASE 2)",
+        description=(
+            "👹 *\"Ngươi làm ta thấy thú vị rồi đấy... Nào, bắt đầu thật sự thôi.\"*\n\n"
+            f"❤️ **Máu:** **`{p2['hp']:,} HP`** | ⚔️ **Sát thương:** **`{p2['power']:,} DMG`** (chia đều)\n"
+            "🗡️ **Kỹ năng mới:** *World Cutting Slash* — niệm chú 3 turn rồi chém 1 lá bài, bỏ qua mọi phòng ngự!\n\n"
+            "✨ **PHÉP MÀU THANH TẨY:** Toàn bộ thẻ bài của dũng giả được **hồi sinh và hồi 100% sinh lực**!"
+        ),
+        color=0x450A0A
+    )
+    alert.set_image(url=SUKUNA_GIF_P2)
+    battle_msg = await channel.send(embed=alert)
+    await asyncio.sleep(2.5)
+    _sk_reset_phase(combatants)
+
+    hp2, r2, mx2 = await _sk_run_phase(channel, battle_msg, combatants, 2, all_turns)
+    if hp2 > 0:
+        fail = discord.Embed(
+            title="❌ QUÂN ĐOÀN THẤT THỦ TRƯỚC SUKUNA HEIAN FORM (PHASE 2)!",
+            description=f"Phase 1: 🎉 hạ gục sau **{r1} hiệp**\nPhase 2: ❌ thất thủ sau **{r2} hiệp** — Sukuna còn **{hp2:,}/{mx2:,} HP**.",
+            color=0xEF4444
+        )
+        fail.set_thumbnail(url=p2["image"])
+        await channel.send(embed=fail, view=OpenDetailsView(all_turns))
+        return
+
+    # ---------- CHIẾN THẮNG: PHÁT THƯỞNG ----------
+    total_dmg = sum(c["total_dmg"] for c in combatants)
+    lines = []
+    for uid in participants:
+        p = get_player(uid)
+        old_lvl = p.get("level", 1)
+        p["pull_tickets"] += 30.0
+        got = ["🎟️ **+30 Vé Pull** (100%)"]
+        if random.random() < 0.05:
+            sh = p.setdefault("shards", {})
+            sh["sukuna"] = sh.get("sukuna", 0) + 1
+            got.append(f"🫳 **+1 Sukuna Finger** (5% Cực Hiếm! Kho: {sh['sukuna']})")
+        if random.random() < 0.90:
+            p["xp"] = p.get("xp", 0) + 3000
+            got.append("✨ **+3,000 XP** (90%)")
+        for n_ in update_event_quest_progress(p, "event_raid", 1):
+            got.append(n_)
+        save_player(p)
+        new_lvl = p.get("level", 1)
+        lvl_txt = f" 🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+        lines.append(f"🏆 **{p['username']}**:{lvl_txt}\n   └ " + "\n   └ ".join(got))
+
+    final = discord.Embed(
+        title="🏆 KẾT QUẢ ĐẠI CHIẾN: RYOMEN SUKUNA - NGUYỀN VƯƠNG!",
+        description=(
+            "🌸 **Reimu thở phào:** *\"Phù... cuối cùng cũng đánh bại được hắn. Nguyền khí đã tan hết rồi!\"*\n\n"
+            f"**Phase 1:** 🎉 Hạ gục sau **{r1} hiệp**\n"
+            f"**Phase 2:** 🎉 Hạ gục sau **{r2} hiệp**\n"
+            f"💥 **Tổng Sát Thương:** **{total_dmg:,} DMG**"
+        ),
+        color=0x10B981
+    )
+    final.set_thumbnail(url=p2["image"])
+    chunk, chunk_len, idx = [], 0, 1
+    for ln in lines:
+        if chunk and chunk_len + len(ln) > 950:
+            final.add_field(name=f"🎁 Phần Thưởng (nhóm {idx}):", value="\n".join(chunk), inline=False)
+            chunk, chunk_len, idx = [], 0, idx + 1
+        chunk.append(_jt_cut(ln, 900))
+        chunk_len += len(ln) + 1
+    if chunk:
+        final.add_field(name=f"🎁 Phần Thưởng (nhóm {idx}):", value="\n".join(chunk), inline=False)
+    await channel.send(embed=final, view=OpenDetailsView(all_turns))
 import sys
 
 def start_bot_safely():
