@@ -718,9 +718,9 @@ SEIKI_BOSS_PHASE2_CONFIG = {
 EVENT_CONFIG = {
     "id": "halloween_2026",
     "name": "Halloween Event 2026 - Lễ Hội Kẹo Ma Quái",
-    "active": False,
-    "start_date": "2026-10-02",
-    "end_date": "2026-10-30",
+    "active": True,
+    "start_date": "2026-10-25",
+    "end_date": "2026-11-10",
     "banner": "https://media.discordapp.net/attachments/1527157582115111077/1555132294170419230/images.png?backend=b2&ex=6abf694f&is=6abe17cf&hm=0da7e8bf9d0062f5711ce6391b3216939b3b641e8743b8a6c707250d849e0bec&=&format=webp&quality=lossless&width=362&height=512",
     "quote": "Marisa: \"Thu thập những mảnh kẹo và đổi lấy phần thưởng nào!\"",
     "quests": {
@@ -4241,10 +4241,6 @@ async def execute_raid(channel, raid_data):
             if ac["current_hp"] <= 0:
                 ac["current_hp"] = 0
                 dead_name = ac["name"]
-                trade_dmg = ac["power"]
-                p1_hp = max(0, p1_hp - trade_dmg)
-                c["total_dmg"] += trade_dmg
-                push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{dead_name}** ({c['username']}) trước khi gục ngã đã thành công đổi **{trade_dmg:,} DMG** lên Boss!")
                 _g = sakuya3_raid_revive(c, push_logs)
                 if _g:
                     turn_image = _g
@@ -4930,10 +4926,6 @@ async def execute_raid(channel, raid_data):
                 if ac["current_hp"] <= 0:
                     ac["current_hp"] = 0
                     dead_name = ac["name"]
-                    trade_dmg = ac["power"]
-                    p2_hp = max(0, p2_hp - trade_dmg)
-                    c["total_dmg"] += trade_dmg
-                    push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{dead_name}** ({c['username']}) trước khi gục ngã đã thành công đổi **{trade_dmg:,} DMG** lên Boss Phase 2!")
                     _g = sakuya3_raid_revive(c, push_logs)
                     if _g:
                         turn_image = _g
@@ -5519,10 +5511,6 @@ async def execute_raid(channel, raid_data):
             if ac["current_hp"] <= 0:
                 ac["current_hp"] = 0
                 dead_name = ac["name"]
-                trade_dmg = ac["power"]
-                p2_hp = max(0, p2_hp - trade_dmg)
-                c["total_dmg"] += trade_dmg
-                push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{dead_name}** ({c['username']}) trước khi gục ngã đã thành công đổi **{trade_dmg:,} DMG** lên Boss Phase 2!")
 
                 _g = sakuya3_raid_revive(c, push_logs)
                 if _g:
@@ -10461,6 +10449,37 @@ async def handle_battle(ctx_or_interaction):
                 "image": c.get("image", "")
             })
 
+    # [UPDATE] 25% gặp đội hình của người chơi khác
+    if random.random() < 0.25:
+        try:
+            _cands = await asyncio.to_thread(get_all_opponents, user.id)
+        except Exception:
+            _cands = []
+        random.shuffle(_cands)
+        for _doc in _cands:
+            _tcids = [x for x in (_doc.get("team") or []) if x in CARDS_DATA and not is_card_locked(_doc, x)][:3]
+            if not _tcids:
+                continue
+            _lvl = calculate_level_from_xp(_doc.get("xp", 0), _doc.get("prestige", 0))
+            _bp, _bh = get_level_atk_buff(_lvl), get_level_hp_buff(_lvl)
+            _real = []
+            for x in _tcids:
+                _cd = CARDS_DATA[x]
+                _ace = is_card_ace2(_doc, x)
+                _pw = _cd["power"] + _bp + (ACE_POWER_BUFF if _ace else 0)
+                _hp = _cd["hp"] + _bh + (ACE_HP_BUFF if _ace else 0)
+                _real.append({
+                    "cid": x,
+                    "name": f"[Ace 2 ⭐⭐] #{disp_id(_cd['id'])} {_cd['name']}" if _ace else f"#{disp_id(_cd['id'])} {_cd['name']}",
+                    "raw_name": _cd["name"], "rank": _cd.get("rank", "A"),
+                    "power": _pw, "hp": _hp, "current_hp": _hp,
+                    "is_ace2": _ace, "base_power": _cd["power"], "base_hp": _cd["hp"],
+                    "skill": _cd.get("skill", "Tấn công Danmaku cơ bản"), "image": _cd.get("image", "")
+                })
+            opp_cards = _real
+            opp_name = f"👤 {_doc.get('username', 'Người chơi')}"
+            opp_level = _lvl
+            break
     p_idx, o_idx, r_cnt = 0, 0, 0
     p_sakuya, p_reimu, p_marisa = False, False, False
     p_flandre, o_flandre = False, False
@@ -10948,38 +10967,50 @@ async def handle_battle(ctx_or_interaction):
                 p_molten_ground_turns = 0
                 turn_actions.append(f"🛡️ **[Wonder Guard]** **{pc['name']}** phản ngược **Mặt Đất Nung Chảy** sang sân đối thủ!")
 
-        if not stunned_pc:
-            oc_invul = False
-            if oc["cid"] == 15 and oc.get("is_ace2") and not o_reimu:
-                if random.random() < 0.30:
-                    o_reimu = True
-                    oc_invul = True
-                    pc["current_hp"] = max(0, pc["current_hp"] - oc["power"])
-                    turn_actions.append(f"🌸 **Đối thủ [Ace 2] [#15] reimu** phản đòn **1x ATK**, gây **{oc['power']:,} DMG** lên **{pc['name']}**!")
-                    if not turn_image:
-                        turn_image = EVOL_CONFIG[15]["skill_gif"]
-                    msg_skill = f"🛡️ **Đối thủ [Ace 2] [#15] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (30%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
-                    battle_logs.append(msg_skill)
-                    turn_actions.append(msg_skill)
-
-            if not oc_invul:
-                if oc["cid"] == 4 and oc.get("is_ace2") and oc.get("erased_skill") != "yukari_gap" and curr_pc_power == pc["power"] and random.random() < 0.10:
-                    pc["current_hp"] = max(0, pc["current_hp"] - curr_pc_power)
-                    msg_gap = f"🌀 **Đối thủ [Ace 2] [#04] Yukari** kích hoạt **Invisible Gap (10%)**! Miễn thương và phản lại 100% đòn đánh thường (**{curr_pc_power:,} DMG**) vào **{pc['name']}**!"
-                    battle_logs.append(msg_gap)
-                    turn_actions.append(msg_gap)
-                else:
-                    oc["current_hp"] -= curr_pc_power
-                    turn_actions.append(f"⚔️ **{pc['name']}** tấn công gây **{curr_pc_power:,} DMG** lên **{oc['name']}**!")
-            else:
-                turn_actions.append(f"🛡️ **{oc['name']}** né tránh hoàn toàn đòn đánh của **{pc['name']}**!")
-        else:
-            turn_actions.append(f"❄️ **{pc['name']}** bị đóng băng nên không thể ra đòn!")
-
+        # [UPDATE] Random 50/50 phe nào ra đòn trước mỗi hiệp
         if p_wg_active:
             p_t3_state["wonder_guard_turns"] -= 1
+        _atk_order = ["player", "opp"] if random.random() < 0.5 else ["opp", "player"]
+        if _atk_order[0] == "player":
+            turn_actions.append("🎲 **[Lượt ra đòn]** Hiệp này **bạn** ra đòn trước!")
+        else:
+            turn_actions.append(f"🎲 **[Lượt ra đòn]** Hiệp này **{opp_name}** ra đòn trước!")
+        for _side in _atk_order:
+            if _side == "player" and pc["current_hp"] <= 0:
+                continue
+            if _side == "opp" and oc["current_hp"] <= 0:
+                continue
+                
+            if _side == "player" and not stunned_pc:
+                oc_invul = False
+                if oc["cid"] == 15 and oc.get("is_ace2") and not o_reimu:
+                    if random.random() < 0.30:
+                        o_reimu = True
+                        oc_invul = True
+                        pc["current_hp"] = max(0, pc["current_hp"] - oc["power"])
+                        turn_actions.append(f"🌸 **Đối thủ [Ace 2] [#15] reimu** phản đòn **1x ATK**, gây **{oc['power']:,} DMG** lên **{pc['name']}**!")
+                        if not turn_image:
+                            turn_image = EVOL_CONFIG[15]["skill_gif"]
+                        msg_skill = f"🛡️ **Đối thủ [Ace 2] [#15] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (30%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
+                        battle_logs.append(msg_skill)
+                        turn_actions.append(msg_skill)
+    
+                if not oc_invul:
+                    if oc["cid"] == 4 and oc.get("is_ace2") and oc.get("erased_skill") != "yukari_gap" and curr_pc_power == pc["power"] and random.random() < 0.10:
+                        pc["current_hp"] = max(0, pc["current_hp"] - curr_pc_power)
+                        msg_gap = f"🌀 **Đối thủ [Ace 2] [#04] Yukari** kích hoạt **Invisible Gap (10%)**! Miễn thương và phản lại 100% đòn đánh thường (**{curr_pc_power:,} DMG**) vào **{pc['name']}**!"
+                        battle_logs.append(msg_gap)
+                        turn_actions.append(msg_gap)
+                    else:
+                        oc["current_hp"] -= curr_pc_power
+                        turn_actions.append(f"⚔️ **{pc['name']}** tấn công gây **{curr_pc_power:,} DMG** lên **{oc['name']}**!")
+                else:
+                    turn_actions.append(f"🛡️ **{oc['name']}** né tránh hoàn toàn đòn đánh của **{pc['name']}**!")
+            elif _side == "player":
+                turn_actions.append(f"❄️ **{pc['name']}** bị đóng băng nên không thể ra đòn!")
 
-        if not stunned_oc:
+
+        elif not stunned_oc:
             pc_invul = p_t4_save_invul or p_kasen_guard or (str(pc["cid"]).lower() == "t1" and bool(pc.get("is_ace2")) and bool(_t1.get("invul", False)))
             if p_wg_active:
                 pc_invul = True
@@ -11040,15 +11071,9 @@ async def handle_battle(ctx_or_interaction):
 
         if pc["current_hp"] <= 0:
             pc["current_hp"] = 0
-            trade_dmg = pc["power"]
-            oc["current_hp"] = max(0, oc["current_hp"] - trade_dmg)
-            turn_trades.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{pc['name']}** trước khi gục ngã đã kịp thời đổi **{trade_dmg:,} DMG** vào **{oc['name']}**!")
 
         if oc["current_hp"] <= 0:
             oc["current_hp"] = 0
-            trade_dmg = oc["power"]
-            pc["current_hp"] = max(0, pc["current_hp"] - trade_dmg)
-            turn_trades.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{oc['name']}** trước khi gục ngã đã kịp thời đổi **{trade_dmg:,} DMG** vào **{pc['name']}**!")
 
         push_msg = []
         if pc["current_hp"] <= 0:
@@ -12073,49 +12098,58 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
 
         
 
-        if not c_stunned and not t_invul:
-            if tc["cid"] == 4 and tc.get("is_ace2") and tc.get("erased_skill") != "yukari_gap" and c_curr_power == cc["power"] and random.random() < 0.10:
-                cc["current_hp"] = max(0, cc["current_hp"] - c_curr_power)
-                turn_actions.append(f"🌀 **[Ace 2] [#04] Yukari** ({target.display_name}) kích hoạt **Invisible Gap (10%)**! Miễn thương và phản lại 100% đòn đánh thường (**{c_curr_power:,} DMG**) vào **{cc['name']}**!")
-            elif str(tc["cid"]).lower() == "t2" and tc.get("erased_skill") != "t2_adapt":
-                t_adapt = min(0.90, t_mahoraga_turns * 0.05)
-                actual_dmg = int(c_curr_power * (1.0 - t_adapt))
-                tc["current_hp"] -= actual_dmg
-                turn_actions.append(f"⚔️ **{cc['name']}** giáng **{c_curr_power:,} DMG** nhưng **{tc['name']}** Thích Nghi (-{int(t_adapt*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!")
-            else:
-                tc["current_hp"] -= c_curr_power
-                turn_actions.append(f"⚔️ **{cc['name']}** giáng **{c_curr_power:,} DMG** lên **{tc['name']}**!")
-        elif c_stunned:
-            turn_actions.append(f"❄️ **{cc['name']}** bị đóng băng không thể tấn công!")
-        elif t_invul:
-            if t_wg_active and not c_stunned:
-                ref_dmg = int(c_curr_power * 0.60)
-                cc["current_hp"] = max(0, cc["current_hp"] - ref_dmg)
-                turn_actions.append(f"🛡️ **[Wonder Guard]** **{tc['name']}** miễn thương hoàn toàn & **PHẢN LẠI {ref_dmg:,} DMG (60%)** vào **{cc['name']}**! *(Còn {t_t3_state['wonder_guard_turns']} lượt)*")
-            else:
-                turn_actions.append(f"🛡️ **{tc['name']}** miễn nhiễm toàn bộ đòn đánh!")
-
-        if not t_stunned and not c_invul:
-            if cc["cid"] == 4 and cc.get("is_ace2") and cc.get("erased_skill") != "yukari_gap" and t_curr_power == tc["power"] and random.random() < 0.10:
-                tc["current_hp"] = max(0, tc["current_hp"] - t_curr_power)
-                turn_actions.append(f"🌀 **[Ace 2] [#04] Yukari** ({challenger.display_name}) kích hoạt **Invisible Gap (10%)**! Miễn thương và phản lại 100% đòn đánh thường (**{t_curr_power:,} DMG**) vào **{tc['name']}**!")
-            elif str(cc["cid"]).lower() == "t2" and cc.get("erased_skill") != "t2_adapt":
-                c_adapt = min(0.90, c_mahoraga_turns * 0.05)
-                actual_dmg = int(t_curr_power * (1.0 - c_adapt))
-                cc["current_hp"] -= actual_dmg
-                turn_actions.append(f"⚔️ **{tc['name']}** giáng **{t_curr_power:,} DMG** nhưng **{cc['name']}** Thích Nghi (-{int(c_adapt*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!")
-            else:
-                cc["current_hp"] -= t_curr_power
-                turn_actions.append(f"⚔️ **{tc['name']}** giáng **{t_curr_power:,} DMG** lên **{cc['name']}**!")
-        elif t_stunned:
-            turn_actions.append(f"❄️ **{tc['name']}** bị đóng băng không thể tấn công!")
-        elif c_invul:
-            if c_wg_active and not t_stunned:
-                ref_dmg = int(t_curr_power * 0.60)
-                tc["current_hp"] = max(0, tc["current_hp"] - ref_dmg)
-                turn_actions.append(f"🛡️ **[Wonder Guard]** **{cc['name']}** miễn thương hoàn toàn & **PHẢN LẠI {ref_dmg:,} DMG (60%)** vào **{tc['name']}**! *(Còn {c_t3_state['wonder_guard_turns']} lượt)*")
-            else:
-                turn_actions.append(f"🛡️ **{cc['name']}** miễn nhiễm toàn bộ đòn đánh!")
+        # [UPDATE] Random 50/50 bên nào ra đòn trước mỗi hiệp
+        _atk_order = ["chal", "targ"] if random.random() < 0.5 else ["targ", "chal"]
+        _first_name = challenger.display_name if _atk_order[0] == "chal" else target.display_name
+        turn_actions.append(f"🎲 **[Lượt ra đòn]** Hiệp này **{_first_name}** ra đòn trước!")
+        for _side in _atk_order:
+            if _side == "chal" and cc["current_hp"] <= 0:
+                continue
+            if _side == "targ" and tc["current_hp"] <= 0:
+                continue
+            if _side == "chal" and not c_stunned and not t_invul:
+                if tc["cid"] == 4 and tc.get("is_ace2") and tc.get("erased_skill") != "yukari_gap" and c_curr_power == cc["power"] and random.random() < 0.10:
+                    cc["current_hp"] = max(0, cc["current_hp"] - c_curr_power)
+                    turn_actions.append(f"🌀 **[Ace 2] [#04] Yukari** ({target.display_name}) kích hoạt **Invisible Gap (10%)**! Miễn thương và phản lại 100% đòn đánh thường (**{c_curr_power:,} DMG**) vào **{cc['name']}**!")
+                elif str(tc["cid"]).lower() == "t2" and tc.get("erased_skill") != "t2_adapt":
+                    t_adapt = min(0.90, t_mahoraga_turns * 0.05)
+                    actual_dmg = int(c_curr_power * (1.0 - t_adapt))
+                    tc["current_hp"] -= actual_dmg
+                    turn_actions.append(f"⚔️ **{cc['name']}** giáng **{c_curr_power:,} DMG** nhưng **{tc['name']}** Thích Nghi (-{int(t_adapt*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!")
+                else:
+                    tc["current_hp"] -= c_curr_power
+                    turn_actions.append(f"⚔️ **{cc['name']}** giáng **{c_curr_power:,} DMG** lên **{tc['name']}**!")
+            elif _side == "chal" and c_stunned:
+                turn_actions.append(f"❄️ **{cc['name']}** bị đóng băng không thể tấn công!")
+            elif _side == "chal" and t_invul:
+                if t_wg_active and not c_stunned:
+                    ref_dmg = int(c_curr_power * 0.60)
+                    cc["current_hp"] = max(0, cc["current_hp"] - ref_dmg)
+                    turn_actions.append(f"🛡️ **[Wonder Guard]** **{tc['name']}** miễn thương hoàn toàn & **PHẢN LẠI {ref_dmg:,} DMG (60%)** vào **{cc['name']}**! *(Còn {t_t3_state['wonder_guard_turns']} lượt)*")
+                else:
+                    turn_actions.append(f"🛡️ **{tc['name']}** miễn nhiễm toàn bộ đòn đánh!")
+    
+            if _side == "targ" and not t_stunned and not c_invul:
+                if cc["cid"] == 4 and cc.get("is_ace2") and cc.get("erased_skill") != "yukari_gap" and t_curr_power == tc["power"] and random.random() < 0.10:
+                    tc["current_hp"] = max(0, tc["current_hp"] - t_curr_power)
+                    turn_actions.append(f"🌀 **[Ace 2] [#04] Yukari** ({challenger.display_name}) kích hoạt **Invisible Gap (10%)**! Miễn thương và phản lại 100% đòn đánh thường (**{t_curr_power:,} DMG**) vào **{tc['name']}**!")
+                elif str(cc["cid"]).lower() == "t2" and cc.get("erased_skill") != "t2_adapt":
+                    c_adapt = min(0.90, c_mahoraga_turns * 0.05)
+                    actual_dmg = int(t_curr_power * (1.0 - c_adapt))
+                    cc["current_hp"] -= actual_dmg
+                    turn_actions.append(f"⚔️ **{tc['name']}** giáng **{t_curr_power:,} DMG** nhưng **{cc['name']}** Thích Nghi (-{int(c_adapt*100)}% ST), chỉ nhận **{actual_dmg:,} DMG**!")
+                else:
+                    cc["current_hp"] -= t_curr_power
+                    turn_actions.append(f"⚔️ **{tc['name']}** giáng **{t_curr_power:,} DMG** lên **{cc['name']}**!")
+            elif _side == "targ" and t_stunned:
+                turn_actions.append(f"❄️ **{tc['name']}** bị đóng băng không thể tấn công!")
+            elif _side == "targ" and c_invul:
+                if c_wg_active and not t_stunned:
+                    ref_dmg = int(t_curr_power * 0.60)
+                    tc["current_hp"] = max(0, tc["current_hp"] - ref_dmg)
+                    turn_actions.append(f"🛡️ **[Wonder Guard]** **{cc['name']}** miễn thương hoàn toàn & **PHẢN LẠI {ref_dmg:,} DMG (60%)** vào **{tc['name']}**! *(Còn {c_t3_state['wonder_guard_turns']} lượt)*")
+                else:
+                    turn_actions.append(f"🛡️ **{cc['name']}** miễn nhiễm toàn bộ đòn đánh!")
 
         cc["cid"], cc["is_ace2"] = orig_cc_cid, orig_cc_ace
         tc["cid"], tc["is_ace2"] = orig_tc_cid, orig_tc_ace
@@ -12125,15 +12159,9 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
         eq_gaia_post(tc, _eq_tc_mark, c_curr_power, cc["power"], turn_actions)
         if cc["current_hp"] <= 0:
             cc["current_hp"] = 0
-            trade_dmg = cc["power"]
-            tc["current_hp"] = max(0, tc["current_hp"] - trade_dmg)
-            turn_trades.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{cc['name']}** ({challenger.display_name}) trước khi gục đã kịp thời đổi **{trade_dmg:,} DMG** vào **{tc['name']}**!")
 
         if tc["current_hp"] <= 0:
             tc["current_hp"] = 0
-            trade_dmg = tc["power"]
-            cc["current_hp"] = max(0, cc["current_hp"] - trade_dmg)
-            turn_trades.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{tc['name']}** ({target.display_name}) trước khi gục đã kịp thời đổi **{trade_dmg:,} DMG** vào **{cc['name']}**!")
 
         push_msg = []
         if cc["current_hp"] <= 0:
@@ -12357,7 +12385,7 @@ async def handle_pvp(ctx_or_interaction, target: discord.Member):
     embed_challenge.add_field(name=f"🔵 Đội Hình {target.display_name} (Lv.{t_player['level']}):", value=t_cards_str, inline=True)
     embed_challenge.add_field(
         name="📜 Quy Tắc Quyết Đấu:",
-        value="• Đấu lần lượt 3 thẻ bài (tự động cộng chỉ số theo Cấp & Thức tỉnh Ace 2).\n• Kỹ năng Ace 2: Sakuya đóng băng, Reimu vô tưởng chuyển sinh, Seiki 4 tuyệt kỹ (hiện GIF trực tiếp).\n• Thẻ bài trước khi gục ngã đều đổi toàn bộ sát thương lên đối thủ!\n• Sau trận có mục **Xem Chi Tiết Trận Chiến** để xem lại từng hiệp kèm GIF.",
+        value="• Đấu lần lượt 3 thẻ bài (tự động cộng chỉ số theo Cấp & Thức tỉnh Ace 2).\n• Kỹ năng Ace 2: Sakuya đóng băng, Reimu vô tưởng chuyển sinh, Seiki 4 tuyệt kỹ (hiện GIF trực tiếp).\n• Mỗi hiệp random 50/50 bên nào ra đòn trước, bên bị hạ gục trước sẽ không kịp đánh trả!\n• Sau trận có mục **Xem Chi Tiết Trận Chiến** để xem lại từng hiệp kèm GIF.",
         inline=False
     )
     embed_challenge.set_footer(text="Thời gian chờ chấp nhận: 90 giây")
@@ -13121,9 +13149,6 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
 
         if pc["current_hp"] <= 0:
             pc["current_hp"] = 0
-            trade = pc["power"]
-            rumia_hp = max(0, rumia_hp - trade)
-            turn_logs.append(f"💥 [Đổi Sát Thương] {pc['name']} trước khi gục đã đổi **{trade:,} DMG** vào Rumia!")
             _rv, _rv_log = sakuya3_try_revive(player_cards, p_idx)
             if _rv_log:
                 turn_logs.append(_rv_log)
@@ -13548,9 +13573,6 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
 
         if pc["current_hp"] <= 0:
             pc["current_hp"] = 0
-            trade = pc["power"]
-            cirno_hp = max(0, cirno_hp - trade)
-            turn_logs.append(f"💥 [Đổi Sát Thương] {pc['name']} trước khi gục đã đổi **{trade:,} DMG** vào Cirno!")
             _rv, _rv_log = sakuya3_try_revive(player_cards, p_idx)
             if _rv_log:
                 turn_logs.append(_rv_log)
@@ -15766,10 +15788,6 @@ async def execute_jotaro_raid(channel, raid_data):
             ac = c["team_cards"][c["current_card_index"]]
             if ac["current_hp"] <= 0:
                 ac["current_hp"] = 0
-                trade = ac["power"]
-                B["hp"] = max(0, B["hp"] - trade)
-                c["total_dmg"] += trade
-                push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{ac['name']}** ({c['username']}) trước khi gục đã đổi **{trade:,} DMG** lên Boss!")
                 _g = sakuya3_raid_revive(c, push_logs)
                 if _g:
                     B["gif"] = _g
@@ -16710,10 +16728,6 @@ async def execute_prime_raid(channel, raid_data):
             if ac["current_hp"] <= 0:
                 ac["current_hp"] = 0
                 kills += 1
-                trade = ac["power"]
-                B["hp"] = max(0, B["hp"] - trade)
-                c["total_dmg"] += trade
-                push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{ac['name']}** ({c['username']}) trước khi gục đã đổi **{trade:,} DMG** lên Boss!")
                 _g = sakuya3_raid_revive(c, push_logs)
                 if _g:
                     B["gif"] = _g
@@ -17312,9 +17326,6 @@ async def run_story_meiling_battle(channel_or_interaction, user, player):
         # --- thẻ gục: đổi sát thương / Sakuya Ace 3 hồi sinh / đẩy thẻ kế tiếp ---
         if pc["current_hp"] <= 0:
             pc["current_hp"] = 0
-            trade = pc["power"]
-            B["hp"] = max(0, B["hp"] - trade)
-            logs.append(f"💥 [Đổi Sát Thương] **{pc['name']}** trước khi gục đã đổi **{trade:,} DMG** vào Meiling!")
             _rv, _rv_log = sakuya3_try_revive(player_cards, p_idx)
             if _rv_log:
                 logs.append(_rv_log)
@@ -19541,16 +19552,12 @@ async def _sk_run_phase(channel, battle_msg, combatants, phase, all_turns):
         for tac in forced_kills:
             tac["current_hp"] = 0
 
-        # ---------- Thay thẻ / đổi sát thương ----------
+        # ---------- Thay thẻ  ----------
         push_logs = []
         for c in active:
             ac = c["team_cards"][c["current_card_index"]]
             if ac["current_hp"] <= 0:
                 ac["current_hp"] = 0
-                trade = ac["power"]
-                B["hp"] = max(0, B["hp"] - trade)
-                c["total_dmg"] += trade
-                push_logs.append(f"💥 **[ĐỔI SÁT THƯƠNG]** **{ac['name']}** ({c['username']}) trước khi gục đã đổi **{trade:,} DMG** lên Boss!")
                 _g = sakuya3_raid_revive(c, push_logs)
                 if _g:
                     B["gif"] = _g
