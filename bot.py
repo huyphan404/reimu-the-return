@@ -9209,7 +9209,7 @@ async def handle_collection(ctx_or_interaction):
 
     t_lines = []
     shards_cnt = player.get("shards", {}).get("seiki", 0)
-    for t_cid in ["t1", "t2", "t3", "t4", "t5", "t6", "t7"]:
+    for t_cid in ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"]:
         if t_cid in CARDS_DATA:
             t_card = CARDS_DATA[t_cid]
             t_cnt = player["inventory"].get(t_cid, 0)
@@ -9249,6 +9249,11 @@ async def handle_collection(ctx_or_interaction):
                 t_shard_info = f"   └ ☠️ **Kisami Shards:** `{_ks}/{KISAMI_SHARDS_UNLOCK}` mảnh"
                 if _ks >= KISAMI_SHARDS_UNLOCK:
                     t_shard_info += " ✨ *(Đủ mảnh! Dùng `/t translate loai_shard:kisami` để đổi ngay!)*"
+            elif t_cid == "t8":
+                _sf = player.get("shards", {}).get("sukuna", 0)
+                t_shard_info = f"   └ 🫳 **Sukuna Finger:** `{_sf}/{T8_SHARDS_UNLOCK}` ngón tay"
+                if _sf >= T8_SHARDS_UNLOCK:
+                    t_shard_info += " ✨ *(Đủ ngón! Dùng `/t translate loai_shard:sukuna` để đổi ngay!)*"
             elif t_cid == "t4":
                 fateria_shards = player.get("shards", {}).get("fateria", 0)
                 t_shard_info = f"   └ ⏳ **Mảnh Fateria:** `{fateria_shards}/20` mảnh"
@@ -9627,7 +9632,8 @@ class ShardGroup(app_commands.Group, name="t", description="Quản lý kho mản
         app_commands.Choice(name="Mảnh Jotaro (15 mảnh -> Thẻ [T] #t5 Jotaro)", value="jotaro"),
         app_commands.Choice(name="Kanae Shards (10 mảnh -> Thẻ [T] #6 Kanae)", value="kanae"),
         app_commands.Choice(name="Mảnh Fateria (20 mảnh -> Thẻ [T] #t4 Fateria)", value="fateria"),
-        app_commands.Choice(name="Kisami Shards (10 mảnh -> Thẻ [T] #t7 Kisami)", value="kisami")
+        app_commands.Choice(name="Kisami Shards (10 mảnh -> Thẻ [T] #t7 Kisami)", value="kisami"),
+        app_commands.Choice(name="Sukuna Finger (10 ngón -> Thẻ [T] #t8 Sukuna)", value="sukuna")
     ])
     async def slash_t_translate(self, interaction: discord.Interaction, loai_shard: str = "seiki"):
         await handle_translate_shard(interaction, loai_shard)
@@ -10875,6 +10881,14 @@ async def handle_battle(ctx_or_interaction):
                 turn_image = _k7["gif"]
             battle_logs.extend(_k7["logs"])
             turn_actions.extend(_k7["logs"])
+        # ===== [T8 SUKUNA] BATTLE =====
+        if str(pc["cid"]).lower() == "t8":
+            _k8 = t8_combat_turn(pc, oc["hp"], f"**{oc['name']}**", is_ace2=pc.get("is_ace2", False), skills_locked=stunned_pc)
+            curr_pc_power = int(curr_pc_power * _k8["multiplier"]) + _k8["bonus"]
+            if _k8["gif"] and not turn_image:
+                turn_image = _k8["gif"]
+            battle_logs.extend(_k8["logs"])
+            turn_actions.extend(_k8["logs"])
         curr_oc_power = t7_duel_defend(pc, player_cards, curr_oc_power, oc["power"], stunned_oc, turn_actions)
         _eq_pc_mark, _eq_oc_mark = pc["current_hp"], oc["current_hp"]
         # ===== [ACE 2] HONG MEILING - RAINBOW TAIJIQUAN (BATTLE) =====
@@ -11934,6 +11948,21 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_image = _k7b["gif"]
             pvp_logs.extend(_k7b["logs"])
             turn_actions.extend(_k7b["logs"])
+        # ===== [T8 SUKUNA] PVP =====
+        if str(cc["cid"]).lower() == "t8":
+            _k8a = t8_combat_turn(cc, tc["max_hp"], f"**{tc['name']}** ({target.display_name})", is_ace2=cc.get("is_ace2", False), skills_locked=c_stunned)
+            c_curr_power = int(c_curr_power * _k8a["multiplier"]) + _k8a["bonus"]
+            if _k8a["gif"] and not turn_image:
+                turn_image = _k8a["gif"]
+            pvp_logs.extend(_k8a["logs"])
+            turn_actions.extend(_k8a["logs"])
+        if str(tc["cid"]).lower() == "t8":
+            _k8b = t8_combat_turn(tc, cc["max_hp"], f"**{cc['name']}** ({challenger.display_name})", is_ace2=tc.get("is_ace2", False), skills_locked=t_stunned)
+            t_curr_power = int(t_curr_power * _k8b["multiplier"]) + _k8b["bonus"]
+            if _k8b["gif"] and not turn_image:
+                turn_image = _k8b["gif"]
+            pvp_logs.extend(_k8b["logs"])
+            turn_actions.extend(_k8b["logs"])
         t_curr_power = t7_duel_defend(cc, c_cards, t_curr_power, tc["power"], t_stunned, turn_actions)
         c_curr_power = t7_duel_defend(tc, t_cards, c_curr_power, cc["power"], c_stunned, turn_actions)
         _eq_cc_mark, _eq_tc_mark = cc["current_hp"], tc["current_hp"]
@@ -19662,6 +19691,631 @@ async def execute_sukuna_raid(channel, raid_data):
     if chunk:
         final.add_field(name=f"🎁 Phần Thưởng (nhóm {idx}):", value="\n".join(chunk), inline=False)
     await channel.send(embed=final, view=OpenDetailsView(all_turns))
+
+# ==============================================================================
+# [UPDATE SUKUNA] THẺ T8 RYOMEN SUKUNA (ACE 1 + ACE 2)
+# ==============================================================================
+T8_UNLOCK_GIF = "https://static2.klipy.com/ii/bea85337777ad0e23e63683391435543/ad/29/gNraHQ4k.gif"
+T8_EVOL_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/13/6c/sGyW3GFvHeH9aOuT9b.gif"
+T8_FUGA_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/f2/7b/ESERnfwlXJTEyAwm.gif"
+T8_SLASH_GIF = "https://static2.klipy.com/ii/c44064a00e4b7451969381d90dea1769/b4/48/pA54GCKj.gif"
+T8_BAT_GIF = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/b8/cb/yziPD6jQGe0kGSprK.gif"
+T8_DOMAIN_GIF = "https://static2.klipy.com/ii/84b4c0b02782dda9051003f9e36484ec/2d/76/pL5zyul8.gif"
+T8_SUMMON_GIF = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/cb/47/t2bPIPdbs3Wb0SfPKFWy.gif"  # Agito & Mahoraga dùng chung (theo link cậu đưa)
+
+T8_SHARDS_UNLOCK = 10            # Ace 1: khấu trừ 10 Sukuna Finger
+T8_SHARDS_ACE2 = 5               # Ace 2: khấu trừ 5 Sukuna Finger
+T8_ACE2_PRESTIGE = 3
+T8_FUGA_INTERVAL = 4             # mỗi 4 lượt
+T8_FUGA_MULT = 3.5
+T8_A1_SLASH_MULT, T8_A1_SLASH_MAX = 2.0, 2
+T8_A1_BAT_PCT = 0.20
+T8_A1_DOMAIN_CHANCE, T8_A1_DOMAIN_PCT, T8_A1_DOMAIN_TURNS = 0.15, 0.03, 2
+T8_A2_SLASH_DMG = 4545
+T8_A2_SLASH_MAX = 2              # 0 = không giới hạn lần (theo mô tả Ace 2). Muốn giới hạn thì đổi số này
+T8_A2_AGITO_CHANCE, T8_A2_AGITO_RATIO = 0.50, 0.25
+T8_A2_MAHO_CHANCE, T8_A2_MAHO_RATIO = 0.20, 0.50
+T8_A2_DOMAIN_CHANCE, T8_A2_DOMAIN_PCT, T8_A2_DOMAIN_TURNS = 0.10, 0.05, 3
+T8_DOMAIN_FLAT = 1000
+T8_DOMAIN_MAX = 2
+T8_TANK_ORDER = ("agito", "maho")     # Agito tank cho Mahoraga, Mahoraga tank cho Sukuna
+T8_RAID_TRUE_CAP_PCT = 0.25           # trần sát thương % máu (Bát + Lãnh địa) cộng dồn lên Boss trong Raid
+T8_SHARD_ALIASES = ("sukuna", "t8", "finger", "sukuna_finger", "ryomen", "ngontay", "ngon_tay")
+
+CARDS_DATA["t8"] = {
+    "id": "t8", "name": "Ryomen Sukuna", "rank": "T", "power": 650, "hp": 7000,
+    "image": T8_UNLOCK_GIF, "unlock_gif": T8_UNLOCK_GIF,
+    "passive": {"name": "Fuga", "gif": T8_FUGA_GIF,
+                "desc": "Cứ mỗi 4 lượt chiến đấu, tích đủ Fuga: đòn đánh gây ×3.5 sát thương"},
+    "skills": {
+        "tram_kich": {"name": "Trảm kích", "chance": 0.25, "gif": T8_SLASH_GIF},
+        "bat": {"name": "Bát", "chance": 0.20, "gif": T8_BAT_GIF},
+        "lanh_dia": {"name": "Bành trướng lãnh địa - Phục Ma Ngự Trù Tử", "chance": 0.15, "gif": T8_DOMAIN_GIF},
+    }
+}
+
+# ---- Đăng ký vào các bảng sẵn có ----
+T_ACE2_PRESTIGE_REQ["t8"] = T8_ACE2_PRESTIGE
+T_PRESTIGE_NAMES["t8"] = "Sukuna"
+CARD_ALIASES.update({"sukuna": "t8", "ryomen": "t8", "ryomensukuna": "t8", "t8": "t8", "nguyenvuong": "t8"})
+if "t8" not in EVOL_ORDER:
+    EVOL_ORDER.append("t8")
+EVOL_T_SHARD["t8"] = ("sukuna", T8_SHARDS_UNLOCK)
+CHARACTER_DETAILS["t8"] = {
+    "title": "Nguyền Vương (Nhóm T-Đặc Biệt)",
+    "skill_name": "Fuga • Trảm kích • Bát • Bành trướng lãnh địa",
+    "skill_desc": "Ryomen Sukuna (650 ATK / 7,000 HP). Mở khóa bằng 10 Sukuna Finger."
+}
+EVOL_CONFIG["t8"] = {
+    "id": "t8", "key": "sukuna", "name": "Ryomen Sukuna",
+    "title": "[#t8] Ryomen Sukuna - Ace 2 ⭐⭐", "ace_level": "Ace 2 ⭐⭐",
+    "required_cards": 0, "required_pulls": 0, "required_shards": T8_SHARDS_ACE2,
+    "evol_gif": T8_EVOL_GIF,
+    "skill_name": "Fuga • Trảm kích • Agito! • Mahoraga! • Phục Ma Ngự Trù Tử",
+    "skill_desc": "Ace 2 của Sukuna: triệu hồi Agito / Mahoraga tank đòn, Trảm kích 4,545 DMG diện rộng, lãnh địa 5% máu.",
+    "bonus_power": 300, "bonus_hp": 300
+}
+
+
+# ==============================================================================
+# LÕI KỸ NĂNG (dùng chung Raid / Battle / PvP / Story)
+# ==============================================================================
+def t8_alive_summons(card: dict):
+    sm = card.get("t8_sum") or {}
+    return [sm[k] for k in T8_TANK_ORDER if k in sm and sm[k].get("hp", 0) > 0]
+
+
+def t8_absorb_incoming(card: dict, dmg, logs=None):
+    """Quái triệu hồi tank đòn thay Sukuna (Agito -> Mahoraga -> Sukuna). Trả về sát thương CÒN LẠI lên Sukuna."""
+    dmg = int(dmg)
+    sm = card.get("t8_sum")
+    if dmg <= 0 or not sm:
+        return dmg
+    for key in T8_TANK_ORDER:
+        s = sm.get(key)
+        if not s or s.get("hp", 0) <= 0:
+            continue
+        take = min(dmg, s["hp"])
+        s["hp"] -= take
+        dmg -= take
+        if logs is not None:
+            if s["hp"] <= 0:
+                logs.append(f"🛡️ **[{s['name']}]** tank **{take:,} DMG** thay Sukuna rồi **bị đánh bại**!")
+            else:
+                logs.append(f"🛡️ **[{s['name']}]** tank **{take:,} DMG** thay Sukuna (còn {s['hp']:,}/{s['max_hp']:,} HP)")
+        if dmg <= 0:
+            break
+    return dmg
+
+
+def t8_absorb_hp(card: dict, mark, logs=None):
+    """So máu trước/sau đòn đánh của địch, phần máu đã mất sẽ được quái triệu hồi gánh."""
+    try:
+        if mark is None or not card.get("t8_sum"):
+            return
+        lost = mark - card["current_hp"]
+        if lost <= 0:
+            return
+        remain = t8_absorb_incoming(card, lost, logs)
+        card["current_hp"] = mark - remain
+    except Exception as e:
+        print(f"[T8] lỗi absorb_hp: {e}", flush=True)
+
+
+def t8_combat_turn(card: dict, target_max_hp, target_name: str, is_ace2: bool = False,
+                   skills_locked: bool = False, cap_fn=None):
+    """Lượt đánh của Sukuna. Trả về dict: multiplier, bonus (sát thương cộng thêm), gif, logs.
+    cap_fn(amount, label) -> số sát thương % máu được phép (chỉ dùng trong Raid để chặn trần)."""
+    res = {"multiplier": 1.0, "bonus": 0, "gif": None, "logs": []}
+    if skills_locked:
+        return res
+    logs = res["logs"]
+    cap = cap_fn if cap_fn else (lambda amt, label: int(amt))
+    st = card.setdefault("t8_state", {})
+    erased = card.get("erased_skill")
+    tag = "[Ace 2] [#t8] Sukuna" if is_ace2 else "[T] [#t8] Sukuna"
+    target_max_hp = max(1, int(target_max_hp or 1))
+    self_max = int(card.get("max_hp") or card.get("hp") or 1)
+    self_pow = int(card.get("power", 0))
+
+    # 0. Skill bị Bóng Khái Niệm xóa
+    if erased == "t8_domain":
+        st["domain_left"] = 0
+    sm = card.get("t8_sum")
+    if sm:
+        if erased == "t8_agito":
+            sm.pop("agito", None)
+        if erased == "t8_maho":
+            sm.pop("maho", None)
+
+    # 1. Quái triệu hồi tấn công (đánh thường)
+    summon_attacked = False
+    for key in T8_TANK_ORDER:
+        s = (card.get("t8_sum") or {}).get(key)
+        if s and s.get("hp", 0) > 0:
+            res["bonus"] += s["atk"]
+            summon_attacked = True
+            logs.append(f"🐲 **[{s['name']}]** đánh thường: +**{s['atk']:,} DMG**")
+
+    # 2. Lãnh địa đang duy trì
+    def _tick():
+        pct = st.get("domain_pct", T8_A1_DOMAIN_PCT)
+        extra = cap(int(target_max_hp * pct), "Lãnh địa (Sukuna)")
+        d = T8_DOMAIN_FLAT + extra
+        res["bonus"] += d
+        res["gif"] = res["gif"] or T8_DOMAIN_GIF
+        logs.append(f"🏯 **{tag}** - **Phục Ma Ngự Trù Tử**: {target_name} chịu **{d:,} DMG** ({T8_DOMAIN_FLAT:,} + {int(pct * 100)}% máu tối đa)!")
+
+    ticked = False
+    if st.get("domain_left", 0) > 0:
+        st["domain_left"] -= 1
+        ticked = True
+        _tick()
+
+    # 3. Nội tại Fuga: mỗi 4 lượt
+    fuga_now = False
+    if erased != "t8_fuga":
+        st["fuga"] = st.get("fuga", 0) + 1
+        if st["fuga"] >= T8_FUGA_INTERVAL:
+            st["fuga"] = 0
+            fuga_now = True
+            res["multiplier"] = T8_FUGA_MULT
+            res["gif"] = T8_FUGA_GIF
+            logs.append(f"🔥 **{tag}** - **FUGA** bùng nổ! Đòn đánh **×{T8_FUGA_MULT:g} sát thương** lên {target_name}!")
+
+    # 4. Skill chủ động (tối đa 1 chiêu / lượt, bỏ qua ở lượt Fuga)
+    if not fuga_now:
+        opts = []
+        if not is_ace2:
+            if erased != "t8_slash" and st.get("slash", 0) < T8_A1_SLASH_MAX:
+                opts.append(("slash", 0.25))
+            if erased != "t8_bat" and st.get("bat", 0) < 1:
+                opts.append(("bat", 0.20))
+            if erased != "t8_domain" and not ticked and st.get("domain_uses", 0) < T8_DOMAIN_MAX:
+                opts.append(("domain", T8_A1_DOMAIN_CHANCE))
+        else:
+            if erased != "t8_slash" and (T8_A2_SLASH_MAX <= 0 or st.get("slash", 0) < T8_A2_SLASH_MAX):
+                opts.append(("slash", 0.25))
+            if erased != "t8_agito" and not st.get("agito_used"):
+                opts.append(("agito", T8_A2_AGITO_CHANCE))
+            if erased != "t8_maho" and not st.get("maho_used"):
+                opts.append(("maho", T8_A2_MAHO_CHANCE))
+            if erased != "t8_domain" and not ticked and st.get("domain_uses", 0) < T8_DOMAIN_MAX:
+                opts.append(("domain", T8_A2_DOMAIN_CHANCE))
+        random.shuffle(opts)
+        for key, ch in opts:
+            if random.random() >= ch:
+                continue
+            if key == "slash":
+                st["slash"] = st.get("slash", 0) + 1
+                res["gif"] = T8_SLASH_GIF
+                if is_ace2:
+                    res["bonus"] += T8_A2_SLASH_DMG
+                    logs.append(f"⚔️ **{tag}** tung **Trảm kích** (25%)! +**{T8_A2_SLASH_DMG:,} DMG** lên toàn bộ đơn vị tiền tuyến của {target_name}!")
+                else:
+                    res["multiplier"] = T8_A1_SLASH_MULT
+                    logs.append(f"⚔️ **{tag}** tung **Trảm kích** (25%)! **×{T8_A1_SLASH_MULT:g} sát thương** *(Lần {st['slash']}/{T8_A1_SLASH_MAX})*")
+            elif key == "bat":
+                st["bat"] = 1
+                amt = cap(int(target_max_hp * T8_A1_BAT_PCT), "Bát (Sukuna)")
+                res["bonus"] += amt
+                res["gif"] = T8_BAT_GIF
+                logs.append(f"🩸 **{tag}** tung **Bát** (20%)! Xẻ {target_name}: **{amt:,} DMG** (20% máu tối đa) *(1 lần/trận)*")
+            elif key == "domain":
+                st["domain_uses"] = st.get("domain_uses", 0) + 1
+                pct = T8_A2_DOMAIN_PCT if is_ace2 else T8_A1_DOMAIN_PCT
+                turns = T8_A2_DOMAIN_TURNS if is_ace2 else T8_A1_DOMAIN_TURNS
+                st["domain_pct"] = pct
+                st["domain_left"] = turns
+                res["gif"] = T8_DOMAIN_GIF
+                logs.append(f"🏯 **{tag}** mở **Bành trướng lãnh địa - Phục Ma Ngự Trù Tử** *(lần {st['domain_uses']}/{T8_DOMAIN_MAX})*! Kéo dài **{turns} turn**: mỗi turn {T8_DOMAIN_FLAT:,} DMG + {int(pct * 100)}% máu tối đa, kể cả thẻ mới vào sân!")
+                _tick()
+                st["domain_left"] -= 1
+            elif key in ("agito", "maho"):
+                if key == "agito":
+                    st["agito_used"] = True
+                    ratio, name, chance_txt = T8_A2_AGITO_RATIO, "Khảm Hợp Thú Agito", "50%"
+                else:
+                    st["maho_used"] = True
+                    ratio, name, chance_txt = T8_A2_MAHO_RATIO, "Mahoraga (Triệu Hồi)", "20%"
+                s_atk = max(1, int(self_pow * ratio))
+                s_hp = max(1, int(self_max * ratio))
+                card.setdefault("t8_sum", {})[key] = {"name": name, "atk": s_atk, "hp": s_hp, "max_hp": s_hp}
+                res["gif"] = T8_SUMMON_GIF
+                logs.append(f"🐲 **{tag}** hô vang **{name}!** ({chance_txt}) Triệu hồi với {int(ratio * 100)}% chỉ số: **{s_atk:,} ATK / {s_hp:,} HP**, đánh thường mỗi lượt và **tank 100% đòn cho Sukuna**!")
+            break
+
+    if summon_attacked and not res["gif"]:
+        res["gif"] = T8_SUMMON_GIF
+    return res
+
+
+# ---------------- Hook RAID thường / Event ----------------
+def t8_raid_attack(c, ac, card_dmg, turn_image, notif, active, L):
+    try:
+        if str(ac.get("cid")).lower() != "t8":
+            return card_dmg, turn_image, notif
+        max_hp = L.get("p2_max_hp") or L.get("p1_max_hp") or 100000
+        cap_total = int(max_hp * T8_RAID_TRUE_CAP_PCT)
+
+        def cap_fn(amt, label):
+            used = sum(x.get("t8_true_used", 0) for x in (active or []))
+            ok = max(0, min(int(amt), cap_total - used))
+            c["t8_true_used"] = c.get("t8_true_used", 0) + ok
+            return ok
+
+        r = t8_combat_turn(ac, max_hp, "Boss", is_ace2=bool(ac.get("is_ace2")), cap_fn=cap_fn)
+        card_dmg = int(card_dmg * r["multiplier"]) + r["bonus"]
+        if r["gif"] and not turn_image:
+            turn_image = r["gif"]
+        if r["logs"]:
+            notif = (notif + "\n" if notif else "") + "\n".join(f"({c['username']}) {l}" for l in r["logs"])
+        if t8_alive_summons(ac):
+            ac["t8_base"] = ac["current_hp"]
+    except Exception as e:
+        print(f"[T8] lỗi raid_attack: {e}", flush=True)
+    return card_dmg, turn_image, notif
+
+
+def t8_raid_after_boss(active) -> str:
+    out = []
+    try:
+        for c in active or []:
+            cards = c.get("team_cards", [])
+            idx = c.get("current_card_index", 0)
+            if idx >= len(cards):
+                continue
+            ac = cards[idx]
+            if not t8_alive_summons(ac):
+                ac.pop("t8_base", None)
+                continue
+            base = ac.get("t8_base")
+            if base is None:
+                ac["t8_base"] = ac["current_hp"]
+                continue
+            lg = []
+            t8_absorb_hp(ac, base, lg)
+            ac["t8_base"] = ac["current_hp"]
+            out.extend(f"({c['username']}) {l}" for l in lg)
+    except Exception as e:
+        print(f"[T8] lỗi raid_after_boss: {e}", flush=True)
+    return ("\n" + "\n".join(out)) if out else ""
+
+
+# ---------------- Hook Boss Jotaro / Han Seiki / Sukuna boss ----------------
+def t8_jt_hook(c, ac, dmg, B, notes):
+    try:
+        if str(ac.get("cid")).lower() != "t8":
+            return dmg
+
+        def cap_fn(amt, label):
+            applied, B["true_accum"], cap_msg = apply_raid_true_damage(int(amt), B["true_accum"], B["true_cap"], label)
+            if cap_msg:
+                notes.append(cap_msg)
+            return applied
+
+        r = t8_combat_turn(ac, B["max_hp"], "Boss", is_ace2=bool(ac.get("is_ace2")), cap_fn=cap_fn)
+        dmg = int(dmg * r["multiplier"]) + r["bonus"]
+        if r["gif"] and not B.get("gif"):
+            B["gif"] = r["gif"]
+        notes.extend(f"({c['username']}) {l}" for l in r["logs"])
+        if t8_alive_summons(ac):
+            ac["t8_base"] = ac["current_hp"]
+    except Exception as e:
+        print(f"[T8] lỗi jt_hook: {e}", flush=True)
+    return dmg
+
+
+# ==============================================================================
+# BỌC CÁC HÀM CÓ SẴN (không cần sửa tay trong các hàm gốc)
+# ==============================================================================
+_orig_t7_raid_attack = t7_raid_attack
+def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
+    card_dmg, boss_stunned, turn_image, notif = _orig_t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L)
+    card_dmg, turn_image, notif = t8_raid_attack(c, ac, card_dmg, turn_image, notif, active, L)
+    return card_dmg, boss_stunned, turn_image, notif
+
+_orig_t7_raid_after_boss = t7_raid_after_boss
+def t7_raid_after_boss(active, boss_log) -> str:
+    pre = t8_raid_after_boss(active)          # quái triệu hồi gánh đòn TRƯỚC khi tính các hiệu ứng khác
+    return pre + _orig_t7_raid_after_boss(active, boss_log)
+
+_orig_t7_jt_attack = t7_jt_attack
+def t7_jt_attack(c, ac, dmg, B, notes):
+    dmg = _orig_t7_jt_attack(c, ac, dmg, B, notes)
+    return t8_jt_hook(c, ac, dmg, B, notes)
+
+_orig_t7_story_apply = t7_story_apply
+def t7_story_apply(pc, card_dmg, guard, boss_max_hp, boss_power, logs, team=None, boss_hp=None):
+    card_dmg, guard, stun, gif = _orig_t7_story_apply(pc, card_dmg, guard, boss_max_hp, boss_power, logs, team, boss_hp)
+    try:
+        if str(pc.get("cid")).lower() == "t8":
+            r = t8_combat_turn(pc, boss_max_hp, "Boss", is_ace2=bool(pc.get("is_ace2")))
+            card_dmg = int(card_dmg * r["multiplier"]) + r["bonus"]
+            gif = gif or r["gif"]
+            logs.extend(r["logs"])
+    except Exception as e:
+        print(f"[T8] lỗi story_apply: {e}", flush=True)
+    return card_dmg, guard, stun, gif
+
+_orig_eq_take_damage = eq_take_damage
+def eq_take_damage(card, dmg, logs=None, skill=False):
+    try:
+        dmg = t8_absorb_incoming(card, int(dmg), logs)   # Story: quái triệu hồi tank trước
+    except Exception as e:
+        print(f"[T8] lỗi take_damage: {e}", flush=True)
+    if dmg <= 0:
+        return
+    return _orig_eq_take_damage(card, dmg, logs, skill)
+
+_orig_eq_gaia_post = eq_gaia_post
+def eq_gaia_post(card, mark, incoming, base_power, logs):
+    t8_absorb_hp(card, mark, logs)                        # Battle / PvP: quái triệu hồi gánh đòn
+    return _orig_eq_gaia_post(card, mark, incoming, base_power, logs)
+
+_orig_reset_sakuya3_phase = reset_sakuya3_phase
+def reset_sakuya3_phase(c: dict):
+    _orig_reset_sakuya3_phase(c)                           # sang Phase 2: xóa quái + trạng thái skill
+    c["t8_true_used"] = 0
+    for card in c.get("team_cards", []):
+        for k in ("t8_state", "t8_sum", "t8_base"):
+            card.pop(k, None)
+
+_orig_apply_bong_khai_niem_card = apply_bong_khai_niem_card
+def apply_bong_khai_niem_card(target_card: dict):
+    if str(target_card.get("cid")).lower() == "t8" and not target_card.get("erased_skill"):
+        if target_card.get("is_ace2"):
+            pool = [("t8_fuga", "Fuga"), ("t8_slash", "Trảm kích"), ("t8_agito", "Agito!"),
+                    ("t8_maho", "Mahoraga!"), ("t8_domain", "Phục Ma Ngự Trù Tử")]
+        else:
+            pool = [("t8_fuga", "Fuga"), ("t8_slash", "Trảm kích"), ("t8_bat", "Bát"),
+                    ("t8_domain", "Phục Ma Ngự Trù Tử")]
+        key, name = random.choice(pool)
+        target_card["erased_skill"] = key
+        target_card["erased_skill_name"] = name
+        return f"🌑 **[Bóng Khái Niệm]** Đã xóa ngẫu nhiên 1 kỹ năng duy nhất **[{name}]** của **{target_card['name']}**! *(Tối đa mất 1 chiêu)*"
+    return _orig_apply_bong_khai_niem_card(target_card)
+
+
+# ==============================================================================
+# TIẾN HÓA ACE 2 + BẢNG /evol required
+# ==============================================================================
+def execute_sukuna_ace2(player):
+    _blk = ace2_prestige_block(player, "t8")
+    if _blk:
+        return False, _blk, None
+    if is_card_ace2(player, "t8"):
+        return False, "⚠️ **[#t8] Ryomen Sukuna** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
+    if not is_card_unlocked(player, "t8") and player.get("inventory", {}).get("t8", 0) <= 0:
+        return False, (
+            "❌ **Bạn chưa mở khóa thẻ [#t8] Ryomen Sukuna (Ace 1)!**\n"
+            f"• Thu thập **{T8_SHARDS_UNLOCK} Sukuna Finger** rồi dùng `/t translate loai_shard:sukuna` để đổi thẻ gốc trước."
+        ), None
+    shards = player.setdefault("shards", {})
+    cur = shards.get("sukuna", 0)
+    has_maho = is_card_unlocked(player, "t2") or player.get("inventory", {}).get("t2", 0) > 0
+    problems = []
+    if cur < T8_SHARDS_ACE2:
+        problems.append(f"• Sukuna Finger: **{cur}/{T8_SHARDS_ACE2}**.")
+    if not has_maho:
+        problems.append("• Cần sở hữu thẻ **[#t2] Mahoraga (Ace 1)** *(không bị trừ)*.")
+    if problems:
+        return False, "❌ **Chưa đủ điều kiện tiến hóa Sukuna Ace 2!**\n" + "\n".join(problems), None
+
+    shards["sukuna"] = cur - T8_SHARDS_ACE2
+    player.setdefault("evolutions", {})["t8"] = 2
+    save_player(player)
+    embed = discord.Embed(
+        title="🌟 TIẾN HÓA THÀNH CÔNG: [#t8] RYOMEN SUKUNA - ACE 2 ⭐⭐!",
+        description=(
+            "👹 **NGUYỀN VƯƠNG THỨC TỈNH - BỘ KỸ NĂNG ACE 2:**\n\n"
+            "🔥 **Fuga (Nội tại):** Mỗi 4 lượt, đòn đánh ×3.5 sát thương\n"
+            "⚔️ **Trảm kích (25%):** 4,545 DMG lên toàn bộ đơn vị tiền tuyến địch\n"
+            "🐲 **Agito! (50%, 1 lần):** Khảm hợp thú 25% chỉ số, đánh thường & tank 100% đòn\n"
+            "🐲 **Mahoraga! (20%, 1 lần):** Mahoraga 50% chỉ số, đánh thường & tank 100% đòn\n"
+            "🏯 **Phục Ma Ngự Trù Tử (10%, tối đa 2 lần):** 3 turn, mỗi turn 1,000 DMG + 5% máu tối đa\n\n"
+            f"📉 **Chi phí:** {T8_SHARDS_ACE2} Sukuna Finger (còn `{shards['sukuna']}`)\n"
+            "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn!"
+        ),
+        color=0x7F1D1D
+    )
+    embed.set_image(url=T8_EVOL_GIF)
+    embed.set_footer(text="Touhou Evolution System • Sukuna Ace 2 Activated • Card ID #t8")
+    return True, "", embed
+
+_orig_execute_card_evolution = execute_card_evolution
+def execute_card_evolution(player, cid):
+    if str(cid).strip().lower() in ("t8", "sukuna", "ryomen"):
+        return execute_sukuna_ace2(player)
+    return _orig_execute_card_evolution(player, cid)
+
+_orig_evol_req_data = evol_req_data
+def evol_req_data(player, key, stage):
+    if key == "t8" and stage == 2:
+        inv = player.get("inventory", {}) or {}
+        shards = player.get("shards", {}) or {}
+        prestige = player.get("prestige", 0)
+        own = lambda k: is_card_unlocked(player, k) or inv.get(str(k), 0) > 0
+        have = shards.get("sukuna", 0)
+        rows = [
+            _rq(own("t8"), "Sở hữu thẻ [#t8] Ryomen Sukuna (Ace 1)"),
+            _rq(have >= T8_SHARDS_ACE2, f"Sukuna Finger: {have}/{T8_SHARDS_ACE2}"),
+            _rq(own("t2"), "Sở hữu thẻ [#t2] Mahoraga (Ace 1, không bị trừ)"),
+            _rq(prestige >= T8_ACE2_PRESTIGE, f"Prestige {T8_ACE2_PRESTIGE}+ (hiện tại P{prestige})"),
+        ]
+        if _raw_ace2(player, "t8"):
+            return rows, ("done" if is_card_ace2(player, "t8") else "locked")
+        return rows, ("ready" if all(x[0] for x in rows) else "no")
+    return _orig_evol_req_data(player, key, stage)
+
+
+# ==============================================================================
+# ĐỔI MẢNH: /t translate loai_shard:sukuna  (10 Sukuna Finger -> thẻ #t8)
+# ==============================================================================
+_orig_handle_translate_shard = handle_translate_shard
+async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
+    key = str(loai_shard or "").lower().strip()
+    if key not in T8_SHARD_ALIASES:
+        return await _orig_handle_translate_shard(ctx_or_interaction, loai_shard)
+
+    is_inter = isinstance(ctx_or_interaction, discord.Interaction)
+    user = ctx_or_interaction.user if is_inter else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    shards = player.setdefault("shards", {})
+    cur = shards.get("sukuna", 0)
+    card = CARDS_DATA["t8"]
+
+    if cur < T8_SHARDS_UNLOCK:
+        msg = (f"❌ **Không đủ ngón tay!** Bạn có **{cur}/{T8_SHARDS_UNLOCK} Sukuna Finger**.\n"
+               f"💡 *Mẹo: Sukuna Finger rơi 5% khi hạ Event Boss Ryomen Sukuna.*")
+        if is_inter:
+            await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else:
+            await ctx_or_interaction.send(msg)
+        return
+
+    shards["sukuna"] = cur - T8_SHARDS_UNLOCK
+    unl = player.setdefault("unlocked_cards", [])
+    if "t8" not in unl:
+        unl.append("t8")
+    inv = player.setdefault("inventory", {})
+    inv["t8"] = inv.get("t8", 0) + 1
+    save_player(player)
+
+    embed = discord.Embed(
+        title="👹 QUY ĐỔI THÀNH CÔNG: RYOMEN SUKUNA - NGUYỀN VƯƠNG!",
+        description=(
+            f"✨ **Chúc mừng {user.mention}!** Bạn đã dung hợp **{T8_SHARDS_UNLOCK} Sukuna Finger**!\n\n"
+            f"🎴 **THẺ NHẬN ĐƯỢC:** **[T] #t8 Ryomen Sukuna**\n"
+            f"• ⚔️ ATK **{card['power']:,}** | ❤️ HP **{card['hp']:,}**\n"
+            f"• 🔥 **Fuga (Nội tại):** Mỗi 4 lượt, đòn đánh ×3.5 sát thương\n"
+            f"• ⚔️ **Trảm kích (25%):** ×2 sát thương (tối đa 2 lần)\n"
+            f"• 🩸 **Bát (20%):** 20% máu tối đa địch (tối đa 1 lần)\n"
+            f"• 🏯 **Phục Ma Ngự Trù Tử (15%):** 2 turn, 1,000 DMG + 3% máu tối đa (tối đa 2 lần)\n\n"
+            f"📦 **Ngón tay còn lại:** `{shards['sukuna']}` | 🎒 **Kho thẻ:** `{inv['t8']}` lá"
+        ),
+        color=0x7F1D1D
+    )
+    embed.set_image(url=T8_UNLOCK_GIF)
+    embed.set_footer(text="Dùng /team add id_the:t8 để đưa Sukuna vào đội hình!")
+    if is_inter:
+        await ctx_or_interaction.response.send_message(embed=embed)
+    else:
+        await ctx_or_interaction.send(embed=embed)
+
+
+# ==============================================================================
+# GIAO DIỆN /check & /card_info CHO #t8
+# ==============================================================================
+class SukunaCardView(discord.ui.View):
+    def __init__(self, user_id=None, back_index: int = 0, show_ace: bool = False):
+        super().__init__(timeout=180)
+        self.user_id = user_id
+        self.back_index = back_index
+        self.show_ace = show_ace
+        self._build()
+
+    def _build(self):
+        self.clear_items()
+        if self.show_ace:
+            toggle = discord.ui.Button(label="⭐ Xem Bản Ace 1", style=discord.ButtonStyle.secondary, emoji="🔄", row=0)
+        else:
+            toggle = discord.ui.Button(label="🌟 Xem Ace 2 ⭐⭐", style=discord.ButtonStyle.success, emoji="✨", row=0)
+        toggle.callback = self.on_toggle
+        self.add_item(toggle)
+        back = discord.ui.Button(label="📖 Quay lại danh sách nhân vật", style=discord.ButtonStyle.primary, row=0)
+        back.callback = self.on_back
+        self.add_item(back)
+
+    def get_embed(self):
+        card = CARDS_DATA["t8"]
+        player = get_player(self.user_id) if self.user_id else None
+        lvl = player.get("level", 1) if player else 1
+        owned = player.get("inventory", {}).get("t8", 0) if player else 0
+        fingers = player.get("shards", {}).get("sukuna", 0) if player else 0
+        ace = self.show_ace
+        pw = card["power"] + (ACE_POWER_BUFF if ace else 0)
+        hp = card["hp"] + (ACE_HP_BUFF if ace else 0)
+        embed = discord.Embed(
+            title="🌟 [Ace 2 ⭐⭐] #t8 RYOMEN SUKUNA (THỨC TỈNH)" if ace else "👹 [THẺ ĐẶC BIỆT NHÓM T] #t8 RYOMEN SUKUNA",
+            description=("🔥 **Đang xem: ACE 2 ⭐⭐** *(+300 ATK / +300 HP)*" if ace else
+                         f"✨ Mở khóa bằng **{T8_SHARDS_UNLOCK} Sukuna Finger** (`/t translate loai_shard:sukuna`).\n✨ **Có thể tiến hóa Ace 2 ⭐⭐!**"),
+            color=0x7F1D1D
+        )
+        embed.set_image(url=T8_EVOL_GIF if ace else T8_UNLOCK_GIF)
+        embed.add_field(
+            name="⚔️ SỨC MẠNH & CHỈ SỐ:",
+            value=f"• ⚔️ **ATK:** `{pw:,}` | ❤️ **HP:** `{hp:,}`\n• 🛡️ **Trong đội hình (Lv.{lvl}):** `{pw + (lvl - 1) * 15:,}` ATK | `{hp + (lvl - 1) * 45:,}` HP",
+            inline=False
+        )
+        if ace:
+            skills = (
+                "🔥 **Fuga (Nội tại):** Mỗi 4 lượt, đòn đánh ×3.5 sát thương.\n"
+                "⚔️ **Trảm kích (25%):** 4,545 sát thương lên toàn bộ đơn vị tiền tuyến địch.\n"
+                "🐲 **Agito! (50% - 1 lần):** Triệu hồi khảm hợp thú 25% chỉ số Sukuna, đánh thường liên tục & tank 100% đòn.\n"
+                "🐲 **Mahoraga! (20% - 1 lần):** Triệu hồi Mahoraga 50% chỉ số Sukuna, đánh thường liên tục & tank 100% đòn.\n"
+                "🏯 **Phục Ma Ngự Trù Tử (10% - tối đa 2 lần):** 3 turn, mỗi turn 1,000 DMG + 5% máu tối đa, kể cả thẻ mới vào sân.\n"
+                "*(Thứ tự tank: Agito → Mahoraga → Sukuna)*"
+            )
+        else:
+            skills = (
+                "🔥 **Fuga (Nội tại):** Mỗi 4 lượt, đòn đánh ×3.5 sát thương.\n"
+                "⚔️ **Trảm kích (25%):** ×2 sát thương (tối đa 2 lần).\n"
+                "🩸 **Bát (20%):** Gây 20% máu tối đa kẻ địch (tối đa 1 lần).\n"
+                "🏯 **Phục Ma Ngự Trù Tử (15%, tối đa 2 lần):** 2 turn, mỗi turn 1,000 DMG + 3% máu tối đa, kể cả thẻ mới vào sân."
+            )
+        embed.add_field(name="🔮 KỸ NĂNG:", value=skills, inline=False)
+        if player:
+            has_maho = is_card_unlocked(player, "t2") or player.get("inventory", {}).get("t2", 0) > 0
+            p = player.get("prestige", 0)
+            if is_card_ace2(player, "t8"):
+                badge = "🌟 ĐÃ THỨC TỈNH ACE 2"
+            elif owned > 0 and fingers >= T8_SHARDS_ACE2 and has_maho and p >= T8_ACE2_PRESTIGE:
+                badge = "🟢 Đủ điều kiện! Dùng `/evol id_hoac_ten:t8`"
+            else:
+                badge = f"🔴 Chưa đủ (Ngón {fingers}/{T8_SHARDS_ACE2} | Mahoraga: {'✅' if has_maho else '❌'} | Prestige P{p}/{T8_ACE2_PRESTIGE})"
+            embed.add_field(name="🎒 TÚI ĐỒ CỦA BẠN:", value=f"• Sở hữu: **{owned}** lá\n• 🫳 Sukuna Finger: **{fingers}**\n• Cảnh giới: **{badge}**", inline=False)
+        embed.set_footer(text="Thẻ nhóm T đặc biệt • Hoạt động trong Raid, Battle, PvP, Story, Event")
+        return embed
+
+    async def on_toggle(self, interaction: discord.Interaction):
+        self.show_ace = not self.show_ace
+        self._build()
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    async def on_back(self, interaction: discord.Interaction):
+        v = CharacterCheckView(current_index=self.back_index, user_id=self.user_id)
+        await interaction.response.edit_message(embed=v.get_current_embed(), view=v)
+
+
+_orig_cc_rebuild_items = CharacterCheckView.rebuild_items
+def _cc_rebuild_items_with_t8(self):
+    _orig_cc_rebuild_items(self)
+    try:
+        btn = discord.ui.Button(label="#t8 Sukuna", style=discord.ButtonStyle.secondary, emoji="👹", row=4)
+        async def _cb(interaction: discord.Interaction, _self=self):
+            kv = SukunaCardView(_self.user_id, _self.current_index)
+            await interaction.response.edit_message(embed=kv.get_embed(), view=kv)
+        btn.callback = _cb
+        self.add_item(btn)
+    except Exception as e:
+        print(f"[T8] lỗi thêm nút check: {e}", flush=True)
+CharacterCheckView.rebuild_items = _cc_rebuild_items_with_t8
+
+_orig_handle_check_character = handle_check_character
+async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
+    if nhan_vat and str(nhan_vat).strip().lower().replace("#", "").replace(" ", "") in ("t8", "sukuna", "ryomen", "ryomensukuna"):
+        user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+        sv = SukunaCardView(user.id, 0)
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=sv.get_embed(), view=sv)
+        else:
+            await ctx_or_interaction.send(embed=sv.get_embed(), view=sv)
+        return
+    return await _orig_handle_check_character(ctx_or_interaction, nhan_vat)
+
+# ===================== HẾT KHỐI SUKUNA =====================
+
 import sys
 
 def start_bot_safely():
