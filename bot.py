@@ -778,8 +778,8 @@ EVENT_BOSS_CONFIG = {
     "id": "kizuna_event",
     "name": "Kizuna - Huyết Ma Đế (Phase 1)",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1555151435237294090/image.png?backend=b2&ex=6abf7b23&is=6abe29a3&hm=046b321ed799b1a5c6266bb195b80de0a345c35fdeb75211aef98176ab00e12a&=&format=webp&quality=lossless",
-    "hp": 50000,
-    "power": 3000,
+    "hp": 90000,
+    "power": 9000,
     "passive_regen_pct": 0.015, # Hồi 1,5% máu mỗi lượt
     "skills": {
         "blood_chain": {
@@ -804,8 +804,8 @@ EVENT_BOSS_PHASE2_CONFIG = {
     "id": "kizuna_event_phase2",
     "name": "Kizuna - Huyết Ma Đế Thức Tỉnh (Phase 2)",
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1555151435237294090/image.png?backend=b2&ex=6abf7b23&is=6abe29a3&hm=046b321ed799b1a5c6266bb195b80de0a345c35fdeb75211aef98176ab00e12a&=&format=webp&quality=lossless",
-    "hp": 75000,
-    "power": 7000,
+    "hp": 150000,
+    "power": 13000,
     "passive_regen_pct": 0.015,
     "skills": {
         "blood_chain": {
@@ -5882,8 +5882,8 @@ async def spawn_event_boss_raid(channel, author, boss_key="kizuna", is_admin=Fal
         )
         embed = discord.Embed(title=title, description=desc, color=0x991B1B)
         embed.set_image(url=EVENT_BOSS_CONFIG["image"])
-        embed.add_field(name="❤️ Máu Boss (HP):", value="• Phase 1: **50,000 HP**\n• Phase 2 Thức Tỉnh: **75,000 HP**", inline=True)
-        embed.add_field(name="⚔️ Sức Mạnh:", value="• Phase 1: **3,000 DMG** (chia đều)\n• Phase 2: **7,000 DMG** (chia đều)", inline=True)
+        embed.add_field(name="❤️ Máu Boss (HP):", value="• Phase 1: **90,000 HP**\n• Phase 2 Thức Tỉnh: **150,000 HP**", inline=True)
+        embed.add_field(name="⚔️ Sức Mạnh:", value="• Phase 1: **9,000 DMG** (chia đều)\n• Phase 2: **13,000 DMG** (chia đều)", inline=True)
         embed.add_field(name="👥 Người Tham Gia (1/6):", value=author.display_name, inline=False)
         embed.add_field(
             name="🔮 Kỹ Năng & Nội Tại Huyết Ma Đế:",
@@ -5908,6 +5908,7 @@ async def spawn_event_boss_raid(channel, author, boss_key="kizuna", is_admin=Fal
             value="Có **2 phút (120 giây)** để bấm nút **'Tham Gia'** bên dưới! Đủ 6 người hoặc hết giờ sẽ tự động khai màn trận chiến!",
             inline=False
         )
+        eq_add_boss_field(embed, "kizuna_event")
         embed.set_footer(text="Phòng chờ Event Raid • Tối đa 6 dũng giả tham chiến")
 
     view = EventRaidJoinView(raid_data)
@@ -5993,10 +5994,12 @@ async def execute_event_raid(channel, raid_data):
     # ========================================================================
     # PHASE 1: KIZUNA - HUYẾT MA ĐẾ (50,000 HP / 3,000 DMG)
     # ========================================================================
+    boss_type = "kizuna_event"        # để Giáp Gaia của Boss giảm 5% sát thương skill người chơi
+    boss_liem_used = False
     p1_cfg = EVENT_BOSS_CONFIG
-    p1_max_hp = p1_cfg["hp"]
+    p1_max_hp = p1_cfg["hp"] + boss_eq_hp("kizuna_event")      # +800 Gaia
     p1_hp = p1_max_hp
-    p1_power = p1_cfg["power"]
+    p1_power = p1_cfg["power"] + boss_eq_atk("kizuna_event")   # +80 Liềm
     p1_rounds = 0
     boss_mind_turns = 0
     boss_freeze_debuff_turns = 0
@@ -6264,6 +6267,15 @@ async def execute_event_raid(channel, raid_data):
 
         p1_hp = max(0, p1_hp - round_player_dmg)
         player_atk_str = f"Toàn quân xuất trận gây **{round_player_dmg:,} DMG** lên Kizuna!"
+        if p1_hp > 0 and round_player_dmg > 0:
+            _gh = int(p1_max_hp * GAIA_HEAL_PCT * (0.70 if raid_data.get("ev_heal_reduce") else 1.0))
+            _old = p1_hp
+            p1_hp = min(p1_max_hp, p1_hp + _gh)
+            player_atk_str += f"\n🛡️ **[Giáp Gaia - Boss]** Kizuna chịu sát thương và hồi **+{p1_hp - _old:,} HP** (1,5% máu tối đa)!"
+        if p1_hp <= 0 and not boss_liem_used:
+            boss_liem_used = True
+            p1_hp = 1
+            player_atk_str += "\n🌙 **[Liềm Hỗn Mang - Boss]** Kizuna rơi xuống 0 HP nhưng **chưa chết** — cầm cự ở **1 HP** đến hết turn tiếp theo! *(1 lần/phase)*"
 
         # 3. Boss phản kích
         boss_action_log = ""
@@ -6466,9 +6478,10 @@ async def execute_event_raid(channel, raid_data):
     # PHASE 2: KIZUNA THỨC TỈNH (75,000 HP / 7,000 DMG / WONDER GUARD PHẢN 90% ST)
     # ========================================================================
     p2_cfg = EVENT_BOSS_PHASE2_CONFIG
-    p2_max_hp = p2_cfg["hp"]
+    p2_max_hp = p2_cfg["hp"] + boss_eq_hp("kizuna_event")
     p2_hp = p2_max_hp
-    p2_power = p2_cfg["power"] # 7,000 DMG
+    p2_power = p2_cfg["power"] + boss_eq_atk("kizuna_event")
+    boss_liem_used = False
     p2_rounds = 0
     wonder_guard_turns = 0
     boss_skill_erased = None
@@ -6816,6 +6829,15 @@ async def execute_event_raid(channel, raid_data):
         else:
             p2_hp = max(0, p2_hp - round_player_dmg)
 
+        if p2_hp > 0 and round_player_dmg > 0 and not reflected_dmg_log:
+            _gh = int(p2_max_hp * GAIA_HEAL_PCT * (0.70 if raid_data.get("ev_heal_reduce") else 1.0))
+            _old = p2_hp
+            p2_hp = min(p2_max_hp, p2_hp + _gh)
+            player_atk_str += f"\n🛡️ **[Giáp Gaia - Boss]** Kizuna chịu sát thương và hồi **+{p2_hp - _old:,} HP** (1,5% máu tối đa)!"
+        if p2_hp <= 0 and not boss_liem_used:
+            boss_liem_used = True
+            p2_hp = 1
+            player_atk_str += "\n🌙 **[Liềm Hỗn Mang - Boss]** Kizuna rơi xuống 0 HP nhưng **chưa chết** — cầm cự ở **1 HP** đến hết turn tiếp theo! *(1 lần/phase)*"
         boss_action_log = ""
         if p2_hp <= 0:
             boss_action_log = "💥 **Huyết Ma Đế Kizuna Phase 2 đã bị tiêu diệt hoàn toàn!**"
@@ -6829,8 +6851,15 @@ async def execute_event_raid(channel, raid_data):
                     ac = c["team_cards"][c["current_card_index"]]
                     if ac["cid"] == 4 and ac.get("is_ace2") and random.random() < 0.10:
                         boss_action_log += f"\n🌀 **[Ace 2] [#04] Yukari** ({c['username']}) kích hoạt **Invisible Gap (10%)**! Miễn thương đòn đánh thường!"
+                    elif ac["cid"] == 15 and ac.get("is_ace2") and not c["reimu_invul_used"] and random.random() < 0.40:
+                        c["reimu_invul_used"] = True
+                        turn_image = EVOL_CONFIG[15]["skill_gif"]
+                        boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                    elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and not ac.get("is_ace2") and random.random() < 0.40)):
+                        c["seiki_seal_used"] = True
+                        turn_image = T1_SEAL_GIF
+                        boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
-                        pass
                         boss_action_log += f"\n🛡️ **[Ace 2] [#t3] Kizuna** ({c['username']}) duy trì **Wonder Guard**! Miễn thương đòn đánh!"
                     elif str(ac["cid"]).lower() == "t2":
                         adapt_pct = min(0.90, c.get("mahoraga_adapt_turns", 1) * 0.05)
@@ -14518,10 +14547,11 @@ async def handle_event_info(ctx_or_interaction):
     )
     embed.set_footer(text="Dùng /event shop để đổi Kẹo lấy quà • Dùng /event raid để mở phòng săn Boss!")
     
+    view = EventQuestRedoView(user.id, ep.get("claimed", False))
     if isinstance(ctx_or_interaction, discord.Interaction):
-        await ctx_or_interaction.response.send_message(embed=embed)
+        await ctx_or_interaction.response.send_message(embed=embed, view=view)
     else:
-        await ctx_or_interaction.send(embed=embed)
+        await ctx_or_interaction.send(embed=embed, view=view)
 
 # --- HÀM XỬ LÝ /EVENT SHOP (ĐỔI KẸO LẤY VÉ, RƯƠNG [E], SHARD) ---
 async def handle_event_shop(ctx_or_interaction):
@@ -14541,6 +14571,7 @@ async def handle_event_shop(ctx_or_interaction):
             f"1️⃣ **50 Kẹo:** Đổi **+5 Vé Pull** 🎟️\n"
             f"2️⃣ **120 Kẹo:** Đổi **+1 Rương Halloween Ma Quái [E]** 📦\n"
             f"3️⃣ **200 Kẹo:** Đổi **+1 Mảnh Kizuna** 🩸 (15 mảnh = 1 Thẻ [T] #t3 Kizuna)\n"
+            f"4️⃣ **{LIEM_SHOP_PRICE:,} Kẹo:** Đổi **+1 Liềm Hỗn Mang** 🌙 (vũ khí: +80 ATK, +2% kích skill, cầm cự khi về 0 HP)\n"
         ),
         color=0xF97316
     )
@@ -14845,6 +14876,7 @@ class ItemGroup(app_commands.Group, name="item", description="Quản lý kho v�
         app_commands.Choice(name="Rương Halloween Ma Quái [E] (ruong_halloween_e)", value="ruong_halloween_e"),
         app_commands.Choice(name="Giáp Gaia 🛡️ (giap_gaia)", value="giap_gaia"),
         app_commands.Choice(name="Nanh Fenrir 🐺 (nanh_fenrir)", value="nanh_fenrir"),
+        app_commands.Choice(name="Liềm Hỗn Mang 🌙 (liem_hon_mang)", value="liem_hon_mang"),
         app_commands.Choice(name="Magical Potion 🧪 (magical_potion)", value="magical_potion"),
         app_commands.Choice(name="Quả Lọ 🏺 (qua_lo)", value="qua_lo")
     ])
@@ -14860,6 +14892,7 @@ class ItemGroup(app_commands.Group, name="item", description="Quản lý kho v�
         app_commands.Choice(name="Đĩa Ký Ức Jotaro 💿 (dia_ky_uc_jotaro)", value="dia_ky_uc_jotaro"),
         app_commands.Choice(name="Quạt Giấy 🪭 (quat_giay)", value="quat_giay"),
         app_commands.Choice(name="Nanh Fenrir 🐺 (nanh_fenrir)", value="nanh_fenrir"),
+        app_commands.Choice(name="Liềm Hỗn Mang 🌙 (liem_hon_mang)", value="liem_hon_mang"),
         app_commands.Choice(name="Giáp Gaia 🛡️ (giap_gaia)", value="giap_gaia"),
         app_commands.Choice(name="Magical Potion 🧪 (magical_potion)", value="magical_potion"),
         app_commands.Choice(name="Quả Lọ 🏺 (qua_lo)", value="qua_lo")
@@ -14992,6 +15025,7 @@ class AdminGiveGroup(app_commands.Group, name="admin_give", description="[CHỦ 
         app_commands.Choice(name="Kẹo Halloween 🍬 (keo_halloween)", value="keo_halloween"),
         app_commands.Choice(name="Rương Halloween Ma Quái [E] (ruong_halloween_e)", value="ruong_halloween_e"),
         app_commands.Choice(name="Nanh Fenrir 🐺 (nanh_fenrir)", value="nanh_fenrir"),
+        app_commands.Choice(name="Liềm Hỗn Mang 🌙 (liem_hon_mang)", value="liem_hon_mang"),
         app_commands.Choice(name="Giáp Gaia 🛡️ (giap_gaia)", value="giap_gaia"),
         app_commands.Choice(name="Quạt Giấy 🪭 (quat_giay)", value="quat_giay"),
         app_commands.Choice(name="Đĩa Ký Ức Jotaro 💿 (dia_ky_uc_jotaro)", value="dia_ky_uc_jotaro"),
@@ -18292,15 +18326,20 @@ async def handle_equip_item(ctx_or_interaction, player, item_id: str):
     embed.set_thumbnail(url=info["image"])
     await _eq_send(ctx_or_interaction, embed=embed)
 
-@bot.tree.command(name="weapond", description="Trang bị / tháo vũ khí (Nanh Fenrir 🐺)")
-async def slash_weapond(interaction: discord.Interaction):
+@bot.tree.command(name="weapond", description="Trang bị / tháo / đổi vũ khí (Nanh Fenrir 🐺 hoặc Liềm Hỗn Mang 🌙)")
+@app_commands.describe(vu_khi="Chọn vũ khí (để trống = tự chọn / tháo món đang mặc)")
+@app_commands.choices(vu_khi=[
+    app_commands.Choice(name="Nanh Fenrir 🐺", value="nanh_fenrir"),
+    app_commands.Choice(name="Liềm Hỗn Mang 🌙", value="liem_hon_mang"),
+])
+async def slash_weapond(interaction: discord.Interaction, vu_khi: Optional[str] = None):
     player = get_player(interaction.user.id, interaction.user.display_name)
-    await handle_equip_item(interaction, player, "nanh_fenrir")
+    await handle_equip_item(interaction, player, _pick_weapon(player, vu_khi))
 
 @bot.command(name="weapond", aliases=["weapon"])
-async def prefix_weapond(ctx):
+async def prefix_weapond(ctx, vu_khi: str = None):
     player = get_player(ctx.author.id, ctx.author.display_name)
-    await handle_equip_item(ctx, player, "nanh_fenrir")
+    await handle_equip_item(ctx, player, _pick_weapon(player, vu_khi))
 
 # ==============================================================================
 # [UPDATE SHARD TRADE] /shard trade your: their:  (TRAO ĐỔI MẢNH GIỮA 2 NGƯỜI CHƠI)
@@ -20376,6 +20415,219 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
     return await _orig_handle_check_character(ctx_or_interaction, nhan_vat)
 
 # ===================== HẾT KHỐI SUKUNA =====================
+
+# ==============================================================================
+# [UPDATE KIZUNA EVENT] LIỀM HỖN MANG + BUFF BOSS + REDO QUEST
+# ==============================================================================
+import sys as _sys
+import linecache as _linecache
+import random as _std_random
+
+LIEM_ID = "liem_hon_mang"
+LIEM_ATK = 80
+LIEM_SKILL_BONUS = 0.02
+LIEM_SHOP_PRICE = 6666
+# Link Discord sẽ hết hạn -> nên up ảnh lên GitHub repo rồi thay link raw vào đây
+LIEM_IMG = "https://media.discordapp.net/attachments/1549063334781911070/1564633162921803796/images.png?ex=6ae1f9af&is=6ae0a82f&hm=4fa058aa4a2e9eba2a9454d8fc340625a6fed1b48e4f27c5953cf7f98fb15149&=&format=webp&quality=lossless&width=256&height=256"
+
+EQUIPMENT_DB[LIEM_ID] = {
+    "id": LIEM_ID, "name": "Liềm Hỗn Mang 🌙", "slot": "weapon", "slot_name": "Vũ khí tấn công",
+    "image": LIEM_IMG, "color": 0x6D28D9,
+    "desc": ("**+80 ATK** cho toàn đội và **+2% tỉ lệ kích skill/passive** cho toàn đội. "
+             "**Nội tại:** khi một lá bài về 0 HP sẽ **không chết** mà cầm cự ở **1 HP** đến hết turn tiếp theo (**1 lần/trận**).")
+}
+EQUIP_ALIASES.update({"liem": LIEM_ID, "liemhonmang": LIEM_ID, "honmang": LIEM_ID, "hon_mang": LIEM_ID})
+ITEMS_DATABASE[LIEM_ID] = {
+    "id": LIEM_ID, "name": "Liềm Hỗn Mang 🌙", "usable": True, "tradeable": True,
+    "desc": EQUIPMENT_DB[LIEM_ID]["desc"] + " (Dùng `/weapond` hoặc `/item use`; mỗi đội 1 vũ khí)"
+}
+EQUIP_BOSS["kizuna_event"] = (LIEM_ID, "giap_gaia")   # Boss Kizuna dùng Liềm + Gaia
+
+
+# ---------------- Chỉ số +80 ATK & cờ eq_liem cho toàn đội ----------------
+_orig_apply_equipment_to_cards = apply_equipment_to_cards
+def apply_equipment_to_cards(player: dict, cards: list):
+    _orig_apply_equipment_to_cards(player, cards)
+    try:
+        if get_active_equipment(player).get("weapon") == LIEM_ID:
+            for card in cards:
+                card["power"] += LIEM_ATK
+                card["eq_liem"] = True
+    except Exception as e:
+        print(f"[LIEM] lỗi apply_equipment: {e}", flush=True)
+
+
+# ---------------- Nội tại: về 0 HP không chết (dùng chung Raid/Battle/PvP/Story) ----------------
+_orig_sakuya3_try_revive = sakuya3_try_revive
+def sakuya3_try_revive(cards: list, idx: int):
+    try:
+        if 0 <= idx < len(cards):
+            k = cards[idx]
+            if k.get("eq_liem") and not k.get("liem_used"):
+                k["liem_used"] = True
+                k["current_hp"] = 1
+                return True, (f"🌙 **[Liềm Hỗn Mang]** **{k['name']}** rơi xuống 0 HP nhưng **chưa chết** — "
+                              f"cầm cự ở **1 HP** đến hết turn tiếp theo! *(1 lần/trận)*")
+    except Exception as e:
+        print(f"[LIEM] lỗi revive: {e}", flush=True)
+    return _orig_sakuya3_try_revive(cards, idx)
+
+_orig_reset_phase_liem = reset_sakuya3_phase
+def reset_sakuya3_phase(c: dict):          # sang Phase 2 -> nội tại Liềm dùng lại được
+    _orig_reset_phase_liem(c)
+    for card in c.get("team_cards", []):
+        card.pop("liem_used", None)
+
+
+# ---------------- Boss dùng Liềm: +80 ATK ----------------
+def boss_eq_atk(boss_key) -> int:
+    return (FENRIR_ATK if boss_eq_has(boss_key, "nanh_fenrir") else 0) + (LIEM_ATK if boss_eq_has(boss_key, LIEM_ID) else 0)
+
+def eq_add_boss_field(embed, boss_key):
+    try:
+        have = EQUIP_BOSS.get(str(boss_key), ())
+        if not have:
+            return
+        lines = []
+        if "nanh_fenrir" in have:
+            lines.append("🐺 **Nanh Fenrir:** +180 ATK; đòn đánh thường gây thêm +30% lên thẻ dưới 50% máu")
+        if LIEM_ID in have:
+            lines.append("🌙 **Liềm Hỗn Mang:** +80 ATK; về 0 HP vẫn cầm cự 1 HP đến hết turn tiếp theo (1 lần/phase)")
+        if "giap_gaia" in have:
+            lines.append("🛡️ **Giáp Gaia:** +800 máu; hồi 1,5% máu tối đa khi chịu sát thương; giảm 5% sát thương skill")
+        drops = " | ".join(f"{EQUIPMENT_DB[i]['name']} {ch * 100:g}%" for i, ch in EQUIP_DROPS.get(str(boss_key), ()))
+        embed.add_field(name="⚔️ Trang Bị Của Boss & Drop:",
+                        value="\n".join(lines) + (f"\n🎁 **Rơi:** {drops}" if drops else ""), inline=False)
+    except Exception as e:
+        print(f"[EQ] lỗi add_boss_field: {e}", flush=True)
+
+
+# ---------------- +2% tỉ lệ kích skill/passive (proxy cho random.random) ----------------
+# Mỗi lần gọi random.random(), proxy xác định lá bài đang tung skill; nếu lá đó có cờ eq_liem thì
+# dịch số roll xuống 0.02 => mọi tỉ lệ "roll < X" của người dùng Liềm tăng đúng +2%.
+_LIEM_FUNC_VARS = {
+    "t1_ace2_attack": "ac", "t3_combat_turn": "card_data", "t4_combat_turn": "card_data",
+    "t5_combat_turn": "card_data", "t6_combat_turn": "card_data", "t7_combat_turn": "card",
+    "t8_combat_turn": "card", "sakuya3_combat_turn": "card", "meiling_raid_turn": "ac",
+    "kasen_raid_turn": "ac", "kasen_duel_apply": "card", "story_s3_player_turn": "pc",
+    "_jt_player_attack": "ac", "_jt_boss_hit": "ac",
+}
+_LIEM_SRC_RE = re.compile(r'\b(ac|pc|cc|tc)\[')
+
+class _LiemRandom:
+    def __getattr__(self, name):
+        return getattr(_std_random, name)
+
+    def random(self):
+        r = _std_random.random()
+        try:
+            f = _sys._getframe(1)
+            var = _LIEM_FUNC_VARS.get(f.f_code.co_name)
+            card = None
+            if var:
+                card = f.f_locals.get(var)
+            else:   # skill nằm thẳng trong vòng lặp: đọc dòng code hiện tại / dòng trên để biết biến ac/pc/cc/tc
+                fn, ln = f.f_code.co_filename, f.f_lineno
+                for off in (0, 1):
+                    m = _LIEM_SRC_RE.search(_linecache.getline(fn, ln - off))
+                    if m:
+                        card = f.f_locals.get(m.group(1))
+                        break
+            if isinstance(card, dict) and card.get("eq_liem"):
+                r = max(0.0, r - LIEM_SKILL_BONUS)
+        except Exception:
+            pass
+        return r
+
+random = _LiemRandom()
+
+
+# ---------------- /weapond: chọn Fenrir hoặc Liềm ----------------
+def _pick_weapon(player: dict, raw=None) -> str:
+    k = str(raw).lower().strip() if raw else None
+    k = EQUIP_ALIASES.get(k, k) if k else None
+    if k in EQUIPMENT_DB and EQUIPMENT_DB[k]["slot"] == "weapon":
+        return k
+    equipped = get_active_equipment(player).get("weapon")
+    if equipped:
+        return equipped                       # đang mặc -> gõ lại để tháo
+    items = player.get("items", {})
+    have = [w for w in ("nanh_fenrir", LIEM_ID) if items.get(w, 0) >= 1]
+    return have[0] if have else "nanh_fenrir"
+
+
+# ---------------- /event quest + nút REDO ----------------
+class EventQuestRedoView(discord.ui.View):
+    def __init__(self, user_id, can_redo: bool):
+        super().__init__(timeout=180)
+        self.user_id = user_id
+        btn = discord.ui.Button(label="🔄 Làm Lại Nhiệm Vụ (Redo)", style=discord.ButtonStyle.success,
+                                disabled=not can_redo, row=0)
+        btn.callback = self.on_redo
+        self.add_item(btn)
+
+    async def on_redo(self, interaction: discord.Interaction):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải bảng nhiệm vụ của bạn!", ephemeral=True)
+            return
+        if not EVENT_CONFIG.get("active", True):
+            await interaction.response.send_message("🚫 Sự kiện đã kết thúc, không thể làm lại nhiệm vụ!", ephemeral=True)
+            return
+        p = get_player(interaction.user.id, interaction.user.display_name)
+        ep = p.get("event_progress") or {}
+        if not ep.get("claimed"):
+            await interaction.response.send_message("⚠️ Bạn chưa hoàn thành & nhận thưởng 4/4 nhiệm vụ nên chưa thể Redo!", ephemeral=True)
+            return
+        p["event_progress"] = {"battle": 0, "pvp": 0, "raid": 0, "event_raid": 0, "claimed": False}
+        p["event_redo_count"] = p.get("event_redo_count", 0) + 1
+        save_player(p)
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(view=self)
+        await interaction.followup.send(
+            f"🔄 **{interaction.user.display_name}** đã làm mới 4 nhiệm vụ sự kiện (lần Redo thứ {p['event_redo_count']})!\n"
+            f"Hoàn thành lại 4/4 để nhận tiếp **+1 Thánh Lõi 🌟 và +250 Tokens 💎**. Gõ `/event quest` để xem tiến trình.")
+
+async def _event_quest_cb(interaction: discord.Interaction):
+    await handle_event_info(interaction)
+
+try:
+    _evt_grp = bot.tree.get_command("event")
+    if _evt_grp is not None:
+        _evt_grp.add_command(app_commands.Command(
+            name="quest", description="Xem nhiệm vụ Halloween & bấm Redo để làm lại khi đã hoàn thành",
+            callback=_event_quest_cb))
+except Exception as _e:
+    print(f"[LIEM] lỗi thêm /event quest: {_e}", flush=True)
+
+@prefix_event_group.command(name="quest")
+async def prefix_event_quest(ctx):
+    await handle_event_info(ctx)
+
+
+# ---------------- Event shop: nút mua Liềm Hỗn Mang ----------------
+_orig_event_shop_init = EventShopButtonsView.__init__
+def _event_shop_init(self, player, user_id):
+    _orig_event_shop_init(self, player, user_id)
+    btn = discord.ui.Button(label=f"🌙 Liềm Hỗn Mang ({LIEM_SHOP_PRICE} Kẹo)", style=discord.ButtonStyle.secondary, row=1)
+    async def _cb(interaction: discord.Interaction):
+        if interaction.user.id != user_id:
+            return
+        if not EVENT_CONFIG.get("active", True):
+            await interaction.response.send_message("🚫 **Sự kiện Halloween 2026 đã kết thúc!** Cửa hàng đã đóng cửa.", ephemeral=True)
+            return
+        items = self.player.setdefault("items", {})
+        if items.get("keo_halloween", 0) < LIEM_SHOP_PRICE:
+            await interaction.response.send_message(f"❌ Bạn không đủ Kẹo! (Cần {LIEM_SHOP_PRICE:,} Kẹo)", ephemeral=True)
+            return
+        items["keo_halloween"] -= LIEM_SHOP_PRICE
+        items[LIEM_ID] = items.get(LIEM_ID, 0) + 1
+        save_player(self.player)
+        await interaction.response.send_message(
+            f"✅ Đã mua **+1 Liềm Hỗn Mang 🌙**! (Còn {items['keo_halloween']:,} Kẹo) — Dùng `/weapond` hoặc `/item use liem_hon_mang` để trang bị.")
+    btn.callback = _cb
+    self.add_item(btn)
+EventShopButtonsView.__init__ = _event_shop_init
 
 import sys
 
