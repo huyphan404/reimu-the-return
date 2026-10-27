@@ -4461,9 +4461,6 @@ async def execute_raid(channel, raid_data):
     if boss_type == "fateria":
         await execute_fateria_phase2(channel, raid_data, combatants, all_raid_turns, p1_rounds, p1_rewards_data)
         return
-        total_raid_dmg = sum(c["total_dmg"] for c in combatants)   # (code cũ bên dưới giữ nguyên, không chạy tới nữa)
-        final_embed = discord.Embed(
-            title="⚔️ KẾT QUẢ ĐẠI CHIẾN: FATERIA – KHUÔN MẪU CỦA SỐ PHẬN!",
         total_raid_dmg = sum(c["total_dmg"] for c in combatants)
         final_embed = discord.Embed(
             title="⚔️ KẾT QUẢ ĐẠI CHIẾN: FATERIA – KHUÔN MẪU CỦA SỐ PHẬN!",
