@@ -2160,7 +2160,7 @@ def apply_bong_khai_niem_boss(boss_type: str, phase: int, erased_skill_current: 
     elif boss_type == "jotaro":
         pool = [("stand_barrage", "Stand Barrage"), ("skull_breaker", "Skull Breaker"), ("time_stop", "Time Stop")]
     elif boss_type == "sukuna":
-        pool = [("slash", "Trảm kích"), ("hachi", "Bát"), ("domain", "Bành trướng lãnh địa"), ("wcs", "World Cutting Slash")]
+        pool = [("slash", "Trảm kích"), ("hachi", "Bát"), ("domain", "Bành trướng lãnh địa"), ("wcs", "World Cutting Slash"), ("rct", "Phản chuyển thuật thức")]
     else:
         pool = [("di_hinh_bua_chu", "Dị Hình Bùa Chú")]
 
@@ -2762,6 +2762,7 @@ BOSS_XP_DROPS = {
     ("seiki", 1):     {"flat": 1100, "mult": 1.2},
     ("seiki", 2):     {"flat": 1800, "mult": 1.5},
     ("fateria", 1):   {"flat": 2000, "mult": 3.0},
+    ("fateria", 2):   {"flat": 2000, "mult": 3.0},
     ("mahoraga", 1):  {"flat": 1550, "mult": 2.0},
     ("han_seiki", 1): {"flat": 2500, "mult": None},   # mult cũ (50% x4) đã có sẵn trong code Prime
     ("jotaro", 1):    {"flat": 1550, "mult": None},   # mult cũ (50% x1.5) đã có sẵn trong code Jotaro
@@ -2815,7 +2816,7 @@ async def send_boss_xp_report(channel, raid_data: dict):
             if lines:
                 by_phase.setdefault(phase, []).append((name, lines))
         boss_name = (raid_data.get("boss_config") or {}).get("name", "Boss")
-        two_phase = raid_data.get("boss_type") in ("reimu", "seiki")
+        two_phase = raid_data.get("boss_type") in ("reimu", "seiki", "fateria")
         for phase in sorted(by_phase):
             blocks = [
                 f"🏆 **{name}**\n" + "\n".join(f"   └ {l}" for l in lines)
@@ -4458,6 +4459,11 @@ async def execute_raid(channel, raid_data):
         return
 
     if boss_type == "fateria":
+        await execute_fateria_phase2(channel, raid_data, combatants, all_raid_turns, p1_rounds, p1_rewards_data)
+        return
+        total_raid_dmg = sum(c["total_dmg"] for c in combatants)   # (code cũ bên dưới giữ nguyên, không chạy tới nữa)
+        final_embed = discord.Embed(
+            title="⚔️ KẾT QUẢ ĐẠI CHIẾN: FATERIA – KHUÔN MẪU CỦA SỐ PHẬN!",
         total_raid_dmg = sum(c["total_dmg"] for c in combatants)
         final_embed = discord.Embed(
             title="⚔️ KẾT QUẢ ĐẠI CHIẾN: FATERIA – KHUÔN MẪU CỦA SỐ PHẬN!",
@@ -5843,6 +5849,7 @@ async def spawn_event_boss_raid(channel, author, boss_key="kizuna", is_admin=Fal
                 "• 🌀 **Fuga (Nội tại):** Cứ mỗi **7 lượt**, tích đủ sẽ gây đúng **10,000 DMG** lên toàn bộ tiền tuyến!\n"
                 "• ⚔️ **Trảm kích (30%):** **×1.5 sát thương (Phase 1) / ×2 sát thương (Phase 2)** chia đều lên toàn bộ đơn vị tiền tuyến!\n"
                 "• 🩸 **Bát (20%):** Gây **50% máu tối đa** lên **2 đơn vị ngẫu nhiên**!\n"
+                "• 🌀 **Phản chuyển thuật thức (10%):** Tự chữa lành **25% máu tối đa**!\n"
                 "• 🏯 **Bành trướng lãnh địa - Phục Ma Ngự Trù Tử (10%, tối đa 2 lần/phase):** Trong **3 turn** liên tục gây **1,000 DMG + 10% máu tối đa** lên mọi thẻ tiền tuyến (kể cả thẻ mới vào sân)!"
             ),
             inline=False
@@ -17805,7 +17812,7 @@ def t7_jt_attack(c, ac, dmg, B, notes):
     try:
         if str(ac.get("cid")).lower() != "t7":
             return dmg
-        cfg = PRIME_BOSS_CONFIG if B.get("boss_type") == "han_seiki" else (SUKUNA_BOSS_CONFIG if B.get("boss_type") == "sukuna" else JOTARO_BOSS_CONFIG)
+        cfg = PRIME_BOSS_CONFIG if B.get("boss_type") == "han_seiki" else (SUKUNA_BOSS_CONFIG if B.get("boss_type") == "sukuna" else (FATERIA_BOSS_PHASE2_CONFIG if B.get("boss_type") == "fateria" else JOTARO_BOSS_CONFIG))
         st = c.setdefault("t3_state", {}).setdefault("t7", {})
         r = t7_combat_turn(st, ac, B["max_hp"], cfg["power"], "Boss", is_ace2=bool(ac.get("is_ace2")))
         dmg = int(dmg * r["multiplier"]) + r["bonus"]
@@ -19506,6 +19513,8 @@ async def _sk_run_phase(channel, battle_msg, combatants, phase, all_turns):
                             opts.append(("slash", 0.30))
                         if B["erased"] != "hachi":
                             opts.append(("hachi", 0.20))
+                        if B["erased"] != "rct":
+                            opts.append(("rct", 0.10))
                         if B["erased"] != "domain" and domain_uses < SUKUNA_DOMAIN_MAX and domain_turns == 0:
                             opts.append(("domain", 0.10))
                         if phase == 2 and B["erased"] != "wcs":
@@ -19527,6 +19536,11 @@ async def _sk_run_phase(channel, battle_msg, combatants, phase, all_turns):
                         action_log += f"⚔️ **[KỸ NĂNG] Sukuna** tung **Trảm kích (30%)**! Gây tổng **{total_slash_dmg:,} DMG** ({slash_mult:g}x sát thương), chia đều **{each_slash_dmg:,} DMG** lên mỗi thẻ tiền tuyến ({n} lá)!"
                         for c in active:
                             _sk_hit(c, c["team_cards"][c["current_card_index"]], each_slash_dmg, B, hit_logs, rounds)
+                    elif chosen == "rct":
+                        B["gif"] = SUKUNA_GIF_RCT
+                        _rct_old = B["hp"]
+                        B["hp"] = min(max_hp, B["hp"] + int(max_hp * 0.25))
+                        action_log += f"🌀 **[KỸ NĂNG] Sukuna** thi triển **Phản chuyển thuật thức (10%)**! Tự chữa lành **+{B['hp'] - _rct_old:,} HP** (25% máu tối đa)!"
                     elif chosen == "hachi":
                         B["gif"] = SUKUNA_GIF_HACHI
                         targets = random.sample(active, min(2, len(active)))
@@ -20629,6 +20643,411 @@ def _event_shop_init(self, player, user_id):
     self.add_item(btn)
 EventShopButtonsView.__init__ = _event_shop_init
 
+# ==============================================================================
+# [UPDATE FATERIA PHASE 2] + [SUKUNA: PHẢN CHUYỂN THUẬT THỨC]
+# ==============================================================================
+FATERIA_P2_GIF_REWIND = "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/75/a1/PpN8LBdD.gif"
+FATERIA_P2_GIF_CUBE = "https://static2.klipy.com/ii/2f34308bfc69e8c858753b83566e3ab4/d6/70/kflnzKbY72OaCUKW8O9a.gif"
+SUKUNA_GIF_RCT = "https://static2.klipy.com/ii/bea85337777ad0e23e63683391435543/39/be/emF7cuVa.gif"
+
+FATERIA_BOSS_PHASE2_CONFIG = {
+    "id": "fateria_phase2",
+    "name": "Fateria – Khuôn mẫu của số phận (Phase 2)",
+    "quote": "Đến lúc để ngươi biết số phận ngươi sẽ không bao giờ thay đổi",
+    "image": FATERIA_BOSS_CONFIG["image"],
+    "hp": 220000,          # <<< chỉnh tại đây
+    "power": 11000,        # <<< chỉnh tại đây
+    "shard_rate": 0.10,    # Fateria Shard rơi 10% ở Phase 2
+    "cube_space": {"reduce_pct": 0.25, "counter_mult": 2.0, "max_uses": 1, "gif": FATERIA_P2_GIF_CUBE},
+    "have_you_know": {"gif": FATERIA_P2_GIF_REWIND, "max_uses": 1},
+}
+
+
+def _fa_rewind(combatants):
+    """Hồi sinh + hồi đầy máu + reset toàn bộ cờ/trạng thái skill của mọi lá bài (về trạng thái đầu Phase 2)."""
+    _sk_reset_phase(combatants)
+    for c in combatants:
+        c["mahoraga_adapt_turns"] = 0
+        c["t8_true_used"] = 0
+        c["reimu_paid"] = False
+        c["eq_boss_fenrir"] = boss_eq_has("fateria", "nanh_fenrir")
+
+
+async def execute_fateria_phase2(channel, raid_data, combatants, all_turns, p1_rounds, p1_rewards_data):
+    cfg = FATERIA_BOSS_PHASE2_CONFIG
+    base = FATERIA_BOSS_CONFIG
+    pas = base["passive"]
+    sk = base["skills"]
+    clones = sk["clone_attack"]["clones"]
+    cube_cfg = cfg["cube_space"]
+    participants = raid_data["participants"]
+    max_hp = cfg["hp"] + boss_eq_hp("fateria")
+    power = cfg["power"] + boss_eq_atk("fateria")
+    color = 0x0369A1
+
+    p1_lines = []
+    for r in p1_rewards_data.values():
+        p1_lines.append(f"🎁 **{r['username']}**: +{r['total_pulls']:.0f} Vé ({r['items'][0]})" + (f"\n   └ {r['items'][1]}" if len(r['items']) > 1 else ""))
+
+    alert = discord.Embed(
+        title="🚨 FATERIA THỨC TỈNH - SỐ PHẬN KHÔNG THỂ THAY ĐỔI! (PHASE 2)",
+        description=(
+            f"⏳ **Fateria:** *\"{cfg['quote']}\"*\n\n"
+            f"❤️ **Máu:** **{max_hp:,} HP** | ⚔️ **Sát thương:** **{power:,} DMG** (chia đều)\n"
+            "🔄 **Save loop (15%):** Hồi 30% HP & miễn nhiễm sát thương trong turn đó.\n"
+            "⏪ **Have you know:** Khi bị hạ gục sẽ **tua ngược về hiệp 1 Phase 2** (1 lần duy nhất)!\n"
+            "🧊 **Cube space (thay Thunder blaze, 1 lần):** Giảm 25% sát thương nhận & phản kích 2x sát thương!\n\n"
+            "✨ **PHÉP MÀU THANH TẨY:** Toàn bộ thẻ bài của dũng giả được **hồi sinh và hồi 100% sinh lực**!"
+        ),
+        color=color
+    )
+    alert.set_image(url=cfg["image"])
+    if p1_lines:
+        alert.add_field(name="📦 Phần Thưởng Phase 1 Đã Nhận:", value=_jt_cut("\n".join(p1_lines), 1000), inline=False)
+    battle_msg = await channel.send(embed=alert)
+    await asyncio.sleep(2.5)
+
+    _fa_rewind(combatants)
+
+    B = {
+        "hp": max_hp, "max_hp": max_hp, "stunned": False, "mind": 0, "freeze": 0, "molten": 0,
+        "erased": None, "fate": 0, "locked_now": False, "ice": 0, "gif": None,
+        "true_cap": int(max_hp * 0.50), "true_accum": 0,
+        "boss_type": "fateria", "boss_name": cfg["name"], "active": []
+    }
+    rounds = 0
+    max_rounds = 50
+    rewind_used = False
+    cube_uses = 0
+    fate_turns = 0
+    ice_turns = 0
+    heal_reduce = 0.0
+
+    while B["hp"] > 0 and rounds < max_rounds:
+        active = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
+        if not active:
+            break
+        rounds += 1
+        front = [c["team_cards"][c["current_card_index"]] for c in active]
+        n = len(front)
+        B["stunned"] = False
+        B["gif"] = None
+        B["active"] = active
+        B["locked_now"] = B["fate"] > 0
+        if B["fate"] > 0:
+            B["fate"] -= 1
+        notes, boss_fx, hit_logs = [], [], []
+
+        # ---------- PASSIVE 1: SAVE LOOP ----------
+        save_loop = False
+        hp_snap = B["hp"]
+        if (not B["locked_now"]) and B["erased"] != "save_loop" and random.random() < pas["chance"]:
+            save_loop = True
+            _old = B["hp"]
+            B["hp"] = min(max_hp, B["hp"] + int(max_hp * pas["heal_pct"]))
+            hp_snap = B["hp"]
+            B["gif"] = pas["gif"]
+            boss_fx.append(f"🔄 **[Passive - Save loop (15%)]** Fateria quay ngược thời gian: hồi **+{B['hp'] - _old:,} HP** (30% HP tối đa) và **MIỄN NHIỄM TOÀN BỘ SÁT THƯƠNG** trong turn này!")
+
+        # ---------- Hiệu ứng Boss đang đè lên người chơi ----------
+        player_locked = fate_turns > 0
+        if player_locked:
+            fate_turns -= 1
+            boss_fx.append(f"⛓️ **[Fate loop]** Đối thủ **không thể dùng skill** trong hiệp này! (Còn {fate_turns} lượt khóa)")
+        ice_active = ice_turns > 0
+        if ice_active:
+            ice_turns -= 1
+
+        # ---------- BOSS QUYẾT ĐỊNH SKILL TỪ ĐẦU LƯỢT (để Cube space giảm sát thương cùng lượt) ----------
+        choice = "normal"
+        if not B["locked_now"]:
+            can_fate = (B["erased"] != "fate_loop") and fate_turns == 0 and (not player_locked)
+            if can_fate and random.random() < sk["fate_loop"]["chance"]:
+                choice = "fate"
+            elif B["erased"] != "clone_attack" and random.random() < sk["clone_attack"]["chance"]:
+                _pick = random.choice(["cube", "fallen", "ice"])
+                if _pick == "cube" and cube_uses >= cube_cfg["max_uses"]:
+                    choice = "normal"
+                else:
+                    choice = _pick
+
+        # ---------- Debuff đang đè lên Boss ----------
+        if B["mind"] > 0:
+            B["mind"] -= 1
+            if random.random() < 0.20:
+                B["hp"] = max(0, B["hp"] - power)
+                boss_fx.append(f"🌀 **[Red Eye Mind]** Boss mất kiểm soát, tự gây **{power:,} DMG** lên bản thân! (Còn {B['mind']} lượt)")
+        if B["molten"] > 0:
+            B["molten"] -= 1
+            _applied, B["true_accum"], _cap = apply_raid_true_damage(int(max_hp * 0.02), B["true_accum"], B["true_cap"], "Bỏng Mặt Đất (Utsuho)")
+            if _applied > 0:
+                B["hp"] = max(0, B["hp"] - _applied)
+                boss_fx.append(f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Boss **{_applied:,} DMG**! (Còn {B['molten']} lượt)")
+        if B["freeze"] > 0:
+            B["freeze"] -= 1
+            if random.random() < 0.45:
+                B["stunned"] = True
+                boss_fx.append(f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%)! (Còn {B['freeze']} lượt duy trì)")
+
+        # ---------- LƯỢT ĐÁNH CỦA NGƯỜI CHƠI (hỗ trợ toàn bộ lá bài) ----------
+        hp_before = {id(k): k["current_hp"] for k in front}
+        round_dmg = 0
+        for c in active:
+            ac = c["team_cards"][c["current_card_index"]]
+            blocked = ice_active and random.random() < 0.40
+            if blocked:
+                notes.append(f"❄️ **[Ice spear]** **{ac['name']}** ({c['username']}) bị giáo băng cầm chân (40%), không thể tấn công lượt này!")
+                continue
+            if player_locked:
+                d = ac["power"]
+            else:
+                d = _jt_player_attack(c, ac, rounds, B, notes)
+            round_dmg += d
+            c["total_dmg"] += d
+
+        # Giảm hiệu quả hồi máu (The fallen hero)
+        if heal_reduce > 0:
+            for k in front:
+                _b = hp_before.get(id(k))
+                if _b is not None and k["current_hp"] > _b:
+                    k["current_hp"] = _b + int((k["current_hp"] - _b) * (1.0 - heal_reduce))
+
+        # ---------- Boss có hành động được không? ----------
+        can_act = not B["stunned"]
+        if can_act and B["ice"] > 0:
+            B["ice"] -= 1
+            if random.random() < 0.40:
+                can_act = False
+                boss_fx.append("❄️ **[Ice spear]** Giáo băng cầm chân Fateria, Boss không thể tấn công lượt này!")
+        if B["locked_now"]:
+            choice = "normal"
+        if choice == "fate" and B["erased"] == "fate_loop":
+            choice = "normal"
+        if choice in ("cube", "fallen", "ice") and B["erased"] == "clone_attack":
+            choice = "normal"
+
+        # ---------- CUBE SPACE: giảm 25% sát thương Boss nhận trong lượt ----------
+        cube_on = (choice == "cube" and can_act)
+        cube_txt = ""
+        if cube_on:
+            _cut = int(round_dmg * cube_cfg["reduce_pct"])
+            round_dmg -= _cut
+            cube_txt = f" *(🧊 Cube space giảm **{_cut:,} DMG** - 25%)*"
+        round_dmg = max(0, round_dmg)
+
+        if save_loop:
+            B["hp"] = hp_snap
+            player_atk_str = f"🔄 Toàn quân dồn **{round_dmg:,} DMG** nhưng Fateria đã kích hoạt **Save loop**, **MIỄN NHIỄM TOÀN BỘ SÁT THƯƠNG** turn này!"
+        else:
+            B["hp"] = max(0, B["hp"] - round_dmg)
+            player_atk_str = f"Toàn quân gây **{round_dmg:,} DMG** lên Fateria!{cube_txt}"
+
+        # ---------- HÀNH ĐỘNG CỦA BOSS ----------
+        action_log = ""
+        if B["hp"] <= 0:
+            action_log = "💥 **Fateria đã bị đánh gục!**"
+        elif not can_act:
+            action_log = "❄️ Fateria bị ngưng động/cầm chân, không thể ra đòn trong hiệp này!"
+        else:
+            if B["locked_now"]:
+                action_log = "⛓️ **[Fate loop]** Kỹ năng của Fateria đang bị khóa, chỉ có thể đánh thường!\n"
+            if choice == "fate":
+                fate_turns = sk["fate_loop"]["turns"]
+                B["gif"] = sk["fate_loop"]["gif"]
+                each = max(100, power // n)
+                action_log += (f"⛓️ **[SKILL 1] Fateria** tung **Fate loop (10%)**! Đối thủ **không thể dùng skill trong 2 turn liên tiếp**!\n"
+                               f"⚔️ Sát thương kèm theo **{power:,} DMG**, chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!")
+                for c in active:
+                    _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds)
+            elif choice == "cube":
+                cube_uses += 1
+                B["gif"] = cube_cfg["gif"]
+                total = int(power * cube_cfg["counter_mult"])
+                each = max(100, total // n)
+                action_log += (f"🧊 **[SKILL 2 - Clone Attack] Fateria** triển khai **Cube space**! Các khối đa chiều lập phương bao quanh, "
+                               f"**giảm 25% sát thương nhận** và **phản kích 2x sát thương ({total:,} DMG)**, chia đều **{each:,} DMG** lên {n} thẻ!")
+                for c in active:
+                    _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds)
+            elif choice == "fallen":
+                cl = clones["the_fallen_hero"]
+                B["gif"] = cl["gif"]
+                heal_reduce = cl["heal_reduce_pct"]
+                total = int(power * cl["multiplier"])
+                each = max(100, total // n)
+                action_log += f"🗡️ **[SKILL 2 - Clone Attack] Fateria** tung **The fallen hero**! **1.5x DMG ({total:,} DMG)**, chia đều **{each:,} DMG** và **GIẢM 30% HEAL**!"
+                for c in active:
+                    _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds)
+            elif choice == "ice":
+                cl = clones["ice_spear"]
+                B["gif"] = cl["gif"]
+                ice_turns = cl["turns"]
+                total = int(power * cl["multiplier"])
+                each = max(100, total // n)
+                action_log += f"❄️ **[SKILL 2 - Clone Attack] Fateria** phóng **Ice spear**! **1.5x DMG ({total:,} DMG)**, chia đều **{each:,} DMG**, đối phương **40% không thể tấn công trong 2 lượt sau**!"
+                for c in active:
+                    _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds)
+            else:
+                each = max(100, power // n)
+                action_log += f"⚔️ Fateria đánh thường tổng **{power:,} DMG**, chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!"
+                for c in active:
+                    _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds, normal=True)
+
+        # ---------- PASSIVE 2: HAVE YOU KNOW (chết -> tua ngược, 1 lần) ----------
+        do_rewind = False
+        if B["hp"] <= 0 and not rewind_used:
+            rewind_used = True
+            do_rewind = True
+            B["gif"] = cfg["have_you_know"]["gif"]
+            boss_fx.append("⏪ **[Passive - Have you know]** Fateria vừa gục ngã... nhưng thời gian **tua ngược** về hiệp 1 Phase 2! *(1 lần duy nhất)*")
+
+        # ---------- Dọn hiệu ứng, đổi thẻ ----------
+        action_log += t7_raid_after_boss(active, action_log); kasen_restore_guard(active)
+        tick_wonder_guard(active)
+        restore_t4_save_loop(active, rounds)
+
+        push_logs = []
+        for c in active:
+            ac = c["team_cards"][c["current_card_index"]]
+            if ac["current_hp"] <= 0:
+                ac["current_hp"] = 0
+                _g = sakuya3_raid_revive(c, push_logs)
+                if _g:
+                    B["gif"] = _g
+                    continue
+                c["current_card_index"] += 1
+                if c["current_card_index"] < len(c["team_cards"]):
+                    push_logs.append(f"💀 **{ac['name']}** gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
+                else:
+                    c["is_alive"] = False
+                    push_logs.append(f"☠️ **{c['username']}** đã hết thẻ bài và tử trận!")
+
+        # ---------- Embed ----------
+        desc = (
+            f"❤️ **Máu Boss:** `{get_hp_bar(B['hp'], max_hp)}` **{B['hp']:,}/{max_hp:,} HP**\n"
+            f"⏪ Have you know: **{'ĐÃ DÙNG' if rewind_used else 'SẴN SÀNG'}** | 🧊 Cube space: **{cube_uses}/{cube_cfg['max_uses']}**"
+        )
+        fields = [("💥 Tiền Tuyến Tấn Công:", _jt_cut(player_atk_str, 400), False)]
+        if notes:
+            fields.append(("✨ Kỹ Năng Thẻ Bài:", _jt_cut("\n".join(notes), 900), False))
+        if boss_fx:
+            fields.append(("🌀 Hiệu Ứng / Passive Boss:", _jt_cut("\n".join(boss_fx), 800), False))
+        fields.append(("👺 Phản Kích Của Boss:", _jt_cut(action_log, 1000), False))
+        if hit_logs:
+            fields.append(("🛡️ Phản Ứng Phòng Thủ:", _jt_cut("\n".join(hit_logs), 700), False))
+        if push_logs:
+            fields.append(("🔄 Thay Đổi Tiền Tuyến:", _jt_cut("\n".join(push_logs), 600), False))
+        fields.append(("🛡️ Tình Trạng Tiền Tuyến:", _jt_cut(_pr_status_lines(combatants), 800), False))
+
+        round_embed = discord.Embed(title=f"⏳ HIỆP {rounds} - FATERIA (PHASE 2)", description=desc, color=color)
+        for fname, fval, finl in fields:
+            round_embed.add_field(name=fname, value=fval, inline=finl)
+        if B["gif"]:
+            round_embed.set_image(url=B["gif"])
+        else:
+            round_embed.set_thumbnail(url=cfg["image"])
+
+        all_turns.append({
+            "round": rounds, "phase": 2,
+            "title": f"Phase 2 - Hiệp {rounds}: Fateria",
+            "short_label": f"P2 - H{rounds}",
+            "short_desc": f"Boss còn {B['hp']:,} HP",
+            "desc": f"⏳ **{cfg['name']}**\n{desc}",
+            "color": color, "image": B["gif"], "fields": fields
+        })
+        try:
+            await battle_msg.edit(embed=round_embed)
+        except Exception:
+            pass
+
+        if do_rewind:
+            await asyncio.sleep(3.0)
+            rw = discord.Embed(
+                title="⏪ HAVE YOU KNOW... — THỜI GIAN BỊ TUA NGƯỢC!",
+                description=(
+                    "⏳ **Fateria:** *\"Ngươi tưởng ta đã chết sao? Số phận của ngươi sẽ không bao giờ thay đổi...\"*\n\n"
+                    "🔁 Mọi thứ quay về **hiệp 1 Phase 2**: Fateria hồi đầy máu, toàn bộ thẻ bài hồi sinh & hồi 100% sinh lực, "
+                    "mọi kỹ năng của hai bên được làm mới!"
+                ),
+                color=0x0EA5E9
+            )
+            rw.set_image(url=cfg["have_you_know"]["gif"])
+            try:
+                await battle_msg.edit(embed=rw)
+            except Exception:
+                pass
+            await asyncio.sleep(3.0)
+            _fa_rewind(combatants)
+            B.update({"hp": max_hp, "stunned": False, "mind": 0, "freeze": 0, "molten": 0, "erased": None,
+                      "fate": 0, "locked_now": False, "ice": 0, "gif": None, "true_accum": 0})
+            rounds = 0
+            cube_uses = 0
+            fate_turns = 0
+            ice_turns = 0
+            heal_reduce = 0.0
+            continue
+
+        if B["hp"] <= 0:
+            break
+        await asyncio.sleep(3.0)
+
+    # ---------- THẤT BẠI ----------
+    if B["hp"] > 0:
+        fail = discord.Embed(
+            title="❌ QUÂN ĐOÀN THẤT THỦ TRƯỚC FATERIA PHASE 2!",
+            description=(
+                f"**Phase 1:** 🎉 Hạ gục sau **{p1_rounds} hiệp** (quà Phase 1 được bảo lưu trọn vẹn!)\n"
+                f"**Phase 2:** ❌ Thất thủ — Fateria còn **{B['hp']:,}/{max_hp:,} HP**\n"
+                "⏳ Hồi chiêu **15 phút** đã kích hoạt!"
+            ),
+            color=0xEF4444
+        )
+        fail.set_thumbnail(url=cfg["image"])
+        await channel.send(embed=fail, view=OpenDetailsView(all_turns))
+        return
+
+    # ---------- CHIẾN THẮNG: DROP PHASE 2 (giống Phase 1, shard 10%) ----------
+    total_dmg = sum(c["total_dmg"] for c in combatants)
+    p2_lines = []
+    for uid in participants:
+        p = get_player(uid)
+        old_lvl = calculate_level_from_xp(p.get("xp", 0), p.get("prestige", 0))
+        roll = random.random()
+        if roll < 0.10:
+            t_val, d_str = 30.0, "👑 **+30 Vé** (10%)"
+        elif roll < 0.50:
+            t_val, d_str = 15.0, "🔥 **+15 Vé** (40%)"
+        else:
+            t_val, d_str = 10.0, "💎 **+10 Vé** (50%)"
+        got = [d_str]
+        sh = p.setdefault("shards", {})
+        if random.random() < cfg["shard_rate"]:
+            sh["fateria"] = sh.get("fateria", 0) + 1
+            got.append(f"⏳ **+1 Fateria Shard** (10% Siêu Hiếm! Kho: {sh['fateria']}/20)")
+        p["pull_tickets"] += t_val
+        grant_boss_xp_drop(p, "fateria", 2, raid_data)
+        got.extend(eq_roll_drops(p, "fateria", raid_data))
+        p["xp"] += 100
+        save_player(p)
+        new_lvl = calculate_level_from_xp(p.get("xp", 0), p.get("prestige", 0))
+        lvl_txt = f" 🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+        p2_lines.append(f"🏆 **{p['username']}**:{lvl_txt} +{t_val:.0f} Vé + 100 XP\n   └ " + "\n   └ ".join(got))
+
+    final = discord.Embed(
+        title="⚔️ KẾT QUẢ ĐẠI CHIẾN: FATERIA – KHUÔN MẪU CỦA SỐ PHẬN (FULL 2 PHASES)!",
+        description=(
+            "🌸 **Reimu:** *\"Vòng lặp thời gian đã bị phá vỡ thật sự! Số phận không còn là xiềng xích nữa!\"*\n\n"
+            f"**Phase 1:** 🎉 Hạ gục sau **{p1_rounds} hiệp**\n"
+            f"**Phase 2:** 🎉 Hạ gục (kể cả sau Have you know)\n"
+            f"💥 **Tổng Sát Thương:** **{total_dmg:,} DMG**\n"
+            "⏳ **Hồi chiêu Boss tiếp theo:** **15 phút**"
+        ),
+        color=0x10B981
+    )
+    final.set_thumbnail(url=cfg["image"])
+    final.add_field(name="📦 Phần Thưởng Phase 1 (đã trao):", value=_jt_cut("\n".join(p1_lines) or "—", 1000), inline=False)
+    final.add_field(name="💎 Phần Thưởng Phase 2 (10% 30 vé, 40% 15 vé, 50% 10 vé, 10% Fateria Shard):", value=_jt_cut("\n".join(p2_lines), 1000), inline=False)
+    await channel.send(embed=final, view=OpenDetailsView(all_turns))
+    
 import sys
 
 def start_bot_safely():
