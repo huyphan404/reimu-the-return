@@ -1229,7 +1229,7 @@ EVOL_CONFIG["t5"] = {
     "required_item": "dia_ky_uc_jotaro",
     "evol_gif": T5_GIF_EVOL,
     "skill_name": "Star Platinum: The World (Rage • ​Ngưỡng Máu Tử • Stand Barrage • Skull Breaker • Time Stop)",
-    "skill_desc": "Rage, Ngưỡng máu tử (máu <30% tự động Time Stop 2 turn), Stand Barrage (40%, x1.5), Skull Breaker (25%, x2.2), Time Stop (20%, đóng băng 2 turn).",
+    "skill_desc": "Rage, Ngưỡng máu tử (máu <30% tự động Time Stop 2 turn), Stand Barrage (40%, x1.5), Skull Breaker (25%, x2.2), Time Stop (20%, đóng băng 1 turn).",
     "bonus_power": 300,
     "bonus_hp": 300
 }
@@ -14303,7 +14303,9 @@ async def handle_help(ctx_or_interaction):
             "• `/token` : Dùng token mua đồ ở shop đặc biệt.\n"
             "• `/item check` : Xem kho đồ của bạn.\n"
             "• `/weapond` : Trang bị vũ khí tấn công (mặc giáp dùng `/item use`).\n"
-            "• `/item trade` : Trade vật phẩm."
+            "• `/item trade` : Trade vật phẩm.\n"
+            "• `/coinflip` : Tung đồng xu cược Xu (tối đa 2,500).\n"
+            "• `/slot machine` : Quay số trái cây cược Xu (tối đa 5,000)."
         ),
         inline=False
     )
@@ -15203,10 +15205,10 @@ def t5_combat_turn(t5_state: dict, card_data: dict, is_ace2: bool = False, skill
                     logs.append(f"💀 **{tag}** tung **Skull Breaker** (25%)! Star Platinum dừng thời gian rồi nghiền nát sọ đối phương, **×2.2 DMG**!")
                 else:
                     t5_state["stop_uses"] = t5_state.get("stop_uses", 0) + 1
-                    t5_state["stop_remaining"] = 1
+                    # [NERF] Time Stop chỉ còn 1 turn: KHÔNG set stop_remaining (giữ nguyên nếu Ngưỡng Máu Tử đang chạy)
                     stun = True
                     gif = T5_GIF_TIMESTOP
-                    logs.append(f"⏱️ **{tag}** hô vang **STAR PLATINUM THE WORLD!** (20%) Đóng băng đối thủ trong **2 turn**! *(Lần {t5_state['stop_uses']}/2)*")
+                    logs.append(f"⏱️ **{tag}** hô vang **STAR PLATINUM THE WORLD!** (20%) Đóng băng đối thủ trong **1 turn**! *(Lần {t5_state['stop_uses']}/2)*")
                 break
 
     # 4. Rage chỉ buff ĐÁNH THƯỜNG (lượt không dùng chiêu)
@@ -15255,7 +15257,7 @@ def execute_jotaro_ace2(player):
             "⏳ **Ngưỡng Máu Tử:** Máu dưới 30% ➜ Time Stop, đóng băng mọi mục tiêu 2 turn\n"
             "👊 **Stand Barrage (40%):** ×1.5 DMG (tối đa 2 lần/trận)\n"
             "💀 **Skull Breaker (25%):** ×2.2 DMG (1 lần/trận)\n"
-            "⏱️ **Time Stop (20%):** Đóng băng mục tiêu 2 turn (tối đa 2 lần/trận)\n\n"
+            "⏱️ **Time Stop (20%):** Đóng băng mục tiêu 1 turn (tối đa 2 lần/trận)\n\n"
             f"📉 **Chi phí:** 10 Jotaro Shards (còn `{shards['jotaro']}`) + 1 Đĩa Ký Ức (còn `{items['dia_ky_uc_jotaro']}`)\n"
             "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn!"
         ),
@@ -15319,7 +15321,7 @@ class JotaroCardView(discord.ui.View):
                 "⏳ **Ngưỡng Máu Tử (Passive):** Máu <30% ➜ Time Stop, đóng băng mọi mục tiêu 2 turn.\n"
                 "👊 **Stand Barrage (40%):** ×1.5 DMG (2 lần/trận).\n"
                 "💀 **Skull Breaker (25%):** ×2.2 DMG (1 lần/trận).\n"
-                "⏱️ **Time Stop (20%):** Đóng băng mục tiêu 2 turn (tối đa 2 lần/trận)."
+                "⏱️ **Time Stop (20%):** Đóng băng mục tiêu 1 turn (tối đa 2 lần/trận)."
             )
         else:
             skills = (
@@ -18784,6 +18786,18 @@ async def handle_view(ctx_or_interaction, target=None):
     embed.add_field(name="📦 Kho chứa", value=f"**{get_storage_used(p)}/{get_storage_cap(p)}** slot", inline=True)
     embed.add_field(name="🔥 Daily streak", value=f"**{p.get('daily_streak', 0)}** ngày", inline=True)
     embed.add_field(name="🧪 Buff", value=potion, inline=True)
+    # ---- Gamble Rate ----
+    gb = p.get("gamble") or {}
+    gb_lines, t_games, t_wins, t_profit = [], 0, 0, 0
+    for gkey, glabel in (("coinflip", "🪙 Coinflip"), ("slot", "🎰 Slot")):
+        gs = gb.get(gkey) or {}
+        g_, w_, pr_ = gs.get("games", 0), gs.get("wins", 0), gs.get("profit", 0)
+        t_games += g_; t_wins += w_; t_profit += pr_
+        g_rate = (w_ / g_ * 100) if g_ > 0 else 0.0
+        gb_lines.append(f"{glabel}: **{w_}/{g_}** thắng (**{g_rate:.1f}%**) • lãi/lỗ **{pr_:+,}** {XU_EMOJI}")
+    t_rate = (t_wins / t_games * 100) if t_games > 0 else 0.0
+    gb_lines.append(f"📊 **Tổng:** {t_wins}/{t_games} thắng (**{t_rate:.1f}%**) • lãi/lỗ **{t_profit:+,}** {XU_EMOJI}")
+    embed.add_field(name="🎲 Gamble Rate", value="\n".join(gb_lines), inline=False)
     embed.set_footer(text="Dùng /view @người_khác để xem hồ sơ người khác")
     await _eq_send(ctx_or_interaction, embed=embed)
 
@@ -21945,7 +21959,202 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
     return await _FA_PREV_CHECK(ctx_or_interaction, nhan_vat)
 
 # ===================== HẾT KHỐI FATERIA ACE 2 =====================
-    
+# ==============================================================================
+# [UPDATE GAMBLE] /coinflip + /slot machine + LƯU THỐNG KÊ GAMBLE RATE
+# ==============================================================================
+import random as _gb_rand   # dùng random chuẩn, tránh proxy _LiemRandom
+
+COINFLIP_MAX_BET = 2500
+SLOT_MAX_BET = 5000
+GAMBLE_COOLDOWN = 3.0
+
+SLOT_FRUITS = {1: "🍎", 2: "🍊", 3: "🍋", 4: "🍇", 5: "🍓", 6: "🍒", 7: "🍑", 8: "🍍", 9: "🥝", 10: "🍉"}
+SLOT_MULT_TRIPLE = 30        # 3 ô giống nhau: nhận lại x30 tiền cược
+SLOT_MULT_TRIPLE_TOP = 50    # 3 số 10 (🍉🍉🍉): x50
+SLOT_MULT_PAIR = 2           # 2 ô giống nhau: x2 (lãi đúng bằng tiền cược)
+
+_gamble_locks = {}
+_gamble_last = {}
+
+
+def _gamble_stat(player: dict, game: str) -> dict:
+    g = player.setdefault("gamble", {})
+    return g.setdefault(game, {"games": 0, "wins": 0, "profit": 0})
+
+
+def _gamble_record(player: dict, game: str, net: int):
+    s = _gamble_stat(player, game)
+    s["games"] += 1
+    if net > 0:
+        s["wins"] += 1
+    s["profit"] += net
+
+
+def _gamble_validate(player: dict, bet, max_bet: int):
+    if bet is None or bet <= 0:
+        return f"❌ Số xu cược phải lớn hơn 0! (Tối đa **{max_bet:,}** {XU_EMOJI})"
+    if bet > max_bet:
+        return f"❌ Cược tối đa của trò này là **{max_bet:,}** {XU_EMOJI}!"
+    have = player.get("xu", 0)
+    if have < bet:
+        return f"❌ Bạn không đủ Xu! (Cần {bet:,}, hiện có {have:,} {XU_EMOJI})"
+    return None
+
+
+def _parse_coin_side(raw):
+    s = str(raw or "").strip().lower()
+    if s in ("heads", "head", "h", "ngua", "ngửa"):
+        return "heads"
+    if s in ("tails", "tail", "t", "sap", "sấp"):
+        return "tails"
+    return None
+
+
+async def _gamble_guard(ctx_or_interaction, user):
+    """Trả về lock nếu được phép chơi, None nếu bị chặn (đã gửi thông báo)."""
+    lock = _gamble_locks.setdefault(user.id, asyncio.Lock())
+    if lock.locked():
+        await _eq_send(ctx_or_interaction, content="⏳ Ván trước của bạn vẫn đang xử lý!", ephemeral=True)
+        return None
+    rem = GAMBLE_COOLDOWN - (time.time() - _gamble_last.get(user.id, 0.0))
+    if rem > 0:
+        await _eq_send(ctx_or_interaction, content=f"⏳ Chậm thôi! Chờ thêm **{rem:.1f}s** để chơi ván tiếp theo.", ephemeral=True)
+        return None
+    return lock
+
+
+# ---------------------------- /coinflip ----------------------------
+async def handle_coinflip(ctx_or_interaction, bet, side):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    pick = _parse_coin_side(side)
+    if pick is None:
+        await _eq_send(ctx_or_interaction, content="❌ Hãy chọn **ngửa (heads)** hoặc **sấp (tails)**! VD: `!coinflip 500 heads`", ephemeral=True)
+        return
+    lock = await _gamble_guard(ctx_or_interaction, user)
+    if lock is None:
+        return
+    async with lock:
+        player = get_player(user.id, user.display_name)
+        err = _gamble_validate(player, bet, COINFLIP_MAX_BET)
+        if err:
+            await _eq_send(ctx_or_interaction, content=err, ephemeral=True)
+            return
+        result = _gb_rand.choice(["heads", "tails"])
+        win = (result == pick)
+        net = bet if win else -bet
+        player["xu"] = player.get("xu", 0) + net
+        _gamble_record(player, "coinflip", net)
+        save_player(player)
+        _gamble_last[user.id] = time.time()
+
+        names = {"heads": "🪙 NGỬA (Heads)", "tails": "🪙 SẤP (Tails)"}
+        s = _gamble_stat(player, "coinflip")
+        embed = discord.Embed(
+            title="🪙 COINFLIP - " + ("BẠN THẮNG!" if win else "BẠN THUA!"),
+            description=(
+                f"👤 **{user.display_name}** cược **{bet:,}** {XU_EMOJI} vào **{names[pick]}**\n"
+                f"🎯 Kết quả: **{names[result]}**\n\n"
+                f"{'🎉 **+' + format(bet, ',') + '**' if win else '💸 **-' + format(bet, ',') + '**'} {XU_EMOJI}\n"
+                f"{XU_EMOJI} Số dư: **{player['xu']:,}** xu"
+            ),
+            color=0x10B981 if win else 0xEF4444
+        )
+        embed.set_footer(text=f"Coinflip: {s['wins']}/{s['games']} thắng • Lãi/lỗ tổng {s['profit']:+,} xu • Cược tối đa {COINFLIP_MAX_BET:,}")
+        await _eq_send(ctx_or_interaction, embed=embed)
+
+
+# ---------------------------- /slot machine ----------------------------
+def _slot_eval(reels):
+    """Trả về (hệ số nhận lại, tên kết quả)."""
+    a, b, c = reels
+    if a == b == c:
+        if a == 10:
+            return SLOT_MULT_TRIPLE_TOP, "👑 SIÊU JACKPOT (3 số 10)"
+        return SLOT_MULT_TRIPLE, "💎 JACKPOT (3 ô giống nhau)"
+    if a == b or b == c or a == c:
+        return SLOT_MULT_PAIR, "✨ 2 ô giống nhau"
+    return 0, "💀 Không trúng"
+
+
+async def handle_slot(ctx_or_interaction, bet):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    lock = await _gamble_guard(ctx_or_interaction, user)
+    if lock is None:
+        return
+    async with lock:
+        player = get_player(user.id, user.display_name)
+        err = _gamble_validate(player, bet, SLOT_MAX_BET)
+        if err:
+            await _eq_send(ctx_or_interaction, content=err, ephemeral=True)
+            return
+        reels = [_gb_rand.randint(1, 10) for _ in range(3)]
+        mult, label = _slot_eval(reels)
+        net = bet * mult - bet
+        player["xu"] = player.get("xu", 0) + net
+        _gamble_record(player, "slot", net)
+        save_player(player)
+        _gamble_last[user.id] = time.time()
+
+        board = "  |  ".join(f"{SLOT_FRUITS[r]} `{r}`" for r in reels)
+        win = net > 0
+        s = _gamble_stat(player, "slot")
+        embed = discord.Embed(
+            title="🎰 SLOT MACHINE - " + ("THẮNG!" if win else "THUA!"),
+            description=(
+                f"👤 **{user.display_name}** cược **{bet:,}** {XU_EMOJI}\n\n"
+                f"╔══════════════╗\n   {board}\n╚══════════════╝\n\n"
+                f"{label}" + (f" — nhận **x{mult}**" if mult else "") + "\n"
+                f"{'🎉 **+' + format(net, ',') + '**' if win else '💸 **-' + format(-net, ',') + '**'} {XU_EMOJI}\n"
+                f"{XU_EMOJI} Số dư: **{player['xu']:,}** xu"
+            ),
+            color=0xF59E0B if win else 0xEF4444
+        )
+        embed.add_field(
+            name="📜 Bảng thưởng",
+            value=(f"👑 3 số **10** (🍉🍉🍉): **x{SLOT_MULT_TRIPLE_TOP}**\n"
+                   f"💎 3 ô giống nhau: **x{SLOT_MULT_TRIPLE}**\n"
+                   f"✨ 2 ô giống nhau: **x{SLOT_MULT_PAIR}**\n"
+                   f"💀 Còn lại: mất cược"),
+            inline=False
+        )
+        embed.set_footer(text=f"Slot: {s['wins']}/{s['games']} thắng • Lãi/lỗ tổng {s['profit']:+,} xu • Cược tối đa {SLOT_MAX_BET:,}")
+        await _eq_send(ctx_or_interaction, embed=embed)
+
+
+# ---------------------------- Đăng ký lệnh ----------------------------
+@bot.tree.command(name="coinflip", description=f"Tung đồng xu cược Xu công đức (cược tối đa {COINFLIP_MAX_BET:,})")
+@app_commands.describe(bet="Số xu muốn cược", mat="Chọn mặt ngửa hoặc sấp")
+@app_commands.choices(mat=[
+    app_commands.Choice(name="🪙 Ngửa (Heads)", value="heads"),
+    app_commands.Choice(name="🪙 Sấp (Tails)", value="tails"),
+])
+async def slash_coinflip(interaction: discord.Interaction, bet: int, mat: str):
+    await handle_coinflip(interaction, bet, mat)
+
+@bot.command(name="coinflip", aliases=["cf"])
+async def prefix_coinflip(ctx, bet: int = None, mat: str = None):
+    if bet is None or mat is None:
+        await ctx.send("💡 Cú pháp: `!coinflip <số_xu> <heads|tails>` (VD: `!coinflip 500 heads`)")
+        return
+    await handle_coinflip(ctx, bet, mat)
+
+
+class SlotGroup(app_commands.Group, name="slot", description="Máy quay số trái cây"):
+    @app_commands.command(name="machine", description=f"Quay 3 ô số 1-10 (trái cây) cược Xu (cược tối đa {SLOT_MAX_BET:,})")
+    @app_commands.describe(bet="Số xu muốn cược")
+    async def slot_machine_cmd(self, interaction: discord.Interaction, bet: int):
+        await handle_slot(interaction, bet)
+
+bot.tree.add_command(SlotGroup())
+
+@bot.command(name="slot", aliases=["slots"])
+async def prefix_slot(ctx, *args):
+    nums = [a for a in args if a.lstrip("-").isdigit()]
+    if not nums:
+        await ctx.send("💡 Cú pháp: `!slot <số_xu>` (VD: `!slot 1000`)")
+        return
+    await handle_slot(ctx, int(nums[0]))  
+
 import sys
 
 def start_bot_safely():
