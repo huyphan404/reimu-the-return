@@ -18651,7 +18651,7 @@ async def prefix_shard_trade(ctx, user: Union[discord.Member, discord.User] = No
 XU_NAME = "Xu công đức"
 XU_EMOJI = "🪙"
 
-SAC_VALUES = {"SS": 10000, "S": 5000, "A": 2500, "B": 1250, "C": 625}
+SAC_VALUES = {"SS": 10000, "S": 5000, "A": 2500, "B": 200, "C": 100}
 
 # Kho chứa theo Prestige (P0: 300 thẻ, P1: 500, P2: 550, P3: 700, P4: 1000, P5+ = 2000)
 STORAGE_BASE_BY_PRESTIGE = {0: 400, 1: 500, 2: 550, 3: 700, 4: 1000, 5: 2000}
