@@ -20448,7 +20448,7 @@ import random as _std_random
 LIEM_ID = "liem_hon_mang"
 LIEM_ATK = 80
 LIEM_SKILL_BONUS = 0.02
-LIEM_SHOP_PRICE = 6666
+LIEM_SHOP_PRICE = 1300
 # Link Discord sẽ hết hạn -> nên up ảnh lên GitHub repo rồi thay link raw vào đây
 LIEM_IMG = "https://media.discordapp.net/attachments/1549063334781911070/1564633162921803796/images.png?ex=6ae1f9af&is=6ae0a82f&hm=4fa058aa4a2e9eba2a9454d8fc340625a6fed1b48e4f27c5953cf7f98fb15149&=&format=webp&quality=lossless&width=256&height=256"
 
