@@ -8956,12 +8956,22 @@ async def _handle_pull_inner(ctx_or_interaction, count: int = 1):
 
     entries = []
     notes = []
+    auto_sac_cnt, auto_sac_xu = 0, 0
     for _ in range(count):
         card, is_dup, conv, unlocked_from_lock = execute_single_pull(player)
         entries.append({"card": card, "is_dup": is_dup, "unlocked": unlocked_from_lock})
+        _axu = auto_sac_try(player, card, is_dup)
+        if _axu:
+            auto_sac_cnt += 1
+            auto_sac_xu += _axu
         if unlocked_from_lock:
             notes.append(f"🔓 Chúc mừng! Bạn đã quay trúng lại **#{disp_id(card['id'])} {card['name']}**, thẻ bài đã được giải phóng khỏi trạng thái khóa Admin!")
 
+    if auto_sac_cnt:
+        notes.append(
+            f"♻️ **Auto Sac:** đã tự động quy đổi **{auto_sac_cnt}** thẻ trùng ➜ **+{auto_sac_xu:,} {XU_EMOJI} Xu công đức** "
+            f"(Tổng: **{player.get('xu', 0):,}**)"
+        )
     dq_notifs = update_daily_quest_progress(player, "pull", count)
     ok = await asyncio.to_thread(save_player, player)
     if not ok:
@@ -14285,6 +14295,7 @@ async def handle_help(ctx_or_interaction):
             "• `/daily` : Nhận thưởng hằng ngày (vé + % XP + Xu, có streak 7 ngày).\n"
             "• `/view` : Xem hồ sơ của bạn hoặc người khác (trận thắng, Xu, pull, prestige).\n"
             "• `/sac` : Quy đổi thẻ thừa ra Xu công đức.\n"
+            "• `/auto sac` : Tự động quy đổi / giữ lại thẻ khi pull.\n"
             "• `/shop` : Kirisame Magic Shop (Potion, thẻ S, kho chứa, Quả Lọ).\n"
             "• `/quest` : Nhiệm vụ ngày, thêm lượt quay và phần thưởng.\n"
             "• `/boss_status` : Kiểm tra tình trạng spawn rate Boss.\n"
@@ -16441,7 +16452,7 @@ async def spawn_prime_raid(channel, author, is_admin=False):
         name="🎁 Phần Thưởng Hạ Gục Boss:",
         value=(
             "• 🎟️ **100%** nhận **10 Vé Pull**\n"
-            "• 🎟️ **50%** nhận thêm **40 Vé Pull**\n"
+            "• 🎟️ **30%** nhận thêm **15 Vé Pull**\n"
             f"• ✨ **50%** nhận XP = **×{PRIME_XP_DROP_MULT:g} XP hiện tại** trong cấp\n"
             "• 🌸 **10%** rơi **Kanae Shard**| 🌪️ **6%** rơi **Kisami Shard** | 🔮 **5%** Mảnh **Seiki** | ⏳ **5%** **Fateria Shard** | 🩸 **5%** Mảnh **Kizuna**"
         ),
@@ -16610,7 +16621,7 @@ async def execute_prime_raid(channel, raid_data):
         "hp": max_hp, "max_hp": max_hp, "stunned": False, "mind": 0, "freeze": 0, "molten": 0,
         "erased": None, "fate": 0, "locked_now": False, "ice": 0, "gif": None,
         "true_cap": int(max_hp * 0.50), "true_accum": 0,
-        "boss_type": "sukuna", "boss_name": cfg["name"], "active": [],
+        "boss_type": "han_seiki", "boss_name": cfg["name"], "active": [],
         "eq_gaia": True
     }
 
@@ -16849,9 +16860,9 @@ async def execute_prime_raid(channel, raid_data):
         got = ["🎟️ **+10 Vé Pull** (100%)"]
         p_shards = p.setdefault("shards", {})
 
-        if random.random() < 0.50:
-            p["pull_tickets"] += 40.0
-            got.append("🎟️ **+40 Vé Pull** (50% Bonus!)")
+        if random.random() < 0.30:
+            p["pull_tickets"] += 15.0
+            got.append("🎟️ **+40 Vé Pull** (30% Bonus!)")
         if random.random() < 0.10:
             p_shards["kanae"] = p_shards.get("kanae", 0) + 1
             got.append(f"🌸 **+1 Kanae Shard** (10%! Kho: {p_shards['kanae']}/10)")
@@ -20693,7 +20704,7 @@ async def execute_fateria_phase2(channel, raid_data, combatants, all_turns, p1_r
             f"❤️ **Máu:** **{max_hp:,} HP** | ⚔️ **Sát thương:** **{power:,} DMG** (chia đều)\n"
             "🔄 **Save loop (15%):** Hồi 30% HP & miễn nhiễm sát thương trong turn đó.\n"
             "⏪ **Have you know:** Khi bị hạ gục sẽ **tua ngược về hiệp 1 Phase 2** (1 lần duy nhất)!\n"
-            "🧊 **Cube space (thay Thunder blaze, 1 lần):** Giảm 25% sát thương nhận & phản kích 2x sát thương!\n\n"
+            "🧊 **Cube space (thay Thunder blaze):** Giảm 25% sát thương nhận & phản kích 2x sát thương!\n\n"
             "✨ **PHÉP MÀU THANH TẨY:** Toàn bộ thẻ bài của dũng giả được **hồi sinh và hồi 100% sinh lực**!"
         ),
         color=color
@@ -20715,6 +20726,7 @@ async def execute_fateria_phase2(channel, raid_data, combatants, all_turns, p1_r
     rounds = 0
     max_rounds = 50
     rewind_used = False
+    rewind_buff_left = 0 
     cube_uses = 0
     fate_turns = 0
     ice_turns = 0
@@ -20734,6 +20746,13 @@ async def execute_fateria_phase2(channel, raid_data, combatants, all_turns, p1_r
         if B["fate"] > 0:
             B["fate"] -= 1
         notes, boss_fx, hit_logs = [], [], []
+        buff_dodge, buff_skill = 0.0, 0.0
+        if rewind_buff_left > 0:
+            _bi = 3 - rewind_buff_left            # 0,1,2
+            buff_dodge = (1.0, 0.5, 0.25)[_bi]
+            buff_skill = (0.15, 0.10, 0.05)[_bi]
+            rewind_buff_left -= 1
+            boss_fx.append(f"⏳ **[Hậu Quả Tua Ngược - Turn {_bi + 1}/3]** Fateria **{int(buff_dodge * 100)}% né tránh** & **+{int(buff_skill * 100)}% tỉ lệ kích skill**!")
 
         # ---------- PASSIVE 1: SAVE LOOP ----------
         save_loop = False
@@ -20759,13 +20778,11 @@ async def execute_fateria_phase2(channel, raid_data, combatants, all_turns, p1_r
         choice = "normal"
         if not B["locked_now"]:
             can_fate = (B["erased"] != "fate_loop") and fate_turns == 0 and (not player_locked)
-            if can_fate and random.random() < sk["fate_loop"]["chance"]:
+            if can_fate and random.random() < sk["fate_loop"]["chance"] + buff_skill:
                 choice = "fate"
-            elif B["erased"] != "clone_attack" and random.random() < sk["clone_attack"]["chance"]:
+            elif B["erased"] != "clone_attack" and random.random() < sk["clone_attack"]["chance"] + buff_skill:
                 _pick = random.choice(["cube", "fallen", "ice"])
                 if _pick == "cube" and cube_uses >= cube_cfg["max_uses"]:
-                    choice = "normal"
-                else:
                     choice = _pick
 
         # ---------- Debuff đang đè lên Boss ----------
@@ -20787,6 +20804,7 @@ async def execute_fateria_phase2(channel, raid_data, combatants, all_turns, p1_r
                 boss_fx.append(f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%)! (Còn {B['freeze']} lượt duy trì)")
 
         # ---------- LƯỢT ĐÁNH CỦA NGƯỜI CHƠI (hỗ trợ toàn bộ lá bài) ----------
+        hp_before_atk = B["hp"]
         hp_before = {id(k): k["current_hp"] for k in front}
         round_dmg = 0
         for c in active:
@@ -20831,6 +20849,12 @@ async def execute_fateria_phase2(channel, raid_data, combatants, all_turns, p1_r
             round_dmg -= _cut
             cube_txt = f" *(🧊 Cube space giảm **{_cut:,} DMG** - 25%)*"
         round_dmg = max(0, round_dmg)
+
+        # ---------- NÉ TRÁNH (BUFF SAU TUA NGƯỢC) ----------
+        if buff_dodge > 0 and (round_dmg > 0 or B["hp"] < hp_before_atk) and random.random() < buff_dodge:
+            B["hp"] = hp_before_atk
+            round_dmg = 0
+            boss_fx.append(f"💨 **[Né Tránh {int(buff_dodge * 100)}%]** Fateria bẻ cong thời gian, **né hoàn toàn** đòn tấn công của đội trong hiệp này!")
 
         if save_loop:
             B["hp"] = hp_snap
@@ -20921,7 +20945,7 @@ async def execute_fateria_phase2(channel, raid_data, combatants, all_turns, p1_r
         # ---------- Embed ----------
         desc = (
             f"❤️ **Máu Boss:** `{get_hp_bar(B['hp'], max_hp)}` **{B['hp']:,}/{max_hp:,} HP**\n"
-            f"⏪ Have you know: **{'ĐÃ DÙNG' if rewind_used else 'SẴN SÀNG'}** | 🧊 Cube space: **{cube_uses}/{cube_cfg['max_uses']}**"
+            f"⏪ Have you know: **{'ĐÃ DÙNG' if rewind_used else 'SẴN SÀNG'}** | 🧊 Cube space: **{cube_uses}** lần"
         )
         fields = [("💥 Tiền Tuyến Tấn Công:", _jt_cut(player_atk_str, 400), False)]
         if notes:
@@ -20981,6 +21005,7 @@ async def execute_fateria_phase2(channel, raid_data, combatants, all_turns, p1_r
             fate_turns = 0
             ice_turns = 0
             heal_reduce = 0.0
+            rewind_buff_left = 3
             continue
 
         if B["hp"] <= 0:
@@ -21044,6 +21069,187 @@ async def execute_fateria_phase2(channel, raid_data, combatants, all_turns, p1_r
     final.add_field(name="📦 Phần Thưởng Phase 1 (đã trao):", value=_jt_cut("\n".join(p1_lines) or "—", 1000), inline=False)
     final.add_field(name="💎 Phần Thưởng Phase 2 (10% 30 vé, 40% 15 vé, 50% 10 vé, 10% Fateria Shard):", value=_jt_cut("\n".join(p2_lines), 1000), inline=False)
     await channel.send(embed=final, view=OpenDetailsView(all_turns))
+    
+# ==============================================================================
+# [UPDATE AUTO SAC] /auto sac - TỰ ĐỘNG QUY ĐỔI THẺ TRÙNG RA XU KHI /PULL
+# ==============================================================================
+AUTO_SAC_MAX = 50
+
+def _as_get(player: dict, key: str) -> list:
+    lst = player.get(key)
+    if not isinstance(lst, list):
+        lst = []
+        player[key] = lst
+    return lst
+
+def _as_fmt(keys: list) -> str:
+    if not keys:
+        return "*(Trống)*"
+    out = []
+    for k in keys:
+        ks = str(k)
+        cid = int(ks) if ks.isdigit() else ks
+        c = CARDS_DATA.get(cid)
+        out.append(f"#{disp_id(cid)} {c['name']}" if c else ks)
+    return _jt_cut(", ".join(out), 1000)
+
+def auto_sac_try(player: dict, card: dict, is_dup: bool) -> int:
+    """Gọi sau mỗi lần pull. Nếu thẻ vừa pull là thẻ trùng nằm trong Auto Sac (và không nằm trong Auto Keep)
+    thì đổi 1 lá ra Xu. Trả về số Xu nhận được (0 = không đổi)."""
+    try:
+        if not is_dup:
+            return 0
+        cid = card["id"]
+        key = str(cid)
+        if key in [str(x) for x in player.get("auto_keep", [])]:
+            return 0
+        if key not in [str(x) for x in player.get("auto_sac", [])]:
+            return 0
+        value = SAC_VALUES.get(card.get("rank"))
+        if not value:
+            return 0
+        inv = player.setdefault("inventory", {})
+        if inv.get(key, 0) < 2:          # luôn giữ lại 1 lá
+            return 0
+        if is_card_locked(player, cid):
+            return 0
+        inv[key] -= 1
+        player["xu"] = player.get("xu", 0) + value
+        return value
+    except Exception as e:
+        print(f"[AUTOSAC] lỗi auto_sac_try: {e}", flush=True)
+        return 0
+
+def build_auto_sac_embed(player: dict) -> discord.Embed:
+    sac = _as_get(player, "auto_sac")
+    keep = _as_get(player, "auto_keep")
+    embed = discord.Embed(
+        title="♻️ AUTO SAC - TỰ ĐỘNG QUY ĐỔI THẺ KHI PULL",
+        description=(
+            "• 🔴 **Auto Sac:** thẻ trong danh sách này, khi pull trúng **thẻ trùng** sẽ tự đổi ra "
+            f"{XU_EMOJI} **Xu công đức** (luôn giữ lại 1 lá).\n"
+            "• 🟢 **Auto Keep:** thẻ trong danh sách này **không bao giờ** bị tự quy đổi (ưu tiên hơn Auto Sac).\n"
+            "• 🗑️ **Remove All:** xóa toàn bộ 2 danh sách.\n"
+            "⚠️ *Thẻ cần để tiến hóa Ace 2 (nhiều lá) nên cho vào Auto Keep, kẻo bị đổi mất nguyên liệu!*"
+        ),
+        color=0xF59E0B
+    )
+    embed.add_field(name=f"🔴 Auto Sac ({len(sac)}/{AUTO_SAC_MAX}):", value=_as_fmt(sac), inline=False)
+    embed.add_field(name=f"🟢 Auto Keep ({len(keep)}/{AUTO_SAC_MAX}):", value=_as_fmt(keep), inline=False)
+    embed.set_footer(text="Bấm nút để thêm/gỡ thẻ • Nhập lại thẻ đã có trong danh sách sẽ gỡ nó ra")
+    return embed
+
+class AutoSacModal(discord.ui.Modal):
+    def __init__(self, mode: str):
+        super().__init__(title=("Auto Sac - Thẻ tự đổi ra Xu" if mode == "sac" else "Auto Keep - Thẻ luôn giữ lại"))
+        self.mode = mode
+        self.card_input = discord.ui.TextInput(
+            label="ID hoặc tên nhân vật (cách nhau bằng dấu phẩy):",
+            style=discord.TextStyle.paragraph,
+            placeholder="VD: 25, 28, rumia, tewi",
+            required=True, max_length=400
+        )
+        self.add_item(self.card_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        player = get_player(interaction.user.id, interaction.user.display_name)
+        target_key = "auto_sac" if self.mode == "sac" else "auto_keep"
+        other_key = "auto_keep" if self.mode == "sac" else "auto_sac"
+        target = _as_get(player, target_key)
+        other = _as_get(player, other_key)
+        added, removed, bad = [], [], []
+
+        for tok in re.split(r"[,;\n]+", self.card_input.value):
+            tok = tok.strip()
+            if not tok:
+                continue
+            cid = normalize_user_card_input(tok)
+            if (cid is None or cid not in CARDS_DATA) and len(tok) >= 3:
+                cid = find_card_by_name_or_id(tok)
+            if cid is None or cid not in CARDS_DATA:
+                bad.append(f"`{tok}` (không tìm thấy)")
+                continue
+            card = CARDS_DATA[cid]
+            key = str(cid)
+            if key in target:                      # nhập lại = gỡ khỏi danh sách
+                target.remove(key)
+                removed.append(card["name"])
+                continue
+            if self.mode == "sac" and card["rank"] not in SAC_VALUES:
+                bad.append(f"`{card['name']}` (thẻ nhóm [{card['rank']}] không quy đổi được)")
+                continue
+            if len(target) >= AUTO_SAC_MAX:
+                bad.append(f"`{card['name']}` (danh sách đã đầy {AUTO_SAC_MAX})")
+                continue
+            target.append(key)
+            if key in other:
+                other.remove(key)
+            added.append(card["name"])
+
+        save_player(player)
+        lines = []
+        if added:
+            lines.append("✅ **Đã thêm:** " + ", ".join(added))
+        if removed:
+            lines.append("➖ **Đã gỡ:** " + ", ".join(removed))
+        if bad:
+            lines.append("⚠️ **Bỏ qua:** " + ", ".join(bad))
+        await interaction.response.send_message(
+            content="\n".join(lines) or "Không có thay đổi nào.",
+            embed=build_auto_sac_embed(player), ephemeral=True
+        )
+
+class AutoSacView(discord.ui.View):
+    def __init__(self, user):
+        super().__init__(timeout=300)
+        self.user = user
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải bảng của bạn! Hãy tự gõ `/auto sac`.", ephemeral=True)
+            return False
+        return True
+
+    @discord.ui.button(label="Auto Sac Card", style=discord.ButtonStyle.danger, emoji="♻️", row=0)
+    async def btn_sac(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(AutoSacModal("sac"))
+
+    @discord.ui.button(label="Auto Keep Card", style=discord.ButtonStyle.success, emoji="🛡️", row=0)
+    async def btn_keep(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(AutoSacModal("keep"))
+
+    @discord.ui.button(label="Remove All", style=discord.ButtonStyle.secondary, emoji="🗑️", row=1)
+    async def btn_clear(self, interaction: discord.Interaction, button: discord.ui.Button):
+        player = get_player(interaction.user.id, interaction.user.display_name)
+        player["auto_sac"] = []
+        player["auto_keep"] = []
+        save_player(player)
+        await interaction.response.edit_message(embed=build_auto_sac_embed(player), view=self)
+
+async def handle_auto_sac(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    embed = build_auto_sac_embed(player)
+    view = AutoSacView(user)
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed, view=view)
+    else:
+        await ctx_or_interaction.send(embed=embed, view=view)
+
+class AutoGroup(app_commands.Group, name="auto", description="Các chức năng tự động hóa"):
+    @app_commands.command(name="sac", description="Mở bảng Auto Sac: tự quy đổi thẻ trùng ra Xu khi pull")
+    async def slash_auto_sac_cmd(self, interaction: discord.Interaction):
+        await handle_auto_sac(interaction)
+
+bot.tree.add_command(AutoGroup())
+
+@bot.group(name="auto", invoke_without_command=True)
+async def prefix_auto_group(ctx):
+    await handle_auto_sac(ctx)
+
+@prefix_auto_group.command(name="sac")
+async def prefix_auto_sac(ctx):
+    await handle_auto_sac(ctx)
     
 import sys
 
