@@ -21271,6 +21271,680 @@ async def prefix_auto_group(ctx):
 @prefix_auto_group.command(name="sac")
 async def prefix_auto_sac(ctx):
     await handle_auto_sac(ctx)
+
+# ==============================================================================
+# [UPDATE FATERIA ACE 2] "HAVE YOU KNOW?" + TIẾN HÓA + /CHECK + ẢNH BOSS PHASE 2
+# ĐẶT NGAY TRÊN DÒNG:  import sys   (phía trên def start_bot_safely)
+# ==============================================================================
+import copy as _fa_copy
+import ctypes as _fa_ctypes
+import uuid as _fa_uuid
+import random as _fa_rand
+import sys as _fa_sys
+
+# ---------------------------- 1. CẤU HÌNH ----------------------------
+FATERIA_ACE2_IMG = "https://media.discordapp.net/attachments/1527157582115111077/1565380110478217306/244ca225-b88b-4ffb-b1d6-3b807c5048b6.png?ex=6ae4b155&is=6ae35fd5&hm=36cc356108d8a1fdd38d8e1f7dee228ade5aba06e1ed1b8e0369efe123305b1e&=&format=webp&quality=lossless&width=384&height=362"
+FATERIA_ACE2_SHARDS = 10            # khấu trừ 10 Fateria Shards
+FATERIA_ACE2_PRESTIGE = 4           # cần Prestige 4+
+FATERIA_ACE2_DMG_BONUS = 0.25       # cộng vào HỆ SỐ của mọi chiêu gây sát thương (Clone attack). Muốn +0.5 thì đổi thành 0.5
+FATERIA_REWIND_BUFFS = ((1.00, 0.15), (0.50, 0.10), (0.25, 0.05))   # (tỉ lệ né, +rate chiêu) cho hiệp 1/2/3 sau khi tua ngược
+FATERIA_REWIND_GIF = FATERIA_P2_GIF_REWIND                           # gif giống passive "Have you know" của boss
+
+# Ảnh boss Fateria Phase 2
+FATERIA_BOSS_PHASE2_CONFIG["image"] = FATERIA_ACE2_IMG
+
+# Đăng ký vào các bảng sẵn có
+T_ACE2_PRESTIGE_REQ["t4"] = FATERIA_ACE2_PRESTIGE
+if "t4" not in EVOL_ORDER:
+    EVOL_ORDER.insert((EVOL_ORDER.index("t3") + 1) if "t3" in EVOL_ORDER else len(EVOL_ORDER), "t4")
+EVOL_T_SHARD["t4"] = ("fateria", 20)
+EVOL_CONFIG["t4"] = {
+    "id": "t4", "key": "fateria", "name": "Fateria – Khuôn mẫu của số phận",
+    "title": "[#t4] Fateria - Ace 2 ⭐⭐", "ace_level": "Ace 2 ⭐⭐",
+    "required_cards": 0, "required_pulls": 0, "required_shards": FATERIA_ACE2_SHARDS,
+    "evol_gif": CARDS_DATA["t4"]["unlock_gif"],
+    "skill_name": "Save loop • Fate loop • Clone attack • Have you know?",
+    "skill_desc": "Ace 2 của Fateria: thêm passive Have you know? (chết thì tua ngược thời gian), Clone attack mạnh hơn.",
+    "bonus_power": 300, "bonus_hp": 300
+}
+CHARACTER_DETAILS["t4"]["skill_desc"] += (
+    "\n[Ace 2 ⭐⭐]: ⏪ **Have you know?** (chết -> tua ngược về lúc Fateria ra sân, 3 hiệp buff né 100/50/25% & +15/10/5% rate chiêu, 1 lần/trận) "
+    "• Mọi chiêu gây sát thương +0.25 hệ số."
+)
+
+# ---------------------------- 2. LÕI SNAPSHOT / REWIND ----------------------------
+_FA_REG = {}   # uid -> {used, buff_left, snap, snap_tried, dodge, hp_mark, ts}
+
+# Các hàm "chiến trường" chứa biến cục bộ của trận (dùng để tìm frame cần tua ngược)
+_FA_MODE_FUNCS = {
+    "execute_raid", "execute_event_raid", "execute_jotaro_raid", "execute_prime_raid",
+    "_sk_run_phase", "execute_fateria_phase2", "handle_battle", "run_pvp_match",
+    "run_story_rumia_battle", "run_story_cirno_battle", "run_story_meiling_battle",
+}
+# Biến lịch sử/log: KHÔNG tua ngược (để giữ nhật ký trận đấu)
+_FA_EXCLUDE = {
+    "all_raid_turns", "all_event_raid_turns", "all_turns", "battle_turns", "pvp_turns",
+    "battle_logs", "pvp_logs", "p1_battle_history", "p2_battle_history",
+    "p1_rewards_data", "p2_rewards_data", "p1_rewards", "p2_rewards", "p1_lines",
+    "turn_actions", "turn_trades", "push_logs", "push_msg", "notes", "boss_fx", "hit_logs",
+    "turn_logs", "logs", "round_card_status", "round_status", "ice_spear_blocked_logs",
+    "reflected_cc_logs", "round_player_dmg",
+    "p1_rounds", "p2_rounds", "rounds", "r_cnt",     # bộ đếm hiệp cứ tiếp tục tăng (không tua số hiệp)
+}
+_FA_STR_STATE = {"boss_skill_erased"}   # biến chuỗi mang trạng thái
+# Các key tạm thời trong thẻ/boss: không khôi phục để tránh lỗi
+_FA_SKIP_KEYS = {"cid", "is_ace2", "eq_hp_mark", "t7_hp_mark", "kasen_guard",
+                 "meiling_guard", "meiling_hp_snap", "wg_reflected_stun", "gif"}
+_FA_MISSING = object()
+_FA_S3_GIF_ORIG = SAKUYA3_PASSIVE_GIF
+
+
+def _fa_frame_write(frame, updates: dict) -> bool:
+    """Ghi đè biến cục bộ của 1 frame đang chạy (Python<=3.12 dùng ctypes, >=3.13 ghi thẳng qua proxy)."""
+    if not updates:
+        return True
+    try:
+        loc = frame.f_locals
+        for k, v in updates.items():
+            loc[k] = v
+        if _fa_sys.version_info < (3, 13):
+            _fa_ctypes.pythonapi.PyFrame_LocalsToFast(_fa_ctypes.py_object(frame), _fa_ctypes.c_int(0))
+        return True
+    except Exception as e:
+        print(f"[FATERIA] ghi biến frame lỗi: {e}", flush=True)
+        return False
+
+
+def _fa_selftest() -> bool:
+    def _w(fr):
+        return _fa_frame_write(fr, {"zz": 2})
+    zz = int("1")
+    _w(_fa_sys._getframe(0))
+    return zz == 2
+
+try:
+    _FA_FRAME_OK = bool(_fa_selftest())
+except Exception:
+    _FA_FRAME_OK = False
+print(f"[FATERIA] Frame-write: {'OK' if _FA_FRAME_OK else 'KHÔNG HOẠT ĐỘNG (rewind sẽ chỉ khôi phục dữ liệu thẻ/boss dạng dict)'} | Python {_fa_sys.version.split()[0]}", flush=True)
+
+
+def _fa_find_mode_frame():
+    f = _fa_sys._getframe(1)
+    depth = 0
+    while f is not None and depth < 14:
+        if f.f_code.co_name in _FA_MODE_FUNCS:
+            return f
+        f = f.f_back
+        depth += 1
+    return None
+
+
+def _fa_pure_deep(v, seen, budget) -> bool:
+    if v is None or isinstance(v, (bool, int, float, str)):
+        return True
+    if isinstance(v, (dict, list, tuple)):
+        i = id(v)
+        if i in seen:
+            return True
+        seen.add(i)
+        budget[0] -= 1
+        if budget[0] < 0:
+            return False
+        if isinstance(v, dict):
+            for k, x in v.items():
+                if not (k is None or isinstance(k, (str, int, float, bool))):
+                    return False
+                if not _fa_pure_deep(x, seen, budget):
+                    return False
+        else:
+            for x in v:
+                if not _fa_pure_deep(x, seen, budget):
+                    return False
+        return True
+    return False
+
+
+def _fa_pure(v, name) -> bool:
+    if v is None or isinstance(v, (bool, int, float)):
+        return True
+    if isinstance(v, str):
+        return name in _FA_STR_STATE
+    if isinstance(v, (dict, list, tuple)):
+        return _fa_pure_deep(v, set(), [20000])
+    return False
+
+
+def _fa_collect(frame) -> dict:
+    loc = frame.f_locals
+    out = {}
+    for name in list(loc.keys()):
+        if name.startswith("_") or name in _FA_EXCLUDE:
+            continue
+        try:
+            v = loc[name]
+        except Exception:
+            continue
+        if _fa_pure(v, name):
+            out[name] = v
+    return out
+
+
+def _fa_restore_inplace(dst, src, seen):
+    key = (id(dst), id(src))
+    if key in seen:
+        return
+    seen.add(key)
+    if isinstance(dst, dict) and isinstance(src, dict):
+        for k in list(dst.keys()):
+            if k in _FA_SKIP_KEYS:
+                continue
+            if k not in src:
+                dst.pop(k, None)
+        for k, sv in src.items():
+            if k in _FA_SKIP_KEYS:
+                continue
+            dv = dst.get(k, _FA_MISSING)
+            if (isinstance(sv, dict) and isinstance(dv, dict)) or (isinstance(sv, list) and isinstance(dv, list)):
+                _fa_restore_inplace(dv, sv, seen)
+            else:
+                dst[k] = _fa_copy.deepcopy(sv)
+    elif isinstance(dst, list) and isinstance(src, list):
+        n = min(len(dst), len(src))
+        for i in range(n):
+            sv, dv = src[i], dst[i]
+            if (isinstance(sv, dict) and isinstance(dv, dict)) or (isinstance(sv, list) and isinstance(dv, list)):
+                _fa_restore_inplace(dv, sv, seen)
+            else:
+                dst[i] = _fa_copy.deepcopy(sv)
+        if len(dst) > len(src):
+            del dst[len(src):]
+        elif len(src) > n:
+            dst.extend(_fa_copy.deepcopy(x) for x in src[n:])
+
+
+def _fa_take_snapshot(reg) -> bool:
+    reg["snap_tried"] = True
+    frame = _fa_find_mode_frame()
+    if frame is None:
+        return False
+    try:
+        vars_ = _fa_collect(frame)
+        reg["snap"] = {"live": dict(vars_), "vars": _fa_copy.deepcopy(vars_), "func": frame.f_code.co_name}
+        return True
+    except Exception as e:
+        print(f"[FATERIA] snapshot lỗi: {e}", flush=True)
+        return False
+    finally:
+        del frame
+
+
+def _fa_restore_frame(frame, snap) -> bool:
+    vars_, live = snap["vars"], snap["live"]
+    loc = frame.f_locals
+    seen, updates = set(), {}
+    for name, sval in vars_.items():
+        try:
+            if name not in loc:
+                continue
+            cur = loc[name]
+        except Exception:
+            continue
+        if isinstance(sval, (dict, list)):
+            if cur is live.get(name):          # chỉ khôi phục khi vẫn là CÙNG đối tượng như lúc snapshot
+                _fa_restore_inplace(cur, sval, seen)
+        else:
+            updates[name] = sval
+    if updates:
+        return bool(_FA_FRAME_OK and _fa_frame_write(frame, updates))
+    return True
+
+
+def _fa_purge():
+    now = time.time()
+    for k in [k for k, v in _FA_REG.items() if now - v.get("ts", now) > 10800]:
+        _FA_REG.pop(k, None)
+
+
+def _fa_begin_turn(card):
+    """Gọi đầu mỗi lượt Fateria Ace 2 ra đòn: gán uid, chụp snapshot lần đầu, tính buff sau tua ngược."""
+    now = time.time()
+    uid = card.get("fa_uid")
+    if not uid:
+        uid = _fa_uuid.uuid4().hex[:12]
+        card["fa_uid"] = uid            # gán TRƯỚC khi snapshot để uid nằm trong snapshot
+    reg = _FA_REG.get(uid)
+    if reg is None:
+        if len(_FA_REG) > 200:
+            _fa_purge()
+        reg = {"used": False, "buff_left": 0, "snap": None, "snap_tried": False,
+               "dodge": 0.0, "hp_mark": None, "ts": now}
+        _FA_REG[uid] = reg
+    reg["ts"] = now
+    if not reg["used"] and reg["snap"] is None and not reg["snap_tried"]:
+        _fa_take_snapshot(reg)
+    rate, log = 0.0, None
+    if reg["buff_left"] > 0:
+        total = len(FATERIA_REWIND_BUFFS)
+        i = max(0, min(total - 1, total - reg["buff_left"]))
+        dodge, rate = FATERIA_REWIND_BUFFS[i]
+        reg["buff_left"] -= 1
+        reg["dodge"] = dodge
+        log = (f"⏳ **[Ace 2] [#t4] Fateria - Hậu Quả Tua Ngược (Hiệp {i + 1}/{total})**: "
+               f"**{int(dodge * 100)}% né tránh** & **+{int(rate * 100)}% tỉ lệ kích hoạt chiêu**!")
+    else:
+        reg["dodge"] = 0.0
+    return reg, rate, log
+
+
+def _fa_try_rewind(cards, idx):
+    card = cards[idx]
+    if str(card.get("cid")).lower() != "t4" or not card.get("is_ace2"):
+        return None
+    if card.get("erased_skill") == "t4_rewind":
+        return None
+    uid = card.get("fa_uid")
+    reg = _FA_REG.get(uid) if uid else None
+    if not reg or reg.get("used") or not reg.get("snap"):
+        return None
+    snap = reg["snap"]
+    name = card.get("name", "Fateria")
+    frame = _fa_find_mode_frame()
+    if frame is None or frame.f_code.co_name != snap["func"]:
+        return None
+    try:
+        full_ok = _fa_restore_frame(frame, snap)
+    finally:
+        del frame
+    reg.update(used=True, buff_left=len(FATERIA_REWIND_BUFFS), snap=None, dodge=0.0, hp_mark=None, ts=time.time())
+    msg = (f"⏪ **[Ace 2] [#t4] Fateria - Have you know? (Passive)**: **{name}** gục ngã... "
+           f"nhưng thời gian **TUA NGƯỢC** về lúc Fateria vừa ra sân! Toàn bộ trận đấu (máu, kỹ năng, hiệu ứng, cả nội tại của Boss/đối thủ) quay về thời điểm đó. "
+           f"3 hiệp tới nhận buff: **100% / 50% / 25% né** & **+15% / +10% / +5% tỉ lệ chiêu**! *(1 lần/trận)*")
+    if not full_ok:
+        msg += "\n⚠️ *(Phiên bản Python của server không cho tua ngược biến nội bộ, chỉ khôi phục dữ liệu thẻ.)*"
+    return msg
+
+
+# --- Hook cái chết: dùng chung cho Raid / Battle / PvP / Story (qua sakuya3_try_revive) ---
+_FA_PREV_REVIVE = sakuya3_try_revive
+def sakuya3_try_revive(cards: list, idx: int):
+    global SAKUYA3_PASSIVE_GIF
+    SAKUYA3_PASSIVE_GIF = _FA_S3_GIF_ORIG
+    try:
+        if 0 <= idx < len(cards):
+            msg = _fa_try_rewind(cards, idx)
+            if msg:
+                SAKUYA3_PASSIVE_GIF = FATERIA_REWIND_GIF
+                return True, msg
+    except Exception as e:
+        print(f"[FATERIA] lỗi rewind: {e}", flush=True)
+    return _FA_PREV_REVIVE(cards, idx)
+
+
+# ---------------------------- 3. NÉ TRÁNH SAU TUA NGƯỢC ----------------------------
+def _fa_raid_dodge(active) -> str:
+    out = []
+    for c in active or []:
+        cards = c.get("team_cards", [])
+        idx = c.get("current_card_index", 0)
+        if idx >= len(cards):
+            continue
+        ac = cards[idx]
+        uid = ac.get("fa_uid")
+        reg = _FA_REG.get(uid) if uid else None
+        if not reg:
+            continue
+        dodge = reg.get("dodge", 0.0) or 0.0
+        mark = reg.get("hp_mark")
+        reg["dodge"], reg["hp_mark"] = 0.0, None
+        if dodge > 0 and mark is not None and ac["current_hp"] < mark and _fa_rand.random() < dodge:
+            ac["current_hp"] = mark
+            out.append(f"💨 **[Have you know? - Né Tránh {int(dodge * 100)}%]** **{ac['name']}** ({c['username']}) né hoàn toàn đòn của Boss!")
+    return ("\n" + "\n".join(out)) if out else ""
+
+_FA_PREV_AFTER_BOSS = t7_raid_after_boss
+def t7_raid_after_boss(active, boss_log) -> str:
+    extra = ""
+    try:
+        extra = _fa_raid_dodge(active)
+    except Exception as e:
+        print(f"[FATERIA] lỗi dodge raid: {e}", flush=True)
+    return extra + _FA_PREV_AFTER_BOSS(active, boss_log)
+
+_FA_PREV_GAIA_POST = eq_gaia_post
+def eq_gaia_post(card, mark, incoming, base_power, logs):       # Battle / PvP
+    try:
+        uid = card.get("fa_uid")
+        reg = _FA_REG.get(uid) if uid else None
+        if reg:
+            dodge = reg.get("dodge", 0.0) or 0.0
+            reg["dodge"], reg["hp_mark"] = 0.0, None
+            if dodge > 0 and mark is not None and card["current_hp"] < mark and _fa_rand.random() < dodge:
+                card["current_hp"] = mark
+                logs.append(f"💨 **[Have you know? - Né Tránh {int(dodge * 100)}%]** **{card['name']}** né hoàn toàn đòn của đối phương!")
+    except Exception as e:
+        print(f"[FATERIA] lỗi dodge duel: {e}", flush=True)
+    return _FA_PREV_GAIA_POST(card, mark, incoming, base_power, logs)
+
+_FA_PREV_TAKE_DMG = eq_take_damage
+def eq_take_damage(card, dmg, logs=None, skill=False):          # Story
+    try:
+        uid = card.get("fa_uid")
+        reg = _FA_REG.get(uid) if uid else None
+        if reg:
+            dodge = reg.get("dodge", 0.0) or 0.0
+            reg["dodge"], reg["hp_mark"] = 0.0, None
+            if dodge > 0 and _fa_rand.random() < dodge:
+                if logs is not None:
+                    logs.append(f"💨 **[Have you know? - Né Tránh {int(dodge * 100)}%]** **{card['name']}** né hoàn toàn đòn phản công!")
+                return
+    except Exception as e:
+        print(f"[FATERIA] lỗi dodge story: {e}", flush=True)
+    return _FA_PREV_TAKE_DMG(card, dmg, logs, skill)
+
+
+# ---------------------------- 4. KỸ NĂNG THẺ FATERIA (GHI ĐÈ HÀM CŨ) ----------------------------
+def t4_combat_turn(t4_state: dict, card_data: dict, target_name: str, heal_mult: float = 1.0, enemy_fate_loop_turns: int = 0):
+    logs = []
+    gif = None
+    multiplier = 1.0
+    save_loop_invul = False
+    fate_loop_triggered = False
+    heal_reduce_triggered = False
+    ice_spear_triggered = False
+    erased = card_data.get("erased_skill")
+    is_ace2 = bool(card_data.get("is_ace2"))
+
+    rate_bonus = 0.0
+    reg = None
+    if is_ace2 and erased != "t4_rewind":
+        try:
+            reg, rate_bonus, buff_log = _fa_begin_turn(card_data)
+            if buff_log:
+                logs.append(buff_log)
+        except Exception as e:
+            print(f"[FATERIA] lỗi begin_turn: {e}", flush=True)
+            reg, rate_bonus = None, 0.0
+    dmg_bonus = FATERIA_ACE2_DMG_BONUS if is_ace2 else 0.0
+
+    max_hp = card_data.get("max_hp", card_data.get("hp", 7500))
+    cur_hp = card_data.get("current_hp", max_hp)
+
+    # 1. PASSIVE: SAVE LOOP (15%)
+    if erased != "t4_save_loop" and random.random() < 0.15:
+        save_loop_invul = True
+        heal_amt = int(max_hp * 0.50 * heal_mult)
+        card_data["current_hp"] = min(max_hp, cur_hp + heal_amt)
+        gif = CARDS_DATA["t4"]["passive"]["gif"]
+        logs.append(
+            f"🔄 **[#t4] Fateria** kích hoạt **Save loop (15%)**! "
+            f"Hồi phục **+{heal_amt:,} HP (50% HP)** ({card_data['current_hp']:,}/{max_hp:,} HP) và **MIỄN NHIỄM SÁT THƯƠNG** trong turn này!"
+        )
+
+    fate_uses = t4_state.get("fate_uses", 0)
+    clone_uses = t4_state.get("clone_uses", 0)
+    can_fate = (erased != "t4_fate_loop") and (fate_uses < 2) and (enemy_fate_loop_turns <= 0)
+    can_clone = (erased != "t4_clone_attack") and (clone_uses < 2)
+    fate_p = 0.20 + rate_bonus
+    clone_p = 0.40 + rate_bonus
+
+    roll = random.random()
+    if can_fate and roll < fate_p:
+        t4_state["fate_uses"] = fate_uses + 1
+        fate_loop_triggered = True
+        gif = CARDS_DATA["t4"]["skills"]["fate_loop"]["gif"]
+        logs.append(
+            f"⛓️ **[#t4] Fateria** thi triển **FATE LOOP ({int(fate_p * 100)}%)** *(Lần {t4_state['fate_uses']}/2)*! "
+            f"Khóa toàn bộ kỹ năng của {target_name} trong **2 turn liên tiếp**!"
+        )
+    elif can_clone and ((can_fate and fate_p <= roll < fate_p + clone_p) or ((not can_fate) and roll < clone_p)):
+        t4_state["clone_uses"] = clone_uses + 1
+        clones_cfg = CARDS_DATA["t4"]["skills"]["clone_attack"]["clones"]
+        c_key = random.choice(["thunder_blaze", "the_fallen_hero", "ice_spear"])
+        c_info = clones_cfg[c_key]
+        base_mult = c_info["multiplier"]
+        multiplier = base_mult + dmg_bonus
+        gif = c_info["gif"]
+        bonus_txt = f" *(Ace 2: ×{base_mult:g} +{dmg_bonus:g})*" if dmg_bonus else ""
+        n_use = t4_state["clone_uses"]
+        if c_key == "thunder_blaze":
+            logs.append(f"⚡ **[#t4] Fateria** - **Clone attack ({n_use}/2): Thunder blaze**! Những ngọn lửa chớp điện gây **{multiplier:g}x DMG** lên {target_name}!{bonus_txt}")
+        elif c_key == "the_fallen_hero":
+            heal_reduce_triggered = True
+            logs.append(f"🗡️ **[#t4] Fateria** - **Clone attack ({n_use}/2): The fallen hero**! Trảm kích ánh sáng **{multiplier:g}x DMG** và **giảm 30% Heal** của {target_name}!{bonus_txt}")
+        else:
+            ice_spear_triggered = True
+            logs.append(f"❄️ **[#t4] Fateria** - **Clone attack ({n_use}/2): Ice spear**! Giáo băng **{multiplier:g}x DMG** khiến {target_name} có **40% không thể tấn công trong 2 lượt sau**!{bonus_txt}")
+
+    if reg is not None:
+        reg["hp_mark"] = card_data.get("current_hp")     # mốc máu để tính né tránh
+
+    return {
+        "multiplier": multiplier,
+        "save_loop_invul": save_loop_invul,
+        "fate_loop_triggered": fate_loop_triggered,
+        "heal_reduce_triggered": heal_reduce_triggered,
+        "ice_spear_triggered": ice_spear_triggered,
+        "logs": logs,
+        "gif": gif
+    }
+
+
+# Bóng Khái Niệm có thể xóa passive Have you know?
+_FA_PREV_ERASE = apply_bong_khai_niem_card
+def apply_bong_khai_niem_card(target_card: dict):
+    if str(target_card.get("cid")).lower() == "t4" and target_card.get("is_ace2") and not target_card.get("erased_skill"):
+        pool = [("t4_save_loop", "Save loop"), ("t4_fate_loop", "Fate loop"),
+                ("t4_clone_attack", "Clone attack"), ("t4_rewind", "Have you know?")]
+        key, name = random.choice(pool)
+        target_card["erased_skill"] = key
+        target_card["erased_skill_name"] = name
+        return f"🌑 **[Bóng Khái Niệm]** Đã xóa ngẫu nhiên 1 kỹ năng duy nhất **[{name}]** của **{target_card['name']}**! *(Tối đa mất 1 chiêu)*"
+    return _FA_PREV_ERASE(target_card)
+
+
+# ---------------------------- 5. TIẾN HÓA ACE 2 ----------------------------
+def execute_fateria_ace2(player):
+    _blk = ace2_prestige_block(player, "t4")
+    if _blk:
+        return False, _blk, None
+    if is_card_ace2(player, "t4"):
+        return False, "⚠️ **[#t4] Fateria** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
+    inv = player.get("inventory", {}) or {}
+    own = lambda k: is_card_unlocked(player, k) or inv.get(str(k), 0) > 0
+    if not own("t4"):
+        return False, ("❌ **Bạn chưa mở khóa thẻ [#t4] Fateria (Ace 1)!**\n"
+                       "• Thu thập **20 Fateria Shards** rồi dùng `/t translate loai_shard:fateria` trước."), None
+    shards = player.setdefault("shards", {})
+    cur = shards.get("fateria", 0)
+    problems = []
+    if cur < FATERIA_ACE2_SHARDS:
+        problems.append(f"• Fateria Shards: **{cur}/{FATERIA_ACE2_SHARDS}** (khấu trừ {FATERIA_ACE2_SHARDS} mảnh).")
+    if not is_card_ace2(player, "t1"):
+        problems.append("• **[#t1] Seiki** phải đạt **Ace 2 ⭐⭐**.")
+    if not is_card_ace2(player, "t7"):
+        problems.append("• **[#t7] Kisami Mikawa** phải đạt **Ace 2 ⭐⭐**.")
+    if not own("t6"):
+        problems.append("• Phải sở hữu thẻ **[#t6] Kanae Wasuko** *(không bị trừ)*.")
+    if problems:
+        return False, "❌ **Chưa đủ điều kiện tiến hóa Fateria Ace 2!**\n" + "\n".join(problems), None
+
+    shards["fateria"] = cur - FATERIA_ACE2_SHARDS
+    player.setdefault("evolutions", {})["t4"] = 2
+    save_player(player)
+    embed = discord.Embed(
+        title="🌟 TIẾN HÓA THÀNH CÔNG: [#t4] FATERIA - ACE 2 ⭐⭐!",
+        description=(
+            "⏳ **KHUÔN MẪU SỐ PHẬN THỨC TỈNH - BỘ KỸ NĂNG ACE 2:**\n\n"
+            "🔄 **Save loop (15%)** • ⛓️ **Fate loop (20%)** • 🪆 **Clone attack (40%)** — mọi chiêu gây sát thương **+0.25 hệ số**\n"
+            "⏪ **Have you know? (Passive mới):** Khi gục ngã, **tua ngược** về lúc Fateria vừa ra sân (1 lần/trận)\n"
+            "   • Hiệp 1: **100% né** & +15% rate chiêu\n"
+            "   • Hiệp 2: **50% né** & +10% rate chiêu\n"
+            "   • Hiệp 3: **25% né** & +5% rate chiêu\n\n"
+            f"📉 **Chi phí:** {FATERIA_ACE2_SHARDS} Fateria Shards (còn `{shards['fateria']}`)\n"
+            "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn!"
+        ),
+        color=0x0EA5E9
+    )
+    embed.set_image(url=CARDS_DATA["t4"]["unlock_gif"])     # giữ nguyên gif như /translate
+    embed.set_thumbnail(url=FATERIA_ACE2_IMG)
+    embed.set_footer(text="Touhou Evolution System • Fateria Ace 2 Activated • Card ID #t4")
+    return True, "", embed
+
+_FA_PREV_EXEC_EVOL = execute_card_evolution
+def execute_card_evolution(player, cid):
+    if str(cid).strip().lower() in ("t4", "fateria"):
+        return execute_fateria_ace2(player)
+    return _FA_PREV_EXEC_EVOL(player, cid)
+
+_FA_PREV_EVOL_REQ = evol_req_data
+def evol_req_data(player, key, stage):
+    if key == "t4" and stage == 2:
+        inv = player.get("inventory", {}) or {}
+        shards = player.get("shards", {}) or {}
+        prestige = player.get("prestige", 0)
+        own = lambda k: is_card_unlocked(player, k) or inv.get(str(k), 0) > 0
+        have = shards.get("fateria", 0)
+        rows = [
+            _rq(own("t4"), "Sở hữu thẻ [#t4] Fateria (Ace 1)"),
+            _rq(have >= FATERIA_ACE2_SHARDS, f"Fateria Shards: {have}/{FATERIA_ACE2_SHARDS}"),
+            _rq(is_card_ace2(player, "t1"), f"Ace 2: {evol_tag('t1')} {evol_name('t1')}"),
+            _rq(is_card_ace2(player, "t7"), f"Ace 2: {evol_tag('t7')} {evol_name('t7')}"),
+            _rq(own("t6"), f"Sở hữu thẻ {evol_tag('t6')} {evol_name('t6')} (không bị trừ)"),
+            _rq(prestige >= FATERIA_ACE2_PRESTIGE, f"Prestige {FATERIA_ACE2_PRESTIGE}+ (hiện tại P{prestige})"),
+        ]
+        if _raw_ace2(player, "t4"):
+            return rows, ("done" if is_card_ace2(player, "t4") else "locked")
+        return rows, ("ready" if all(x[0] for x in rows) else "no")
+    return _FA_PREV_EVOL_REQ(player, key, stage)
+
+_FA_PREV_STAGE_IMG = evol_stage_image
+def evol_stage_image(key, stage):
+    if key == "t4" and stage == 2:
+        return FATERIA_ACE2_IMG
+    return _FA_PREV_STAGE_IMG(key, stage)
+
+
+# ---------------------------- 6. GIAO DIỆN /CHECK & /CARD_INFO ----------------------------
+def _fa_card_embed(user_id, show_ace=None):
+    card = CARDS_DATA["t4"]
+    player = get_player(user_id) if user_id else None
+    lvl = player.get("level", 1) if player else 1
+    owned = player.get("inventory", {}).get("t4", 0) if player else 0
+    shards = player.get("shards", {}).get("fateria", 0) if player else 0
+    user_ace = is_card_ace2(player, "t4") if player else False
+    ace = user_ace if show_ace is None else bool(show_ace)
+    pw = card["power"] + (ACE_POWER_BUFF if ace else 0)
+    hp = card["hp"] + (ACE_HP_BUFF if ace else 0)
+
+    embed = discord.Embed(
+        title="🌟 [Ace 2 ⭐⭐] #t4 FATERIA – KHUÔN MẪU CỦA SỐ PHẬN (THỨC TỈNH)" if ace else "⏳ [THẺ ĐẶC BIỆT NHÓM T] #t4 FATERIA – KHUÔN MẪU CỦA SỐ PHẬN",
+        description=("🔥 **Đang xem: ACE 2 ⭐⭐** *(+300 ATK / +300 HP)*" if ace else
+                     "✨ Mở khóa bằng **20 Fateria Shards** (`/t translate loai_shard:fateria`).\n✨ **Có thể tiến hóa Ace 2 ⭐⭐!**"),
+        color=0x0EA5E9
+    )
+    if ace:
+        embed.set_image(url=FATERIA_ACE2_IMG)
+    else:
+        embed.set_thumbnail(url=card["image"])
+        embed.set_image(url=card["unlock_gif"])
+    embed.add_field(
+        name="⚔️ SỨC MẠNH & CHỈ SỐ:",
+        value=f"• ⚔️ **ATK:** `{pw:,}` | ❤️ **HP:** `{hp:,}`\n• 🛡️ **Trong đội hình (Lv.{lvl}):** `{pw + (lvl - 1) * 15:,}` ATK | `{hp + (lvl - 1) * 45:,}` HP",
+        inline=False
+    )
+    skills = (
+        "🔄 **Save loop (Passive 15%):** Hồi **50% HP tối đa** và **miễn nhiễm sát thương** trong turn đó.\n"
+        "⛓️ **Fate loop (20%):** Đối thủ **không thể dùng skill 2 turn liên tiếp** (tối đa 2 lần/trận).\n"
+        "🪆 **Clone attack (40%, tối đa 2 lần/trận):** Random 1/3 chiêu:\n"
+        f"  • ⚡ Thunder blaze **{2.3 + (FATERIA_ACE2_DMG_BONUS if ace else 0):g}x DMG**\n"
+        f"  • 🗡️ The fallen hero **{1.5 + (FATERIA_ACE2_DMG_BONUS if ace else 0):g}x DMG** + giảm 30% Heal\n"
+        f"  • ❄️ Ice spear **{1.5 + (FATERIA_ACE2_DMG_BONUS if ace else 0):g}x DMG** + 40% không tấn công 2 lượt sau"
+    )
+    if ace:
+        skills += (
+            "\n⏪ **Have you know? (Passive Ace 2):** Khi gục ngã, **tua ngược** về lúc Fateria vừa ra sân (reset cả nội tại của Boss/đối thủ), 1 lần/trận:\n"
+            "  • Hiệp 1: **100% né** & +15% rate chiêu\n  • Hiệp 2: **50% né** & +10% rate chiêu\n  • Hiệp 3: **25% né** & +5% rate chiêu"
+        )
+    embed.add_field(name="🔮 KỸ NĂNG:", value=skills, inline=False)
+    if player:
+        inv = player.get("inventory", {}) or {}
+        own6 = is_card_unlocked(player, "t6") or inv.get("t6", 0) > 0
+        si, ki = is_card_ace2(player, "t1"), is_card_ace2(player, "t7")
+        pr = player.get("prestige", 0)
+        if user_ace:
+            badge = "🌟 ĐÃ THỨC TỈNH ACE 2"
+        elif owned > 0 and shards >= FATERIA_ACE2_SHARDS and si and ki and own6 and pr >= FATERIA_ACE2_PRESTIGE:
+            badge = "🟢 Đủ điều kiện! Dùng `/evol id_hoac_ten:t4`"
+        else:
+            badge = (f"🔴 Chưa đủ (Mảnh {shards}/{FATERIA_ACE2_SHARDS} | Seiki Ace2: {'✅' if si else '❌'} | "
+                     f"Kisami Ace2: {'✅' if ki else '❌'} | Kanae: {'✅' if own6 else '❌'} | P{pr}/{FATERIA_ACE2_PRESTIGE})")
+        embed.add_field(name="🎒 TÚI ĐỒ CỦA BẠN:", value=f"• Sở hữu: **{owned}** lá\n• ⏳ Fateria Shards: **{shards}**\n• Cảnh giới: **{badge}**", inline=False)
+    embed.set_footer(text="Thẻ nhóm T đặc biệt • Hoạt động trong Raid, Battle, PvP, Story")
+    return embed
+
+
+class FateriaCardView(discord.ui.View):
+    def __init__(self, user_id=None, back_index: int = 0, show_ace=None):
+        super().__init__(timeout=180)
+        self.user_id = user_id
+        self.back_index = back_index
+        if show_ace is None and user_id:
+            try:
+                show_ace = is_card_ace2(get_player(user_id), "t4")
+            except Exception:
+                show_ace = False
+        self.show_ace = bool(show_ace)
+        self._build()
+
+    def _build(self):
+        self.clear_items()
+        if self.show_ace:
+            toggle = discord.ui.Button(label="⭐ Xem Bản Ace 1", style=discord.ButtonStyle.secondary, emoji="🔄", row=0)
+        else:
+            toggle = discord.ui.Button(label="🌟 Xem Ace 2 ⭐⭐", style=discord.ButtonStyle.success, emoji="✨", row=0)
+        toggle.callback = self.on_toggle
+        self.add_item(toggle)
+        back = discord.ui.Button(label="📖 Quay lại danh sách nhân vật", style=discord.ButtonStyle.primary, row=0)
+        back.callback = self.on_back
+        self.add_item(back)
+
+    def get_embed(self):
+        return _fa_card_embed(self.user_id, self.show_ace)
+
+    async def on_toggle(self, interaction: discord.Interaction):
+        self.show_ace = not self.show_ace
+        self._build()
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    async def on_back(self, interaction: discord.Interaction):
+        v = CharacterCheckView(current_index=self.back_index, user_id=self.user_id)
+        await interaction.response.edit_message(embed=v.get_current_embed(), view=v)
+
+
+def _fa_get_t4_embed(self):
+    return _fa_card_embed(self.user_id, None)
+
+async def _fa_show_t4_card(self, interaction: discord.Interaction):
+    fv = FateriaCardView(self.user_id, self.current_index)
+    await interaction.response.edit_message(embed=fv.get_embed(), view=fv)
+
+CharacterCheckView.get_t4_embed = _fa_get_t4_embed
+CharacterCheckView.show_t4_card = _fa_show_t4_card
+
+_FA_PREV_CHECK = handle_check_character
+async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
+    if nhan_vat and str(nhan_vat).strip().lower().replace("#", "").replace(" ", "") in ("t4", "fateria", "sophan", "khuonmau"):
+        user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+        fv = FateriaCardView(user.id, 0)
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=fv.get_embed(), view=fv)
+        else:
+            await ctx_or_interaction.send(embed=fv.get_embed(), view=fv)
+        return
+    return await _FA_PREV_CHECK(ctx_or_interaction, nhan_vat)
+
+# ===================== HẾT KHỐI FATERIA ACE 2 =====================
     
 import sys
 
