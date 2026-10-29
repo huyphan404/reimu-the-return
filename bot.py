@@ -21139,12 +21139,15 @@ def build_auto_sac_embed(player: dict) -> discord.Embed:
     embed.set_footer(text="Bấm nút để thêm/gỡ thẻ • Nhập lại thẻ đã có trong danh sách sẽ gỡ nó ra")
     return embed
 
+# ==========================================
+# ✅ CODE MỚI ĐÃ SỬA CHUẨN DISCORD API:
+# ==========================================
 class AutoSacModal(discord.ui.Modal):
     def __init__(self, mode: str):
-        super().__init__(title=("Auto Sac - Thẻ tự đổi ra Xu" if mode == "sac" else "Auto Keep - Thẻ luôn giữ lại"))
+        super().__init__(title=("Auto Sac - Tự đổi thẻ ra Xu" if mode == "sac" else "Auto Keep - Giữ lại thẻ"))
         self.mode = mode
         self.card_input = discord.ui.TextInput(
-            label="ID hoặc tên nhân vật (cách nhau bằng dấu phẩy):",
+            label="ID hoặc tên thẻ (cách nhau dấu phẩy):",  # Rút ngắn còn 39 ký tự (<= 45)
             style=discord.TextStyle.paragraph,
             placeholder="VD: 25, 28, rumia, tewi",
             required=True, max_length=400
@@ -21205,10 +21208,28 @@ class AutoSacView(discord.ui.View):
         self.user = user
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        if interaction.user.id != self.user.id:
+        # Hỗ trợ cả trường hợp self.user là đối tượng Member/User lẫn dạng ID số nguyên (int)
+        user_id = getattr(self.user, "id", self.user)
+        if interaction.user.id != user_id:
             await interaction.response.send_message("❌ Đây không phải bảng của bạn! Hãy tự gõ `/auto sac`.", ephemeral=True)
             return False
         return True
+
+    @discord.ui.button(label="Auto Sac Card", style=discord.ButtonStyle.danger, emoji="♻️", row=0)
+    async def btn_sac(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(AutoSacModal("sac"))
+
+    @discord.ui.button(label="Auto Keep Card", style=discord.ButtonStyle.success, emoji="🛡️", row=0)
+    async def btn_keep(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(AutoSacModal("keep"))
+
+    @discord.ui.button(label="Remove All", style=discord.ButtonStyle.secondary, emoji="🗑️", row=1)
+    async def btn_clear(self, interaction: discord.Interaction, button: discord.ui.Button):
+        player = get_player(interaction.user.id, interaction.user.display_name)
+        player["auto_sac"] = []
+        player["auto_keep"] = []
+        save_player(player)
+        await interaction.response.edit_message(embed=build_auto_sac_embed(player), view=self)
 
     @discord.ui.button(label="Auto Sac Card", style=discord.ButtonStyle.danger, emoji="♻️", row=0)
     async def btn_sac(self, interaction: discord.Interaction, button: discord.ui.Button):
