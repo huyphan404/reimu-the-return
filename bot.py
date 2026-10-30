@@ -2014,22 +2014,10 @@ async def on_ready():
 
 @bot.event
 async def on_message(message: discord.Message):
-    # 1. Bỏ qua tin nhắn từ Bot
+    # Đã bỏ cơ chế wild boss spawn khi chat. Chỉ xử lý lệnh prefix.
     if message.author.bot:
         return
-
-    # 2. Xử lý các lệnh prefix (!pull, !daily, !battle, !boss,...)
     await bot.process_commands(message)
-
-    # 3. TỶ LỆ 10% XUẤT HIỆN BOSS TỰ NHIÊN CHO MỌI TIN NHẮN TRONG SERVER (NẾU HẾT HỒI CHIÊU 15P)
-    global boss_cooldown_until, active_raid
-    now = time.time()
-    if active_raid is None and now >= boss_cooldown_until:
-        # Tỉ lệ 10% khi có bất kỳ ai chat (0.10)
-        if random.random() < 0.10:
-            print(f"🚨 [BOSS EVENT] Kích hoạt xuất hiện Boss ngẫu nhiên tại #{message.channel.name} do {message.author.display_name} chat!", flush=True)
-            await spawn_boss_raid(message.channel)
-            return
 
 # ==============================================================================
 # HÀM TIẾN HÓA SEIKI ACE 2 & HÀM XỬ LÝ KỸ NĂNG DÙNG CHUNG (RAID / BATTLE / PVP)
@@ -2947,7 +2935,7 @@ async def raid_timer_lifecycle(channel, raid_data, view):
         print(f"Lỗi trong raid_timer_lifecycle: {ex}", flush=True)
         active_raid = None
 
-async def spawn_boss_raid(channel, author=None, boss_type=None):
+async def spawn_boss_raid(channel, author=None, boss_type=None, admin=True):
     global active_raid, boss_cooldown_until
     if active_raid is not None:
         if active_raid.get("task") and not active_raid["task"].done():
@@ -3001,7 +2989,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
     }
     active_raid = raid_data
 
-    is_admin = (author is not None)
+    is_admin = (author is not None) and admin
     title = f"🚨 [ADMIN TRIỆU HỒI] CẢNH BÁO KHẨN CẤP: DỊ BIẾN {cfg['name'].upper()}!" if is_admin else f"🚨 CẢNH BÁO KHẨN CẤP: DỊ BIẾN {cfg['name'].upper()}!"
 
     if is_seiki:
@@ -3141,7 +3129,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None):
         embed = build_jotaro_spawn_embed(cfg, author, is_admin, title)
         
     eq_add_boss_field(embed, boss_type)
-    embed.set_footer(text=f"Bấm 'Tham Gia' để xuất trận • Miễn phí • {'Admin Force Spawn' if is_admin else 'Boss Tự Nhiên'}")
+    embed.set_footer(text=f"Bấm 'Tham Gia' để xuất trận • Miễn phí • {'Admin Force Spawn' if is_admin else 'Mở bằng /raid'}")
     view = RaidJoinView(raid_data)
     raid_data["view"] = view
     msg = await channel.send(embed=embed, view=view)
@@ -3154,12 +3142,66 @@ async def admin_spawn_boss(channel, author, boss_type=None):
     boss_cooldown_until = 0
     await spawn_boss_raid(channel, author, boss_type=boss_type)
 
+# ==============================================================================
+# [UPDATE RAID] COOLDOWN 15 PHÚT KHI JOIN + NÚT HỦY RAID
+# ==============================================================================
+RAID_JOIN_COOLDOWN = 15 * 60   # 15 phút / mỗi lần join (tính cả người mở raid)
+
+def raid_cd_remaining(player: dict, uid=None) -> int:
+    """Số giây còn lại của cooldown join raid. Admin được miễn."""
+    if uid is not None and is_authorized_admin(uid):
+        return 0
+    last = player.get("last_raid_join_time", 0.0) or 0.0
+    return max(0, int(RAID_JOIN_COOLDOWN - (time.time() - last)))
+
+def raid_cd_text(sec: int) -> str:
+    return f"{sec // 60} phút {sec % 60:02d} giây"
+
+async def raid_cancel_common(interaction: discord.Interaction, raid_data: dict):
+    """Hủy raid khi đang ở phòng chờ. Chỉ người mở raid hoặc Admin được hủy."""
+    global active_raid, active_prime_raid
+    uid = interaction.user.id
+    if raid_data.get("started") or raid_data.get("closed"):
+        await interaction.response.send_message("⚠️ Raid đã bắt đầu hoặc đã đóng, không thể hủy!", ephemeral=True)
+        return
+    if not (is_authorized_admin(uid) or uid == raid_data.get("opener_id")):
+        await interaction.response.send_message("⛔ Chỉ **người mở raid** hoặc **Admin** mới được hủy raid này!", ephemeral=True)
+        return
+
+    raid_data["closed"] = True
+    # Hoàn lại cooldown cho tất cả người đã join (vì raid bị hủy)
+    for u in raid_data.get("participants", []):
+        try:
+            p = get_player(u)
+            p["last_raid_join_time"] = 0.0
+            save_player(p)
+        except Exception as e:
+            print(f"Lỗi reset cooldown raid: {e}", flush=True)
+
+    if active_raid is raid_data:
+        active_raid = None
+    if active_prime_raid is raid_data:
+        active_prime_raid = None
+    try:
+        raid_data["start_event"].set()   # để timer tự kết thúc (thấy closed=True sẽ return)
+    except Exception:
+        pass
+
+    view = raid_data.get("view")
+    if view:
+        for child in view.children:
+            child.disabled = True
+    await interaction.response.edit_message(
+        content=f"🛑 **Raid đã bị hủy bởi {interaction.user.mention}.** Cooldown của những người đã tham gia được hoàn lại.",
+        view=view
+    )
+
 class RaidJoinView(discord.ui.View):
     def __init__(self, raid_data):
         super().__init__(timeout=None)
         self.raid_data = raid_data
 
-    @discord.ui.button(label="⚔️ Tham Gia / Join Raid (Miễn phí)", style=discord.ButtonStyle.danger, emoji="💥")
+    @discord.ui.button(label="⚔️ Tham Gia / Join Raid (Miễn phí)", style=discord.ButtonStyle.success, emoji="💥", row=0)
     async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.raid_data.get("started") or self.raid_data.get("closed"):
             await interaction.response.send_message("Trận chiến đã bắt đầu hoặc thời gian chuẩn bị đã kết thúc!", ephemeral=True)
@@ -3175,6 +3217,12 @@ class RaidJoinView(discord.ui.View):
             return
 
         player = get_player(user_id, interaction.user.display_name)
+
+        rem = raid_cd_remaining(player, user_id)
+        if rem > 0:
+            await interaction.response.send_message(f"⏳ Bạn đang trong hồi chiêu raid! Cần chờ thêm **{raid_cd_text(rem)}** mới được tham gia.", ephemeral=True)
+            return
+
         has_any_card = len(player.get("team", [])) > 0 or any(cnt > 0 for cnt in player.get("inventory", {}).values())
         if not has_any_card:
             await interaction.response.send_message("⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` trước nhé!", ephemeral=True)
@@ -3190,7 +3238,10 @@ class RaidJoinView(discord.ui.View):
                 if len(current_team) >= 3:
                     break
             player["team"] = current_team
-            save_player(player)
+
+        if not is_authorized_admin(user_id):
+            player["last_raid_join_time"] = time.time()   # bắt đầu cooldown 15 phút
+        save_player(player)
 
         self.raid_data["participants"].append(user_id)
         self.raid_data["names"].append(interaction.user.display_name)
@@ -3212,6 +3263,10 @@ class RaidJoinView(discord.ui.View):
 
         if count >= BOSS_CONFIG["max_players"]:
             self.raid_data["start_event"].set()
+
+    @discord.ui.button(label="Hủy Raid", style=discord.ButtonStyle.danger, emoji="🛑", row=0)
+    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await raid_cancel_common(interaction, self.raid_data)
 
 def get_hp_bar(current_hp, max_hp, total_blocks=10):
     ratio = max(0.0, min(1.0, current_hp / max_hp)) if max_hp > 0 else 0
@@ -12929,7 +12984,7 @@ async def slash_boss_status(interaction: discord.Interaction):
         rem = int(boss_cooldown_until - now)
         embed.add_field(name="⏳ Hồi Chiêu:", value=f"Cần đợi thêm **{rem // 60} phút {rem % 60} giây** nữa!", inline=False)
     else:
-        embed.add_field(name="🟢 Sẵn Sàng:", value="Boss đã sẵn sàng xuất hiện ngẫu nhiên (10% khi chat)!\n*(Hoặc Admin có thể dùng `boss admin spawn`)*", inline=False)
+        embed.add_field(name="🟢 Sẵn Sàng:", value="Boss đã sẵn sàng xuất hiện ngẫu nhiên (10% khi chat) không còn hoạt động, hãy raid thay thế!\n*(Hoặc Admin có thể dùng `boss admin spawn`)*", inline=False)
     await interaction.response.send_message(embed=embed)
 
 @bot.command(name="boss", aliases=["bossstatus"])
@@ -14321,7 +14376,7 @@ async def handle_help(ctx_or_interaction):
             "• `/battle` : Chiến đấu để cày cấp.\n"
             "• `/pvp` : Thử sức với người chơi khác, cũng để làm nhiệm vụ.\n"
             "• `/story` : Tham gia tiến trình cốt truyện.\n"
-            "• `/raid` : Triệu hồi Han Seiki the Prime One (yêu cầu Lv.50, tối đa 10 người, hồi chiêu 2 tiếng)."
+            "• `/raid` : Triệu hồi Han Seiki the Prime One (yêu cầu Lv.50, tối đa 10 người, hồi chiêu 15 phút)."
         ),
         inline=False
     )
@@ -16386,7 +16441,7 @@ class PrimeRaidJoinView(discord.ui.View):
         super().__init__(timeout=None)
         self.raid_data = raid_data
 
-    @discord.ui.button(label="⚔️ Tham Gia Diệt Han Seiki (Miễn phí)", style=discord.ButtonStyle.danger, emoji="⚖️")
+    @discord.ui.button(label="⚔️ Tham Gia Diệt Han Seiki (Miễn phí)", style=discord.ButtonStyle.success, emoji="⚖️", row=0)
     async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         rd = self.raid_data
         if rd.get("started") or rd.get("closed"):
@@ -16400,9 +16455,17 @@ class PrimeRaidJoinView(discord.ui.View):
             await interaction.response.send_message(f"Đội hình đã đầy ({PRIME_MAX_PLAYERS}/{PRIME_MAX_PLAYERS})!", ephemeral=True)
             return
         player = get_player(uid, interaction.user.display_name)
+
+        rem = raid_cd_remaining(player, uid)
+        if rem > 0:
+            await interaction.response.send_message(f"⏳ Bạn đang trong hồi chiêu raid! Cần chờ thêm **{raid_cd_text(rem)}** mới được tham gia.", ephemeral=True)
+            return
         if not _prime_prepare_team(player):
             await interaction.response.send_message("⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` trước nhé!", ephemeral=True)
             return
+        if not is_authorized_admin(uid):
+            player["last_raid_join_time"] = time.time()
+        save_player(player)
 
         rd["participants"].append(uid)
         rd["names"].append(interaction.user.display_name)
@@ -16416,6 +16479,10 @@ class PrimeRaidJoinView(discord.ui.View):
             pass
         if count >= PRIME_MAX_PLAYERS:
             rd["start_event"].set()
+
+    @discord.ui.button(label="Hủy Raid", style=discord.ButtonStyle.danger, emoji="🛑", row=0)
+    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await raid_cancel_common(interaction, self.raid_data)
 
 
 async def prime_raid_timer_lifecycle(channel, raid_data, view):
@@ -16528,7 +16595,7 @@ async def spawn_prime_raid(channel, author, is_admin=False):
         inline=False
     )
     eq_add_boss_field(embed, "han_seiki")
-    embed.set_footer(text="Han Seiki the Prime One • /raid • Hồi chiêu 2 tiếng • Yêu cầu Lv.50 để mở")
+    embed.set_footer(text="Han Seiki the Prime One • /raid • Mỗi người tham gia chịu hồi chiêu 15 phút • Yêu cầu Lv.50 để mở")
 
     view = PrimeRaidJoinView(raid_data)
     raid_data["view"] = view
@@ -16568,7 +16635,7 @@ async def handle_prime_raid_open(ctx_or_interaction):
         await reply(f"⛔ **Cấp độ không đủ!** Yêu cầu đạt tối thiểu **Lv.50** để mở Raid Han Seiki the Prime One! (Cấp hiện tại của bạn: **Lv.{player.get('level', 1)}**)")
         return
 
-    # 2. Cooldown 2 tiếng tính riêng cho NGƯỜI MỞ raid (người khác vẫn join bình thường)
+    # 2. Cooldown 15 phút tính riêng cho NGƯỜI MỞ raid (người khác vẫn join bình thường)
     last_t = player.get("last_prime_raid_time", 0.0)
     if not is_adm and (now - last_t < PRIME_COOLDOWN):
         rem = int(PRIME_COOLDOWN - (now - last_t))
@@ -16594,13 +16661,140 @@ async def handle_prime_raid_open(ctx_or_interaction):
     await spawn_prime_raid(channel, user, is_admin=is_adm)
 
 
-@bot.tree.command(name="raid", description="Triệu hồi Boss Han Seiki the Prime One (Yêu cầu Lv.50, tối đa 10 người, hồi chiêu 2 tiếng)")
-async def slash_raid_prime(interaction: discord.Interaction):
-    await handle_prime_raid_open(interaction)
+# ==============================================================================
+# [UPDATE RAID] /raid CHỌN BOSS (Reimu / Seiki / Jotaro / Mahoraga / Fateria / Han Seiki)
+# ==============================================================================
+RAID_BOSS_LABELS = {
+    "reimu": "Reimu Dị Hình",
+    "seiki": "Seiki Dị Hình",
+    "jotaro": "Kujo Jotaro",
+    "mahoraga": "Mahoraga - Bát Ách Kiếm Thần Tướng",
+    "fateria": "Fateria - Khuôn Mẫu Của Số Phận",
+    "han_seiki": "Han Seiki the Prime One",
+}
+RAID_BOSS_ALIASES = {
+    "reimu": "reimu", "reimudihinh": "reimu", "dihinh": "reimu",
+    "seiki": "seiki", "seikidihinh": "seiki",
+    "jotaro": "jotaro", "kujo": "jotaro", "jotarokujo": "jotaro",
+    "mahoraga": "mahoraga", "batach": "mahoraga",
+    "fateria": "fateria",
+    "hanseiki": "han_seiki", "prime": "han_seiki", "primeone": "han_seiki", "primeboss": "han_seiki",
+}
+
+def normalize_raid_boss(raw):
+    k = str(raw or "han_seiki").lower().strip().replace(" ", "").replace("_", "").replace("-", "")
+    return RAID_BOSS_ALIASES.get(k)
+
+async def handle_raid_open(ctx_or_interaction, boss="han_seiki"):
+    global active_raid, active_prime_raid
+    is_inter = isinstance(ctx_or_interaction, discord.Interaction)
+    user = ctx_or_interaction.user if is_inter else ctx_or_interaction.author
+    channel = ctx_or_interaction.channel
+
+    async def reply(msg):
+        if is_inter:
+            await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else:
+            await ctx_or_interaction.send(msg)
+
+    key = normalize_raid_boss(boss)
+    if key is None:
+        await reply("❌ Boss không hợp lệ! Hãy chọn: `reimu`, `seiki`, `jotaro`, `mahoraga`, `fateria`, `hanseiki`.")
+        return
+
+    is_adm = is_authorized_admin(user)
+    check_and_clean_expired_raid()
+
+    # Đang có phòng raid khác -> chặn (Admin được phép ghi đè)
+    if active_raid is not None or active_prime_raid is not None:
+        if is_adm:
+            for rd in (active_raid, active_prime_raid):
+                if rd is not None and rd.get("task") and not rd["task"].done():
+                    rd["task"].cancel()
+            active_raid = None
+            active_prime_raid = None
+        else:
+            await reply("🚨 Đang có một phòng Raid khác xuất hiện hoặc đang giao chiến! Hãy đợi trận hiện tại kết thúc (hoặc người mở bấm **Hủy Raid**).")
+            return
+
+    player = get_player(user.id, user.display_name)
+
+    if not is_adm:
+        rem = raid_cd_remaining(player, user.id)
+        if rem > 0:
+            await reply(f"⏳ Bạn đang trong hồi chiêu raid! Cần chờ thêm **{raid_cd_text(rem)}** nữa.")
+            return
+        if key == "han_seiki" and player.get("level", 1) < 50:
+            await reply(f"⛔ **Cấp độ không đủ!** Mở Han Seiki the Prime One yêu cầu tối thiểu **Lv.50** (hiện tại: **Lv.{player.get('level', 1)}**).")
+            return
+
+    if not _prime_prepare_team(player):
+        await reply("⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` trước nhé!")
+        return
+
+    # Người mở raid cũng chịu cooldown 15 phút (tính như đã join)
+    if not is_adm:
+        player["last_raid_join_time"] = time.time()
+    save_player(player)
+
+    text = f"⚔️ **{user.display_name}** đã mở nghi lễ triệu hồi raid **{RAID_BOSS_LABELS[key]}**!"
+    if is_inter:
+        await ctx_or_interaction.response.send_message(text)
+    else:
+        await ctx_or_interaction.send(text)
+
+    try:
+        if key == "han_seiki":
+            await spawn_prime_raid(channel, user, is_admin=is_adm)
+            if active_prime_raid is not None:
+                active_prime_raid["opener_id"] = user.id
+        else:
+            await spawn_boss_raid(channel, user, boss_type=key, admin=is_adm)
+            rd = active_raid
+            if rd is not None:
+                rd["opener_id"] = user.id
+                # Người mở raid tự động có tên trong danh sách
+                if user.id not in rd["participants"]:
+                    rd["participants"].insert(0, user.id)
+                    rd["names"].insert(0, user.display_name)
+                try:
+                    msg = rd.get("msg")
+                    emb = msg.embeds[0]
+                    emb.set_field_at(
+                        2,
+                        name=f"👥 Người Tham Gia ({len(rd['participants'])}/{BOSS_CONFIG['max_players']}):",
+                        value=", ".join(rd["names"]),
+                        inline=False
+                    )
+                    await msg.edit(embed=emb)
+                except Exception as e:
+                    print(f"Lỗi cập nhật danh sách người mở raid: {e}", flush=True)
+    except Exception as e:
+        # Mở raid lỗi -> hoàn cooldown cho người mở
+        print(f"Lỗi mở raid: {e}", flush=True)
+        try:
+            player["last_raid_join_time"] = 0.0
+            save_player(player)
+        except Exception:
+            pass
+        raise
+
+@bot.tree.command(name="raid", description="Triệu hồi Boss Raid (mỗi người tham gia chịu hồi chiêu 15 phút)")
+@app_commands.describe(boss="Chọn Boss muốn triệu hồi (mặc định: Han Seiki the Prime One)")
+@app_commands.choices(boss=[
+    app_commands.Choice(name="Reimu Dị Hình", value="reimu"),
+    app_commands.Choice(name="Seiki Dị Hình", value="seiki"),
+    app_commands.Choice(name="Kujo Jotaro", value="jotaro"),
+    app_commands.Choice(name="Mahoraga - Bát Ách Kiếm Thần Tướng", value="mahoraga"),
+    app_commands.Choice(name="Fateria - Thao Túng Số Phận", value="fateria"),
+    app_commands.Choice(name="Han Seiki the Prime One (Yêu cầu Lv.50)", value="han_seiki"),
+])
+async def slash_raid(interaction: discord.Interaction, boss: str = "han_seiki"):
+    await handle_raid_open(interaction, boss)
 
 @bot.command(name="raid", aliases=["hanseiki", "primeboss"])
-async def prefix_raid_prime(ctx):
-    await handle_prime_raid_open(ctx)
+async def prefix_raid(ctx, *, boss: str = "han_seiki"):
+    await handle_raid_open(ctx, boss)
 
 @bot.command(name="primereset")
 async def prefix_prime_reset(ctx):
@@ -16963,7 +17157,7 @@ async def execute_prime_raid(channel, raid_data):
             "🌸 **Reimu thở phào:** *\"Phù... cuối cùng các khái niệm cũng trở lại đúng chỗ của chúng. Mọi người làm tốt lắm!\"*\n\n"
             f"🎉 Đội quân đã hạ gục **Han Seiki the Prime One** sau **{rounds} hiệp**!\n"
             f"💥 **Tổng Sát Thương:** **{total_raid_dmg:,} DMG**\n"
-            "⏳ **Hồi chiêu `/raid` tiếp theo:** **2 tiếng** kể từ lúc mở"
+            "⏳ **Hồi chiêu `/raid` tiếp theo:** **15 phút** kể từ lúc mở"
         ),
         color=0x10B981
     )
