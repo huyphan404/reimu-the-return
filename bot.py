@@ -8,7 +8,7 @@
 # 4. ADMIN COMMANDS: /admin_set_level, /admin_confiscate, /admin_add_card, /admin_lock (ID: 1502579398560317441)
 # 5. LEVEL UP MỚI: Mỗi cấp tăng +50 XP (Lv.1: 100 XP, Lv.2: 150 XP, Lv.3: 200 XP...)
 # 6. EVOL UPDATE:
-#    - Luôn hiển thị ID nhân vật: [#15] reimu Hakurei, [#18] Sakuya Izayoi
+#    - Luôn hiển thị ID nhân vật: [#17] reimu Hakurei, [#20] Sakuya Izayoi
 #    - Lệnh /evol hỗ trợ nhập trực tiếp ID hoặc tên
 #    - Hoạt ảnh GIF hiển thị trực tiếp trong Discord (embed image & direct GIF)
 #    - Buff tối thượng Ace: Mọi nhân vật đạt Ace đều được cộng +300 ATK (Power) và +300 Máu (HP)!
@@ -19,7 +19,7 @@
 # 9. ACE 2 MỚI:
 #    - [#09] Flandre Scarlet (30 thẻ): Ripples of 495 Years — 25% xóa 50% HP đối thủ (Battle/PvP)
 #      hoặc 30% HP Boss (Raid Phase 1 & 2), kích hoạt 1 lần/trận, kèm GIF kỹ năng trực tiếp!
-#    - Buff Marisa Ace 2 [#18]: Master Spark tăng sát thương từ ×1.5 lên ×2.5!
+#    - Buff Marisa Ace 2 [#20]: Master Spark tăng sát thương từ ×1.5 lên ×2.5!
 #    - [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 ⭐⭐): Cleave (+2% Max HP mục tiêu mọi đòn) • Medicine Sign (35% hồi 40% máu) •
 #      Fantasy Seal (40% ở Ace 1 / buff lên 50% ở Ace 2: Miễn toàn bộ sát thương) • Bóng Khái Niệm (40%: 15% Max HP + xóa kỹ năng đối phương)!
 # ==============================================================================
@@ -929,7 +929,7 @@ EVOL_CONFIG = {
         "id": 15,
         "key": "reimu",
         "name": "Reimu Hakurei",
-        "title": "[#15] reimu Hakurei - Ace 2 ⭐⭐",
+        "title": "[#17] reimu Hakurei - Ace 2 ⭐⭐",
         "ace_level": "Ace 2 ⭐⭐",
         "required_cards": 20,
         "required_pulls": 20,
@@ -944,7 +944,7 @@ EVOL_CONFIG = {
         "id": 18,
         "key": "sakuya",
         "name": "Sakuya Izayoi",
-        "title": "[#18] Sakuya Izayoi - Ace 2 ⭐⭐",
+        "title": "[#20] Sakuya Izayoi - Ace 2 ⭐⭐",
         "ace_level": "Ace 2 ⭐⭐",
         "required_cards": 30,
         "required_pulls": 30,
@@ -959,7 +959,7 @@ EVOL_CONFIG = {
         "id": 19,
         "key": "marisa",
         "name": "Marisa Kirisame",
-        "title": "[#19] Marisa Kirisame - Ace 2 ⭐⭐",
+        "title": "[#21] Marisa Kirisame - Ace 2 ⭐⭐",
         "ace_level": "Ace 2 ⭐⭐",
         "required_cards": 25,
         "required_pulls": 25,
@@ -1004,7 +1004,7 @@ EVOL_CONFIG = {
         "id": 21,
         "key": "reisen",
         "name": "Reisen Udongein Inaba",
-        "title": "[#21] Reisen Udongein Inaba - Ace 2 ⭐⭐",
+        "title": "[#23] Reisen Udongein Inaba - Ace 2 ⭐⭐",
         "ace_level": "Ace 2 ⭐⭐",
         "required_cards": 40,
         "required_pulls": 40,
@@ -1019,7 +1019,7 @@ EVOL_CONFIG = {
         "id": 23,
         "key": "cirno",
         "name": "Cirno",
-        "title": "[#23] Cirno - Ace 2 ⭐⭐",
+        "title": "[#26] Cirno - Ace 2 ⭐⭐",
         "ace_level": "Ace 2 ⭐⭐",
         "required_cards": 60,
         "required_pulls": 60,
@@ -1074,7 +1074,7 @@ EVOL_CONFIG["21"] = EVOL_CONFIG[21]
 EVOL_CONFIG["23"] = EVOL_CONFIG[23]
 EVOL_CONFIG["13"] = EVOL_CONFIG[13]
 
-# ===== ACE 2: [#24] HONG MEILING =====
+# ===== ACE 2: [#27] HONG MEILING =====
 
 MEILING_EVOL_GIF = "https://static2.klipy.com/ii/2f34308bfc69e8c858753b83566e3ab4/85/03/sCmjZv9yGXNs8eUbqSo.gif"
 MEILING_SKILL_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/4c/fb/3nGGTKnzNfnGFTmp6.gif"
@@ -1083,7 +1083,7 @@ EVOL_CONFIG[24] = {
     "id": 24,
     "key": "meiling",
     "name": "Hong Meiling",
-    "title": "[#24] Hong Meiling - Ace 2 ⭐⭐",
+    "title": "[#27] Hong Meiling - Ace 2 ⭐⭐",
     "ace_level": "Ace 2 ⭐⭐",
     "required_cards": 100,
     "required_pulls": 100,
@@ -1096,7 +1096,7 @@ EVOL_CONFIG[24] = {
 }
 EVOL_CONFIG["24"] = EVOL_CONFIG[24]    
 
-# ===== ACE 2: [#17] KASEN IBARAKI =====
+# ===== ACE 2: [#19] KASEN IBARAKI =====
 KASEN_EVOL_GIF = "https://c.tenor.com/u0C6J8DJiOUAAAAd/kasen-ibaraki-touhou.gif"
 KASEN_SKILL_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/e5/d7/EjDux8NLQl7SA0ly.gif"
 KASEN_SUMMON_CHANCE = 0.35
@@ -1106,7 +1106,7 @@ EVOL_CONFIG[17] = {
     "id": 17,
     "key": "kasen",
     "name": "Kasen Ibaraki",
-    "title": "[#17] Kasen Ibaraki - Ace 2 ⭐⭐",
+    "title": "[#19] Kasen Ibaraki - Ace 2 ⭐⭐",
     "ace_level": "Ace 2 ⭐⭐",
     "required_cards": 25,
     "required_pulls": 25,
@@ -1131,7 +1131,7 @@ def kasen_duel_apply(card, power, stunned, log_lists):
     card["kasen_used"] = True
     bonus = int(card.get("power", 0) * KASEN_SUMMON_ATK_MULT)
     msg = (
-        f"🦴 **[Ace 2] [#17] Kasen Ibaraki** kích hoạt **Triệu Hoán Vong Cốt** (35%)! "
+        f"🦴 **[Ace 2] [#19] Kasen Ibaraki** kích hoạt **Triệu Hoán Vong Cốt** (35%)! "
         f"Vong cốt ùa lên che chắn: **CẢ ĐỘI MIỄN 100% SÁT THƯƠNG** trong lượt này và gây thêm **+{bonus:,} DMG** (×0.8 ATK)!"
     )
     for lst in log_lists:
@@ -1157,7 +1157,7 @@ def kasen_raid_turn(c, ac, active_combatants):
             c2["kasen_guard"] = {"idx": idx, "hp": cards[idx]["current_hp"]}
     bonus = int(ac["power"] * KASEN_SUMMON_ATK_MULT)
     log = (
-        f"🦴 **[Ace 2] [#17] Kasen Ibaraki** ({c['username']}) kích hoạt **Triệu Hoán Vong Cốt** (35%)! "
+        f"🦴 **[Ace 2] [#19] Kasen Ibaraki** ({c['username']}) kích hoạt **Triệu Hoán Vong Cốt** (35%)! "
         f"**TOÀN BỘ TIỀN TUYẾN MIỄN 100% SÁT THƯƠNG** trong hiệp này (mọi sát thương Boss gây ra sẽ bị vô hiệu) "
         f"và gây thêm **+{bonus:,} DMG** (×0.8 ATK)!"
     )
@@ -1179,7 +1179,7 @@ def kasen_restore_guard(active_combatants):
 # ACE 2 MỚI: [#t1] SEIKI ĐỆ NHẤT PHÁP SƯ (BỘ KỸ NĂNG THAY ĐỔI HOÀN TOÀN)
 # ==============================================================================
 T1_ACE2_CONFIG = {
-    "required_ace2": [19, 15, 18],   # [#19] Marisa, [#15] reimu, [#18] Sakuya phải đạt Ace 2
+    "required_ace2": [19, 15, 18],   # [#21] Marisa, [#17] reimu, [#20] Sakuya phải đạt Ace 2
     "required_shards": 10,           # Chi phí: 10 Mảnh Seiki
     "cleave_pct": 0.02,              # Clave (thụ động 100%): đánh thường +2% Máu Tối Đa mục tiêu
     "gif_cleave": "https://static2.klipy.com/ii/9ed0121ed465c12e1f3dda331ed33f0e/9b/b3/mOb3k5Ux7HWC.gif",
@@ -1782,6 +1782,8 @@ def get_player(user_id, username="Visitor"):
         data = get_default_player(user_id, username)
         is_new = True
 
+    if not is_new:
+        data.pop("_is_first_time", None)   # dọn cờ cũ đã lỡ lưu trong DB
     if "inventory" not in data: data["inventory"] = {}
     if "pull_stats" not in data: data["pull_stats"] = {}
     if "unlocked_cards" not in data:
@@ -1898,6 +1900,7 @@ def get_player(user_id, username="Visitor"):
     return data
 
 def save_player(player_data):
+    player_data.pop("_is_first_time", None)   # <<< THÊM
     uid_str = str(player_data["user_id"])
     now_iso = datetime.now().isoformat()
     player_data["level"] = calculate_level_from_xp(player_data.get("xp", 0), player_data.get("prestige", 0))
@@ -2083,7 +2086,7 @@ def execute_kizuna_ace2(player):
 # BỘ KỸ NĂNG ACE 2 CHO THẺ [T] #t1 SEIKI (CLEAVE, MEDICINE SIGN, FANTASY SEAL, BÓNG KHÁI NIỆM)
 # ==============================================================================
 def execute_seiki_ace2(player):
-    """Tiến hóa Ace 2 [#t1] Seiki: yêu cầu đã mở khóa thẻ #t1 + Ace 2 của Marisa [#19], Reimu [#15], Sakuya [#18] + 10 Mảnh Seiki."""
+    """Tiến hóa Ace 2 [#t1] Seiki: yêu cầu đã mở khóa thẻ #t1 + Ace 2 của Marisa [#21], Reimu [#17], Sakuya [#20] + 10 Mảnh Seiki."""
     _blk = ace2_prestige_block(player, "t1")
     if _blk:
         return False, _blk, None
@@ -2102,7 +2105,7 @@ def execute_seiki_ace2(player):
         names = ", ".join(f"[#{disp_id(c)}] {CARDS_DATA[c]['name']}" for c in missing)
         return False, (
             "❌ **Chưa đủ điều kiện tiến hóa Seiki Ace 2!**\n"
-            "• Yêu cầu: **[#19] Marisa**, **[#15] reimu**, **[#18] Sakuya** đều phải đạt **Ace 2 ⭐⭐**.\n"
+            "• Yêu cầu: **[#21] Marisa**, **[#17] reimu**, **[#20] Sakuya** đều phải đạt **Ace 2 ⭐⭐**.\n"
             f"• Còn thiếu Ace 2: **{names}**"
         ), None
 
@@ -2482,7 +2485,7 @@ def meiling_raid_turn(c, ac):
     ac["meiling_guard"] = True
     ac["meiling_hp_snap"] = ac["current_hp"]
     log = (
-        f"🌈 **[Ace 2] [#24] Hong Meiling** ({c['username']}) thi triển **Rainbow Taijiquan** (30%)! "
+        f"🌈 **[Ace 2] [#27] Hong Meiling** ({c['username']}) thi triển **Rainbow Taijiquan** (30%)! "
         f"Gây **×1.2 sát thương** và **giảm 15% sát thương phải nhận** trong lượt này!"
     )
     return 1.2, MEILING_SKILL_GIF, log
@@ -3501,7 +3504,7 @@ async def execute_raid(channel, raid_data):
                         c["sakuya_stun_used"] = True
                         boss_stunned = True
                         turn_image = EVOL_CONFIG[18]["skill_gif"]
-                        sakuya_stun_notif = f"⏳ **[Ace 2] [#18] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss bị **STUN** mất lượt!"
+                        sakuya_stun_notif = f"⏳ **[Ace 2] [#20] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss bị **STUN** mất lượt!"
                         break
 
         if boss_freeze_debuff_turns > 0 and not boss_stunned:
@@ -3549,7 +3552,7 @@ async def execute_raid(channel, raid_data):
                     card_dmg = int(card_dmg * 2.5)
                     if not turn_image:
                         turn_image = EVOL_CONFIG[19]["skill_gif"]
-                    marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.5 giáng **{card_dmg:,} DMG** lên Boss!"
+                    marisa_spark_notif = f"🌟 **[Ace 2] [#21] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.5 giáng **{card_dmg:,} DMG** lên Boss!"
 
             # Kỹ năng Yukari Ace 2 tấn công:
             if ac["cid"] == 4 and ac.get("is_ace2"):
@@ -3602,7 +3605,7 @@ async def execute_raid(channel, raid_data):
                     boss_mind_turns = 4
                     if not turn_image:
                         turn_image = EVOL_CONFIG[21]["skill_gif"]
-                    reisen_notif = f"🔴 **[Ace 2] [#21] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
+                    reisen_notif = f"🔴 **[Ace 2] [#23] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
 
             if ac["cid"] == 23 and ac["is_ace2"] and not c.get("cirno_freeze_used"):
                 if random.random() < 0.40:
@@ -3610,7 +3613,7 @@ async def execute_raid(channel, raid_data):
                     boss_freeze_debuff_turns = 2
                     if not turn_image:
                         turn_image = EVOL_CONFIG[23]["skill_gif"]
-                    cirno_notif = f"❄️ **[Ace 2] [#23] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% không thể đánh trả**!"
+                    cirno_notif = f"❄️ **[Ace 2] [#26] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% không thể đánh trả**!"
 
             if ac["cid"] == 13 and ac["is_ace2"]:
                 if random.random() < 0.30:
@@ -3834,7 +3837,7 @@ async def execute_raid(channel, raid_data):
                                 c["reimu_invul_used"] = True
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
@@ -3876,7 +3879,7 @@ async def execute_raid(channel, raid_data):
                                 c["reimu_invul_used"] = True
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
@@ -3918,7 +3921,7 @@ async def execute_raid(channel, raid_data):
                                 c["reimu_invul_used"] = True
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
@@ -3962,7 +3965,7 @@ async def execute_raid(channel, raid_data):
                             boss_action_log = (
                                 f"⚔️ **[KỸ NĂNG] Mahoraga** rút kiếm tung **THOÁI MA KIẾM** (25%)! "
                                 f"Trường kiếm khổng lồ giáng **{p1_power:,} DMG sát thương thuần** (không chia đều) thẳng vào **{ac['name']}** ({target_c['username']})!\n"
-                                f"🛡️ **[Ace 2] [#15] reimu** ({target_c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                f"🛡️ **[Ace 2] [#17] reimu** ({target_c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                             )
                     if not invul and str(ac["cid"]).lower() == "t1" and (target_c.get("seiki_invul_turn") == p1_rounds or (not target_c.get("seiki_seal_used") and target_c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         target_c["seiki_seal_used"] = True
@@ -4021,7 +4024,7 @@ async def execute_raid(channel, raid_data):
                                 c["reimu_invul_used"] = True
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
@@ -4118,7 +4121,7 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 if not fateria_skill_gif:
                                     turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
@@ -4168,7 +4171,7 @@ async def execute_raid(channel, raid_data):
                                 invul = True
                                 if not turn_image or turn_image == BOSS_SKILL_CONFIG["gif"]:
                                     turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
@@ -4209,7 +4212,7 @@ async def execute_raid(channel, raid_data):
                                 c["reimu_invul_used"] = True
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p1_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p1_rounds
@@ -4594,7 +4597,7 @@ async def execute_raid(channel, raid_data):
                         c["sakuya_stun_used"] = True
                         boss_stunned = True
                         turn_image = EVOL_CONFIG[18]["skill_gif"]
-                        sakuya_stun_notif = f"⏳ **[Ace 2] [#18] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss Phase 2 bị **STUN**!"
+                        sakuya_stun_notif = f"⏳ **[Ace 2] [#20] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss Phase 2 bị **STUN**!"
                         break
 
             if boss_freeze_debuff_turns > 0 and not boss_stunned:
@@ -4613,7 +4616,7 @@ async def execute_raid(channel, raid_data):
                         card_dmg = int(card_dmg * 2.5)
                         if not turn_image:
                             turn_image = EVOL_CONFIG[19]["skill_gif"]
-                        marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.5 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
+                        marisa_spark_notif = f"🌟 **[Ace 2] [#21] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.5 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
 
                 if ac["cid"] == 4 and ac.get("is_ace2"):
                     if not c.get("yukari_station_used") and random.random() < 0.30:
@@ -4665,7 +4668,7 @@ async def execute_raid(channel, raid_data):
                         boss_mind_turns = 4
                         if not turn_image:
                             turn_image = EVOL_CONFIG[21]["skill_gif"]
-                        reisen_notif = f"🔴 **[Ace 2] [#21] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss Phase 2 bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
+                        reisen_notif = f"🔴 **[Ace 2] [#23] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss Phase 2 bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
 
                 if ac["cid"] == 23 and ac["is_ace2"] and not c.get("cirno_freeze_used"):
                     if random.random() < 0.40:
@@ -4673,7 +4676,7 @@ async def execute_raid(channel, raid_data):
                         boss_freeze_debuff_turns = 2
                         if not turn_image:
                             turn_image = EVOL_CONFIG[23]["skill_gif"]
-                        cirno_notif = f"❄️ **[Ace 2] [#23] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss Phase 2: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
+                        cirno_notif = f"❄️ **[Ace 2] [#26] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss Phase 2: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
 
                 if ac["cid"] == 13 and ac["is_ace2"]:
                     if random.random() < 0.30:
@@ -4846,7 +4849,7 @@ async def execute_raid(channel, raid_data):
                                 c["reimu_invul_used"] = True
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p2_rounds
@@ -4892,7 +4895,7 @@ async def execute_raid(channel, raid_data):
                                 c["reimu_invul_used"] = True
                                 invul = True
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True
                             c["seiki_used_turn"] = p2_rounds
@@ -5204,7 +5207,7 @@ async def execute_raid(channel, raid_data):
                     c["sakuya_stun_used"] = True
                     boss_stunned = True
                     turn_image = EVOL_CONFIG[18]["skill_gif"]
-                    sakuya_stun_notif = f"⏳ **[Ace 2] [#18] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss Phase 2 bị **STUN**!"
+                    sakuya_stun_notif = f"⏳ **[Ace 2] [#20] Sakuya Izayoi** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss Phase 2 bị **STUN**!"
                     break
 
         if boss_freeze_debuff_turns > 0 and not boss_stunned:
@@ -5223,7 +5226,7 @@ async def execute_raid(channel, raid_data):
                     card_dmg = int(card_dmg * 2.5)
                     if not turn_image:
                         turn_image = EVOL_CONFIG[19]["skill_gif"]
-                    marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.5 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
+                    marisa_spark_notif = f"🌟 **[Ace 2] [#21] Marisa Kirisame** ({c['username']}) bộc phá **Master Spark** (30%)! Đòn đánh ma thuật ×2.5 giáng **{card_dmg:,} DMG** lên Boss Phase 2!"
 # Kỹ năng Yukari Ace 2:
             if ac["cid"] == 4 and ac.get("is_ace2"):
                 if not c.get("yukari_station_used") and random.random() < 0.30:
@@ -5275,7 +5278,7 @@ async def execute_raid(channel, raid_data):
                     boss_mind_turns = 4
                     if not turn_image:
                         turn_image = EVOL_CONFIG[21]["skill_gif"]
-                    reisen_notif = f"🔴 **[Ace 2] [#21] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss Phase 2 bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
+                    reisen_notif = f"🔴 **[Ace 2] [#23] Reisen Udongein Inaba** ({c['username']}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Boss Phase 2 bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
 
             if ac["cid"] == 23 and ac["is_ace2"] and not c.get("cirno_freeze_used"):
                 if random.random() < 0.40:
@@ -5283,7 +5286,7 @@ async def execute_raid(channel, raid_data):
                     boss_freeze_debuff_turns = 2
                     if not turn_image:
                         turn_image = EVOL_CONFIG[23]["skill_gif"]
-                    cirno_notif = f"❄️ **[Ace 2] [#23] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss Phase 2: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
+                    cirno_notif = f"❄️ **[Ace 2] [#26] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss Phase 2: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
 
             if ac["cid"] == 13 and ac["is_ace2"]:
                 if random.random() < 0.30:
@@ -5452,7 +5455,7 @@ async def execute_raid(channel, raid_data):
                             invul = True
                             if not turn_image or turn_image == BOSS_SKILL_CONFIG["gif"]:
                                 turn_image = EVOL_CONFIG[15]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         c["seiki_seal_used"] = True
                         c["seiki_used_turn"] = p2_rounds
@@ -5487,7 +5490,7 @@ async def execute_raid(channel, raid_data):
                             c["reimu_invul_used"] = True
                             invul = True
                             turn_image = EVOL_CONFIG[15]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and c.get("seiki_used_turn") != p2_rounds and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         c["seiki_seal_used"] = True
                         c["seiki_used_turn"] = p2_rounds
@@ -6073,7 +6076,7 @@ async def execute_event_raid(channel, raid_data):
                     c["sakuya_stun_used"] = True
                     boss_stunned = True
                     turn_image = EVOL_CONFIG[18]["skill_gif"]
-                    sakuya_stun_notif = f"⏳ **[Ace 2] [#18] Sakuya** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss bị **STUN**!"
+                    sakuya_stun_notif = f"⏳ **[Ace 2] [#20] Sakuya** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss bị **STUN**!"
                     break
 
         if boss_freeze_debuff_turns > 0 and not boss_stunned:
@@ -6092,7 +6095,7 @@ async def execute_event_raid(channel, raid_data):
                     c["marisa_spark_used"] = True
                     card_dmg = int(card_dmg * 2.5)
                     if not turn_image: turn_image = EVOL_CONFIG[19]["skill_gif"]
-                    marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa** ({c['username']}) tung **Master Spark (×2.5)**! Giáng **{card_dmg:,} DMG**!"
+                    marisa_spark_notif = f"🌟 **[Ace 2] [#21] Marisa** ({c['username']}) tung **Master Spark (×2.5)**! Giáng **{card_dmg:,} DMG**!"
 
             if ac["cid"] == 4 and ac.get("is_ace2"):
                 if not c.get("yukari_station_used") and random.random() < 0.30:
@@ -6131,14 +6134,14 @@ async def execute_event_raid(channel, raid_data):
                     c["reisen_used"] = True
                     boss_mind_turns = 4
                     if not turn_image: turn_image = EVOL_CONFIG[21]["skill_gif"]
-                    reisen_notif = f"🔴 **[Ace 2] [#21] Reisen** ({c['username']}) kích hoạt **Red Eye Mind**! 🌀 Boss bị ảo giác 4 lượt!"
+                    reisen_notif = f"🔴 **[Ace 2] [#23] Reisen** ({c['username']}) kích hoạt **Red Eye Mind**! 🌀 Boss bị ảo giác 4 lượt!"
 
             if ac["cid"] == 23 and ac["is_ace2"] and not c.get("cirno_freeze_used"):
                 if random.random() < 0.40:
                     c["cirno_freeze_used"] = True
                     boss_freeze_debuff_turns = 2
                     if not turn_image: turn_image = EVOL_CONFIG[23]["skill_gif"]
-                    cirno_notif = f"❄️ **[Ace 2] [#23] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss!"
+                    cirno_notif = f"❄️ **[Ace 2] [#26] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss!"
 
             if ac["cid"] == 13 and ac["is_ace2"]:
                 if random.random() < 0.30:
@@ -6300,7 +6303,7 @@ async def execute_event_raid(channel, raid_data):
                     if ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
                         if random.random() < 0.40:
                             c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                         boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
@@ -6327,7 +6330,7 @@ async def execute_event_raid(channel, raid_data):
                     if ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
                         if random.random() < 0.40:
                             c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                         boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
@@ -6360,7 +6363,7 @@ async def execute_event_raid(channel, raid_data):
                     elif ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
                         if random.random() < 0.40:
                             c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
-                            boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                            boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p1_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                         c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                         boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
@@ -6588,10 +6591,10 @@ async def execute_event_raid(channel, raid_data):
                     turn_image = EVOL_CONFIG[18]["skill_gif"]
                     if boss_wg_active:
                         c["wg_reflected_stun"] = True
-                        sakuya_stun_notif = f"⏳ **[Ace 2] [#18] Sakuya** ({c['username']}) tung **Thời Gian Đóng Băng** nhưng bị **Wonder Guard Boss PHẢN NGƯỢC STUN**!"
+                        sakuya_stun_notif = f"⏳ **[Ace 2] [#20] Sakuya** ({c['username']}) tung **Thời Gian Đóng Băng** nhưng bị **Wonder Guard Boss PHẢN NGƯỢC STUN**!"
                     else:
                         boss_stunned = True
-                        sakuya_stun_notif = f"⏳ **[Ace 2] [#18] Sakuya** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss Phase 2 bị **STUN**!"
+                        sakuya_stun_notif = f"⏳ **[Ace 2] [#20] Sakuya** ({c['username']}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Boss Phase 2 bị **STUN**!"
                     break
 
         if boss_freeze_debuff_turns > 0 and not boss_stunned:
@@ -6617,7 +6620,7 @@ async def execute_event_raid(channel, raid_data):
                     c["marisa_spark_used"] = True
                     card_dmg = int(card_dmg * 2.5)
                     if not turn_image: turn_image = EVOL_CONFIG[19]["skill_gif"]
-                    marisa_spark_notif = f"🌟 **[Ace 2] [#19] Marisa** ({c['username']}) tung **Master Spark (×2.5)**! Giáng **{card_dmg:,} DMG**!"
+                    marisa_spark_notif = f"🌟 **[Ace 2] [#21] Marisa** ({c['username']}) tung **Master Spark (×2.5)**! Giáng **{card_dmg:,} DMG**!"
 
             if ac["cid"] == 4 and ac.get("is_ace2"):
                 if not c.get("yukari_station_used") and random.random() < 0.30:
@@ -6665,20 +6668,20 @@ async def execute_event_raid(channel, raid_data):
                     if boss_wg_active:
                         self_mind_dmg = ac["power"]
                         ac["current_hp"] -= self_mind_dmg
-                        reisen_notif = f"🔴 **[Ace 2] [#21] Reisen** ({c['username']}) tung **Red Eye Mind** nhưng bị **Wonder Guard Boss** phản ngược, tự gây **{self_mind_dmg:,} DMG**!"
+                        reisen_notif = f"🔴 **[Ace 2] [#23] Reisen** ({c['username']}) tung **Red Eye Mind** nhưng bị **Wonder Guard Boss** phản ngược, tự gây **{self_mind_dmg:,} DMG**!"
                     else:
                         boss_mind_turns = 4
-                        reisen_notif = f"🔴 **[Ace 2] [#21] Reisen** ({c['username']}) kích hoạt **Red Eye Mind**! 🌀 Boss bị ảo giác 4 lượt!"
+                        reisen_notif = f"🔴 **[Ace 2] [#23] Reisen** ({c['username']}) kích hoạt **Red Eye Mind**! 🌀 Boss bị ảo giác 4 lượt!"
 
             if ac["cid"] == 23 and ac["is_ace2"] and not c.get("cirno_freeze_used"):
                 if random.random() < 0.40:
                     c["cirno_freeze_used"] = True
                     if not turn_image: turn_image = EVOL_CONFIG[23]["skill_gif"]
                     if boss_wg_active:
-                        cirno_notif = f"❄️ **[Ace 2] [#23] Cirno** ({c['username']}) tung **Perfect Freeze** nhưng bị **Wonder Guard Boss** vô hiệu hóa!"
+                        cirno_notif = f"❄️ **[Ace 2] [#26] Cirno** ({c['username']}) tung **Perfect Freeze** nhưng bị **Wonder Guard Boss** vô hiệu hóa!"
                     else:
                         boss_freeze_debuff_turns = 2
-                        cirno_notif = f"❄️ **[Ace 2] [#23] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss Phase 2!"
+                        cirno_notif = f"❄️ **[Ace 2] [#26] Cirno** ({c['username']}) kích hoạt **Perfect Freeze** (40%)! Đóng băng Boss Phase 2!"
 
             if ac["cid"] == 13 and ac["is_ace2"]:
                 if random.random() < 0.30:
@@ -6858,7 +6861,7 @@ async def execute_event_raid(channel, raid_data):
                     elif ac["cid"] == 15 and ac.get("is_ace2") and not c["reimu_invul_used"] and random.random() < 0.40:
                         c["reimu_invul_used"] = True
                         turn_image = EVOL_CONFIG[15]["skill_gif"]
-                        boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                        boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
                     elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and not ac.get("is_ace2") and random.random() < 0.40)):
                         c["seiki_seal_used"] = True
                         turn_image = T1_SEAL_GIF
@@ -6901,7 +6904,7 @@ async def execute_event_raid(channel, raid_data):
                         if ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
                             if random.random() < 0.40:
                                 c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                             boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
@@ -6928,7 +6931,7 @@ async def execute_event_raid(channel, raid_data):
                         if ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
                             if random.random() < 0.40:
                                 c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                             boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
@@ -6962,7 +6965,7 @@ async def execute_event_raid(channel, raid_data):
                         elif ac["cid"] == 15 and ac["is_ace2"] and not c["reimu_invul_used"]:
                             if random.random() < 0.40:
                                 c["reimu_invul_used"] = True; invul = True; turn_image = EVOL_CONFIG[15]["skill_gif"]
-                                boss_action_log += f"\n🛡️ **[Ace 2] [#15] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
+                                boss_action_log += f"\n🛡️ **[Ace 2] [#17] reimu** ({c['username']}) kích hoạt **Vô Tưởng Chuyển Sinh**! MIỄN THƯƠNG!"
                         elif str(ac["cid"]).lower() == "t1" and (c.get("seiki_invul_turn") == p2_rounds or (not c.get("seiki_seal_used") and random.random() < (0.0 if ac.get("is_ace2") else 0.40))):
                             c["seiki_seal_used"] = True; invul = True; turn_image = T1_SEAL_GIF
                             boss_action_log += f"\n🛡️ **[#t1] Seiki** ({c['username']}) kích hoạt **Fantasy Seal**! MIỄN THƯƠNG!"
@@ -7630,21 +7633,21 @@ class EvolSelectView(discord.ui.View):
             return
         await do_evolve_interaction(interaction, self.player, 4)
         
-    @discord.ui.button(label="⛩️ [#15] Tiến Hóa Reimu Ace 2 (20 Thẻ)", style=discord.ButtonStyle.danger, emoji="🌸")
+    @discord.ui.button(label="⛩️ [#17] Tiến Hóa Reimu Ace 2 (20 Thẻ)", style=discord.ButtonStyle.danger, emoji="🌸")
     async def button_evol_reimu(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
         await do_evolve_interaction(interaction, self.player, 15)
 
-    @discord.ui.button(label="🕰️ [#18] Tiến Hóa Sakuya Ace 2 (30 Thẻ)", style=discord.ButtonStyle.primary, emoji="⏳")
+    @discord.ui.button(label="🕰️ [#20] Tiến Hóa Sakuya Ace 2 (30 Thẻ)", style=discord.ButtonStyle.primary, emoji="⏳")
     async def button_evol_sakuya(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
         await do_evolve_interaction(interaction, self.player, 18)
 
-    @discord.ui.button(label="🌟 [#19] Tiến Hóa Marisa Ace 2 (25 Thẻ)", style=discord.ButtonStyle.success, emoji="✨")
+    @discord.ui.button(label="🌟 [#21] Tiến Hóa Marisa Ace 2 (25 Thẻ)", style=discord.ButtonStyle.success, emoji="✨")
     async def button_evol_marisa(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
@@ -7665,20 +7668,20 @@ class EvolSelectView(discord.ui.View):
             return
         await do_evolve_interaction(interaction, self.player, 12)
 
-    @discord.ui.button(label="🐰 [#21] Tiến Hóa Reisen Ace 2 (40 Thẻ)", style=discord.ButtonStyle.success, emoji="🔴", row=1)
+    @discord.ui.button(label="🐰 [#23] Tiến Hóa Reisen Ace 2 (40 Thẻ)", style=discord.ButtonStyle.success, emoji="🔴", row=1)
     async def button_evol_reisen(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
         await do_evolve_interaction(interaction, self.player, 21)
 
-    @discord.ui.button(label="🌈 [#24] Tiến Hóa Hong Meiling Ace 2 (100 Thẻ)", style=discord.ButtonStyle.success, emoji="🥋", row=1)
+    @discord.ui.button(label="🌈 [#27] Tiến Hóa Hong Meiling Ace 2 (100 Thẻ)", style=discord.ButtonStyle.success, emoji="🥋", row=1)
     async def button_evol_meiling(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
         await do_evolve_interaction(interaction, self.player, 24)
-    @discord.ui.button(label="❄️ [#23] Tiến Hóa Cirno Ace 2 (60 Thẻ)", style=discord.ButtonStyle.primary, emoji="🧊", row=2)
+    @discord.ui.button(label="❄️ [#26] Tiến Hóa Cirno Ace 2 (60 Thẻ)", style=discord.ButtonStyle.primary, emoji="🧊", row=2)
     async def button_evol_cirno(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
@@ -7692,7 +7695,7 @@ class EvolSelectView(discord.ui.View):
             return
         await do_evolve_interaction(interaction, self.player, 13)
 
-    @discord.ui.button(label="🦴 [#17] Tiến Hóa Kasen Ace 2 (25 Thẻ + có #14)", style=discord.ButtonStyle.danger, emoji="🦴", row=2)
+    @discord.ui.button(label="🦴 [#19] Tiến Hóa Kasen Ace 2 (25 Thẻ + có #14)", style=discord.ButtonStyle.danger, emoji="🦴", row=2)
     async def button_evol_kasen(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
@@ -7717,7 +7720,7 @@ class EvolSelectView(discord.ui.View):
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
         await do_evolve_interaction(interaction, self.player, "t5") 
-    @discord.ui.button(label="🌠 [#18] Sakuya Ace 3 (100 Thẻ + 6 Ace2 + Prestige 4)", style=discord.ButtonStyle.primary, emoji="🕰️", row=4)
+    @discord.ui.button(label="🌠 [#20] Sakuya Ace 3 (100 Thẻ + 6 Ace2 + Prestige 4)", style=discord.ButtonStyle.primary, emoji="🕰️", row=4)
     async def button_evol_sakuya3(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
@@ -7730,6 +7733,9 @@ class EvolSelectView(discord.ui.View):
             return
         await do_evolve_interaction(interaction, self.player, "t7")
         
+for _k, _cfg in list(EVOL_CONFIG.items()):
+    if isinstance(_k, int):
+        _cfg["title"] = f"[#{disp_id(_k)}] {_cfg['name']} - Ace 2 ⭐⭐"
 def execute_card_evolution(player, cid: Union[int, str]):
     if str(cid).strip().lower() in ("18a3", "sakuya3", "ace3"):
         return execute_sakuya_ace3(player)
@@ -8121,7 +8127,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
         name="🔮 [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 - Điều kiện đặc biệt):",
         value=(
             f"• Trạng thái: **{seiki_status}**\n"
-            "• Điều kiện: **[#19] Marisa + [#15] reimu + [#18] Sakuya** đều Ace 2 ⭐⭐\n"
+            "• Điều kiện: **[#21] Marisa + [#17] reimu + [#20] Sakuya** đều Ace 2 ⭐⭐\n"
             "• Chi phí: **10 Mảnh Seiki** (không khấu trừ thẻ bài)\n"
             "• Buff Ace: **+300 ATK** & **+300 HP**\n"
             "• Kỹ năng: **Cleave** (thụ động +2% Máu tối đa mỗi đòn) • **Medicine Sign** (35% hồi 40% máu) • **Fantasy Seal** (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • **Bóng Khái Niệm** (20%: 1.5x sát thương + 10% máu tối đa + xóa kỹ năng đối thủ)"
@@ -8154,7 +8160,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
         else f"🔴 Thẻ {_r3['cards']}/100 | P{_r3['prestige']}/{SAKUYA3_REQ_PRESTIGE} || Thiếu Ace2: {len(_r3['missing']) + (0 if _r3['sakuya_ace2'] else 1)}"
     )
     embed.add_field(
-        name="🌠 [#18] Sakuya Izayoi (Ace 3):",
+        name="🌠 [#20] Sakuya Izayoi (Ace 3):",
         value=f"• {_s3_status}\n• Cần Ace 2: Sakuya, Seiki, Reimu, Marisa, Remilia, Flandre, Meiling\n• +150 ATK / +550 HP • Time Manipulation, Knives Throw, Time Stop",
         inline=False
     )
@@ -8167,7 +8173,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
     else:
         _k_status = f"🔴 Chưa đủ (Kasen: {_k_cnt}/25 | Ibaraki-Douji's Arm #14: {'✅' if _k_arm >= 1 else '❌'})"
     embed.add_field(
-        name="🦴 [#17] Kasen Ibaraki (Yêu cầu: 25 thẻ + sở hữu [#14] Ibaraki-Douji's Arm):",
+        name="🦴 [#19] Kasen Ibaraki (Yêu cầu: 25 thẻ + sở hữu [#14] Ibaraki-Douji's Arm):",
         value=(
             f"• Trạng thái: **{_k_status}**\n"
             "• Buff Ace: **+300 ATK** & **+300 HP** (khấu trừ 25 thẻ Kasen, KHÔNG khấu trừ thẻ #14)\n"
@@ -8210,10 +8216,13 @@ def evol_name(key) -> str:
 
 
 def evol_choice_list():
-    """Danh sách (value, nhãn) cho autocomplete."""
+    """Danh sách (value, nhãn) cho autocomplete. value = ID HIỂN THỊ (để resolve_evol_target hiểu đúng)."""
     out = []
     for k in EVOL_ORDER:
-        out.append((str(k), f"{evol_tag(k)} {evol_name(k)}"))
+        _v = disp_id(k)
+        if _v.isdigit():
+            _v = str(int(_v))          # "04" -> "4"
+        out.append((_v, f"{evol_tag(k)} {evol_name(k)}"))
         if k == 18:
             out.append(("18a3", f"{evol_tag(k)} {evol_name(k)} — Ace 3 🌠"))
     return out
@@ -8999,7 +9008,7 @@ async def handle_daily(ctx_or_interaction):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
 
-    if player.get("_is_first_time") and not player.get("tutorial", {}).get("completed"):
+    if player.get("_is_first_time") and not player.get("tutorial", {}).get("completed") and not player.get("tutorial", {}).get("pull_used"):
         player["_is_first_time"] = False
         await send_tutorial_intro(ctx_or_interaction, player)
         return
@@ -9060,7 +9069,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
 
-    if player.get("_is_first_time") and not player.get("tutorial", {}).get("completed"):
+    if player.get("_is_first_time") and not player.get("tutorial", {}).get("completed") and not player.get("tutorial", {}).get("pull_used"):
         player["_is_first_time"] = False
         await send_tutorial_intro(ctx_or_interaction, player)
         return
@@ -9127,7 +9136,7 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
         msg = f"✅ Đã thêm **{format_card_id(card['id'])} [{card['rank']}] {card['name']}{tag_name}** vào đội hình! (Lực chiến: ⚔️{card['power'] + lvl_buff_pwr + ace_pwr:,} | ❤️{card['hp'] + lvl_buff_hp + ace_hp:,})"
 
         tut = player.get("tutorial", {})
-        if tut.get("active") and tut.get("step") == "team":
+        if tut.get("active") and tut.get("step") in ("collection", "team"):
             if len(player["team"]) >= 3:
                 tut["step"] = "battle"
                 save_player(player)
@@ -9199,6 +9208,15 @@ async def handle_team(ctx_or_interaction, action: str = "view", card_id: int = N
         embed.add_field(name="📊 TỔNG LỰC CHIẾN:", value=f"⚔️ Tổng Power: **{tot_pwr:,}** | ❤️ Tổng HP: **{tot_hp:,}**", inline=False)
         embed.set_thumbnail(url=CARDS_DATA[player["team"][0]]["image"])
 
+    _tt = player.get("tutorial", {})
+    if _tt.get("active") and _tt.get("step") in ("collection", "team") and len(player["team"]) >= 3:
+        _tt["step"] = "battle"
+        save_player(player)
+        embed.add_field(
+            name="⛩️ BƯỚC TIẾP THEO:",
+            value=f"🔔 {user.mention} **Reimu:** *\"Giờ hãy thử `/battle` đi\"*",
+            inline=False
+        )
     eq_add_team_field(embed, player)
     embed.set_footer(text=f"Hakurei Shrine • Thắng {player.get('battles_won', 0)} trận")
     if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
@@ -9318,13 +9336,28 @@ async def handle_collection(ctx_or_interaction):
 
     tut = player.get("tutorial", {})
     if tut.get("active") and tut.get("step") == "collection":
-        tut["step"] = "team"
-        save_player(player)
-        embed.add_field(
-            name="⛩️ BƯỚC TIẾP THEO (TIẾN TRÌNH 1 CHIỀU):",
-            value=f"🔔 {user.mention} **Reimu:** *\"Tốt tốt, giờ nhìn id của họ và `/team add <id>` nào, nhớ là add đủ 3 lần nhé\"*",
-            inline=False
-        )
+        team_now = [c for c in player.get("team", []) if c in CARDS_DATA]
+        if len(team_now) >= 3:
+            tut["step"] = "battle"
+            save_player(player)
+            embed.add_field(
+                name="⛩️ BƯỚC TIẾP THEO:",
+                value=f"🔔 {user.mention} **Reimu:** *\"Đội hình đã đủ 3 thẻ rồi, giờ hãy thử `/battle` đi\"*",
+                inline=False
+            )
+        else:
+            tut["step"] = "team"
+            save_player(player)
+            suggest = get_owned_card_ids(player)
+            suggest.sort(key=lambda c: CARDS_DATA[c]["power"], reverse=True)
+            cmds = "\n".join(f"• `/team add id_the:{disp_id(c)}` → **{CARDS_DATA[c]['name']}**" for c in suggest[:3])
+            embed.add_field(
+                name="⛩️ BƯỚC TIẾP THEO - XẾP ĐỘI HÌNH:",
+                value=(f"🔔 {user.mention} **Reimu:** *\"Nhìn ID của họ rồi `/team add` đủ 3 lần nhé\"*\n"
+                       f"📌 **Gõ lần lượt 3 lệnh sau:**\n{cmds}\n"
+                       f"*(Số sau `id_the:` chính là ID `#..` hiển thị trong danh sách trên)*"),
+                inline=False
+            )
 
     embed.set_footer(text="Quay thêm thẻ bằng lệnh /pull • Thẻ quay được sẽ mở khóa vĩnh viễn")
     if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
@@ -9721,6 +9754,9 @@ async def prefix_standalone_shards(ctx):
 async def send_tutorial_intro(ctx_or_interaction, player):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     tut = player.setdefault("tutorial", {})
+    if tut.get("pull_used") and not tut.get("completed"):
+        await handle_tutorial(ctx_or_interaction)   # đang làm dở -> chỉ nhắc tiến độ, KHÔNG reset
+        return
     tut["active"] = True
     tut["step"] = "pull"
     tut["quest_pulls_remaining"] = 3
@@ -9761,6 +9797,11 @@ async def handle_tutorial(ctx_or_interaction):
         return
 
     if tut.get("pull_used", False):
+        if tut.get("step") in (None, "pull"):          # nạn nhân của bug cũ: step bị reset về "pull"
+            tut["active"] = True
+            tut["step"] = "battle" if len(player.get("team", [])) >= 3 else "collection"
+            save_player(player)
+        curr_step = tut.get("step", "collection")
         curr_step = tut.get("step", "collection")
         step_hints = {
             "collection": "Bạn đã nhận 3 lá tân thủ rồi! Hãy dùng `/collection` để xem bài.",
@@ -10407,7 +10448,7 @@ async def handle_battle(ctx_or_interaction):
     user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
     player = get_player(user.id, user.display_name)
 
-    if player.get("_is_first_time") and not player.get("tutorial", {}).get("completed"):
+    if player.get("_is_first_time") and not player.get("tutorial", {}).get("completed") and not player.get("tutorial", {}).get("pull_used"):
         player["_is_first_time"] = False
         await send_tutorial_intro(ctx_or_interaction, player)
         return
@@ -10621,7 +10662,7 @@ async def handle_battle(ctx_or_interaction):
                 p_sakuya = True
                 stunned_oc = True
                 turn_image = EVOL_CONFIG[18]["skill_gif"]
-                msg_skill = f"⏳ **[Ace 2] [#18] Sakuya** kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {oc['name']} bị STUN mất lượt!"
+                msg_skill = f"⏳ **[Ace 2] [#20] Sakuya** kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {oc['name']} bị STUN mất lượt!"
                 battle_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
@@ -10631,7 +10672,7 @@ async def handle_battle(ctx_or_interaction):
                 stunned_pc = True
                 if not turn_image:
                     turn_image = EVOL_CONFIG[18]["skill_gif"]
-                msg_skill = f"⏳ **Đối thủ [Ace 2] [#18] Sakuya** kích hoạt **Thời Gian Đóng Băng** (30%)! ❄️ {pc['name']} bị STUN mất lượt!"
+                msg_skill = f"⏳ **Đối thủ [Ace 2] [#20] Sakuya** kích hoạt **Thời Gian Đóng Băng** (30%)! ❄️ {pc['name']} bị STUN mất lượt!"
                 battle_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
@@ -10642,7 +10683,7 @@ async def handle_battle(ctx_or_interaction):
                 curr_pc_power = int(curr_pc_power * 2.5)
                 if not turn_image:
                     turn_image = EVOL_CONFIG[19]["skill_gif"]
-                msg_m = f"🌟 **[Ace 2] [#19] Marisa** tung ra **Master Spark** (30%)! Bộc phá ×2.5 sát thương gây **{curr_pc_power:,} DMG**!"
+                msg_m = f"🌟 **[Ace 2] [#21] Marisa** tung ra **Master Spark** (30%)! Bộc phá ×2.5 sát thương gây **{curr_pc_power:,} DMG**!"
                 battle_logs.append(msg_m)
                 turn_actions.append(msg_m)
 # Kỹ năng Yukari Ace 2 trong PvE Battle:
@@ -10678,7 +10719,7 @@ async def handle_battle(ctx_or_interaction):
                 o_mind_turns = 4
                 if not turn_image:
                     turn_image = EVOL_CONFIG[21]["skill_gif"]
-                msg_r = f"🔴 **[Ace 2] [#21] Reisen** kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 **{oc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
+                msg_r = f"🔴 **[Ace 2] [#23] Reisen** kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 **{oc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
                 battle_logs.append(msg_r)
                 turn_actions.append(msg_r)
 
@@ -10688,7 +10729,7 @@ async def handle_battle(ctx_or_interaction):
                 o_freeze_debuff_turns = 2
                 if not turn_image:
                     turn_image = EVOL_CONFIG[23]["skill_gif"]
-                msg_c = f"❄️ **[Ace 2] [#23] Cirno** ({user.display_name}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
+                msg_c = f"❄️ **[Ace 2] [#26] Cirno** ({user.display_name}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% tỷ lệ không thể đánh trả**!"
                 battle_logs.append(msg_c)
                 turn_actions.append(msg_c)
 
@@ -10861,7 +10902,7 @@ async def handle_battle(ctx_or_interaction):
                     curr_oc_power = int(curr_oc_power * 2.5)
                     if not turn_image:
                         turn_image = EVOL_CONFIG[19]["skill_gif"]
-                    msg_m = f"🌟 **Đối thủ [Ace 2] [#19] Marisa** tung ra **Master Spark** (30%)! Bộc phá ×2.5 sát thương gây **{curr_oc_power:,} DMG**!"
+                    msg_m = f"🌟 **Đối thủ [Ace 2] [#21] Marisa** tung ra **Master Spark** (30%)! Bộc phá ×2.5 sát thương gây **{curr_oc_power:,} DMG**!"
                     battle_logs.append(msg_m)
                     turn_actions.append(msg_m)
 
@@ -10913,7 +10954,7 @@ async def handle_battle(ctx_or_interaction):
                     p_mind_turns = 4
                     if not turn_image:
                         turn_image = EVOL_CONFIG[21]["skill_gif"]
-                    msg_r = f"🔴 **Đối thủ [Ace 2] [#21] Reisen** kích hoạt **Red Eye Mind Explosion** (20%)! 🌀 **{pc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
+                    msg_r = f"🔴 **Đối thủ [Ace 2] [#23] Reisen** kích hoạt **Red Eye Mind Explosion** (20%)! 🌀 **{pc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
                     battle_logs.append(msg_r)
                     turn_actions.append(msg_r)
 
@@ -10923,7 +10964,7 @@ async def handle_battle(ctx_or_interaction):
                     p_freeze_debuff_turns = 2
                     if not turn_image:
                         turn_image = EVOL_CONFIG[23]["skill_gif"]
-                    msg_c = f"❄️ **Đối thủ [Ace 2] [#23] Cirno** kích hoạt **Perfect Freeze** (40%)! Đóng băng bạn: Trong 2 turn tiếp theo có **45% không thể đánh trả**!"
+                    msg_c = f"❄️ **Đối thủ [Ace 2] [#26] Cirno** kích hoạt **Perfect Freeze** (40%)! Đóng băng bạn: Trong 2 turn tiếp theo có **45% không thể đánh trả**!"
                     battle_logs.append(msg_c)
                     turn_actions.append(msg_c)
 
@@ -10970,7 +11011,7 @@ async def handle_battle(ctx_or_interaction):
             curr_pc_power = int(curr_pc_power * 1.2)
             if not turn_image:
                 turn_image = MEILING_SKILL_GIF
-            msg_ml = f"🌈 **[Ace 2] [#24] Hong Meiling** ({user.display_name}) thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({curr_pc_power:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!"
+            msg_ml = f"🌈 **[Ace 2] [#27] Hong Meiling** ({user.display_name}) thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({curr_pc_power:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!"
             battle_logs.append(msg_ml)
             turn_actions.append(msg_ml)
         if (oc["cid"] == 24 and oc.get("is_ace2") and oc.get("erased_skill") != "meiling_taijiquan"
@@ -10980,7 +11021,7 @@ async def handle_battle(ctx_or_interaction):
             curr_oc_power = int(curr_oc_power * 1.2)
             if not turn_image:
                 turn_image = MEILING_SKILL_GIF
-            msg_ml = f"🌈 **Đối thủ [Ace 2] [#24] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({curr_oc_power:,} DMG)** và **giảm 15% sát thương phải nhận**!"
+            msg_ml = f"🌈 **Đối thủ [Ace 2] [#27] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({curr_oc_power:,} DMG)** và **giảm 15% sát thương phải nhận**!"
             battle_logs.append(msg_ml)
             turn_actions.append(msg_ml)
         if pc_meiling_guard:
@@ -11031,10 +11072,10 @@ async def handle_battle(ctx_or_interaction):
                         o_reimu = True
                         oc_invul = True
                         pc["current_hp"] = max(0, pc["current_hp"] - oc["power"])
-                        turn_actions.append(f"🌸 **Đối thủ [Ace 2] [#15] reimu** phản đòn **1x ATK**, gây **{oc['power']:,} DMG** lên **{pc['name']}**!")
+                        turn_actions.append(f"🌸 **Đối thủ [Ace 2] [#17] reimu** phản đòn **1x ATK**, gây **{oc['power']:,} DMG** lên **{pc['name']}**!")
                         if not turn_image:
                             turn_image = EVOL_CONFIG[15]["skill_gif"]
-                        msg_skill = f"🛡️ **Đối thủ [Ace 2] [#15] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (30%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
+                        msg_skill = f"🛡️ **Đối thủ [Ace 2] [#17] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (30%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
                         battle_logs.append(msg_skill)
                         turn_actions.append(msg_skill)
     
@@ -11072,10 +11113,10 @@ async def handle_battle(ctx_or_interaction):
                         p_reimu = True
                         pc_invul = True
                         oc["current_hp"] = max(0, oc["current_hp"] - pc["power"])
-                        turn_actions.append(f"🌸 **[Ace 2] [#15] reimu** phản đòn **1x ATK**, gây **{pc['power']:,} DMG** lên **{oc['name']}**!")
+                        turn_actions.append(f"🌸 **[Ace 2] [#17] reimu** phản đòn **1x ATK**, gây **{pc['power']:,} DMG** lên **{oc['name']}**!")
                         if not turn_image:
                             turn_image = EVOL_CONFIG[15]["skill_gif"]
-                        msg_skill = f"🛡️ **[Ace 2] [#15] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
+                        msg_skill = f"🛡️ **[Ace 2] [#17] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ THƯƠNG TỔN!"
                         battle_logs.append(msg_skill)
                         turn_actions.append(msg_skill)
                 if not pc_invul and str(pc["cid"]).lower() == "t1" and not p_seiki_seal and p_seiki_used_turn != r_cnt and not pc.get("is_ace2"):
@@ -11230,6 +11271,27 @@ async def handle_battle(ctx_or_interaction):
         embed.add_field(
             name="🎉 HOÀN THÀNH NHIỆM VỤ TÂN THỦ!",
             value=f"🔔 {user.mention} ⛩️ **Reimu:** *\"Hoàn thành nhiệm vụ tân thủ, nhận thưởng 10 lượt pull\"* 🎟️ (+10 Vé Pull đã được cộng vào tài khoản!)",
+            inline=False
+        )
+        embed.add_field(
+            name="🗺️ GAME CÒN RẤT NHIỀU THỨ ĐỂ CHƠI:",
+            value=(
+                "• 📜 `/quest` + `/daily`: nhiệm vụ & điểm danh mỗi ngày (có vé, XP, Xu)\n"
+                "• 🗺️ `/story`: cốt truyện Hồng Ma Dị Biến (cần 10 trận `/battle` & Lv.10)\n"
+                "• 👹 `/raid`: triệu hồi Han Seiki *(Lv.50, tối đa 10 người)* — Boss thường cũng tự xuất hiện khi chat\n"
+                "• 🎃 `/event info`: sự kiện Halloween, `/event raid` săn Kizuna/Sukuna\n"
+                "• ⚔️ `/pvp @người`: thách đấu người chơi khác"
+            ),
+            inline=False
+        )
+        embed.add_field(
+            name="💡 MẸO PHÁT TRIỂN & GIẢI TRÍ:",
+            value=(
+                "• 🌟 `/evol required`: xem điều kiện tiến hóa Ace 2 • `/prestige`: chuyển sinh\n"
+                "• 🛒 `/shop`, `/token`: mua đồ • ♻️ `/sac`, `/auto sac`: đổi thẻ thừa ra Xu\n"
+                "• 🎲 `/coinflip`, `/slot machine`: cược Xu công đức (⚠️ cẩn thận mất xu!)\n"
+                "• ❓ `/help`: xem toàn bộ lệnh"
+            ),
             inline=False
         )
     if dq_notifs:
@@ -11458,7 +11520,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 c_sakuya = True
                 t_stunned = True
                 turn_image = EVOL_CONFIG[18]["skill_gif"]
-                msg_skill = f"⏳ **[Ace 2] [#18] Sakuya** ({challenger.display_name}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {tc['name']} bị STUN!"
+                msg_skill = f"⏳ **[Ace 2] [#20] Sakuya** ({challenger.display_name}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {tc['name']} bị STUN!"
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
@@ -11468,7 +11530,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 c_stunned = True
                 if not turn_image:
                     turn_image = EVOL_CONFIG[18]["skill_gif"]
-                msg_skill = f"⏳ **[Ace 2] [#18] Sakuya** ({target.display_name}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {cc['name']} bị STUN!"
+                msg_skill = f"⏳ **[Ace 2] [#20] Sakuya** ({target.display_name}) kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ {cc['name']} bị STUN!"
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
@@ -11479,10 +11541,10 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 c_reimu = True
                 c_invul = True
                 tc["current_hp"] = max(0, tc["current_hp"] - cc["power"])
-                turn_actions.append(f"🌸 **[Ace 2] [#15] reimu** ({challenger.display_name}) phản đòn **1x ATK**, gây **{cc['power']:,} DMG** lên **{tc['name']}**!")
+                turn_actions.append(f"🌸 **[Ace 2] [#17] reimu** ({challenger.display_name}) phản đòn **1x ATK**, gây **{cc['power']:,} DMG** lên **{tc['name']}**!")
                 if not turn_image:
                     turn_image = EVOL_CONFIG[15]["skill_gif"]
-                msg_skill = f"🛡️ **[Ace 2] [#15] reimu** ({challenger.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                msg_skill = f"🛡️ **[Ace 2] [#17] reimu** ({challenger.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
@@ -11505,10 +11567,10 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 t_reimu = True
                 t_invul = True
                 cc["current_hp"] = max(0, cc["current_hp"] - tc["power"])
-                turn_actions.append(f"🌸 **[Ace 2] [#15] reimu** ({target.display_name}) phản đòn **1x ATK**, gây **{tc['power']:,} DMG** lên **{cc['name']}**!")
+                turn_actions.append(f"🌸 **[Ace 2] [#17] reimu** ({target.display_name}) phản đòn **1x ATK**, gây **{tc['power']:,} DMG** lên **{cc['name']}**!")
                 if not turn_image:
                     turn_image = EVOL_CONFIG[15]["skill_gif"]
-                msg_skill = f"🛡️ **[Ace 2] [#15] reimu** ({target.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
+                msg_skill = f"🛡️ **[Ace 2] [#17] reimu** ({target.display_name}) kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN THƯƠNG!"
                 pvp_logs.append(msg_skill)
                 turn_actions.append(msg_skill)
 
@@ -11534,7 +11596,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 c_curr_power = int(c_curr_power * 2.5)
                 if not turn_image:
                     turn_image = EVOL_CONFIG[19]["skill_gif"]
-                msg_m = f"🌟 **[Ace 2] [#19] Marisa** ({challenger.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×2.5 sát thương ({c_curr_power:,} DMG)!"
+                msg_m = f"🌟 **[Ace 2] [#21] Marisa** ({challenger.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×2.5 sát thương ({c_curr_power:,} DMG)!"
                 pvp_logs.append(msg_m)
                 turn_actions.append(msg_m)
 # Kỹ năng Yukari Ace 2 bên Thách đấu:
@@ -11570,7 +11632,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 t_mind_turns = 4
                 if not turn_image:
                     turn_image = EVOL_CONFIG[21]["skill_gif"]
-                msg_r = f"🔴 **[Ace 2] [#21] Reisen** ({challenger.display_name}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 **{tc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
+                msg_r = f"🔴 **[Ace 2] [#23] Reisen** ({challenger.display_name}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 **{tc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
                 pvp_logs.append(msg_r)
                 turn_actions.append(msg_r)
 
@@ -11580,7 +11642,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 t_freeze_debuff_turns = 2
                 if not turn_image:
                     turn_image = EVOL_CONFIG[23]["skill_gif"]
-                msg_c = f"❄️ **[Ace 2] [#23] Cirno** ({challenger.display_name}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% không thể đánh trả**!"
+                msg_c = f"❄️ **[Ace 2] [#26] Cirno** ({challenger.display_name}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% không thể đánh trả**!"
                 pvp_logs.append(msg_c)
                 turn_actions.append(msg_c)
 
@@ -11765,7 +11827,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 t_curr_power = int(t_curr_power * 2.5)
                 if not turn_image:
                     turn_image = EVOL_CONFIG[19]["skill_gif"]
-                msg_m = f"🌟 **[Ace 2] [#19] Marisa** ({target.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×2.5 sát thương ({t_curr_power:,} DMG)!"
+                msg_m = f"🌟 **[Ace 2] [#21] Marisa** ({target.display_name}) tung ra **Master Spark** (30%)! Oanh tạc ×2.5 sát thương ({t_curr_power:,} DMG)!"
                 pvp_logs.append(msg_m)
                 turn_actions.append(msg_m)
 # Kỹ năng Yukari Ace 2 bên Nhận thách đấu:
@@ -11801,7 +11863,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 c_mind_turns = 4
                 if not turn_image:
                     turn_image = EVOL_CONFIG[21]["skill_gif"]
-                msg_r = f"🔴 **[Ace 2] [#21] Reisen** ({target.display_name}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 **{cc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
+                msg_r = f"🔴 **[Ace 2] [#23] Reisen** ({target.display_name}) kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 **{cc['name']}** bị điều khiển tâm trí: **20% tự gây sát thương** trong **4 lượt**!"
                 pvp_logs.append(msg_r)
                 turn_actions.append(msg_r)
 
@@ -11811,7 +11873,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 c_freeze_debuff_turns = 2
                 if not turn_image:
                     turn_image = EVOL_CONFIG[23]["skill_gif"]
-                msg_c = f"❄️ **[Ace 2] [#23] Cirno** ({target.display_name}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% không thể đánh trả**!"
+                msg_c = f"❄️ **[Ace 2] [#26] Cirno** ({target.display_name}) kích hoạt **Perfect Freeze** (40%)! Đóng băng đối thủ: Trong 2 turn tiếp theo có **45% không thể đánh trả**!"
                 pvp_logs.append(msg_c)
                 turn_actions.append(msg_c)
 
@@ -12053,7 +12115,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
             c_curr_power = int(c_curr_power * 1.2)
             if not turn_image:
                 turn_image = MEILING_SKILL_GIF
-            msg_ml = f"🌈 **[Ace 2] [#24] Hong Meiling** ({challenger.display_name}) thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({c_curr_power:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!"
+            msg_ml = f"🌈 **[Ace 2] [#27] Hong Meiling** ({challenger.display_name}) thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({c_curr_power:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!"
             pvp_logs.append(msg_ml)
             turn_actions.append(msg_ml)
         if (tc["cid"] == 24 and tc.get("is_ace2") and tc.get("erased_skill") != "meiling_taijiquan"
@@ -12063,7 +12125,7 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
             t_curr_power = int(t_curr_power * 1.2)
             if not turn_image:
                 turn_image = MEILING_SKILL_GIF
-            msg_ml = f"🌈 **[Ace 2] [#24] Hong Meiling** ({target.display_name}) thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({t_curr_power:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!"
+            msg_ml = f"🌈 **[Ace 2] [#27] Hong Meiling** ({target.display_name}) thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({t_curr_power:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!"
             pvp_logs.append(msg_ml)
             turn_actions.append(msg_ml)
         if c_meiling_guard:
@@ -13158,7 +13220,7 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
             card_dmg = int(card_dmg * 1.2)
             if not turn_image:
                 turn_image = MEILING_SKILL_GIF
-            turn_logs.append(f"🌈 **[Ace 2] [#24] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({card_dmg:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!")
+            turn_logs.append(f"🌈 **[Ace 2] [#27] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({card_dmg:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!")
         
         card_dmg, kasen_guard_story, _kg = kasen_duel_apply(pc, card_dmg, False, [turn_logs]); turn_image = turn_image or _kg; card_dmg, kasen_guard_story, _t7s, _t7g = t7_story_apply(pc, card_dmg, kasen_guard_story, rumia_max_hp, rumia_power, turn_logs, player_cards, boss_hp=rumia_hp); boss_stun_story = boss_stun_story or _t7s; turn_image = turn_image or _t7g; rumia_hp = max(0, rumia_hp - card_dmg)
         turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Rumia!")
@@ -13410,7 +13472,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
         title="⚔️ [LIVE BATTLE] STAGE 2: BỀ MẶT HỒ SƯƠNG MÙ - CIRNO ACE 2!",
         description=(
             f"👤 **Trợ thủ xuất trận:** {user.mention} (Lv.{player['level']})\n"
-            f"❄️ **Boss:** **[#23] Cirno (Đệ Nhất Băng Tiên - Ace 2 ⭐⭐)** (Lv.{boss_lvl})\n"
+            f"❄️ **Boss:** **[#26] Cirno (Đệ Nhất Băng Tiên - Ace 2 ⭐⭐)** (Lv.{boss_lvl})\n"
             f"❤️ Máu Boss: `{get_hp_bar(cirno_hp, cirno_max_hp)}` **{cirno_hp:,}/{cirno_max_hp:,} HP**\n"
             f"⚔️ Sức mạnh: **{cirno_power:,} DMG**\n"
             f"🧊 Tuyệt kỹ: **Perfect Freeze** (40% đóng băng, 2 turn tiếp có 45% không thể đánh trả)"
@@ -13569,7 +13631,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                 card_dmg = int(card_dmg * 1.2)
                 if not turn_image:
                     turn_image = MEILING_SKILL_GIF
-                turn_logs.append(f"🌈 **[Ace 2] [#24] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({card_dmg:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!")
+                turn_logs.append(f"🌈 **[Ace 2] [#27] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! Gây **×1.2 sát thương ({card_dmg:,} DMG)** và **giảm 15% sát thương phải nhận** trong lượt này!")
             
             card_dmg, kasen_guard_story, _kg = kasen_duel_apply(pc, card_dmg, False, [turn_logs]); turn_image = turn_image or _kg; card_dmg, kasen_guard_story, _t7s, _t7g = t7_story_apply(pc, card_dmg, kasen_guard_story, cirno_max_hp, cirno_power, turn_logs, player_cards, boss_hp=cirno_hp); boss_stun_story = boss_stun_story or _t7s; turn_image = turn_image or _t7g; cirno_hp = max(0, cirno_hp - card_dmg)
             turn_logs.append(f"🗡️ **{pc['name']}** tấn công gây **{card_dmg:,} DMG** lên Cirno!")
@@ -13660,7 +13722,7 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                 "🌸 **\"Con nhóc hỗn xược bị Reimu và trợ thủ ném xuống hồ băng\"**\n\n"
                 "⛩️ **Reimu:** *\"Đúng là con bé phiền phức thích làm trò. Đường đến Hồng Ma Quán ở ngay phía trước rồi, mau đi thôi!\"*\n\n"
                 "🎁 **PHẦN THƯỞNG CHIẾN TÍCH STAGE 2:**\n"
-                f"• 🎴 **+30 Thẻ bài [#23] Cirno (Rank B)** cộng thẳng vào túi đồ! (Hiện có: `{inv['23']}` lá)\n"
+                f"• 🎴 **+30 Thẻ bài [#26] Cirno (Rank B)** cộng thẳng vào túi đồ! (Hiện có: `{inv['23']}` lá)\n"
                 f"• 🎟️ **+5 Lượt Pull Tích Lũy** (Tổng vé hiện có: `{player['pull_tickets']:.2f}` vé)!\n"
                 f"• 🏆 **Hoàn thành Stage 2!**"
             ),
@@ -13896,7 +13958,7 @@ async def handle_story(ctx_or_interaction):
         )
         embed_dialogue.add_field(
             name="🎁 Phần Thưởng Chiến Thắng:",
-            value="• 🎴 **30 Thẻ bài [#23] Cirno** cộng thẳng túi đồ\n• 🎟️ **+5 Lượt Pull** tích lũy",
+            value="• 🎴 **30 Thẻ bài [#26] Cirno** cộng thẳng túi đồ\n• 🎟️ **+5 Lượt Pull** tích lũy",
             inline=True
         )
         view = StoryCirnoBattleView(user, player)
@@ -16010,7 +16072,7 @@ def sakuya3_combat_turn(state: dict, card: dict, target_name: str):
     Trả về dict: multiplier, stun, gif, logs."""
     logs, gif, mult, stun = [], None, 1.0, False
     erased = card.get("erased_skill")
-    tag = "[Ace 3] [#18] Sakuya Izayoi"
+    tag = "[Ace 3] [#20] Sakuya Izayoi"
 
     was_active = state.get("stop_remaining", 0) > 0
     if was_active:
@@ -16064,7 +16126,7 @@ def sakuya3_try_revive(cards: list, idx: int):
     ally["current_hp"] = max(1, int(max_hp * SAKUYA3_REVIVE_HP_PCT))
     cards[idx], cards[j] = cards[j], cards[idx]   # đồng đội vào đúng vị trí tiền tuyến của Sakuya
     return True, (
-        f"⏳ **[Ace 3] [#18] Sakuya - Time Manipulation (100%)**: Trước khi gục, Sakuya bẻ cong thời gian, "
+        f"⏳ **[Ace 3] [#20] Sakuya - Time Manipulation (100%)**: Trước khi gục, Sakuya bẻ cong thời gian, "
         f"kéo **{ally['name']}** từ quá khứ về hiện tại với **{ally['current_hp']:,} HP**!"
     )
 
@@ -16096,11 +16158,11 @@ def sakuya3_skill_text() -> str:
 
 def execute_sakuya_ace3(player):
     if is_card_ace3(player, 18):
-        return False, "⚠️ **[#18] Sakuya Izayoi** đã đạt **Ace 3 🌠** từ trước rồi!", None
+        return False, "⚠️ **[#20] Sakuya Izayoi** đã đạt **Ace 3 🌠** từ trước rồi!", None
     req = sakuya3_requirements(player)
     problems = []
     if not req["sakuya_ace2"]:
-        problems.append("• **[#18] Sakuya** phải đạt **Ace 2 ⭐⭐** trước (`/evol id_hoac_ten:18`).")
+        problems.append("• **[#20] Sakuya** phải đạt **Ace 2 ⭐⭐** trước (`/evol id_hoac_ten:18`).")
     if req["prestige"] < SAKUYA3_REQ_PRESTIGE:
         problems.append(f"• Cần **Prestige {SAKUYA3_REQ_PRESTIGE}+** (hiện tại: P{req['prestige']}).")
     if req["missing"]:
@@ -16115,7 +16177,7 @@ def execute_sakuya_ace3(player):
     save_player(player)
 
     embed = discord.Embed(
-        title="🌠 TIẾN HÓA THÀNH CÔNG: [#18] SAKUYA IZAYOI - ACE 3!",
+        title="🌠 TIẾN HÓA THÀNH CÔNG: [#20] SAKUYA IZAYOI - ACE 3!",
         description=(
             "🕰️ **THỜI GIAN CHỈ CÒN LÀ ĐỒ CHƠI TRONG TAY HẦU GÁI TRƯỞNG:**\n\n"
             f"{sakuya3_skill_text()}\n\n"
@@ -16130,7 +16192,7 @@ def execute_sakuya_ace3(player):
 
 
 class SakuyaAce3CardView(discord.ui.View):
-    """Giao diện /check, /card_info cho [#18] Sakuya Ace 3."""
+    """Giao diện /check, /card_info cho [#20] Sakuya Ace 3."""
     def __init__(self, user_id=None, back_index: int = CARD_ORDER.index(18)):
         super().__init__(timeout=180)
         self.user_id = user_id
@@ -17040,14 +17102,14 @@ def story_s3_player_turn(pc, rnd, B, logs):
         fl["sakuya"] = True
         B["stun"] = True
         g(EVOL_CONFIG[18]["skill_gif"])
-        logs.append("⏳ **[Ace 2] [#18] Sakuya** kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Hong Meiling bị **STUN** mất lượt!")
+        logs.append("⏳ **[Ace 2] [#20] Sakuya** kích hoạt **Thời Gian Đóng Băng** (40%)! ❄️ Hong Meiling bị **STUN** mất lượt!")
 
     # ----- Marisa Ace 2 -----
     if cid == 19 and ace2 and not fl.get("marisa") and random.random() < 0.30:
         fl["marisa"] = True
         dmg = int(dmg * 2.5)
         g(EVOL_CONFIG[19]["skill_gif"])
-        logs.append(f"🌟 **[Ace 2] [#19] Marisa** tung **Master Spark** (30%)! ×2.5 giáng **{dmg:,} DMG**!")
+        logs.append(f"🌟 **[Ace 2] [#21] Marisa** tung **Master Spark** (30%)! ×2.5 giáng **{dmg:,} DMG**!")
 
     # ----- Yukari Ace 2 -----
     if cid == 4 and ace2:
@@ -17083,14 +17145,14 @@ def story_s3_player_turn(pc, rnd, B, logs):
         fl["reisen"] = True
         B["mind"] = 4
         g(EVOL_CONFIG[21]["skill_gif"])
-        logs.append("🔴 **[Ace 2] [#21] Reisen** kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Meiling ảo giác: **20% tự gây sát thương** trong **4 lượt**!")
+        logs.append("🔴 **[Ace 2] [#23] Reisen** kích hoạt **Red Eye Mind Explosion** (25%)! 🌀 Meiling ảo giác: **20% tự gây sát thương** trong **4 lượt**!")
 
     # ----- Cirno Ace 2 -----
     if cid == 23 and ace2 and not fl.get("cirno") and random.random() < 0.40:
         fl["cirno"] = True
         B["freeze"] = 2
         g(EVOL_CONFIG[23]["skill_gif"])
-        logs.append("❄️ **[Ace 2] [#23] Cirno** kích hoạt **Perfect Freeze** (40%)! 2 turn tới Meiling có **45% không thể đánh trả**!")
+        logs.append("❄️ **[Ace 2] [#26] Cirno** kích hoạt **Perfect Freeze** (40%)! 2 turn tới Meiling có **45% không thể đánh trả**!")
 
     # ----- Utsuho Ace 2 -----
     if cid == 13 and ace2 and random.random() < 0.30:
@@ -17105,7 +17167,7 @@ def story_s3_player_turn(pc, rnd, B, logs):
         out["pguard"] = True
         dmg = int(dmg * 1.2)
         g(MEILING_SKILL_GIF)
-        logs.append(f"🌈 **[Ace 2] [#24] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! ×1.2 sát thương (**{dmg:,} DMG**) và **giảm 15% sát thương phải nhận** lượt này!")
+        logs.append(f"🌈 **[Ace 2] [#27] Hong Meiling** thi triển **Rainbow Taijiquan** (30%)! ×1.2 sát thương (**{dmg:,} DMG**) và **giảm 15% sát thương phải nhận** lượt này!")
 
     # ----- Seiki #t1 -----
     if cs == "t1":
@@ -17268,7 +17330,7 @@ async def run_story_meiling_battle(channel_or_interaction, user, player):
         title="⚔️ [LIVE BATTLE] STAGE 3: CỔNG HỒNG MA QUÁN - HONG MEILING!",
         description=(
             f"👤 **Trợ thủ xuất trận:** {user.mention} (Lv.{player['level']})\n"
-            f"🥋 **Boss:** **[#24] Hong Meiling (Thủ Môn Hồng Ma Quán)** (Lv.{boss_lvl})\n"
+            f"🥋 **Boss:** **[#27] Hong Meiling (Thủ Môn Hồng Ma Quán)** (Lv.{boss_lvl})\n"
             f"❤️ Máu Boss: `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**\n"
             f"⚔️ Sức mạnh: **{B['power']:,} DMG**\n"
             f"🌈 Tuyệt kỹ: **Rainbow Taijiquan** (30% mỗi lượt, không giới hạn số lần)"
@@ -17349,7 +17411,7 @@ async def run_story_meiling_battle(channel_or_interaction, user, player):
             elif pc["cid"] == 15 and ace2 and not fl.get("reimu") and random.random() < 0.40:
                 fl["reimu"] = True
                 turn_gif = turn_gif or EVOL_CONFIG[15]["skill_gif"]
-                logs.append("🛡️ **[Ace 2] [#15] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+                logs.append("🛡️ **[Ace 2] [#17] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
             elif cs == "t1" and not ace2 and not fl.get("seal") and fl.get("used_turn") != rounds and random.random() < 0.40:
                 fl["seal"] = True
                 fl["used_turn"] = rounds
@@ -17421,7 +17483,7 @@ async def run_story_meiling_battle(channel_or_interaction, user, player):
             description=(
                 "🚬 **\"Reimu châm điếu thuốc trong khi trợ thủ cô xách ngang eo Meiling bắt đi dẫn đường\"**\n\n"
                 "🎁 **PHẦN THƯỞNG CHIẾN TÍCH STAGE 3:**\n"
-                f"• 🎴 **+30 Thẻ bài [#24] Hong Meiling (Rank C)** cộng thẳng vào túi đồ! (Hiện có: `{inv['24']}` lá)\n"
+                f"• 🎴 **+30 Thẻ bài [#27] Hong Meiling (Rank C)** cộng thẳng vào túi đồ! (Hiện có: `{inv['24']}` lá)\n"
                 f"• 🎟️ **+20 Lượt Pull Tích Lũy** (Tổng vé hiện có: `{player['pull_tickets']:.2f}` vé)!\n"
                 "• 🏆 **Hoàn thành Stage 3!**"
             ),
@@ -17568,7 +17630,7 @@ async def handle_story_stage3(ctx_or_interaction):
     )
     embed_dlg.add_field(
         name="🎁 Phần Thưởng Chiến Thắng:",
-        value="• 🎴 **30 Thẻ bài [#24] Hong Meiling** cộng thẳng túi đồ\n• 🎟️ **+20 Lượt Pull** tích lũy",
+        value="• 🎴 **30 Thẻ bài [#27] Hong Meiling** cộng thẳng túi đồ\n• 🎟️ **+20 Lượt Pull** tích lũy",
         inline=True
     )
     embed_dlg.set_footer(text="Bấm nút màu đỏ bên dưới để chiến đấu trực tiếp!")
@@ -17734,7 +17796,7 @@ def reimu_counter_bonus(c, ac):
             if k.get("cid") == 15 and k.get("is_ace2"):
                 c["reimu_paid"] = True
                 d = int(k["power"])
-                return d, f"🌸 **[Ace 2] [#15] reimu** ({c['username']}) - **Vô Tưởng Chuyển Sinh** phản đòn **1x ATK**: +**{d:,} DMG** lên Boss!"
+                return d, f"🌸 **[Ace 2] [#17] reimu** ({c['username']}) - **Vô Tưởng Chuyển Sinh** phản đòn **1x ATK**: +**{d:,} DMG** lên Boss!"
     except Exception as e:
         print(f"[REIMU] loi counter: {e}", flush=True)
     return 0, None
@@ -19835,7 +19897,7 @@ T8_SUMMON_GIF = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/c
 T8_SHARDS_UNLOCK = 10            # Ace 1: khấu trừ 10 Sukuna Finger
 T8_SHARDS_ACE2 = 5               # Ace 2: khấu trừ 5 Sukuna Finger
 T8_ACE2_PRESTIGE = 3
-T8_FUGA_INTERVAL = 4             # mỗi 4 lượt
+T8_FUGA_INTERVAL = 5             # mỗi 4 lượt
 T8_FUGA_MULT = 3.0
 T8_A1_SLASH_MULT, T8_A1_SLASH_MAX = 2.0, 2
 T8_A1_BAT_PCT = 0.20
@@ -19858,7 +19920,7 @@ CARDS_DATA["t8"] = {
     "id": "t8", "name": "Ryomen Sukuna", "rank": "T", "power": 650, "hp": 7000,
     "image": T8_UNLOCK_GIF, "unlock_gif": T8_UNLOCK_GIF,
     "passive": {"name": "Fuga", "gif": T8_FUGA_GIF,
-                "desc": "Cứ mỗi 4 lượt chiến đấu, tích đủ Fuga: đòn đánh gây ×3.0 sát thương"},
+                "desc": "Cứ mỗi 5 lượt chiến đấu, tích đủ Fuga: đòn đánh gây ×3.0 sát thương"},
     "skills": {
         "tram_kich": {"name": "Trảm kích", "chance": 0.25, "gif": T8_SLASH_GIF},
         "bat": {"name": "Bát", "chance": 0.20, "gif": T8_BAT_GIF},
@@ -20386,7 +20448,7 @@ class SukunaCardView(discord.ui.View):
         )
         if ace:
             skills = (
-                "🔥 **Fuga (Nội tại):** Mỗi 4 lượt, đòn đánh ×3.0 sát thương.\n"
+                "🔥 **Fuga (Nội tại):** Mỗi 5 lượt, đòn đánh ×3.0 sát thương.\n"
                 "⚔️ **Trảm kích (25%):** 2,2x sát thương lên toàn bộ đơn vị tiền tuyến địch.\n"
                 "🐲 **Agito! (50% - 1 lần):** Triệu hồi khảm hợp thú 25% chỉ số Sukuna, đánh thường liên tục & tank 100% đòn.\n"
                 "🐲 **Mahoraga! (30% - 1 lần):** Triệu hồi Mahoraga 50% chỉ số Sukuna, đánh thường liên tục & tank 100% đòn.\n"
@@ -20395,7 +20457,7 @@ class SukunaCardView(discord.ui.View):
             )
         else:
             skills = (
-                "🔥 **Fuga (Nội tại):** Mỗi 4 lượt, đòn đánh ×3.0 sát thương.\n"
+                "🔥 **Fuga (Nội tại):** Mỗi 5 lượt, đòn đánh ×3.0 sát thương.\n"
                 "⚔️ **Trảm kích (25%):** ×2 sát thương (tối đa 2 lần).\n"
                 "🩸 **Bát (20%):** Gây 20% máu tối đa kẻ địch (tối đa 1 lần).\n"
                 "🏯 **Phục Ma Ngự Trù Tử (15%, tối đa 2 lần):** 2 turn, mỗi turn 1,2x DMG + 3% máu tối đa, kể cả thẻ mới vào sân."
