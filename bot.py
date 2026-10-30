@@ -19340,6 +19340,8 @@ async def handle_shop(ctx_or_interaction):
                     value=f"Giá lần tới: {storage_line}\nBảng giá: {prices} xu (tối đa 4 lần)", inline=False)
     embed.add_field(name=f"🏺 4. Quả Lọ — {QUA_LO_PRICE:,} xu/lọ",
                     value=f"Cộng ngay **{QUA_LO_XP_PCT}% XP** yêu cầu lên cấp.\n`/item use` để dùng • trade được qua `/item trade`", inline=False)
+    embed.add_field(name=f"💎 5. Crystal — {ALLY_CRYSTAL_PRICE:,} xu/viên",
+                    value=f"Gom **{ALLY_CRYSTAL_PER_TICKET} Crystal** → `/crystal` đổi **1 Vé Allies** → `/allies` để quay đồng minh.", inline=False)
     embed.set_footer(text="Marisa Shop sẽ cập nhật thêm trong tương lai, uhe~~")
     view = ShopView(user)
     if isinstance(ctx_or_interaction, discord.Interaction):
@@ -22410,6 +22412,597 @@ async def prefix_slot(ctx, *args):
         await ctx.send("💡 Cú pháp: `!slot <số_xu>` (VD: `!slot 1000`)")
         return
     await handle_slot(ctx, int(nums[0]))  
+
+# ==============================================================================
+# [UPDATE ALLIES] ĐỒNG MINH: /allies • /crystal • SHOP CRYSTAL • LEAF • SPACE MARINE
+# ==============================================================================
+import random as _al_rand   # random chuẩn (tránh proxy Liềm)
+
+ALLY_BUFF_RATIO = 0.5            # 50% buff lv / vũ khí / giáp
+ALLY_CRYSTAL_PRICE = 25000
+ALLY_CRYSTAL_PER_TICKET = 10
+ALLY_XP_DROP = 5000
+ALLY_RATE_ALLY = 0.10            # 10% ra đồng minh
+ALLY_RATE_XP = 0.25              # 25% ra 5000 XP, còn lại 65% = không có gì
+ALLY_BLEED_CAP_PCT = 0.15        # trần chảy máu cộng dồn lên Boss trong Raid
+
+ALLY_GIF_LEAF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/01/90/p0IR3MFbaQyLS41.gif"
+ALLY_GIF_MARINE = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/ea/bc/1VEUUXdQPKN7gsKQSiPg.gif"
+ALLY_GIF_ARROWS = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/49/d4/brqcQoBvaiBsFetuH.gif"
+ALLY_GIF_HEAL = "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/67/15/0nATdv4F.gif"
+ALLY_GIF_EMPEROR = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/75/cc/QuLBLFnIXYCXo.gif"
+ALLY_GIF_SAW = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/0a/b4/1Vq05XNMAljq0Xe5Xv.gif"
+
+ALLY_DATA = {
+    "s1": {
+        "id": "s1", "name": "Leaf – Mary Sue", "role": "sp", "role_tag": "[Sp] Hậu phương",
+        "emoji": "🏹", "color": 0x22C55E, "gif": ALLY_GIF_LEAF, "base_atk": 150, "base_hp": 0,
+        "role_desc": "Đứng hậu phương, không nhận buff máu, không bị đánh. Rút lui khi cả 3 lá của bạn tử trận.",
+        "skills": (
+            "🏹 **Light Arrows (30%, tối đa 2 lần):** phóng vạn quang tên gây **×1.5 sát thương gốc** của Leaf.\n"
+            "💚 **Healing wish (25%, 1 lần):** hồi **30% máu tối đa** cho lá bài đang ở tiền tuyến của bạn."
+        ),
+    },
+    "s2": {
+        "id": "s2", "name": "Space Marine", "role": "tank", "role_tag": "[Tanker]",
+        "emoji": "🛡️", "color": 0x3B82F6, "gif": ALLY_GIF_MARINE, "base_atk": 80, "base_hp": 4100,
+        "role_desc": "Đứng trước lá đầu hàng và gánh trọn sát thương. Nhận 50% buff lv / vũ khí / giáp. Chết là hết tank.",
+        "skills": (
+            "🛡️ **For the Emperor (30%, 1 lần):** dựng khiên năng lượng **+200 HP ảo + 30% máu tối đa** trong **2 turn**, sau đó biến mất.\n"
+            "🪚 **Chainsaw (25%, tối đa 2 lần):** cưa địch **×1.2 sát thương** + chảy máu **1% máu tối đa/turn trong 2 lượt** (cộng dồn tối đa 4%)."
+        ),
+    },
+}
+ALLY_ORDER = ["s1", "s2"]
+
+ITEMS_DATABASE["crystal"] = {
+    "id": "crystal", "name": "Crystal 💎", "usable": False, "tradeable": True,
+    "desc": f"Gom **{ALLY_CRYSTAL_PER_TICKET} Crystal** rồi dùng `/crystal` đổi **1 Vé Allies**. Mua ở `/shop` ({ALLY_CRYSTAL_PRICE:,} xu/viên)."
+}
+
+
+# ---------------------------- LÕI ĐỒNG MINH ----------------------------
+def _al_new_state():
+    return {"arrows": 0, "heal": 0, "emperor": 0, "saw": 0, "shield": 0, "shield_turns": 0, "bleed": []}
+
+def ally_reset(al):
+    al["hp"] = al["max_hp"]
+    al["st"] = _al_new_state()
+
+def ally_build(player: dict, aid: str) -> dict:
+    d = ALLY_DATA[aid]
+    lvl = player.get("level", 1)
+    act = get_active_equipment(player)
+    w = act.get("weapon")
+    w_atk = FENRIR_ATK if w == "nanh_fenrir" else (LIEM_ATK if w == LIEM_ID else 0)
+    a_hp = GAIA_HP if act.get("armor") == "giap_gaia" else 0
+    atk = d["base_atk"] + int(ALLY_BUFF_RATIO * (get_level_atk_buff(lvl) + w_atk))
+    hp = (d["base_hp"] + int(ALLY_BUFF_RATIO * (get_level_hp_buff(lvl) + a_hp))) if d["role"] == "tank" else 0
+    return {"id": aid, "name": d["name"], "role": d["role"], "atk": atk, "max_hp": hp, "hp": hp, "st": _al_new_state()}
+
+def ally_turn(al, front, tmax, tname, logs, cap_fn=None):
+    """Hành động mỗi hiệp của đồng minh. Trả về (sát thương cộng thêm, gif)."""
+    dmg, gif = 0, None
+    try:
+        st, role = al["st"], al["role"]
+        nm = f"[Đồng minh] {al['name']}"
+        cap = cap_fn or (lambda a, l: int(a))
+        if st["shield_turns"] > 0:
+            st["shield_turns"] -= 1
+            if st["shield_turns"] <= 0 and st["shield"] > 0:
+                st["shield"] = 0
+                logs.append(f"🛡️ {nm}: khiên năng lượng đã tan biến!")
+        if role == "tank" and al["hp"] <= 0:
+            return 0, None
+        if st["bleed"]:
+            n = len(st["bleed"])
+            amt = cap(int(tmax * 0.01 * n), "Chảy máu (Chainsaw)")
+            st["bleed"] = [t - 1 for t in st["bleed"] if t - 1 > 0]
+            if amt > 0:
+                dmg += amt
+                logs.append(f"🩸 {nm}: {tname} chảy máu **{amt:,} DMG** ({n} tầng)")
+        atk = int(al["atk"])
+        base = atk
+        mx = (front.get("max_hp") or front.get("hp") or 1) if front else 1
+        opts = []
+        if role == "sp":
+            if st["arrows"] < 2:
+                opts.append(("arrows", 0.30))
+            if not st["heal"] and front and 0 < front.get("current_hp", 0) < mx:
+                opts.append(("heal", 0.25))
+        else:
+            if not st["emperor"]:
+                opts.append(("emperor", 0.30))
+            if st["saw"] < 2:
+                opts.append(("saw", 0.25))
+        _al_rand.shuffle(opts)
+        for key, ch in opts:
+            if _al_rand.random() >= ch:
+                continue
+            if key == "arrows":
+                st["arrows"] += 1
+                base = int(atk * 1.5)
+                gif = ALLY_GIF_ARROWS
+                logs.append(f"🏹 {nm} tung **Light Arrows**! ×1.5 = **{base:,} DMG** ({st['arrows']}/2)")
+            elif key == "heal":
+                st["heal"] = 1
+                hv = int(mx * 0.30)
+                before = front["current_hp"]
+                front["current_hp"] = min(mx, before + hv)
+                gif = ALLY_GIF_HEAL
+                logs.append(f"💚 {nm} **Healing wish**! Hồi **+{front['current_hp'] - before:,} HP** cho lá tiền tuyến")
+            elif key == "emperor":
+                st["emperor"] = 1
+                st["shield"] = 200 + int(al["max_hp"] * 0.30)
+                st["shield_turns"] = 2
+                gif = ALLY_GIF_EMPEROR
+                logs.append(f"🛡️ {nm} hô **For the Emperor!** Khiên ảo **{st['shield']:,} HP** trong 2 turn")
+            else:
+                st["saw"] += 1
+                base = int(atk * 1.2)
+                st["bleed"].append(2)
+                gif = ALLY_GIF_SAW
+                logs.append(f"🪚 {nm} tung **Chainsaw**! ×1.2 = **{base:,} DMG** + chảy máu 2 lượt ({st['saw']}/2)")
+            break
+        dmg += base
+        logs.append(f"🗡️ {nm} đánh phụ trợ **{base:,} DMG** lên {tname}")
+    except Exception as e:
+        print(f"[ALLY] lỗi ally_turn: {e}", flush=True)
+    return dmg, gif
+
+def ally_absorb(al, dmg, logs=None):
+    """Tanker gánh đòn. Trả về sát thương CÒN LẠI lên lá bài."""
+    try:
+        dmg = int(dmg)
+        if not al or al.get("role") != "tank" or al["hp"] <= 0 or dmg <= 0:
+            return dmg
+        st = al["st"]
+        nm = f"[Đồng minh] {al['name']}"
+        if st["shield"] > 0:
+            take = min(dmg, st["shield"])
+            st["shield"] -= take
+            dmg -= take
+            if logs is not None:
+                logs.append(f"🛡️ {nm}: khiên ảo gánh **{take:,} DMG** (còn {st['shield']:,})")
+        if dmg > 0:
+            take = min(dmg, al["hp"])
+            al["hp"] -= take
+            dmg -= take
+            if logs is not None:
+                logs.append(f"🛡️ {nm} tank **{take:,} DMG**" + (" rồi **bị đánh bại**!" if al["hp"] <= 0 else f" (còn {al['hp']:,}/{al['max_hp']:,} HP)"))
+        return dmg
+    except Exception as e:
+        print(f"[ALLY] lỗi absorb: {e}", flush=True)
+        return dmg
+
+
+# ---------------------------- GẮN ALLY VÀO MỌI TRẬN ----------------------------
+_AL_PREV_APPLY_EQ = apply_equipment_to_cards
+def apply_equipment_to_cards(player: dict, cards: list):
+    _AL_PREV_APPLY_EQ(player, cards)
+    try:
+        aid = player.get("ally_equipped")
+        if cards and aid in ALLY_DATA and (player.get("allies") or {}).get(aid, 0) > 0:
+            al = ally_build(player, aid)
+            for k in cards:
+                k["ally_ref"] = al        # cả đội dùng chung 1 đồng minh
+    except Exception as e:
+        print(f"[ALLY] lỗi gắn ally: {e}", flush=True)
+
+_AL_PREV_RESET = reset_sakuya3_phase
+def reset_sakuya3_phase(c: dict):          # sang Phase 2 / Fateria tua ngược
+    _AL_PREV_RESET(c)
+    c["ally_true_used"] = 0
+    for k in c.get("team_cards", []):
+        k.pop("al_mark", None)
+        al = k.get("ally_ref")
+        if al:
+            ally_reset(al)
+
+
+# ---------------------------- RAID ----------------------------
+def _al_mark(active):
+    for c in active or []:
+        cards = c.get("team_cards", [])
+        i = c.get("current_card_index", 0)
+        if i < len(cards):
+            k = cards[i]
+            al = k.get("ally_ref")
+            if al and al.get("role") == "tank" and al.get("hp", 0) > 0:
+                k["al_mark"] = k["current_hp"]
+
+def _al_raid_after(active) -> str:
+    out = []
+    try:
+        for c in active or []:
+            cards = c.get("team_cards", [])
+            i = c.get("current_card_index", 0)
+            if i >= len(cards):
+                continue
+            ac = cards[i]
+            mark = ac.pop("al_mark", None)
+            al = ac.get("ally_ref")
+            if mark is None or not al:
+                continue
+            lost = mark - ac["current_hp"]
+            if lost <= 0:
+                continue
+            lg = []
+            rem = ally_absorb(al, lost, lg)
+            ac["current_hp"] = mark - rem
+            out.extend(f"({c['username']}) {l}" for l in lg)
+    except Exception as e:
+        print(f"[ALLY] lỗi raid_after: {e}", flush=True)
+    return ("\n" + "\n".join(out)) if out else ""
+
+_AL_PREV_RAID_ATTACK = t7_raid_attack
+def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
+    card_dmg, boss_stunned, turn_image, notif = _AL_PREV_RAID_ATTACK(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L)
+    try:
+        al = ac.get("ally_ref")
+        if al:
+            tmax = L.get("p2_max_hp") or L.get("p1_max_hp") or 100000
+            cap_total = int(tmax * ALLY_BLEED_CAP_PCT)
+            def cap_fn(amt, label):
+                used = sum(x.get("ally_true_used", 0) for x in (active or []))
+                ok = max(0, min(int(amt), cap_total - used))
+                c["ally_true_used"] = c.get("ally_true_used", 0) + ok
+                return ok
+            lg = []
+            d, g = ally_turn(al, ac, tmax, "Boss", lg, cap_fn)
+            card_dmg += d
+            if g and not turn_image:
+                turn_image = g
+            if lg:
+                notif = (notif + "\n" if notif else "") + "\n".join(f"({c['username']}) {l}" for l in lg)
+            _al_mark(active)
+    except Exception as e:
+        print(f"[ALLY] lỗi raid_attack: {e}", flush=True)
+    return card_dmg, boss_stunned, turn_image, notif
+
+_AL_PREV_JT_ATTACK = t7_jt_attack
+def t7_jt_attack(c, ac, dmg, B, notes):       # Jotaro / Han Seiki / Sukuna / Fateria P2
+    dmg = _AL_PREV_JT_ATTACK(c, ac, dmg, B, notes)
+    try:
+        al = ac.get("ally_ref")
+        if al:
+            def cap_fn(amt, label):
+                applied, B["true_accum"], cap_msg = apply_raid_true_damage(int(amt), B["true_accum"], B["true_cap"], label)
+                return applied
+            lg = []
+            d, g = ally_turn(al, ac, B["max_hp"], "Boss", lg, cap_fn)
+            dmg += d
+            if g and not B.get("gif"):
+                B["gif"] = g
+            notes.extend(f"({c['username']}) {l}" for l in lg)
+            _al_mark(B.get("active"))
+    except Exception as e:
+        print(f"[ALLY] lỗi jt_attack: {e}", flush=True)
+    return dmg
+
+_AL_PREV_AFTER_BOSS = t7_raid_after_boss
+def t7_raid_after_boss(active, boss_log) -> str:
+    return _al_raid_after(active) + _AL_PREV_AFTER_BOSS(active, boss_log)
+
+
+# ---------------------------- BATTLE / PVP ----------------------------
+_AL_PREV_FENRIR_POST = eq_fenrir_post
+def eq_fenrir_post(att, tgt, tgt_mark, logs):
+    _AL_PREV_FENRIR_POST(att, tgt, tgt_mark, logs)
+    try:
+        al = att.get("ally_ref")
+        if al and tgt.get("current_hp", 0) > 0:
+            mx = tgt.get("max_hp") or tgt.get("hp") or 1
+            d, _g = ally_turn(al, att, mx, f"**{tgt['name']}**", logs)
+            tgt["current_hp"] -= d
+    except Exception as e:
+        print(f"[ALLY] lỗi duel_attack: {e}", flush=True)
+
+_AL_PREV_GAIA_POST = eq_gaia_post
+def eq_gaia_post(card, mark, incoming, base_power, logs):
+    try:
+        al = card.get("ally_ref")
+        if al and mark is not None:
+            lost = mark - card["current_hp"]
+            if lost > 0:
+                rem = ally_absorb(al, lost, logs)
+                card["current_hp"] = mark - rem
+    except Exception as e:
+        print(f"[ALLY] lỗi duel_absorb: {e}", flush=True)
+    return _AL_PREV_GAIA_POST(card, mark, incoming, base_power, logs)
+
+
+# ---------------------------- STORY ----------------------------
+_AL_PREV_STORY_APPLY = t7_story_apply
+def t7_story_apply(pc, card_dmg, guard, boss_max_hp, boss_power, logs, team=None, boss_hp=None):
+    card_dmg, guard, stun, gif = _AL_PREV_STORY_APPLY(pc, card_dmg, guard, boss_max_hp, boss_power, logs, team, boss_hp)
+    try:
+        al = pc.get("ally_ref")
+        if al:
+            d, g = ally_turn(al, pc, boss_max_hp, "Boss", logs)
+            card_dmg += d
+            gif = gif or g
+    except Exception as e:
+        print(f"[ALLY] lỗi story_apply: {e}", flush=True)
+    return card_dmg, guard, stun, gif
+
+_AL_PREV_TAKE_DMG = eq_take_damage
+def eq_take_damage(card, dmg, logs=None, skill=False):
+    try:
+        al = card.get("ally_ref")
+        if al:
+            lg = logs if logs is not None else []
+            dmg = ally_absorb(al, int(dmg), lg)
+            if dmg <= 0:
+                return
+    except Exception as e:
+        print(f"[ALLY] lỗi story_absorb: {e}", flush=True)
+    return _AL_PREV_TAKE_DMG(card, dmg, logs, skill)
+
+
+# ---------------------------- /shop: NÚT MUA CRYSTAL ----------------------------
+class CrystalBuyModal(discord.ui.Modal, title=f"Mua Crystal ({ALLY_CRYSTAL_PRICE:,} xu/viên)"):
+    def __init__(self):
+        super().__init__()
+        self.qty_input = discord.ui.TextInput(label=f"Số lượng (tối đa {SHOP_MAX_QTY}):", default="1", required=True, min_length=1, max_length=2)
+        self.add_item(self.qty_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        qty = _parse_qty(self.qty_input.value)
+        if qty is None:
+            await interaction.response.send_message(f"❌ Số lượng phải từ 1 đến {SHOP_MAX_QTY}!", ephemeral=True)
+            return
+        player = get_player(interaction.user.id, interaction.user.display_name)
+        total = ALLY_CRYSTAL_PRICE * qty
+        if player.get("xu", 0) < total:
+            await interaction.response.send_message(f"❌ Không đủ Xu! (Cần {total:,}, bạn có {player.get('xu', 0):,})", ephemeral=True)
+            return
+        player["xu"] -= total
+        items = player.setdefault("items", {})
+        items["crystal"] = items.get("crystal", 0) + qty
+        save_player(player)
+        await interaction.response.send_message(
+            f"✅ Đã mua **{qty}x Crystal 💎** (-{total:,} {XU_EMOJI}). Số dư: **{player['xu']:,}** xu • Crystal: **{items['crystal']}** "
+            f"(đủ {ALLY_CRYSTAL_PER_TICKET} viên thì dùng `/crystal` đổi vé Allies)")
+
+_AL_PREV_SHOP_INIT = ShopView.__init__
+def _al_shop_init(self, user):
+    _AL_PREV_SHOP_INIT(self, user)
+    btn = discord.ui.Button(label="⋯ 5. Crystal", style=discord.ButtonStyle.primary, emoji="💎", row=2)
+    async def _cb(interaction: discord.Interaction):
+        await interaction.response.send_modal(CrystalBuyModal())
+    btn.callback = _cb
+    self.add_item(btn)
+ShopView.__init__ = _al_shop_init
+
+
+# ---------------------------- /crystal ----------------------------
+async def handle_crystal(ctx_or_interaction, so_luong: int = 1):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    n = max(1, min(100, int(so_luong or 1)))
+    items = player.setdefault("items", {})
+    have = items.get("crystal", 0)
+    need = n * ALLY_CRYSTAL_PER_TICKET
+    if have < need:
+        await _eq_send(ctx_or_interaction, content=f"❌ Không đủ Crystal! Đổi **{n}** vé cần **{need}** viên, bạn có **{have}**. Mua ở `/shop`.", ephemeral=True)
+        return
+    items["crystal"] = have - need
+    player["ally_tickets"] = int(player.get("ally_tickets", 0)) + n
+    save_player(player)
+    embed = discord.Embed(
+        title="💎 ĐỔI CRYSTAL THÀNH CÔNG!",
+        description=(f"➖ **-{need} Crystal** (còn {items['crystal']})\n"
+                     f"🎟️ **+{n} Vé Allies** (hiện có **{player['ally_tickets']}** vé)\n\n"
+                     "👉 Dùng `/allies` để quay đồng minh!"),
+        color=0x06B6D4)
+    await _eq_send(ctx_or_interaction, embed=embed)
+
+@bot.tree.command(name="crystal", description=f"Đổi {ALLY_CRYSTAL_PER_TICKET} Crystal lấy 1 Vé Allies")
+@app_commands.describe(so_luong="Số vé muốn đổi (mặc định 1)")
+async def slash_crystal(interaction: discord.Interaction, so_luong: int = 1):
+    await handle_crystal(interaction, so_luong)
+
+@bot.command(name="crystal")
+async def prefix_crystal(ctx, so_luong: int = 1):
+    await handle_crystal(ctx, so_luong)
+
+
+# ---------------------------- /allies (PULL) ----------------------------
+async def handle_allies_pull(ctx_or_interaction, so_luong: int = 1):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    n = max(1, min(10, int(so_luong or 1)))
+    tickets = int(player.get("ally_tickets", 0))
+    if tickets < n:
+        await _eq_send(ctx_or_interaction, content=f"❌ Không đủ Vé Allies! (Cần {n}, có {tickets}). Mua Crystal ở `/shop` rồi dùng `/crystal`.", ephemeral=True)
+        return
+    player["ally_tickets"] = tickets - n
+    owned = player.setdefault("allies", {})
+    prestige = player.get("prestige", 0)
+    old_lvl = calculate_level_from_xp(player.get("xp", 0), prestige)
+    lines, got_ally, xp_total = [], None, 0
+    for _ in range(n):
+        r = _al_rand.random()
+        if r < ALLY_RATE_ALLY:
+            aid = _al_rand.choice(ALLY_ORDER)
+            d = ALLY_DATA[aid]
+            dup = owned.get(aid, 0) > 0
+            owned[aid] = owned.get(aid, 0) + 1
+            got_ally = aid
+            lines.append(f"🌟 {d['emoji']} **{d['name']}** {d['role_tag']}" + (" *(trùng)*" if dup else " ✨ **[MỚI]**"))
+        elif r < ALLY_RATE_ALLY + ALLY_RATE_XP:
+            xp_total += ALLY_XP_DROP
+            lines.append(f"✨ **+{ALLY_XP_DROP:,} XP**")
+        else:
+            lines.append("💨 Không có gì cả... (lol)")
+    player["xp"] = player.get("xp", 0) + xp_total
+    new_lvl = calculate_level_from_xp(player["xp"], prestige)
+    save_player(player)
+    desc = "\n".join(lines)
+    if new_lvl > old_lvl:
+        desc += f"\n\n🌟 **LÊN CẤP {new_lvl}!**"
+    embed = discord.Embed(title=f"🎰 ALLIES PULL ({n} lượt)", description=desc,
+                          color=ALLY_DATA[got_ally]["color"] if got_ally else 0x6B7280)
+    if got_ally:
+        embed.set_image(url=ALLY_DATA[got_ally]["gif"])
+    embed.set_footer(text=f"Vé Allies còn lại: {player['ally_tickets']} • /allies view • /allies info")
+    await _eq_send(ctx_or_interaction, embed=embed)
+
+
+# ---------------------------- /allies view ----------------------------
+async def handle_allies_view(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    p = get_player(user.id, user.display_name)
+    owned = p.get("allies") or {}
+    eq = p.get("ally_equipped")
+    lines = []
+    for aid in ALLY_ORDER:
+        d = ALLY_DATA[aid]
+        cnt = owned.get(aid, 0)
+        if cnt > 0:
+            b = ally_build(p, aid)
+            hp_txt = f" | ❤️ {b['max_hp']:,}" if b["role"] == "tank" else ""
+            lines.append(f"✅ {d['emoji']} **#{aid} {d['name']}** {d['role_tag']} ×{cnt}{' ⭐ **(ĐANG TRANG BỊ)**' if eq == aid else ''}\n   └ ⚔️ {b['atk']:,}{hp_txt}")
+        else:
+            lines.append(f"🔒 `#{aid}` {d['name']} {d['role_tag']} *(Chưa có)*")
+    embed = discord.Embed(
+        title=f"🤝 BỘ SƯU TẬP ĐỒNG MINH ({sum(1 for a in ALLY_ORDER if owned.get(a, 0) > 0)}/{len(ALLY_ORDER)})",
+        description="\n".join(lines), color=0x8B5CF6)
+    embed.add_field(name="🎒 Tài nguyên:", value=f"🎟️ Vé Allies: **{p.get('ally_tickets', 0)}**\n💎 Crystal: **{(p.get('items') or {}).get('crystal', 0)}**", inline=False)
+    embed.set_footer(text="Dùng /allies info để xem kỹ năng & trang bị đồng minh")
+    await _eq_send(ctx_or_interaction, embed=embed)
+
+
+# ---------------------------- /allies info ----------------------------
+def ally_info_embed(player: dict, idx: int):
+    aid = ALLY_ORDER[idx]
+    d = ALLY_DATA[aid]
+    owned = (player.get("allies") or {}).get(aid, 0)
+    b = ally_build(player, aid)
+    equipped = player.get("ally_equipped") == aid
+    embed = discord.Embed(
+        title=f"{d['emoji']} [#{aid}] {d['name'].upper()} • {d['role_tag']}",
+        description=f"*{d['role_desc']}*", color=d["color"])
+    embed.set_image(url=d["gif"])
+    base_hp = f" | ❤️ **{d['base_hp']:,} HP**" if d["role"] == "tank" else ""
+    now_hp = f" | ❤️ **{b['max_hp']:,} HP**" if d["role"] == "tank" else ""
+    embed.add_field(name="⚔️ CHỈ SỐ:", value=(
+        f"• Gốc: ⚔️ **{d['base_atk']:,} ATK**{base_hp}\n"
+        f"• Của bạn (+50% buff lv/vũ khí" + ("/giáp" if d["role"] == "tank" else "") + f"): ⚔️ **{b['atk']:,} ATK**{now_hp}"), inline=False)
+    embed.add_field(name="🔮 KỸ NĂNG:", value=d["skills"], inline=False)
+    embed.add_field(name="🎒 TRẠNG THÁI:", value=(
+        f"• Sở hữu: **{owned}** lá\n• " + ("⭐ **ĐANG TRANG BỊ**" if equipped else "Chưa trang bị")), inline=False)
+    embed.set_footer(text=f"Đồng minh {idx + 1}/{len(ALLY_ORDER)} • ◀ ▶ để chuyển • Chỉ trang bị tối đa 1 đồng minh")
+    return embed
+
+class AlliesInfoView(discord.ui.View):
+    def __init__(self, user_id, idx=0):
+        super().__init__(timeout=300)
+        self.user_id = user_id
+        self.idx = idx
+        self._build()
+
+    def _build(self):
+        self.clear_items()
+        p = get_player(self.user_id)
+        aid = ALLY_ORDER[self.idx]
+        equipped = (p.get("ally_equipped") == aid)
+        b1 = discord.ui.Button(label="◀", style=discord.ButtonStyle.primary, row=0)
+        b1.callback = self.on_prev
+        self.add_item(b1)
+        self.add_item(discord.ui.Button(label=f"{self.idx + 1}/{len(ALLY_ORDER)}", style=discord.ButtonStyle.secondary, disabled=True, row=0))
+        b2 = discord.ui.Button(label="▶", style=discord.ButtonStyle.primary, row=0)
+        b2.callback = self.on_next
+        self.add_item(b2)
+        eqb = discord.ui.Button(label="Tháo đồng minh" if equipped else "Equip", style=discord.ButtonStyle.success, emoji="✅", row=1)
+        eqb.callback = self.on_equip
+        self.add_item(eqb)
+
+    def _embed(self):
+        return ally_info_embed(get_player(self.user_id), self.idx)
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải bảng của bạn! Hãy tự gõ `/allies info`.", ephemeral=True)
+            return False
+        return True
+
+    async def _refresh(self, interaction):
+        self._build()
+        await interaction.response.edit_message(embed=self._embed(), view=self)
+
+    async def on_prev(self, interaction: discord.Interaction):
+        self.idx = (self.idx - 1) % len(ALLY_ORDER)
+        await self._refresh(interaction)
+
+    async def on_next(self, interaction: discord.Interaction):
+        self.idx = (self.idx + 1) % len(ALLY_ORDER)
+        await self._refresh(interaction)
+
+    async def on_equip(self, interaction: discord.Interaction):
+        p = get_player(self.user_id)
+        aid = ALLY_ORDER[self.idx]
+        if (p.get("allies") or {}).get(aid, 0) <= 0:
+            await interaction.response.send_message(f"❌ Bạn chưa sở hữu **{ALLY_DATA[aid]['name']}**! Quay bằng `/allies`.", ephemeral=True)
+            return
+        p["ally_equipped"] = None if p.get("ally_equipped") == aid else aid   # chọn lá mới sẽ thay lá cũ
+        save_player(p)
+        await self._refresh(interaction)
+
+async def handle_allies_info(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    get_player(user.id, user.display_name)
+    view = AlliesInfoView(user.id, 0)
+    await _eq_send(ctx_or_interaction, embed=view._embed()) if False else None
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=view._embed(), view=view)
+    else:
+        await ctx_or_interaction.send(embed=view._embed(), view=view)
+
+
+# ---------------------------- ĐĂNG KÝ LỆNH /allies ----------------------------
+async def handle_allies(ctx_or_interaction, action="pull", so_luong=1):
+    k = str(action or "pull").lower().strip()
+    if k in ("view", "v", "xem"):
+        await handle_allies_view(ctx_or_interaction)
+    elif k in ("info", "i"):
+        await handle_allies_info(ctx_or_interaction)
+    else:
+        await handle_allies_pull(ctx_or_interaction, so_luong)
+
+@bot.tree.command(name="allies", description="Gacha đồng minh (mặc định: pull) • view: bộ sưu tập • info: xem & trang bị")
+@app_commands.describe(hanh_dong="pull (quay), view (bộ sưu tập), info (chi tiết & equip)", so_luong="Số lượt pull (1-10, chỉ khi pull)")
+@app_commands.choices(hanh_dong=[
+    app_commands.Choice(name="🎰 pull - Quay đồng minh (1 Vé Allies)", value="pull"),
+    app_commands.Choice(name="📖 view - Bộ sưu tập đồng minh", value="view"),
+    app_commands.Choice(name="🔍 info - Xem chi tiết & trang bị", value="info"),
+])
+async def slash_allies(interaction: discord.Interaction, hanh_dong: app_commands.Choice[str] = None, so_luong: int = 1):
+    await handle_allies(interaction, hanh_dong.value if hanh_dong else "pull", so_luong)
+
+@bot.command(name="allies", aliases=["ally", "dongminh"])
+async def prefix_allies(ctx, action: str = "pull", so_luong: int = 1):
+    await handle_allies(ctx, action, so_luong)
+
+# Admin test nhanh: !addally <s1|s2|ticket|crystal> [số lượng] [@User]
+@bot.command(name="addally")
+async def prefix_add_ally(ctx, loai: str = "ticket", so_luong: int = 1, member: Optional[discord.Member] = None):
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send("⛔ Từ chối quyền truy cập!")
+        return
+    t = member or ctx.author
+    p = get_player(t.id, t.display_name)
+    loai = loai.lower().strip()
+    if loai in ALLY_DATA:
+        p.setdefault("allies", {})[loai] = p.setdefault("allies", {}).get(loai, 0) + so_luong
+    elif loai == "crystal":
+        p.setdefault("items", {})["crystal"] = p.setdefault("items", {}).get("crystal", 0) + so_luong
+    else:
+        p["ally_tickets"] = int(p.get("ally_tickets", 0)) + so_luong
+    save_player(p)
+    await ctx.send(f"🎁 Đã cấp **+{so_luong} {loai}** cho {t.mention}!")
+# ===================== HẾT KHỐI ALLIES =====================
 
 import sys
 
