@@ -95,10 +95,10 @@ def format_time_until_midnight_vn() -> str:
 # [UPDATE PRESTIGE] YÊU CẦU PRESTIGE CHO THẺ NHÓM T
 # ==============================================================================
 # Ace 2 của các thẻ T: thiếu Prestige -> Ace 2 bị KHÓA (mất buff + kỹ năng Ace 2)
-T_ACE2_PRESTIGE_REQ = {"t5": 4, "t1": 2, "t3": 3, "t7": 2}
+T_ACE2_PRESTIGE_REQ = {"t5": 4, "t1": 2, "t2": 3, "t3": 3, "t7": 2}
 # Cả thẻ bị khóa (không dùng được) nếu thiếu Prestige. Fateria chưa có Ace 2 nên khóa cả thẻ.
 T_CARD_PRESTIGE_REQ = {"t4": 3}
-T_PRESTIGE_NAMES = {"t1": "Seiki", "t3": "Kizuna", "t4": "Fateria", "t5": "Jotaro", "t7": "Kisami"}
+T_PRESTIGE_NAMES = {"t1": "Seiki", "t2": "Mahoraga", "t3": "Kizuna", "t4": "Fateria", "t5": "Jotaro", "t7": "Kisami"}
 
 def _raw_ace2(player: dict, card_id) -> bool:
     """Đã tiến hóa Ace 2 hay chưa (KHÔNG xét Prestige)."""
@@ -1192,7 +1192,7 @@ T1_ACE2_CONFIG = {
         "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/e7/fe/JOKpsPyd.gif"
     },
     "bong_khai_niem": {
-        "chance": 0.20, "multiplier": 1.5, "dmg_pct": 0.10,  # 20% kích hoạt 1 lần/trận: 1.5x sát thương + 10% Máu Tối Đa + xóa kỹ năng đối phương
+        "chance": 0.20, "multiplier": 1.5, "dmg_pct": 0.10,  # 20% kích hoạt 1 lần/trận: 1.75x sát thương + 10% Máu Tối Đa + xóa kỹ năng đối phương
         "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/38/ec/4v5klqIf3v2WuSLgB.gif"
     }
 }
@@ -1315,7 +1315,7 @@ CHARACTER_DETAILS = {
     "t1": {
         "title": "Dị Tà Đệ Nhất Pháp Sư (Nhóm T-Đặc Biệt)",
         "skill_name": "Tam Đại Tuyệt Kỹ (Fantasy Seal • Master Spark • Medicine Sign)",
-        "skill_desc": "Thẻ bài thần thoại nhóm T. Bản thường: Fantasy Seal (40% miễn thương), Master Spark (30% ×1.5), Medicine Sign (20% hồi phục). [Ace 2 ⭐⭐ - Kỹ năng thay đổi]: 🪓 Cleave (thụ động 100%: mọi đòn đánh +2% Máu Tối Đa mục tiêu) • 💚 Medicine Sign (35% hồi 40% Máu, 1 lần/trận) • 🛡️ Fantasy Seal (50% miễn toàn bộ sát thương 1 hiệp, buff lên 50% ở dạng Ace 2, 1 lần/trận) • 🌑 Bóng Khái Niệm (20%: 1.5x sát thương + 10% Máu Tối Đa + xóa kỹ năng đối phương, 1 lần/trận)."
+        "skill_desc": "Thẻ bài thần thoại nhóm T. Bản thường: Fantasy Seal (40% miễn thương), Master Spark (30% ×1.5), Medicine Sign (20% hồi phục). [Ace 2 ⭐⭐ - Kỹ năng thay đổi]: 🪓 Cleave (thụ động 100%: mọi đòn đánh +2% Máu Tối Đa mục tiêu) • 💚 Medicine Sign (35% hồi 40% Máu, 1 lần/trận) • 🛡️ Fantasy Seal (50% miễn toàn bộ sát thương 1 hiệp, buff lên 50% ở dạng Ace 2, 1 lần/trận) • 🌑 Bóng Khái Niệm (20%: 1.75x sát thương + 10% Máu Tối Đa + xóa kỹ năng đối phương, 1 lần/trận)."
     },
     "t2": {
         "title": "Bát Ách Kiếm Thần Tướng (Nhóm T-Đặc Biệt)",
@@ -2703,7 +2703,7 @@ class OpponentTeamView(discord.ui.View):
             elif c["cid"] == 24:
                 skill_text += "\n🌈 **[Ace 2 Hiệu Ứng]** 30% kích hoạt *Rainbow Taijiquan* (1 lần/trận): ×1.2 sát thương và giảm 15% sát thương phải nhận trong lượt đó."    
         if is_ace and str(c["cid"]).lower() == "t1":
-            skill_text += "\n♾️ **[Ace 2 Hiệu Ứng]** *Cleave* (thụ động, +2% Máu tối đa mỗi đòn) • *Medicine Sign* (35% hồi 40% máu) • *Fantasy Seal* (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • *Bóng Khái Niệm* (20%: 1.5x sát thương + 10% máu tối đa + xóa kỹ năng đối phương — mỗi chiêu 1 lần/trận)."
+            skill_text += "\n♾️ **[Ace 2 Hiệu Ứng]** *Cleave* (thụ động, +2% Máu tối đa mỗi đòn) • *Medicine Sign* (35% hồi 40% máu) • *Fantasy Seal* (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • *Bóng Khái Niệm* (20%: 1.75x sát thương + 10% máu tối đa + xóa kỹ năng đối phương — mỗi chiêu 1 lần/trận)."
         if str(c["cid"]).lower() == "t2":
             skill_text += "\n🔱 **[Thần Tướng Hiệu Ứng]** *The True adapt* (thụ động 100%: mỗi turn hồi 5% Máu tối đa và giảm 5% sát thương phải nhận - cộng dồn) • *Thoái Ma kiếm* (30% kích hoạt gây ×1.5 sát thương)."
         embed.add_field(name="✨ Kỹ Năng / Tuyệt Kỹ Danmaku:", value=f"*{skill_text}*", inline=False)
@@ -8185,7 +8185,7 @@ async def handle_evol(ctx_or_interaction, nhan_vat_hoac_id: str = None):
             "• Điều kiện: **[#21] Marisa + [#17] reimu + [#20] Sakuya** đều Ace 2 ⭐⭐\n"
             "• Chi phí: **10 Mảnh Seiki** (không khấu trừ thẻ bài)\n"
             "• Buff Ace: **+300 ATK** & **+300 HP**\n"
-            "• Kỹ năng: **Cleave** (thụ động +2% Máu tối đa mỗi đòn) • **Medicine Sign** (35% hồi 40% máu) • **Fantasy Seal** (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • **Bóng Khái Niệm** (20%: 1.5x sát thương + 10% máu tối đa + xóa kỹ năng đối thủ)"
+            "• Kỹ năng: **Cleave** (thụ động +2% Máu tối đa mỗi đòn) • **Medicine Sign** (35% hồi 40% máu) • **Fantasy Seal** (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • **Bóng Khái Niệm** (20%: 1.75x sát thương + 10% máu tối đa + xóa kỹ năng đối thủ)"
         ),
         inline=False
     )
@@ -9415,8 +9415,7 @@ async def handle_collection(ctx_or_interaction):
             )
 
     embed.set_footer(text="Quay thêm thẻ bằng lệnh /pull • Thẻ quay được sẽ mở khóa vĩnh viễn")
-    if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(embed=embed)
-    else: await ctx_or_interaction.send(embed=embed)
+    await send_collection_paged(ctx_or_interaction, embed, user.id)
 
 @bot.tree.command(name="collection", description="Kiểm tra bộ sưu tập 28 nhân vật Touhou đã sở hữu")
 async def slash_collection(interaction: discord.Interaction):
@@ -14429,14 +14428,7 @@ async def handle_help(ctx_or_interaction):
 
     embed.set_image(url=HELP_BG_GIF)
     embed.set_footer(text="Hakurei Shrine • Gõ /tutorial nếu bạn là người chơi mới!")
-
-    if isinstance(ctx_or_interaction, discord.Interaction):
-        if ctx_or_interaction.response.is_done():
-            await ctx_or_interaction.followup.send(embed=embed)
-        else:
-            await ctx_or_interaction.response.send_message(embed=embed)
-    else:
-        await ctx_or_interaction.send(embed=embed)
+    await send_help_paged(ctx_or_interaction, embed)
 
 @bot.tree.command(name="help", description="Xem hướng dẫn toàn bộ lệnh chơi game, boss raid và lệnh admin")
 async def slash_help(interaction: discord.Interaction):
@@ -23003,6 +22995,910 @@ async def prefix_add_ally(ctx, loai: str = "ticket", so_luong: int = 1, member: 
     save_player(p)
     await ctx.send(f"🎁 Đã cấp **+{so_luong} {loai}** cho {t.mention}!")
 # ===================== HẾT KHỐI ALLIES =====================
+# ==============================================================================
+# [UPDATE] SEIKI ACE 2: LINH HỒN PHÁN QUYẾT + BÓNG KHÁI NIỆM x1.75
+#          ARROW /collection & /help  •  BOSS SCALING THEO SỐ DŨNG GIẢ
+# ==============================================================================
+import contextvars
+
+# ------------------------------------------------------------------------------
+# PHẦN 1: SEIKI ACE 2 - THE SOULS OF JUDGEMENT (LINH HỒN PHÁN QUYẾT)
+# ------------------------------------------------------------------------------
+T1P_REDUCE = 0.10        # giảm 10% sát thương phải nhận
+T1P_LOW_HP = 0.40        # máu dưới 40%
+T1P_DMG_BOOST = 0.10     # +10% sát thương stats gốc (nhân gộp vào skill)
+T1_ACE2_CONFIG["bong_khai_niem"]["multiplier"] = 1.75   # Bóng Khái Niệm 1.5x -> 1.75x
+
+T1P_TEXT = (
+    "⚖️ **Linh hồn phán quyết (The souls of judgement - Passive):** Giảm **10% sát thương phải nhận** mỗi turn; "
+    "khi máu **dưới 40%** được **+10% sát thương stats gốc** (nhân gộp vào cả đòn đánh thường lẫn skill)."
+)
+
+def _t1p_fix(s):
+    return str(s or "").replace("×1.5 Sát Thương", "×1.75 Sát Thương").replace("1.5x sát thương + 10%", "1.75x sát thương + 10%")
+
+def _t1p_active(card) -> bool:
+    try:
+        return (str(card.get("cid")).lower() == "t1" and bool(card.get("is_ace2"))
+                and card.get("erased_skill") != "t1_passive")
+    except Exception:
+        return False
+
+# cập nhật chữ hiển thị
+EVOL_CONFIG["t1"]["skill_desc"] = _t1p_fix(EVOL_CONFIG["t1"]["skill_desc"]) + "\n" + T1P_TEXT
+CHARACTER_DETAILS["t1"]["skill_desc"] = _t1p_fix(CHARACTER_DETAILS["t1"]["skill_desc"]) + \
+    " • ⚖️ Linh hồn phán quyết (Passive): giảm 10% sát thương nhận mỗi turn; máu <40% được +10% sát thương stats gốc (gộp vào skill)."
+
+# +10% sát thương khi máu < 40% (nhân gộp vào multiplier => skill cũng được cộng)
+_T1P_PREV_ATTACK = t1_ace2_attack
+def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=False):
+    out = _T1P_PREV_ATTACK(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss)
+    try:
+        if _t1p_active(ac):
+            mx = ac.get("max_hp", ac.get("hp", 1)) or 1
+            cur = ac.get("current_hp", mx)
+            if cur < mx * T1P_LOW_HP:
+                out["multiplier"] = out.get("multiplier", 1.0) * (1.0 + T1P_DMG_BOOST)
+                out["logs"].append(
+                    f"⚖️ **[Ace 2] [#t1] Seiki - Linh hồn phán quyết**: máu dưới 40% ({cur:,}/{mx:,})! "
+                    f"Sát thương stats gốc **+10%** (nhân gộp vào skill)!"
+                )
+    except Exception as e:
+        print(f"[T1P] lỗi attack boost: {e}", flush=True)
+    return out
+
+# Bóng Khái Niệm của đối thủ có thể xóa luôn passive này
+_T1P_PREV_ERASE = apply_bong_khai_niem_card
+def apply_bong_khai_niem_card(target_card: dict):
+    if str(target_card.get("cid")).lower() == "t1" and target_card.get("is_ace2") and not target_card.get("erased_skill"):
+        pool = [("t1_cleave", "Cleave"), ("t1_seal", "Fantasy Seal"), ("t1_bong", "Bóng Khái Niệm"),
+                ("t1_med", "Medicine Sign"), ("t1_passive", "Linh hồn phán quyết")]
+        key, name = random.choice(pool)
+        target_card["erased_skill"] = key
+        target_card["erased_skill_name"] = name
+        return f"🌑 **[Bóng Khái Niệm]** Đã xóa ngẫu nhiên 1 kỹ năng duy nhất **[{name}]** của **{target_card['name']}**! *(Tối đa mất 1 chiêu)*"
+    return _T1P_PREV_ERASE(target_card)
+
+# STORY: giảm 10% sát thương nhận
+_T1P_PREV_TAKE_DMG = eq_take_damage
+def eq_take_damage(card, dmg, logs=None, skill=False):
+    try:
+        if _t1p_active(card):
+            old = int(dmg)
+            dmg = int(old * (1.0 - T1P_REDUCE))
+            if logs is not None and old - dmg > 0:
+                logs.append(f"⚖️ **[Linh hồn phán quyết]** **{card['name']}** giảm 10% sát thương nhận (-{old - dmg:,} DMG)!")
+    except Exception as e:
+        print(f"[T1P] lỗi story reduce: {e}", flush=True)
+    return _T1P_PREV_TAKE_DMG(card, dmg, logs, skill)
+
+# BATTLE / PVP: hoàn lại 10% máu đã mất trong hiệp (tương đương giảm 10% sát thương)
+_T1P_PREV_GAIA_POST = eq_gaia_post
+def eq_gaia_post(card, mark, incoming, base_power, logs):
+    try:
+        if _t1p_active(card) and mark is not None:
+            lost = mark - card["current_hp"]
+            back = int(lost * T1P_REDUCE) if lost > 0 else 0
+            if back > 0:
+                mx = card.get("max_hp") or card.get("hp") or 1
+                before = card["current_hp"]
+                card["current_hp"] = min(mx, before + back)
+                logs.append(f"⚖️ **[Linh hồn phán quyết]** **{card['name']}** giảm 10% sát thương nhận (hoàn **+{card['current_hp'] - before:,} HP**)!")
+    except Exception as e:
+        print(f"[T1P] lỗi duel reduce: {e}", flush=True)
+    return _T1P_PREV_GAIA_POST(card, mark, incoming, base_power, logs)
+
+# Embed tiến hóa + /check
+_T1P_PREV_EVOL = execute_seiki_ace2
+def execute_seiki_ace2(player):
+    ok, msg, emb = _T1P_PREV_EVOL(player)
+    try:
+        if ok and emb is not None:
+            d = _t1p_fix(emb.description)
+            emb.description = d.replace("💪 **Buff Ace 2:**", T1P_TEXT + "\n💪 **Buff Ace 2:**", 1)
+    except Exception as e:
+        print(f"[T1P] lỗi sửa embed evol: {e}", flush=True)
+    return ok, msg, emb
+
+_T1P_PREV_T1_EMBED = CharacterCheckView.get_t1_embed
+def _t1p_get_t1_embed(self):
+    emb = _T1P_PREV_T1_EMBED(self)
+    try:
+        for i, f in enumerate(list(emb.fields)):
+            nv = _t1p_fix(f.value)
+            if nv != f.value:
+                emb.set_field_at(i, name=f.name, value=nv, inline=f.inline)
+        if "[Ace 2" in (emb.title or ""):
+            emb.add_field(name="⚖️ NỘI TẠI ACE 2:", value=T1P_TEXT, inline=False)
+    except Exception as e:
+        print(f"[T1P] lỗi sửa embed check: {e}", flush=True)
+    return emb
+CharacterCheckView.get_t1_embed = _t1p_get_t1_embed
+
+
+# ------------------------------------------------------------------------------
+# PHẦN 2: NÚT MŨI TÊN CHO /collection & /help
+# ------------------------------------------------------------------------------
+class ArrowPagerView(discord.ui.View):
+    def __init__(self, user_id, pages):
+        super().__init__(timeout=300)
+        self.user_id = user_id
+        self.pages = pages
+        self.idx = 0
+        self.message = None
+        self._sync()
+
+    def _sync(self):
+        self.prev_btn.disabled = self.idx <= 0
+        self.next_btn.disabled = self.idx >= len(self.pages) - 1
+        self.page_btn.label = f"Trang {self.idx + 1}/{len(self.pages)}"
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if self.user_id is not None and interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải bảng của bạn! Hãy tự gõ lệnh để mở bảng riêng.", ephemeral=True)
+            return False
+        return True
+
+    @discord.ui.button(label="◀", style=discord.ButtonStyle.primary, row=0)
+    async def prev_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.idx > 0:
+            self.idx -= 1
+        self._sync()
+        await interaction.response.edit_message(embed=self.pages[self.idx], view=self)
+
+    @discord.ui.button(label="Trang 1/2", style=discord.ButtonStyle.secondary, disabled=True, row=0)
+    async def page_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        pass
+
+    @discord.ui.button(label="▶", style=discord.ButtonStyle.primary, row=0)
+    async def next_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.idx < len(self.pages) - 1:
+            self.idx += 1
+        self._sync()
+        await interaction.response.edit_message(embed=self.pages[self.idx], view=self)
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        if self.message:
+            try:
+                await self.message.edit(view=self)
+            except Exception:
+                pass
+
+
+async def _send_pager(ctx_or_interaction, pages, user_id):
+    view = ArrowPagerView(user_id, pages)
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        if ctx_or_interaction.response.is_done():
+            view.message = await ctx_or_interaction.followup.send(embed=pages[0], view=view, wait=True)
+        else:
+            await ctx_or_interaction.response.send_message(embed=pages[0], view=view)
+            try:
+                view.message = await ctx_or_interaction.original_response()
+            except Exception:
+                pass
+    else:
+        view.message = await ctx_or_interaction.send(embed=pages[0], view=view)
+
+
+def _footer_text(embed) -> str:
+    try:
+        return embed.footer.text or ""
+    except Exception:
+        return ""
+
+
+async def send_collection_paged(ctx_or_interaction, embed, user_id):
+    """Chia đôi bảng /collection: trang 1 = nửa đầu danh sách thẻ, trang 2 = nửa sau + thẻ nhóm T."""
+    try:
+        desc = embed.description or ""
+        marker = "\n\n🔮 **THẺ ĐẶC BIỆT"
+        if marker in desc:
+            i = desc.index(marker)
+            std_part, t_part = desc[:i], desc[i:]
+        else:
+            std_part, t_part = desc, ""
+        lines = std_part.split("\n")
+        half = (len(lines) + 1) // 2
+        descs = ["\n".join(lines[:half]), "\n".join(lines[half:]) + t_part]
+        ft = _footer_text(embed)
+        pages = []
+        for n, d in enumerate(descs):
+            e = discord.Embed(title=f"{embed.title} • Trang {n + 1}/2", description=d[:4000], color=embed.color)
+            for f in embed.fields:
+                e.add_field(name=f.name, value=f.value, inline=f.inline)
+            e.set_footer(text=(ft + " • " if ft else "") + f"Trang {n + 1}/2")
+            pages.append(e)
+        await _send_pager(ctx_or_interaction, pages, user_id)
+    except Exception as e:
+        print(f"[PAGER] lỗi collection, gửi bảng gốc: {e}", flush=True)
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            if ctx_or_interaction.response.is_done():
+                await ctx_or_interaction.followup.send(embed=embed)
+            else:
+                await ctx_or_interaction.response.send_message(embed=embed)
+        else:
+            await ctx_or_interaction.send(embed=embed)
+
+
+async def send_help_paged(ctx_or_interaction, embed):
+    """Chia đôi bảng /help: trang 1 = Mở đầu + Chiến đấu + Sự kiện, trang 2 = Thẻ bài + Phần thưởng."""
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    try:
+        fields = list(embed.fields)
+        half = (len(fields) + 1) // 2
+        groups = [fields[:half], fields[half:]]
+        ft = _footer_text(embed)
+        img = embed.image.url if embed.image else None
+        pages = []
+        for n, g in enumerate(groups):
+            e = discord.Embed(title=embed.title, description=embed.description, color=embed.color)
+            for f in g:
+                e.add_field(name=f.name, value=f.value, inline=f.inline)
+            if img:
+                e.set_image(url=img)
+            e.set_footer(text=(ft + " • " if ft else "") + f"Trang {n + 1}/2")
+            pages.append(e)
+        await _send_pager(ctx_or_interaction, pages, user.id)
+    except Exception as e:
+        print(f"[PAGER] lỗi help, gửi bảng gốc: {e}", flush=True)
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            if ctx_or_interaction.response.is_done():
+                await ctx_or_interaction.followup.send(embed=embed)
+            else:
+                await ctx_or_interaction.response.send_message(embed=embed)
+        else:
+            await ctx_or_interaction.send(embed=embed)
+
+
+# ------------------------------------------------------------------------------
+# PHẦN 3: BOSS SCALING THEO SỐ DŨNG GIẢ (KHÔNG ÁP DỤNG EVENT BOSS)
+#   - Tối đa 2 người: giữ nguyên chỉ số gốc
+#   - Từ người thứ 3: mỗi người +5% HP & ATK gốc của Boss (skill + hồi máu tăng theo)
+# ------------------------------------------------------------------------------
+BOSS_SCALE_FREE_PLAYERS = 2
+BOSS_SCALE_PER_PLAYER = 0.05
+_BOSS_SCALE = contextvars.ContextVar("boss_scale", default=1.0)
+
+def boss_scale_factor(n_players: int) -> float:
+    extra = max(0, int(n_players) - BOSS_SCALE_FREE_PLAYERS)
+    return 1.0 + BOSS_SCALE_PER_PLAYER * extra
+
+class _ScaledBossCfg(dict):
+    """Config Boss: khi đọc cfg["hp"] / cfg["power"] trong trận raid thì tự nhân hệ số của CHÍNH trận đó."""
+    def __getitem__(self, key):
+        v = dict.__getitem__(self, key)
+        if key in ("hp", "power") and isinstance(v, (int, float)) and not isinstance(v, bool):
+            f = _BOSS_SCALE.get()
+            if f != 1.0:
+                return int(v * f)
+        return v
+
+    def get(self, key, default=None):
+        if key in self:
+            return self[key]
+        return default
+
+# Chỉ bọc các Boss raid thường (KHÔNG có EVENT_BOSS / SUKUNA)
+for _n in ("BOSS_CONFIG", "BOSS_PHASE2_CONFIG", "SEIKI_BOSS_CONFIG", "SEIKI_BOSS_PHASE2_CONFIG",
+           "MAHORAGA_BOSS_CONFIG", "FATERIA_BOSS_CONFIG", "FATERIA_BOSS_PHASE2_CONFIG",
+           "JOTARO_BOSS_CONFIG", "PRIME_BOSS_CONFIG"):
+    _v = globals().get(_n)
+    if isinstance(_v, dict) and not isinstance(_v, _ScaledBossCfg):
+        globals()[_n] = _ScaledBossCfg(_v)
+
+def _bs_notice_embed(raid_data, n, f):
+    cfg = raid_data.get("boss_config") or {}
+    try:
+        name = cfg.get("name", "Boss")
+    except Exception:
+        name = "Boss"
+    pct = int(round((f - 1.0) * 100))
+    return discord.Embed(
+        title="📈 BOSS SCALING - BOSS MẠNH LÊN THEO SỐ DŨNG GIẢ!",
+        description=(
+            f"👹 **{name}** đối mặt **{n} dũng giả** (từ người thứ 3 mỗi người +5%).\n"
+            f"🔺 Boss nhận **+{pct}% HP & ATK gốc** (sát thương skill và lượng hồi máu cũng tăng theo)!"
+        ),
+        color=0xF97316
+    )
+
+# Đặt hệ số cho trận raid thường (Reimu / Seiki / Mahoraga / Fateria / Jotaro)
+_BS_PREV_EXECUTE_RAID = execute_raid
+async def execute_raid(channel, raid_data):
+    n = len(raid_data.get("participants", []) or [])
+    f = boss_scale_factor(n)
+    token = _BOSS_SCALE.set(f)
+    try:
+        if f > 1.0:
+            try:
+                await channel.send(embed=_bs_notice_embed(raid_data, n, f))
+            except Exception:
+                pass
+        return await _BS_PREV_EXECUTE_RAID(channel, raid_data)
+    finally:
+        _BOSS_SCALE.reset(token)
+
+# Han Seiki the Prime One
+_BS_PREV_EXECUTE_PRIME = execute_prime_raid
+async def execute_prime_raid(channel, raid_data):
+    n = len(raid_data.get("participants", []) or [])
+    f = boss_scale_factor(n)
+    token = _BOSS_SCALE.set(f)
+    try:
+        if f > 1.0:
+            try:
+                await channel.send(embed=_bs_notice_embed(raid_data, n, f))
+            except Exception:
+                pass
+        return await _BS_PREV_EXECUTE_PRIME(channel, raid_data)
+    finally:
+        _BOSS_SCALE.reset(token)
+
+
+# ---- Ghi nhận máu thẻ tiền tuyến TRƯỚC khi Boss ra đòn (dùng cho Boss Scaling + Seiki passive) ----
+def _pbh_mark(active):
+    try:
+        for c in active or []:
+            cards = c.get("team_cards", [])
+            for k in cards:
+                k.pop("pbh_mark", None)
+            i = c.get("current_card_index", 0)
+            if i < len(cards):
+                cards[i]["pbh_mark"] = cards[i]["current_hp"]
+    except Exception as e:
+        print(f"[PBH] lỗi mark: {e}", flush=True)
+
+_BS_PREV_RAID_ATTACK = t7_raid_attack
+def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
+    res = _BS_PREV_RAID_ATTACK(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L)
+    _pbh_mark(active)
+    return res
+
+_BS_PREV_JT_ATTACK = t7_jt_attack
+def t7_jt_attack(c, ac, dmg, B, notes):
+    dmg = _BS_PREV_JT_ATTACK(c, ac, dmg, B, notes)
+    _pbh_mark(B.get("active"))
+    return dmg
+
+# Skill sát thương CỐ ĐỊNH của Boss (không dựa trên ATK) -> bù thêo hệ số scaling
+_BS_FLAT_KEYS = ("Blitz Attack (20%)", "Nuclear Spell Card (15%)", "Dị Hình Bùa Chú")
+
+def _bs_flat_compensate(entries, boss_log) -> str:
+    f = _BOSS_SCALE.get()
+    if f <= 1.0:
+        return ""
+    txt = str(boss_log or "")
+    if not any(k in txt for k in _BS_FLAT_KEYS):
+        return ""
+    tot, n = 0, 0
+    for _c, ac, m in entries:
+        lost = m - ac.get("current_hp", m)
+        if lost > 0:
+            extra = int(lost * (f - 1.0))
+            if extra > 0:
+                ac["current_hp"] -= extra
+                tot += extra
+                n += 1
+    if tot > 0:
+        return f"\n🔺 **[Boss Scaling ×{f:g}]** Skill sát thương cố định của Boss mạnh hơn: thêm **{tot:,} DMG** lên {n} thẻ!"
+    return ""
+
+def _t1p_raid_refund(entries) -> str:
+    n, total = 0, 0
+    for _c, ac, m in entries:
+        if not _t1p_active(ac):
+            continue
+        lost = m - ac.get("current_hp", m)
+        back = int(lost * T1P_REDUCE) if lost > 0 else 0
+        if back <= 0:
+            continue
+        before = ac["current_hp"]
+        ac["current_hp"] = min(ac.get("max_hp", m), before + back)
+        n += 1
+        total += ac["current_hp"] - before
+    if n:
+        return f"\n⚖️ **[Linh hồn phán quyết]** {n} thẻ Seiki Ace 2 giảm 10% sát thương nhận (hoàn tổng **+{total:,} HP**)!"
+    return ""
+
+_BS_PREV_AFTER_BOSS = t7_raid_after_boss
+def t7_raid_after_boss(active, boss_log) -> str:
+    entries = []
+    try:
+        for c in active or []:
+            cards = c.get("team_cards", [])
+            idx = c.get("current_card_index", 0)
+            for k in cards:
+                m = k.pop("pbh_mark", None)
+                if m is not None and idx < len(cards) and k is cards[idx]:
+                    entries.append((c, k, m))
+    except Exception as e:
+        print(f"[PBH] lỗi đọc mark: {e}", flush=True)
+    pre = ""
+    try:
+        pre = _bs_flat_compensate(entries, boss_log)
+    except Exception as e:
+        print(f"[BS] lỗi flat compensate: {e}", flush=True)
+    res = _BS_PREV_AFTER_BOSS(active, boss_log)
+    post = ""
+    try:
+        post = _t1p_raid_refund(entries)
+    except Exception as e:
+        print(f"[T1P] lỗi raid refund: {e}", flush=True)
+    return pre + res + post
+
+# ===================== HẾT KHỐI UPDATE =====================
+# ==============================================================================
+# [UPDATE MAHORAGA ACE 2] "Thức thần đã hoàn toàn thoát khỏi ràng buộc!"
+# ĐẶT NGAY TRÊN DÒNG:  import sys   (phía trên def start_bot_safely)
+# ==============================================================================
+import sys as _t2a_sys
+
+# ---------------------------- 1. CẤU HÌNH ----------------------------
+T2A_EVOL_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/0f/a3/479eHatFDAGtsG47vc.gif"
+T2A_PHAP_GIF = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/d1/7a/GSfopkEdXcspDWHhhM3a.gif"
+
+T2_ACE2_SHARDS = 10        # số Mảnh Mahoraga bị trừ khi tiến hóa Ace 2
+T2_ACE2_PRESTIGE = 3       # Prestige tối thiểu (0 = không yêu cầu)
+
+T2A_HEAL_PCT = 0.065       # passive Ace 2: hồi 6,5% máu tối đa / turn (bản thường 5%)
+T2A_SKILL_MULT = 1.75      # Thoái Ma Kiếm Ace 2 (bản thường 1.5)
+T2A_PHAP_CHANCE = 0.20     # Pháp luân!
+T2A_PHAP_MAX = 2           # tối đa 2 lần / trận
+T2A_PHAP_ADAPT = 0.25      # +25% thích nghi
+T2A_PHAP_TURNS = int(round(T2A_PHAP_ADAPT / 0.05))   # = 5 turn thích nghi (mỗi turn 5%)
+
+# ---------------------------- 2. ĐĂNG KÝ VÀO CÁC BẢNG CÓ SẴN ----------------------------
+if T2_ACE2_PRESTIGE > 0:
+    T_ACE2_PRESTIGE_REQ["t2"] = T2_ACE2_PRESTIGE
+    T_PRESTIGE_NAMES["t2"] = "Mahoraga"
+
+if "t2" not in EVOL_ORDER:
+    EVOL_ORDER.insert((EVOL_ORDER.index("t1") + 1) if "t1" in EVOL_ORDER else len(EVOL_ORDER), "t2")
+EVOL_T_SHARD["t2"] = ("mahoraga", 10)
+
+_T2A_SKILL_TEXT = (
+    "🌀 **The True Adapt (Passive nâng cấp - 100%):** Mỗi turn hồi **6,5% máu tối đa** (bản thường 5%) "
+    "& giảm 5% sát thương phải nhận (cộng dồn).\n"
+    "⚔️ **Thoái Ma Kiếm (30%):** Gây **×1.75 sát thương** (bản thường ×1.5).\n"
+    "☸️ **Pháp luân! (20% - tối đa 2 lần/trận):** Lập tức cộng **+25% thích nghi** cho passive."
+    "👑 **Yêu cầu tiến hóa:** 10 Mảnh Mahoraga + **Prestige 3+**."
+)
+
+EVOL_CONFIG["t2"] = {
+    "id": "t2", "key": "mahoraga", "name": "Mahoraga Bát ách kiếm thần tướng",
+    "title": "[#t2] Mahoraga - Ace 2 ⭐⭐", "ace_level": "Ace 2 ⭐⭐",
+    "required_cards": 0, "required_pulls": 0, "required_shards": T2_ACE2_SHARDS,
+    "evol_gif": T2A_EVOL_GIF,
+    "skill_name": "The True Adapt • Thoái Ma Kiếm • Pháp luân!",
+    "skill_desc": _T2A_SKILL_TEXT,
+    "bonus_power": 300, "bonus_hp": 300
+}
+CHARACTER_DETAILS["t2"]["skill_desc"] += (
+    "\n[Ace 2 ⭐⭐ - Thức thần đã hoàn toàn thoát khỏi ràng buộc!]: The True Adapt hồi 6,5% máu/turn • "
+    "Thoái Ma Kiếm ×1.75 • Pháp luân! (20%, tối đa 2 lần/trận): cộng ngay +25% thích nghi."
+)
+
+
+# ---------------------------- 3. HÀM HỖ TRỢ ----------------------------
+def _t2a_roll(card, chance):
+    return random.random() < chance          # random đã bọc Liềm: +2% nếu đội có Liềm Hỗn Mang
+try:
+    _LIEM_FUNC_VARS["_t2a_roll"] = "card"
+except NameError:
+    pass
+
+def _t2a_active(card) -> bool:
+    try:
+        return str(card.get("cid")).lower() == "t2" and bool(card.get("is_ace2"))
+    except Exception:
+        return False
+
+def _t2a_upgrade(power, base):
+    """Đổi Thoái Ma Kiếm ×1.5 thành ×1.75 (giữ nguyên các giảm sát thương của đối thủ nếu có). Trả về (sát thương, đã nâng?)."""
+    try:
+        if power == int(base * 1.5):
+            return int(base * T2A_SKILL_MULT), True
+        if base * 1.2 < power <= base * 1.6:
+            return int(power * T2A_SKILL_MULT / 1.5), True
+    except Exception:
+        pass
+    return power, False
+
+_T2A_WEAK_GIFS = (None, T2_PASSIVE_GIF, T2_THOAI_MA_GIF)
+
+def _t2a_force_gif(fr, gif):
+    """Đè GIF passive/Thoái Ma bằng GIF Pháp luân trong Battle / PvP / Story."""
+    try:
+        loc = fr.f_locals
+        out = loc.get("out")
+        if fr.f_code.co_name == "story_s3_player_turn" and isinstance(out, dict):
+            if out.get("gif") in _T2A_WEAK_GIFS:
+                out["gif"] = gif
+            return
+        if "turn_image" in loc and loc["turn_image"] in _T2A_WEAK_GIFS:
+            if globals().get("_FA_FRAME_OK"):
+                _fa_frame_write(fr, {"turn_image": gif})
+    except Exception as e:
+        print(f"[T2A] lỗi force gif: {e}", flush=True)
+
+
+# ---------------------------- 4. RAID / EVENT RAID / BOSS JOTARO-HAN SEIKI-SUKUNA-FATERIA P2 ----------------------------
+def _t2a_raid_core(c, ac, dmg, heal_mult=1.0):
+    lines, gif = [], None
+    tag = "[Ace 2] [#t2] Mahoraga"
+    base = ac.get("power", 0)
+
+    dmg, up = _t2a_upgrade(dmg, base)
+    if up:
+        lines.append(f"🔱 **{tag}** - **Thoái Ma Kiếm** được cường hóa: **×1.75** ➜ **{dmg:,} DMG**!")
+
+    mx = ac.get("max_hp") or ac.get("hp") or 1
+    extra = int(mx * (T2A_HEAL_PCT - 0.05) * heal_mult)
+    if extra > 0 and ac.get("current_hp", 0) > 0:
+        before = ac["current_hp"]
+        ac["current_hp"] = min(mx, before + extra)
+        got = ac["current_hp"] - before
+        if got > 0:
+            lines.append(f"🌀 **{tag}** - **The True Adapt** (Ace 2): hồi thêm **+{got:,} HP** (tổng 6,5% máu tối đa/turn)!")
+
+    st = c.setdefault("t3_state", {}).setdefault("t2a", {})
+    if st.get("phap", 0) < T2A_PHAP_MAX and _t2a_roll(ac, T2A_PHAP_CHANCE):
+        st["phap"] = st.get("phap", 0) + 1
+        c["mahoraga_adapt_turns"] = c.get("mahoraga_adapt_turns", 0) + T2A_PHAP_TURNS
+        total = int(min(0.90, c["mahoraga_adapt_turns"] * 0.05) * 100)
+        gif = T2A_PHAP_GIF
+        lines.append(f"☸️ **{tag}** hô vang **PHÁP LUÂN!** (20%) Lập tức **+25% thích nghi**! Kháng sát thương hiện tại: **{total}%** *(Lần {st['phap']}/{T2A_PHAP_MAX})*")
+    return dmg, lines, gif
+
+_T2A_PREV_RAID_ATTACK = t7_raid_attack
+def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
+    try:
+        if _t2a_active(ac):
+            hm = L.get("player_heal_mult", 1.0) if isinstance(L, dict) else 1.0
+            if not isinstance(hm, (int, float)):
+                hm = 1.0
+            card_dmg, lines, gif = _t2a_raid_core(c, ac, card_dmg, hm)
+            if gif and (not turn_image or turn_image in _T2A_WEAK_GIFS):
+                turn_image = gif
+            if lines:
+                notif = (notif + "\n" if notif else "") + "\n".join(f"({c['username']}) {l}" for l in lines)
+    except Exception as e:
+        print(f"[T2A] lỗi raid_attack: {e}", flush=True)
+    return _T2A_PREV_RAID_ATTACK(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L)
+
+_T2A_PREV_JT_ATTACK = t7_jt_attack
+def t7_jt_attack(c, ac, dmg, B, notes):
+    try:
+        if _t2a_active(ac):
+            dmg, lines, gif = _t2a_raid_core(c, ac, dmg, 1.0)
+            if gif and B.get("gif") in _T2A_WEAK_GIFS:
+                B["gif"] = gif
+            notes.extend(f"({c['username']}) {l}" for l in lines)
+    except Exception as e:
+        print(f"[T2A] lỗi jt_attack: {e}", flush=True)
+    return _T2A_PREV_JT_ATTACK(c, ac, dmg, B, notes)
+
+
+# ---------------------------- 5. BATTLE / PVP / STORY ----------------------------
+_T2A_MODE_BY_FUNC = {
+    "handle_battle": "duel",
+    "run_pvp_match": "duel",
+    "run_story_rumia_battle": "story",
+    "run_story_cirno_battle": "story",
+    "story_s3_player_turn": "meiling",
+}
+
+def _t2a_duel_turn(card, power, stunned, log_lists, mode, fr):
+    gif = None
+    erased = card.get("erased_skill")
+    tag = "[Ace 2] [#t2] Mahoraga"
+    base = card.get("power", 0)
+    mx = card.get("max_hp") or card.get("hp") or 1
+    adapt_on = erased != "t2_adapt"
+
+    def say(m):
+        for lst in log_lists:
+            lst.append(m)
+
+    # --- Passive The True Adapt ---
+    if adapt_on:
+        if mode in ("duel", "story"):
+            card["t2a_n"] = card.get("t2a_n", 0) + 1
+        if mode == "duel":
+            card["t2a_acted"] = True              # hồi thêm + hoàn sát thương sẽ xử lý ở eq_gaia_post
+        else:
+            hv = int(mx * (T2A_HEAL_PCT if mode == "story" else (T2A_HEAL_PCT - 0.05)))
+            if hv > 0 and card.get("current_hp", 0) > 0:
+                before = card["current_hp"]
+                card["current_hp"] = min(mx, before + hv)
+                got = card["current_hp"] - before
+                if got > 0:
+                    say(f"🌀 **{tag}** - **The True Adapt** (Ace 2): hồi **+{got:,} HP** (6,5% máu tối đa)!")
+
+    # --- Thoái Ma Kiếm ---
+    if erased != "t2_kiem":
+        if mode == "story":                       # Rumia/Cirno chưa có skill Mahoraga nên tự roll
+            if _t2a_roll(card, 0.30):
+                power = int(base * T2A_SKILL_MULT)
+                gif = T2_THOAI_MA_GIF
+                say(f"🔱 **{tag}** vung **Thoái Ma Kiếm** (30%)! **×1.75** giáng **{power:,} DMG**!")
+        else:
+            power, up = _t2a_upgrade(power, base)
+            if up:
+                say(f"🔱 **{tag}** - **Thoái Ma Kiếm** được cường hóa: ×1.5 ➜ **×1.75** (giáng **{power:,} DMG**)!")
+
+    # --- Pháp luân! ---
+    if (adapt_on and not stunned and erased != "t2_phapluan"
+            and card.get("t2a_phap", 0) < T2A_PHAP_MAX and _t2a_roll(card, T2A_PHAP_CHANCE)):
+        card["t2a_phap"] = card.get("t2a_phap", 0) + 1
+        if mode == "meiling":
+            fl = card.setdefault("fl", {})
+            fl["maho"] = fl.get("maho", 0) + T2A_PHAP_TURNS
+            total = int(min(0.90, fl["maho"] * 0.05) * 100)
+        else:
+            card["t2a_bonus"] = card.get("t2a_bonus", 0.0) + T2A_PHAP_ADAPT
+            total = int(min(0.90, card.get("t2a_n", 0) * 0.05 + card["t2a_bonus"]) * 100)
+        gif = T2A_PHAP_GIF
+        say(f"☸️ **{tag}** hô vang **PHÁP LUÂN!** (20%) Lập tức **+25% thích nghi**! Kháng sát thương hiện tại: **{total}%** *(Lần {card['t2a_phap']}/{T2A_PHAP_MAX})*")
+        _t2a_force_gif(fr, gif)
+    return power, gif
+
+_T2A_PREV_KASEN = kasen_duel_apply
+def kasen_duel_apply(card, power, stunned, log_lists):
+    power, guard, gif = _T2A_PREV_KASEN(card, power, stunned, log_lists)
+    try:
+        if _t2a_active(card):
+            fr = _t2a_sys._getframe(1)
+            try:
+                mode = _T2A_MODE_BY_FUNC.get(fr.f_code.co_name)
+                if mode:
+                    power, g2 = _t2a_duel_turn(card, power, stunned, log_lists, mode, fr)
+                    gif = gif or g2
+            finally:
+                del fr
+    except Exception as e:
+        print(f"[T2A] lỗi duel hook: {e}", flush=True)
+    return power, guard, gif
+
+# Battle / PvP: hoàn sát thương do +25% thích nghi (Pháp luân) và hồi thêm 1,5% máu
+_T2A_PREV_GAIA_POST = eq_gaia_post
+def eq_gaia_post(card, mark, incoming, base_power, logs):
+    acted = False
+    try:
+        acted = bool(card.pop("t2a_acted", False)) and _t2a_active(card) and card.get("erased_skill") != "t2_adapt"
+        if acted and mark is not None:
+            bonus = card.get("t2a_bonus", 0.0)
+            if bonus > 0:
+                n = card.get("t2a_n", 0)
+                a_in = min(0.90, n * 0.05)
+                a_tot = min(0.90, n * 0.05 + bonus)
+                lost = mark - card["current_hp"]
+                if lost > 0 and a_tot > a_in:
+                    refund = int(lost * (a_tot - a_in) / (1.0 - a_in))
+                    if refund > 0:
+                        mx = card.get("max_hp") or card.get("hp") or 1
+                        before = card["current_hp"]
+                        card["current_hp"] = min(mx, before + refund)
+                        logs.append(f"☸️ **[Ace 2] [#t2] Mahoraga - Pháp luân**: thích nghi tăng thêm, giảm thêm sát thương nhận (hoàn **+{card['current_hp'] - before:,} HP**)!")
+    except Exception as e:
+        print(f"[T2A] lỗi duel refund: {e}", flush=True)
+    ret = _T2A_PREV_GAIA_POST(card, mark, incoming, base_power, logs)
+    try:
+        if acted and card.get("current_hp", 0) > 0:
+            mx = card.get("max_hp") or card.get("hp") or 1
+            extra = int(mx * (T2A_HEAL_PCT - 0.05))
+            if extra > 0:
+                before = card["current_hp"]
+                card["current_hp"] = min(mx, before + extra)
+                got = card["current_hp"] - before
+                if got > 0:
+                    logs.append(f"🌀 **[Ace 2] [#t2] Mahoraga - The True Adapt**: hồi thêm **+{got:,} HP** (tổng 6,5% máu tối đa/turn)!")
+    except Exception as e:
+        print(f"[T2A] lỗi duel heal: {e}", flush=True)
+    return ret
+
+# Story Rumia / Cirno: giảm sát thương nhận theo thích nghi (Meiling đã có sẵn trong code cũ)
+_T2A_PREV_TAKE_DMG = eq_take_damage
+def eq_take_damage(card, dmg, logs=None, skill=False):
+    try:
+        if _t2a_active(card) and card.get("erased_skill") != "t2_adapt":
+            fr = _t2a_sys._getframe(1)
+            try:
+                name = fr.f_code.co_name
+            finally:
+                del fr
+            if name in ("run_story_rumia_battle", "run_story_cirno_battle"):
+                red = min(0.90, card.get("t2a_n", 0) * 0.05 + card.get("t2a_bonus", 0.0))
+                if red > 0:
+                    old = int(dmg)
+                    dmg = int(old * (1.0 - red))
+                    if logs is not None and old - dmg > 0:
+                        logs.append(f"🔱 **[Ace 2] [#t2] Mahoraga** Thích Nghi (-{int(red * 100)}% ST), chỉ nhận **{dmg:,} DMG**!")
+    except Exception as e:
+        print(f"[T2A] lỗi story reduce: {e}", flush=True)
+    return _T2A_PREV_TAKE_DMG(card, dmg, logs, skill)
+
+# Bóng Khái Niệm có thể xóa Pháp luân
+_T2A_PREV_ERASE = apply_bong_khai_niem_card
+def apply_bong_khai_niem_card(target_card: dict):
+    if str(target_card.get("cid")).lower() == "t2" and target_card.get("is_ace2") and not target_card.get("erased_skill"):
+        pool = [("t2_adapt", "The True Adapt"), ("t2_kiem", "Thoái Ma Kiếm"), ("t2_phapluan", "Pháp luân!")]
+        key, name = random.choice(pool)
+        target_card["erased_skill"] = key
+        target_card["erased_skill_name"] = name
+        return f"🌑 **[Bóng Khái Niệm]** Đã xóa ngẫu nhiên 1 kỹ năng duy nhất **[{name}]** của **{target_card['name']}**! *(Tối đa mất 1 chiêu)*"
+    return _T2A_PREV_ERASE(target_card)
+
+
+# ---------------------------- 6. TIẾN HÓA ACE 2 ----------------------------
+def execute_mahoraga_ace2(player):
+    _blk = ace2_prestige_block(player, "t2")
+    if _blk:
+        return False, _blk, None
+    if is_card_ace2(player, "t2"):
+        return False, "⚠️ **[#t2] Mahoraga** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
+    inv = player.get("inventory", {}) or {}
+    if not (is_card_unlocked(player, "t2") or inv.get("t2", 0) > 0):
+        return False, (
+            "❌ **Bạn chưa mở khóa thẻ [#t2] Mahoraga (Ace 1)!**\n"
+            "• Thu thập **10 Mảnh Mahoraga** rồi dùng `/t translate loai_shard:mahoraga` để đổi thẻ gốc trước."
+        ), None
+    shards = player.setdefault("shards", {})
+    cur = shards.get("mahoraga", 0)
+    if cur < T2_ACE2_SHARDS:
+        return False, (
+            f"❌ **Chưa đủ Mảnh Mahoraga để tiến hóa Ace 2!** ({cur}/{T2_ACE2_SHARDS})\n"
+            "💡 *Nguồn rơi: Boss Mahoraga (5%).*"
+        ), None
+    shards["mahoraga"] = cur - T2_ACE2_SHARDS
+    player.setdefault("evolutions", {})["t2"] = 2
+    save_player(player)
+    embed = discord.Embed(
+        title="🌟 TIẾN HÓA THÀNH CÔNG: [#t2] MAHORAGA - ACE 2 ⭐⭐!",
+        description=(
+            "🔱 **\"Thức thần đã hoàn toàn thoát khỏi ràng buộc!\"**\n\n"
+            f"{_T2A_SKILL_TEXT}\n\n"
+            f"📉 **Chi phí:** {T2_ACE2_SHARDS} Mảnh Mahoraga (còn `{shards['mahoraga']}`)\n"
+            "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn!"
+        ),
+        color=0xDC2626
+    )
+    embed.set_image(url=T2A_EVOL_GIF)
+    embed.set_footer(text="Touhou Evolution System • Mahoraga Ace 2 Activated • Card ID #t2")
+    return True, "", embed
+
+_T2A_PREV_EXEC_EVOL = execute_card_evolution
+def execute_card_evolution(player, cid):
+    if str(cid).strip().lower() in ("t2", "mahoraga", "batach"):
+        return execute_mahoraga_ace2(player)
+    return _T2A_PREV_EXEC_EVOL(player, cid)
+
+_T2A_PREV_EVOL_REQ = evol_req_data
+def evol_req_data(player, key, stage):
+    if key == "t2" and stage == 2:
+        inv = player.get("inventory", {}) or {}
+        shards = player.get("shards", {}) or {}
+        own = is_card_unlocked(player, "t2") or inv.get("t2", 0) > 0
+        have = shards.get("mahoraga", 0)
+        rows = [
+            _rq(own, f"Sở hữu thẻ {evol_tag('t2')} {evol_name('t2')} (Ace 1)"),
+            _rq(have >= T2_ACE2_SHARDS, f"Mảnh Mahoraga: {have}/{T2_ACE2_SHARDS}"),
+        ]
+        if T2_ACE2_PRESTIGE > 0:
+            pr = player.get("prestige", 0)
+            rows.append(_rq(pr >= T2_ACE2_PRESTIGE, f"Prestige {T2_ACE2_PRESTIGE}+ (hiện tại P{pr})"))
+        if _raw_ace2(player, "t2"):
+            return rows, ("done" if is_card_ace2(player, "t2") else "locked")
+        return rows, ("ready" if all(x[0] for x in rows) else "no")
+    return _T2A_PREV_EVOL_REQ(player, key, stage)
+
+
+# ---------------------------- 7. GIAO DIỆN /CHECK & /CARD_INFO ----------------------------
+def _mh_card_embed(user_id, show_ace=None):
+    card = CARDS_DATA["t2"]
+    player = get_player(user_id) if user_id else None
+    lvl = player.get("level", 1) if player else 1
+    owned = player.get("inventory", {}).get("t2", 0) if player else 0
+    shards = player.get("shards", {}).get("mahoraga", 0) if player else 0
+    user_ace = is_card_ace2(player, "t2") if player else False
+    ace = user_ace if show_ace is None else bool(show_ace)
+    pw = card["power"] + (ACE_POWER_BUFF if ace else 0)
+    hp = card["hp"] + (ACE_HP_BUFF if ace else 0)
+
+    embed = discord.Embed(
+        title="🌟 [Ace 2 ⭐⭐] #t2 MAHORAGA - BÁT ÁCH KIẾM THẦN TƯỚNG (THỨC TỈNH)" if ace else "🔱 [THẺ ĐẶC BIỆT NHÓM T] #t2 MAHORAGA BÁT ÁCH KIẾM THẦN TƯỚNG",
+        description=("🔥 **\"Thức thần đã hoàn toàn thoát khỏi ràng buộc!\"** *(+300 ATK / +300 HP)*" if ace else
+                     "✨ Mở khóa bằng **10 Mảnh Mahoraga** (`/t translate loai_shard:mahoraga`).\n✨ **Có thể tiến hóa Ace 2 ⭐⭐!**"),
+        color=0xDC2626
+    )
+    embed.set_image(url=T2A_EVOL_GIF if ace else card["image"])
+    embed.add_field(
+        name="⚔️ SỨC MẠNH & CHỈ SỐ:",
+        value=f"• ⚔️ **ATK:** `{pw:,}` | ❤️ **HP:** `{hp:,}`\n• 🛡️ **Trong đội hình (Lv.{lvl}):** `{pw + (lvl - 1) * 15:,}` ATK | `{hp + (lvl - 1) * 45:,}` HP",
+        inline=False
+    )
+    if ace:
+        skills = _T2A_SKILL_TEXT
+    else:
+        pas, sk = card.get("passive", {}), card.get("skills", {}).get("thoai_ma_kiem", {})
+        skills = (f"🌀 **{pas.get('name', 'The True adapt')} (100%):** {pas.get('desc', '')}\n"
+                  f"⚔️ **{sk.get('name', 'Thoái Ma kiếm')} (30%):** {sk.get('desc', '')}")
+    embed.add_field(name="🔮 KỸ NĂNG:", value=skills, inline=False)
+    if player:
+        pr = player.get("prestige", 0)
+        if user_ace:
+            badge = "🌟 ĐÃ THỨC TỈNH ACE 2"
+        elif owned > 0 and shards >= T2_ACE2_SHARDS and pr >= T2_ACE2_PRESTIGE:
+            badge = "🟢 Đủ điều kiện! Dùng `/evol id_hoac_ten:t2`"
+        else:
+            badge = f"🔴 Chưa đủ (Mảnh {shards}/{T2_ACE2_SHARDS})" + (f" | Prestige P{pr}/{T2_ACE2_PRESTIGE}" if T2_ACE2_PRESTIGE > 0 else "")
+        embed.add_field(name="🎒 TÚI ĐỒ CỦA BẠN:", value=f"• Sở hữu: **{owned}** lá\n• 🔱 Mảnh Mahoraga: **{shards}**\n• Cảnh giới: **{badge}**", inline=False)
+    embed.set_footer(text="Thẻ nhóm T đặc biệt • Hoạt động trong Raid, Event Raid, Battle, PvP, Story")
+    return embed
+
+class MahoragaCardView(discord.ui.View):
+    def __init__(self, user_id=None, back_index: int = 0, show_ace=None):
+        super().__init__(timeout=180)
+        self.user_id = user_id
+        self.back_index = back_index
+        if show_ace is None and user_id:
+            try:
+                show_ace = is_card_ace2(get_player(user_id), "t2")
+            except Exception:
+                show_ace = False
+        self.show_ace = bool(show_ace)
+        self._build()
+
+    def _build(self):
+        self.clear_items()
+        if self.show_ace:
+            toggle = discord.ui.Button(label="⭐ Xem Bản Ace 1", style=discord.ButtonStyle.secondary, emoji="🔄", row=0)
+        else:
+            toggle = discord.ui.Button(label="🌟 Xem Ace 2 ⭐⭐", style=discord.ButtonStyle.success, emoji="✨", row=0)
+        toggle.callback = self.on_toggle
+        self.add_item(toggle)
+        back = discord.ui.Button(label="📖 Quay lại danh sách nhân vật", style=discord.ButtonStyle.primary, row=0)
+        back.callback = self.on_back
+        self.add_item(back)
+
+    def get_embed(self):
+        return _mh_card_embed(self.user_id, self.show_ace)
+
+    async def on_toggle(self, interaction: discord.Interaction):
+        self.show_ace = not self.show_ace
+        self._build()
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    async def on_back(self, interaction: discord.Interaction):
+        v = CharacterCheckView(current_index=self.back_index, user_id=self.user_id)
+        await interaction.response.edit_message(embed=v.get_current_embed(), view=v)
+
+def _mh_get_t2_embed(self):
+    return _mh_card_embed(self.user_id, None)
+
+async def _mh_show_t2_card(self, interaction: discord.Interaction):
+    mv = MahoragaCardView(self.user_id, self.current_index)
+    await interaction.response.edit_message(embed=mv.get_embed(), view=mv)
+
+CharacterCheckView.get_t2_embed = _mh_get_t2_embed
+CharacterCheckView.show_t2_card = _mh_show_t2_card
+
+_T2A_PREV_CHECK = handle_check_character
+async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
+    s = str(nhan_vat or "").strip().lower().replace("#", "").replace(" ", "")
+    if s and (s in ("t2", "batach", "thantuong", "kiemthantuong") or "mahoraga" in s):
+        user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+        mv = MahoragaCardView(user.id, 0)
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=mv.get_embed(), view=mv)
+        else:
+            await ctx_or_interaction.send(embed=mv.get_embed(), view=mv)
+        return
+    return await _T2A_PREV_CHECK(ctx_or_interaction, nhan_vat)
+
+# ===================== HẾT KHỐI MAHORAGA ACE 2 =====================
 
 import sys
 
