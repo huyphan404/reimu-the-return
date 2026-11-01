@@ -14336,7 +14336,7 @@ async def handle_token_shop(ctx_or_interaction):
             f"   └ *Quay ngẫu nhiên 1 lá bài bất kỳ từ bậc SS đến C*\n\n"
             f"🪭 **4. Bảo Vật Quạt Giấy Yukari — 600 Tokens / 1 Cái**\n"
             f"   └ *Vật phẩm dùng để tiến hóa [#04] Yukari Yakumo lên Ace 2 ⭐⭐*\n"
-            f"💎 **5. Crystal — 65 Tokens / 1 Viên**\n"
+            f"💎 **5. Crystal — 25 Tokens / 1 Viên**\n"
             f"   └ *Gom 10 Crystal dùng `/crystal` đổi 1 Vé Allies*\n"
         ),
         color=0xF43F5E
@@ -23921,7 +23921,7 @@ LOOT_COOLDOWN = 10 * 60          # 10 phút
 NB_GEAR_PRICE = 25000            # giá Katana / Chain Armor trong /shop
 KATANA_ID, KATANA_ATK = "katana", 50
 CHAIN_ID, CHAIN_HP = "chain_armor", 100
-TOKEN_CRYSTAL_PRICE = 65         # 65 token / 1 crystal
+TOKEN_CRYSTAL_PRICE = 25         # 65 token / 1 crystal
 
 # Link ảnh tạm (dùng lại ảnh có sẵn). Muốn đẹp thì thay bằng link ảnh của bạn.
 KATANA_IMG = FENRIR_IMG
