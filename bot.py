@@ -2559,15 +2559,41 @@ class BattleDetailsView(discord.ui.View):
 
     def get_current_embed(self):
         t = self.turns_data[self.current_idx]
+        title_text = f"📜 CHI TIẾT TRẬN CHIẾN: {t.get('title', f'Hiệp {self.current_idx + 1}')}"
+        desc_text = t.get("desc", "") or ""
         embed = discord.Embed(
-            title=f"📜 CHI TIẾT TRẬN CHIẾN: {t.get('title', f'Hiệp {self.current_idx + 1}')}",
-            description=t.get("desc", ""),
+            title=title_text[:256],
+            description=desc_text[:4096],
             color=t.get("color", 0x3B82F6)
         )
         for field in t.get("fields", []):
             if len(field) == 3:
                 name, val, inl = field
-                embed.add_field(name=name, value=val, inline=inl)
+                val_str = str(val) if val is not None else ""
+                name_str = str(name)[:256] if name else "Diễn biến"
+
+                # Nếu độ dài nội dung nằm trong giới hạn Discord (< 1024 ký tự)
+                if len(val_str) <= 1024:
+                    if len(embed.fields) < 25:
+                        embed.add_field(name=name_str, value=val_str or "Không có", inline=inl)
+                else:
+                    # Tự động chia nhỏ theo từng dòng để không bị ngắt quãng câu chữ
+                    lines = val_str.split("\n")
+                    cur_chunk = ""
+                    chunk_idx = 1
+                    for line in lines:
+                        if len(cur_chunk) + len(line) + 1 > 1000:
+                            if len(embed.fields) < 25 and cur_chunk:
+                                f_name = name_str if chunk_idx == 1 else f"{name_str} (tiếp {chunk_idx})"
+                                embed.add_field(name=f_name[:256], value=cur_chunk[:1024], inline=False)
+                                chunk_idx += 1
+                                cur_chunk = ""
+                        cur_chunk = (cur_chunk + "\n" + line).strip() if cur_chunk else line
+                    
+                    if cur_chunk and len(embed.fields) < 25:
+                        f_name = name_str if chunk_idx == 1 else f"{name_str} (tiếp {chunk_idx})"
+                        embed.add_field(name=f_name[:256], value=cur_chunk[:1024], inline=False)
+
         if t.get("image"):
             embed.set_image(url=t["image"])
         embed.set_footer(
@@ -2706,7 +2732,7 @@ class OpponentTeamView(discord.ui.View):
             skill_text += "\n♾️ **[Ace 2 Hiệu Ứng]** *Cleave* (thụ động, +2% Máu tối đa mỗi đòn) • *Medicine Sign* (35% hồi 40% máu) • *Fantasy Seal* (buff lên 50% miễn toàn bộ sát thương 1 hiệp) • *Bóng Khái Niệm* (20%: 1.75x sát thương + 10% máu tối đa + xóa kỹ năng đối phương — mỗi chiêu 1 lần/trận)."
         if str(c["cid"]).lower() == "t2":
             skill_text += "\n🔱 **[Thần Tướng Hiệu Ứng]** *The True adapt* (thụ động 100%: mỗi turn hồi 5% Máu tối đa và giảm 5% sát thương phải nhận - cộng dồn) • *Thoái Ma kiếm* (30% kích hoạt gây ×1.5 sát thương)."
-        embed.add_field(name="✨ Kỹ Năng / Tuyệt Kỹ Danmaku:", value=f"*{skill_text}*", inline=False)
+        embed.add_field(name="✨ Kỹ Năng / Tuyệt Kỹ Danmaku:", value=f"*{skill_text}*"[:1024], inline=False)
 
         summary_lines = []
         for i, card in enumerate(self.opp_cards):
