@@ -24280,6 +24280,334 @@ async def send_help_paged(ctx_or_interaction, embed):
     return await _NB_PREV_HELP(ctx_or_interaction, embed)
 
 # ===================== HẾT KHỐI RANK/LOOT/COOLDOWN/TÂN THỦ =====================
+# ==============================================================================
+# [UPDATE] TRADE ĐỒNG MINH (ALLIES) + BẢO HIỂM /allies (PITY)
+# ==============================================================================
+
+# ---------------------------- 1. BẢO HIỂM /allies ----------------------------
+ALLY_PITY = 12   # lượt thứ 12 mà chưa ra đồng minh thì CHẮC CHẮN ra (đổi số này nếu muốn)
+
+async def handle_allies_pull(ctx_or_interaction, so_luong: int = 1):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    n = max(1, min(10, int(so_luong or 1)))
+    tickets = int(player.get("ally_tickets", 0))
+    if tickets < n:
+        await _eq_send(ctx_or_interaction, content=f"❌ Không đủ Vé Allies! (Cần {n}, có {tickets}). Mua Crystal ở `/shop` rồi dùng `/crystal`.", ephemeral=True)
+        return
+    player["ally_tickets"] = tickets - n
+    owned = player.setdefault("allies", {})
+    prestige = player.get("prestige", 0)
+    old_lvl = calculate_level_from_xp(player.get("xp", 0), prestige)
+    pity = int(player.get("ally_pity", 0))   # số lượt liên tiếp chưa ra đồng minh
+    lines, got_ally, xp_total = [], None, 0
+    for _ in range(n):
+        guaranteed = (pity + 1 >= ALLY_PITY)
+        r = _al_rand.random()
+        if guaranteed or r < ALLY_RATE_ALLY:
+            aid = _al_rand.choice(ALLY_ORDER)
+            d = ALLY_DATA[aid]
+            dup = owned.get(aid, 0) > 0
+            owned[aid] = owned.get(aid, 0) + 1
+            got_ally = aid
+            pity = 0
+            tag = " 🛡️ **(BẢO HIỂM)**" if guaranteed else ""
+            lines.append(f"🌟 {d['emoji']} **{d['name']}** {d['role_tag']}" + (" *(trùng)*" if dup else " ✨ **[MỚI]**") + tag)
+        elif r < ALLY_RATE_ALLY + ALLY_RATE_XP:
+            pity += 1
+            xp_total += ALLY_XP_DROP
+            lines.append(f"✨ **+{ALLY_XP_DROP:,} XP**")
+        else:
+            pity += 1
+            lines.append("💨 Không có gì cả... (lol)")
+    player["ally_pity"] = pity
+    player["xp"] = player.get("xp", 0) + xp_total
+    new_lvl = calculate_level_from_xp(player["xp"], prestige)
+    save_player(player)
+    desc = "\n".join(lines)
+    if new_lvl > old_lvl:
+        desc += f"\n\n🌟 **LÊN CẤP {new_lvl}!**"
+    embed = discord.Embed(title=f"🎰 ALLIES PULL ({n} lượt)", description=desc,
+                          color=ALLY_DATA[got_ally]["color"] if got_ally else 0x6B7280)
+    if got_ally:
+        embed.set_image(url=ALLY_DATA[got_ally]["gif"])
+    embed.set_footer(text=f"Vé Allies còn: {player['ally_tickets']} • Bảo hiểm: {pity}/{ALLY_PITY - 1} lượt trượt (lượt {ALLY_PITY} chắc chắn ra)")
+    await _eq_send(ctx_or_interaction, embed=embed)
+
+
+# ---------------------------- 2. TRADE THẺ + ALLIES ----------------------------
+_TR_ALLY_ALIASES = {
+    "s1": "s1", "leaf": "s1", "marysue": "s1", "mary": "s1", "leafmarysue": "s1",
+    "s2": "s2", "marine": "s2", "spacemarine": "s2",
+}
+
+def _tr_ally_id(query):
+    s = str(query or "").strip().lower()
+    for ch in ("#", " ", "_", "-", "–"):
+        s = s.replace(ch, "")
+    return _TR_ALLY_ALIASES.get(s)
+
+def _tr_is_ally(key) -> bool:
+    return isinstance(key, str) and key in ALLY_DATA
+
+def _tr_label(key) -> str:
+    if _tr_is_ally(key):
+        d = ALLY_DATA[key]
+        return f"#{key} {d['emoji']} {d['name']} *(Đồng minh)*"
+    c = CARDS_DATA[key]
+    return f"#{disp_id(key)} [{c['rank']}] {c['name']}"
+
+def _tr_have(player, key) -> int:
+    if _tr_is_ally(key):
+        return int((player.get("allies") or {}).get(key, 0))
+    return int((player.get("inventory") or {}).get(str(key), 0))
+
+def _tr_add(player, key, delta: int):
+    if _tr_is_ally(key):
+        d = player.setdefault("allies", {})
+        d[key] = max(0, d.get(key, 0) + delta)
+        if d[key] <= 0 and player.get("ally_equipped") == key:
+            player["ally_equipped"] = None      # hết đồng minh thì tự tháo
+    else:
+        inv = player.setdefault("inventory", {})
+        inv[str(key)] = inv.get(str(key), 0) + delta
+
+def parse_trade_offer(offer_str: str):
+    """Nhận cả thẻ lẫn đồng minh: 'reimu:1, leaf:2'."""
+    if not offer_str or not offer_str.strip():
+        return None, "Chuỗi đề nghị trao đổi không được để trống!"
+    items = [x.strip() for x in re.split(r"[,;]+", offer_str) if x.strip()]
+    if not items:
+        return None, "Không tìm thấy thẻ/đồng minh nào trong mục trao đổi!"
+    result = {}
+    for item in items:
+        if ":" in item:
+            card_part, qty_part = item.rsplit(":", 1)
+            card_part, qty_part = card_part.strip(), qty_part.strip()
+        else:
+            words = item.strip().split()
+            if len(words) > 1 and words[-1].isdigit():
+                card_part, qty_part = " ".join(words[:-1]), words[-1]
+            else:
+                card_part, qty_part = item.strip(), "1"
+        try:
+            qty = int(qty_part)
+        except ValueError:
+            return None, f"Số lượng không hợp lệ trong `{item}`! Cú pháp: `tên:số_lượng` (VD: `leaf:1` hoặc `reimu:2`)."
+        if qty <= 0:
+            return None, f"Số lượng phải lớn hơn 0 (bạn nhập `{qty}`)!"
+        key = _tr_ally_id(card_part)
+        if key is None:
+            key = find_card_by_name_or_id(card_part)
+        if key is None:
+            return None, f"Không tìm thấy nhân vật/đồng minh `{card_part}`! (VD: `reimu:1`, `leaf:1`, `marine:1`, `13:1`)."
+        result[key] = result.get(key, 0) + qty
+    return result, None
+
+
+class TradeConfirmationView(discord.ui.View):
+    def __init__(self, initiator, target, offer_give: dict, offer_receive: dict):
+        super().__init__(timeout=120)
+        self.initiator = initiator
+        self.target = target
+        self.offer_give = offer_give
+        self.offer_receive = offer_receive
+        self.confirmed_users = set()
+        self.msg = None
+
+    async def _abort(self, interaction, text):
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(content=text, view=self)
+        self.stop()
+
+    @discord.ui.button(label="✅ Đồng Ý Xác Nhận (0/2)", style=discord.ButtonStyle.success, emoji="🤝")
+    async def confirm_trade(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id not in [self.initiator.id, self.target.id]:
+            await interaction.response.send_message("❌ Bạn không tham gia phiên giao dịch này!", ephemeral=True)
+            return
+        if interaction.user.id in self.confirmed_users:
+            await interaction.response.send_message("⏳ Bạn đã xác nhận rồi! Đang chờ đối phương...", ephemeral=True)
+            return
+
+        self.confirmed_users.add(interaction.user.id)
+        button.label = f"✅ Đồng Ý Xác Nhận ({len(self.confirmed_users)}/2)"
+        if len(self.confirmed_users) < 2:
+            other = self.target if interaction.user.id == self.initiator.id else self.initiator
+            await interaction.response.edit_message(
+                content=f"🔔 **{interaction.user.display_name}** đã bấm xác nhận (1/2)! Đang đợi **{other.mention}** xác nhận...",
+                view=self)
+            return
+
+        p_a = get_player(self.initiator.id, self.initiator.display_name)
+        p_b = get_player(self.target.id, self.target.display_name)
+
+        for key, qty in self.offer_give.items():
+            if not _tr_is_ally(key) and is_card_locked(p_a, key):
+                await self._abort(interaction, f"❌ **Giao dịch thất bại!** Thẻ #{disp_id(key)} của {self.initiator.display_name} đang bị Admin khóa.")
+                return
+            if _tr_have(p_a, key) < qty:
+                await self._abort(interaction, f"❌ **Giao dịch thất bại!** {self.initiator.display_name} không còn đủ {qty}x {_tr_label(key)}.")
+                return
+        for key, qty in self.offer_receive.items():
+            if not _tr_is_ally(key) and is_card_locked(p_b, key):
+                await self._abort(interaction, f"❌ **Giao dịch thất bại!** Thẻ #{disp_id(key)} của {self.target.display_name} đang bị Admin khóa.")
+                return
+            if _tr_have(p_b, key) < qty:
+                await self._abort(interaction, f"❌ **Giao dịch thất bại!** {self.target.display_name} không còn đủ {qty}x {_tr_label(key)}.")
+                return
+
+        for key, qty in self.offer_give.items():
+            _tr_add(p_a, key, -qty)
+            _tr_add(p_b, key, +qty)
+        for key, qty in self.offer_receive.items():
+            _tr_add(p_b, key, -qty)
+            _tr_add(p_a, key, +qty)
+        save_player(p_a)
+        save_player(p_b)
+
+        for child in self.children:
+            child.disabled = True
+
+        embed = discord.Embed(
+            title="🎉 GIAO DỊCH THÀNH CÔNG (2/2 ĐÃ XÁC NHẬN)!",
+            description=f"✨ Thỏa thuận giữa **{self.initiator.mention}** và **{self.target.mention}** đã hoàn tất an toàn!",
+            color=0x10B981
+        )
+        a_txt = "\n".join([f"• Gửi đi: {q}x **{_tr_label(k)}** (Còn: {_tr_have(p_a, k)})" for k, q in self.offer_give.items()] +
+                          [f"• Nhận về: {q}x **{_tr_label(k)}** (Hiện có: {_tr_have(p_a, k)})" for k, q in self.offer_receive.items()])
+        b_txt = "\n".join([f"• Gửi đi: {q}x **{_tr_label(k)}** (Còn: {_tr_have(p_b, k)})" for k, q in self.offer_receive.items()] +
+                          [f"• Nhận về: {q}x **{_tr_label(k)}** (Hiện có: {_tr_have(p_b, k)})" for k, q in self.offer_give.items()])
+        embed.add_field(name=f"📦 {self.initiator.display_name} cập nhật:", value=a_txt[:1000], inline=False)
+        embed.add_field(name=f"📦 {self.target.display_name} cập nhật:", value=b_txt[:1000], inline=False)
+        await interaction.response.edit_message(
+            content=f"✅ **GIAO DỊCH HOÀN TẤT!** {self.initiator.mention} ⇄ {self.target.mention}",
+            embed=embed, view=self)
+        self.stop()
+
+    @discord.ui.button(label="❌ Từ Chối / Hủy Bỏ", style=discord.ButtonStyle.danger, emoji="🚫")
+    async def cancel_trade(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id not in [self.initiator.id, self.target.id]:
+            await interaction.response.send_message("❌ Bạn không tham gia phiên giao dịch này!", ephemeral=True)
+            return
+        for child in self.children:
+            child.disabled = True
+        who = self.initiator.display_name if interaction.user.id == self.initiator.id else self.target.display_name
+        embed = discord.Embed(title="🚫 GIAO DỊCH ĐÃ BỊ HỦY BỎ",
+                              description=f"Phiên trao đổi đã bị từ chối hoặc hủy bởi **{who}**.", color=0xEF4444)
+        await interaction.response.edit_message(content=None, embed=embed, view=self)
+        self.stop()
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        if self.msg:
+            try:
+                await self.msg.edit(content="⏰ **Hết thời gian chờ giao dịch (2 phút). Giao dịch đã tự động hủy.**", view=self)
+            except Exception:
+                pass
+
+
+async def handle_trade(ctx_or_interaction, user, your: str = None, their: str = None):
+    author = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+
+    if user is None:
+        await send_trade_msg(ctx_or_interaction, content="⚠️ Hãy gắn thẻ người bạn muốn giao dịch! Ví dụ: `/trade user:@Ai đó your:leaf:1 their:reimu:1`", ephemeral=True)
+        return
+    if getattr(user, "bot", False):
+        await send_trade_msg(ctx_or_interaction, content="🤖 Không thể giao dịch với Bot!", ephemeral=True)
+        return
+    if user.id == author.id:
+        await send_trade_msg(ctx_or_interaction, content="🤡 Bạn không thể tự giao dịch với chính mình!", ephemeral=True)
+        return
+
+    a_name = getattr(author, "display_name", str(author))
+    b_name = getattr(user, "display_name", str(user))
+    p_a = get_player(author.id, a_name)
+    p_b = get_player(user.id, b_name)
+
+    if not your or not their:
+        inv_a, inv_b = p_a.get("inventory", {}), p_b.get("inventory", {})
+        el_a = [c for c in CARDS_DATA if inv_a.get(str(c), 0) >= 1 and (inv_b.get(str(c), 0) >= 1 or is_card_ace2(p_b, c)) and not is_card_locked(p_a, c)]
+        el_b = [c for c in CARDS_DATA if inv_b.get(str(c), 0) >= 1 and (inv_a.get(str(c), 0) >= 1 or is_card_ace2(p_a, c)) and not is_card_locked(p_b, c)]
+        al_a = ", ".join(f"{ALLY_DATA[a]['name']} ×{n}" for a, n in (p_a.get("allies") or {}).items() if n > 0 and a in ALLY_DATA) or "Không có"
+        al_b = ", ".join(f"{ALLY_DATA[a]['name']} ×{n}" for a, n in (p_b.get("allies") or {}).items() if n > 0 and a in ALLY_DATA) or "Không có"
+        guide = discord.Embed(
+            title="🤝 HỆ THỐNG TRAO ĐỔI (THẺ BÀI & ĐỒNG MINH)",
+            description=(
+                f"**Giao dịch an toàn giữa {author.mention} và {user.mention}:**\n\n"
+                f"📌 **Cú pháp:** `/trade user:@{b_name} your:<tên:số_lượng> their:<tên:số_lượng>`\n"
+                f"*(VD: `your:leaf:1 their:reimu:1` • Đồng minh: `leaf`/`s1`, `marine`/`s2`)*\n\n"
+                f"🛡️ **Quy tắc:**\n"
+                f"• **Thẻ bài:** người nhận phải đã sở hữu thẻ đó từ trước (chống clone) và thẻ không bị Admin khóa.\n"
+                f"• **Đồng minh:** không cần sở hữu trước.\n"
+                f"• Cả 2 bên phải gửi cho nhau, và cùng bấm xác nhận **(2/2)** trong 2 phút.\n\n"
+                f"📋 **Thẻ có thể đổi:**\n• {a_name}: {', '.join(format_card_id(c) + ' ' + CARDS_DATA[c]['name'] for c in el_a[:8]) or 'Chưa có thẻ chung'}\n"
+                f"• {b_name}: {', '.join(format_card_id(c) + ' ' + CARDS_DATA[c]['name'] for c in el_b[:8]) or 'Chưa có thẻ chung'}\n\n"
+                f"🤝 **Đồng minh:**\n• {a_name}: {al_a}\n• {b_name}: {al_b}"
+            ),
+            color=0x3B82F6
+        )
+        await send_trade_msg(ctx_or_interaction, embed=guide)
+        return
+
+    offer_a, err_a = parse_trade_offer(your)
+    if err_a:
+        await send_trade_msg(ctx_or_interaction, content=f"⚠️ **Mục [your] không hợp lệ:** {err_a}", ephemeral=True)
+        return
+    offer_b, err_b = parse_trade_offer(their)
+    if err_b:
+        await send_trade_msg(ctx_or_interaction, content=f"⚠️ **Mục [their] không hợp lệ:** {err_b}", ephemeral=True)
+        return
+
+    # ---- Kiểm tra phía người gửi (bạn) ----
+    for key, qty in offer_a.items():
+        if not _tr_is_ally(key):
+            if is_card_locked(p_a, key):
+                await send_trade_msg(ctx_or_interaction, content=f"🔒 Lá bài **#{disp_id(key)} {CARDS_DATA[key]['name']}** của bạn đang bị Admin niêm phong!", ephemeral=True)
+                return
+        has = _tr_have(p_a, key)
+        if has < qty:
+            await send_trade_msg(ctx_or_interaction, content=f"❌ Bạn không đủ {qty}x **{_tr_label(key)}** để gửi đi! (Hiện có: {has})", ephemeral=True)
+            return
+        if not _tr_is_ally(key) and _tr_have(p_b, key) < 1 and not is_card_ace2(p_b, key):
+            await send_trade_msg(ctx_or_interaction, content=(
+                f"🛡️ **Quy định chống Clone Account:** {b_name} chưa từng sở hữu thẻ **{_tr_label(key)}**!\n"
+                f"⚠️ Người nhận phải sở hữu ít nhất 1 lá từ trước mới nhận trade (áp dụng cho thẻ bài, không áp dụng cho đồng minh)."), ephemeral=True)
+            return
+
+    # ---- Kiểm tra phía đối phương ----
+    for key, qty in offer_b.items():
+        if not _tr_is_ally(key):
+            if is_card_locked(p_b, key):
+                await send_trade_msg(ctx_or_interaction, content=f"🔒 Lá bài **#{disp_id(key)} {CARDS_DATA[key]['name']}** của đối phương đang bị Admin niêm phong!", ephemeral=True)
+                return
+        has = _tr_have(p_b, key)
+        if has < qty:
+            await send_trade_msg(ctx_or_interaction, content=f"❌ Đối phương (**{b_name}**) không đủ {qty}x **{_tr_label(key)}**! (Hiện có: {has})", ephemeral=True)
+            return
+        if not _tr_is_ally(key) and _tr_have(p_a, key) < 1 and not is_card_ace2(p_a, key):
+            await send_trade_msg(ctx_or_interaction, content=(
+                f"🛡️ **Quy định chống Clone Account:** bạn chưa từng sở hữu thẻ **{_tr_label(key)}**!\n"
+                f"⚠️ Bạn phải sở hữu ít nhất 1 lá từ trước mới nhận trade (áp dụng cho thẻ bài, không áp dụng cho đồng minh)."), ephemeral=True)
+            return
+
+    view = TradeConfirmationView(author, user, offer_a, offer_b)
+    embed = discord.Embed(
+        title="🤝 LỜI ĐỀ NGHỊ TRAO ĐỔI",
+        description=(f"🔥 **{author.mention}** gửi đề nghị trao đổi tới **{user.mention}**!\n"
+                     f"*(Cả hai kiểm tra kỹ rồi cùng bấm **Đồng Ý Xác Nhận (2/2)**)*"),
+        color=0xF59E0B
+    )
+    embed.add_field(name=f"📤 {a_name} gửi đi:",
+                    value="\n".join(f"• {q}x **{_tr_label(k)}** (Kho: {_tr_have(p_a, k)})" for k, q in offer_a.items()), inline=True)
+    embed.add_field(name=f"📥 {b_name} gửi lại:",
+                    value="\n".join(f"• {q}x **{_tr_label(k)}** (Kho: {_tr_have(p_b, k)})" for k, q in offer_b.items()), inline=True)
+    embed.set_footer(text="Giao dịch tự hủy sau 2 phút nếu không đủ 2/2 xác nhận.")
+    msg_obj = await send_trade_msg(ctx_or_interaction, content=f"{user.mention}", embed=embed, view=view)
+    view.msg = msg_obj
+
+# ===================== HẾT KHỐI TRADE ALLIES + PITY =====================
 
 import sys
 
