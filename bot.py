@@ -20756,19 +20756,62 @@ def apply_equipment_to_cards(player: dict, cards: list):
 
 # ---------------- Nội tại: về 0 HP không chết (dùng chung Raid/Battle/PvP/Story) ----------------
 _orig_sakuya3_try_revive = sakuya3_try_revive
+
+# Các hàm trung gian cần bỏ qua khi tìm "hàm đang chạy trận"
+_LIEM_SKIP_FRAMES = {"_liem_find_gif", "sakuya3_try_revive", "sakuya3_raid_revive"}
+
+def _liem_find_gif():
+    """Lấy gif SẴN CÓ của hiệp hiện tại (để Liềm không tự thêm/đổi gif).
+    Trả về (gif|None, có_phải_gọi_từ_raid)."""
+    raid_call = False
+    try:
+        f = _sys._getframe(1)
+        hops = 0
+        while f is not None and f.f_code.co_name in _LIEM_SKIP_FRAMES and hops < 8:
+            if f.f_code.co_name == "sakuya3_raid_revive":
+                raid_call = True
+            f = f.f_back
+            hops += 1
+        if f is None:
+            return None, raid_call
+        loc = f.f_locals
+        gif = loc.get("turn_image") or loc.get("turn_gif")
+        if not gif:
+            B = loc.get("B")
+            if isinstance(B, dict):
+                gif = B.get("gif")
+        if raid_call and not gif:
+            for nm in ("boss_cfg", "cfg", "p2_cfg", "p1_cfg"):
+                cv = loc.get(nm)
+                if isinstance(cv, dict) and cv.get("image"):
+                    gif = cv["image"]
+                    break
+        return gif, raid_call
+    except Exception as e:
+        print(f"[LIEM] lỗi tìm gif: {e}", flush=True)
+        return None, raid_call
+
 def sakuya3_try_revive(cards: list, idx: int):
+    global SAKUYA3_PASSIVE_GIF
     try:
         if 0 <= idx < len(cards):
             k = cards[idx]
-            if k.get("eq_liem") and not k.get("liem_used"):
-                k["liem_used"] = True
+            # Cờ liem_used áp dụng cho CẢ TEAM -> mỗi trận chỉ cứu được 1 lá duy nhất
+            if k.get("eq_liem") and not any(x.get("liem_used") for x in cards):
+                for x in cards:
+                    x["liem_used"] = True
                 k["current_hp"] = 1
+                # Liềm KHÔNG có gif: giữ nguyên gif của hiệp (nếu có)
+                gif, raid_call = _liem_find_gif()
+                if raid_call and not gif:
+                    gif = BOSS_CONFIG["image"]   # raid cần giá trị "truthy" để không đẩy thẻ kế tiếp
+                SAKUYA3_PASSIVE_GIF = gif
                 return True, (f"🌙 **[Liềm Hỗn Mang]** **{k['name']}** rơi xuống 0 HP nhưng **chưa chết** — "
-                              f"cầm cự ở **1 HP** đến hết turn tiếp theo! *(1 lần/trận)*")
+                              f"cầm cự ở **1 HP** đến hết turn tiếp theo! *(1 lần/trận cho cả đội)*")
     except Exception as e:
         print(f"[LIEM] lỗi revive: {e}", flush=True)
     return _orig_sakuya3_try_revive(cards, idx)
-
+    
 _orig_reset_phase_liem = reset_sakuya3_phase
 def reset_sakuya3_phase(c: dict):          # sang Phase 2 -> nội tại Liềm dùng lại được
     _orig_reset_phase_liem(c)
@@ -24611,6 +24654,22 @@ async def handle_trade(ctx_or_interaction, user, your: str = None, their: str = 
     view.msg = msg_obj
 
 # ===================== HẾT KHỐI TRADE ALLIES + PITY =====================
+# ==============================================================================
+# [DEBUG] BẮT LỖI PVP: lỗi sẽ in ra log Render + báo vào kênh chat
+# ==============================================================================
+import traceback as _tb
+
+_PVP_PREV_RUN = run_pvp_match
+async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, interaction=None, msg=None):
+    try:
+        return await _PVP_PREV_RUN(channel, challenger, target, c_team_cids, t_team_cids, interaction=interaction, msg=msg)
+    except Exception as e:
+        print("❌ [PVP] Lỗi trong trận PvP:\n" + _tb.format_exc(), flush=True)
+        try:
+            if channel is not None:
+                await channel.send(f"⚠️ Trận PvP gặp lỗi kỹ thuật: `{type(e).__name__}: {e}` (đã ghi vào log).")
+        except Exception:
+            pass
 
 import sys
 
