@@ -23557,11 +23557,11 @@ def _t2a_raid_core(c, ac, dmg, heal_mult=1.0):
     st = c.setdefault("t3_state", {}).setdefault("t2a", {})
     if st.get("phap", 0) < T2A_PHAP_MAX and _t2a_roll(ac, T2A_PHAP_CHANCE):
         st["phap"] = st.get("phap", 0) + 1
-        c["mahoraga_adapt_turns"] = c.get("mahoraga_adapt_turns", 0) + T2A_PHAP_TURNS
+        # Giới hạn tối đa 18 turn (= 90%), nếu vượt qua 100% thì tự lấp đầy thành 18 turn (90%)
+        c["mahoraga_adapt_turns"] = min(18, c.get("mahoraga_adapt_turns", 0) + T2A_PHAP_TURNS)
         total = int(min(0.90, c["mahoraga_adapt_turns"] * 0.05) * 100)
         gif = T2A_PHAP_GIF
         lines.append(f"☸️ **{tag}** hô vang **PHÁP LUÂN!** (20%) Lập tức **+25% thích nghi**! Kháng sát thương hiện tại: **{total}%** *(Lần {st['phap']}/{T2A_PHAP_MAX})*")
-    return dmg, lines, gif
 
 _T2A_PREV_RAID_ATTACK = t7_raid_attack
 def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
@@ -23646,11 +23646,14 @@ def _t2a_duel_turn(card, power, stunned, log_lists, mode, fr):
         card["t2a_phap"] = card.get("t2a_phap", 0) + 1
         if mode == "meiling":
             fl = card.setdefault("fl", {})
-            fl["maho"] = fl.get("maho", 0) + T2A_PHAP_TURNS
+            # Cap tối đa 18 turn = 90%
+            fl["maho"] = min(18, fl.get("maho", 0) + T2A_PHAP_TURNS)
             total = int(min(0.90, fl["maho"] * 0.05) * 100)
         else:
-            card["t2a_bonus"] = card.get("t2a_bonus", 0.0) + T2A_PHAP_ADAPT
-            total = int(min(0.90, card.get("t2a_n", 0) * 0.05 + card["t2a_bonus"]) * 100)
+            # Khống chế tổng (turn + bonus) không vượt quá 0.90 (90%)
+            cur_adapt = card.get("t2a_n", 0) * 0.05 + card.get("t2a_bonus", 0.0)
+            card["t2a_bonus"] = min(0.90 - card.get("t2a_n", 0) * 0.05, card.get("t2a_bonus", 0.0) + T2A_PHAP_ADAPT)
+            total = int(min(0.90, card.get("t2a_n", 0) * 0.05 + card.get("t2a_bonus", 0.0)) * 100)
         gif = T2A_PHAP_GIF
         say(f"☸️ **{tag}** hô vang **PHÁP LUÂN!** (20%) Lập tức **+25% thích nghi**! Kháng sát thương hiện tại: **{total}%** *(Lần {card['t2a_phap']}/{T2A_PHAP_MAX})*")
         _t2a_force_gif(fr, gif)
@@ -23687,7 +23690,7 @@ def eq_gaia_post(card, mark, incoming, base_power, logs):
                 a_tot = min(0.90, n * 0.05 + bonus)
                 lost = mark - card["current_hp"]
                 if lost > 0 and a_tot > a_in:
-                    refund = int(lost * (a_tot - a_in) / (1.0 - a_in))
+                    refund = int(lost * (a_tot - a_in) / max(0.01, (1.0 - a_in)))
                     if refund > 0:
                         mx = card.get("max_hp") or card.get("hp") or 1
                         before = card["current_hp"]
