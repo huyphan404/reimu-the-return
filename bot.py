@@ -2594,8 +2594,9 @@ class BattleDetailsView(discord.ui.View):
                         f_name = name_str if chunk_idx == 1 else f"{name_str} (tiếp {chunk_idx})"
                         embed.add_field(name=f_name[:256], value=cur_chunk[:1024], inline=False)
 
-        if t.get("image"):
-            embed.set_image(url=t["image"])
+        turn_img = t.get("image") or t.get("gif")
+        if turn_img:
+            embed.set_image(url=turn_img)
         embed.set_footer(
             text=f"Hiệp {self.current_idx + 1}/{len(self.turns_data)} • Nhấn 'Hiệp Dùng Kỹ Năng' để xem hoạt ảnh GIF chiêu thức trực tiếp"
         )
@@ -2629,7 +2630,7 @@ class BattleDetailsView(discord.ui.View):
 
     @discord.ui.button(label="✨ Hiệp Dùng Kỹ Năng (Xem GIF)", style=discord.ButtonStyle.success, row=1)
     async def skill_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        skill_indices = [i for i, t in enumerate(self.turns_data) if t.get("image")]
+        skill_indices = [i for i, t in enumerate(self.turns_data) if (t.get("image") or t.get("gif"))]
         if not skill_indices:
             await interaction.response.send_message("Không có hiệp nào kích hoạt kỹ năng trong trận này!", ephemeral=True)
             return
