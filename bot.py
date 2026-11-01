@@ -22766,8 +22766,16 @@ def eq_fenrir_post(att, tgt, tgt_mark, logs):
         al = att.get("ally_ref")
         if al and tgt.get("current_hp", 0) > 0:
             mx = tgt.get("max_hp") or tgt.get("hp") or 1
-            d, _g = ally_turn(al, att, mx, f"**{tgt['name']}**", logs)
+            d, g = ally_turn(al, att, mx, f"**{tgt['name']}**", logs)
             tgt["current_hp"] -= d
+            # đẩy GIF skill của đồng minh vào biến turn_image của trận đang chạy
+            if g and globals().get("_FA_FRAME_OK"):
+                fr = _fa_sys._getframe(1)
+                try:
+                    if "turn_image" in fr.f_locals:
+                        _fa_frame_write(fr, {"turn_image": g})
+                finally:
+                    del fr
     except Exception as e:
         print(f"[ALLY] lỗi duel_attack: {e}", flush=True)
 
