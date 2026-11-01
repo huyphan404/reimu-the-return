@@ -14336,6 +14336,8 @@ async def handle_token_shop(ctx_or_interaction):
             f"   └ *Quay ngẫu nhiên 1 lá bài bất kỳ từ bậc SS đến C*\n\n"
             f"🪭 **4. Bảo Vật Quạt Giấy Yukari — 600 Tokens / 1 Cái**\n"
             f"   └ *Vật phẩm dùng để tiến hóa [#04] Yukari Yakumo lên Ace 2 ⭐⭐*\n"
+            f"💎 **5. Crystal — 65 Tokens / 1 Viên**\n"
+            f"   └ *Gom 10 Crystal dùng `/crystal` đổi 1 Vé Allies*\n"
         ),
         color=0xF43F5E
     )
@@ -15004,7 +15006,9 @@ class ItemGroup(app_commands.Group, name="item", description="Quản lý kho v�
         app_commands.Choice(name="Nanh Fenrir 🐺 (nanh_fenrir)", value="nanh_fenrir"),
         app_commands.Choice(name="Liềm Hỗn Mang 🌙 (liem_hon_mang)", value="liem_hon_mang"),
         app_commands.Choice(name="Magical Potion 🧪 (magical_potion)", value="magical_potion"),
-        app_commands.Choice(name="Quả Lọ 🏺 (qua_lo)", value="qua_lo")
+        app_commands.Choice(name="Quả Lọ 🏺 (qua_lo)", value="qua_lo"),
+        app_commands.Choice(name="Katana Tân Thủ ⚔️ (katana)", value="katana"),
+        app_commands.Choice(name="Chain Armor 🔗 (chain_armor)", value="chain_armor")
     ])
     async def slash_item_use_cmd(self, interaction: discord.Interaction, item_id: str):
         await handle_item_use(interaction, item_id)
@@ -15021,7 +15025,9 @@ class ItemGroup(app_commands.Group, name="item", description="Quản lý kho v�
         app_commands.Choice(name="Liềm Hỗn Mang 🌙 (liem_hon_mang)", value="liem_hon_mang"),
         app_commands.Choice(name="Giáp Gaia 🛡️ (giap_gaia)", value="giap_gaia"),
         app_commands.Choice(name="Magical Potion 🧪 (magical_potion)", value="magical_potion"),
-        app_commands.Choice(name="Quả Lọ 🏺 (qua_lo)", value="qua_lo")
+        app_commands.Choice(name="Quả Lọ 🏺 (qua_lo)", value="qua_lo"),
+        app_commands.Choice(name="Katana Tân Thủ ⚔️ (katana)", value="katana"),
+        app_commands.Choice(name="Chain Armor 🔗 (chain_armor)", value="chain_armor")
     ])
     async def slash_item_trade_cmd(self, interaction: discord.Interaction, user: discord.Member, vat_pham: str, so_luong: int = 1):
         await handle_item_trade(interaction, user, vat_pham, so_luong)
@@ -18596,6 +18602,7 @@ async def handle_equip_item(ctx_or_interaction, player, item_id: str):
 @app_commands.choices(vu_khi=[
     app_commands.Choice(name="Nanh Fenrir 🐺", value="nanh_fenrir"),
     app_commands.Choice(name="Liềm Hỗn Mang 🌙", value="liem_hon_mang"),
+    app_commands.Choice(name="Katana Tân Thủ ⚔️", value="katana"),
 ])
 async def slash_weapond(interaction: discord.Interaction, vu_khi: Optional[str] = None):
     player = get_player(interaction.user.id, interaction.user.display_name)
@@ -19334,6 +19341,10 @@ async def handle_shop(ctx_or_interaction):
                     value=f"Cộng ngay **{QUA_LO_XP_PCT}% XP** yêu cầu lên cấp.\n`/item use` để dùng • trade được qua `/item trade`", inline=False)
     embed.add_field(name=f"💎 5. Crystal — {ALLY_CRYSTAL_PRICE:,} xu/viên",
                     value=f"Gom **{ALLY_CRYSTAL_PER_TICKET} Crystal** → `/crystal` đổi **1 Vé Allies** → `/allies` để quay đồng minh.", inline=False)
+    embed.add_field(name=f"⚔️ 6. Katana Tân Thủ — {NB_GEAR_PRICE:,} xu",
+                    value="**+50 ATK** cho toàn đội (vũ khí). Dùng `/weapond` hoặc `/item use katana`.", inline=False)
+    embed.add_field(name=f"🔗 7. Chain Armor — {NB_GEAR_PRICE:,} xu",
+                    value="**+100 HP** cho toàn đội (giáp). Dùng `/defend` hoặc `/item use chain_armor`.", inline=False)
     embed.set_footer(text="Marisa Shop sẽ cập nhật thêm trong tương lai, uhe~~")
     view = ShopView(user)
     if isinstance(ctx_or_interaction, discord.Interaction):
@@ -23899,6 +23910,376 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
     return await _T2A_PREV_CHECK(ctx_or_interaction, nhan_vat)
 
 # ===================== HẾT KHỐI MAHORAGA ACE 2 =====================
+# ==============================================================================
+# [UPDATE] /rank • /coinrank • /loot • /cooldown • GIÁP & KIẾM TÂN THỦ • CRYSTAL TOKEN SHOP
+# ==============================================================================
+import random as _nb_rand   # random chuẩn (tránh proxy Liềm)
+
+RANK_PER_PAGE = 10
+RANK_MAX_PLAYERS = 200
+LOOT_COOLDOWN = 10 * 60          # 10 phút
+NB_GEAR_PRICE = 25000            # giá Katana / Chain Armor trong /shop
+KATANA_ID, KATANA_ATK = "katana", 50
+CHAIN_ID, CHAIN_HP = "chain_armor", 100
+TOKEN_CRYSTAL_PRICE = 65         # 65 token / 1 crystal
+
+# Link ảnh tạm (dùng lại ảnh có sẵn). Muốn đẹp thì thay bằng link ảnh của bạn.
+KATANA_IMG = FENRIR_IMG
+CHAIN_IMG = GAIA_IMG
+
+# ---------------------------- TRANG BỊ TÂN THỦ ----------------------------
+EQUIPMENT_DB[KATANA_ID] = {
+    "id": KATANA_ID, "name": "Katana Tân Thủ ⚔️", "slot": "weapon", "slot_name": "Vũ khí tấn công",
+    "image": KATANA_IMG, "color": 0x9CA3AF,
+    "desc": f"**+{KATANA_ATK} ATK** cho toàn đội."
+}
+EQUIPMENT_DB[CHAIN_ID] = {
+    "id": CHAIN_ID, "name": "Chain Armor 🔗", "slot": "armor", "slot_name": "Giáp phòng thủ",
+    "image": CHAIN_IMG, "color": 0x6B7280,
+    "desc": f"**+{CHAIN_HP} HP** cho mỗi thẻ trong đội."
+}
+ITEMS_DATABASE[KATANA_ID] = {
+    "id": KATANA_ID, "name": "Katana Tân Thủ ⚔️", "usable": True, "tradeable": True,
+    "desc": EQUIPMENT_DB[KATANA_ID]["desc"] + " (Dùng `/weapond` hoặc `/item use katana` để trang bị)"
+}
+ITEMS_DATABASE[CHAIN_ID] = {
+    "id": CHAIN_ID, "name": "Chain Armor 🔗", "usable": True, "tradeable": True,
+    "desc": EQUIPMENT_DB[CHAIN_ID]["desc"] + " (Dùng `/defend` hoặc `/item use chain_armor` để mặc)"
+}
+EQUIP_ALIASES.update({"chain": CHAIN_ID, "chainarmor": CHAIN_ID, "giapxich": CHAIN_ID})
+
+_NB_PREV_APPLY_EQ = apply_equipment_to_cards
+def apply_equipment_to_cards(player: dict, cards: list):
+    _NB_PREV_APPLY_EQ(player, cards)
+    try:
+        act = get_active_equipment(player)
+        if act.get("weapon") == KATANA_ID:
+            for card in cards:
+                card["power"] += KATANA_ATK
+        if act.get("armor") == CHAIN_ID:
+            for card in cards:
+                for k in ("hp", "max_hp", "current_hp"):
+                    if k in card:
+                        card[k] += CHAIN_HP
+    except Exception as e:
+        print(f"[NB] lỗi apply equipment: {e}", flush=True)
+
+def _pick_weapon(player: dict, raw=None) -> str:      # ghi đè bản cũ (thêm Katana)
+    k = str(raw).lower().strip() if raw else None
+    k = EQUIP_ALIASES.get(k, k) if k else None
+    if k in EQUIPMENT_DB and EQUIPMENT_DB[k]["slot"] == "weapon":
+        return k
+    equipped = get_active_equipment(player).get("weapon")
+    if equipped:
+        return equipped
+    items = player.get("items", {})
+    have = [w for w in ("nanh_fenrir", LIEM_ID, KATANA_ID) if items.get(w, 0) >= 1]
+    return have[0] if have else "nanh_fenrir"
+
+def _pick_armor(player: dict, raw=None) -> str:
+    k = str(raw).lower().strip() if raw else None
+    k = EQUIP_ALIASES.get(k, k) if k else None
+    if k in EQUIPMENT_DB and EQUIPMENT_DB[k]["slot"] == "armor":
+        return k
+    equipped = get_active_equipment(player).get("armor")
+    if equipped:
+        return equipped
+    items = player.get("items", {})
+    have = [a for a in ("giap_gaia", CHAIN_ID) if items.get(a, 0) >= 1]
+    return have[0] if have else "giap_gaia"
+
+@bot.tree.command(name="defend", description="Mặc / tháo / đổi giáp (Giáp Gaia 🛡️ hoặc Chain Armor 🔗)")
+@app_commands.describe(giap="Chọn giáp (để trống = tự chọn / tháo món đang mặc)")
+@app_commands.choices(giap=[
+    app_commands.Choice(name="Giáp Gaia 🛡️", value="giap_gaia"),
+    app_commands.Choice(name="Chain Armor 🔗", value="chain_armor"),
+])
+async def slash_defend(interaction: discord.Interaction, giap: Optional[str] = None):
+    player = get_player(interaction.user.id, interaction.user.display_name)
+    await handle_equip_item(interaction, player, _pick_armor(player, giap))
+
+@bot.command(name="defend", aliases=["armor"])
+async def prefix_defend(ctx, giap: str = None):
+    player = get_player(ctx.author.id, ctx.author.display_name)
+    await handle_equip_item(ctx, player, _pick_armor(player, giap))
+
+# ---- /shop: thêm 2 nút mua Katana & Chain Armor ----
+def _nb_make_shop_cb(item_id):
+    async def _cb(interaction: discord.Interaction):
+        player = get_player(interaction.user.id, interaction.user.display_name)
+        if player.get("xu", 0) < NB_GEAR_PRICE:
+            await interaction.response.send_message(
+                f"❌ Không đủ Xu! (Cần {NB_GEAR_PRICE:,}, bạn có {player.get('xu', 0):,})", ephemeral=True)
+            return
+        player["xu"] -= NB_GEAR_PRICE
+        items = player.setdefault("items", {})
+        items[item_id] = items.get(item_id, 0) + 1
+        save_player(player)
+        info = ITEMS_DATABASE[item_id]
+        cmd = "/weapond" if EQUIPMENT_DB[item_id]["slot"] == "weapon" else "/defend"
+        await interaction.response.send_message(
+            f"✅ Marisa: *\"Hàng tốt đấy, cầm đi~\"*\nĐã mua **{info['name']}** (-{NB_GEAR_PRICE:,} {XU_EMOJI}). "
+            f"Số dư: **{player['xu']:,}** xu • Dùng `{cmd}` để trang bị.")
+    return _cb
+
+_NB_PREV_SHOP_INIT = ShopView.__init__
+def _nb_shop_init(self, user):
+    _NB_PREV_SHOP_INIT(self, user)
+    b1 = discord.ui.Button(label="⋯ 6. Katana (25k)", style=discord.ButtonStyle.secondary, emoji="⚔️", row=3)
+    b1.callback = _nb_make_shop_cb(KATANA_ID)
+    self.add_item(b1)
+    b2 = discord.ui.Button(label="⋯ 7. Chain Armor (25k)", style=discord.ButtonStyle.secondary, emoji="🔗", row=3)
+    b2.callback = _nb_make_shop_cb(CHAIN_ID)
+    self.add_item(b2)
+ShopView.__init__ = _nb_shop_init
+
+# ---------------------------- TOKEN SHOP: BÁN CRYSTAL ----------------------------
+class TokenCrystalModal(discord.ui.Modal, title=f"Mua Crystal ({TOKEN_CRYSTAL_PRICE} Token/viên)"):
+    def __init__(self):
+        super().__init__()
+        self.qty_input = discord.ui.TextInput(label="Số lượng (1 - 100):", default="1",
+                                              required=True, min_length=1, max_length=3)
+        self.add_item(self.qty_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            qty = int(self.qty_input.value.strip())
+            if qty < 1 or qty > 100:
+                raise ValueError
+        except ValueError:
+            await interaction.response.send_message("❌ Số lượng phải từ 1 đến 100!", ephemeral=True)
+            return
+        player = get_player(interaction.user.id, interaction.user.display_name)
+        total = TOKEN_CRYSTAL_PRICE * qty
+        if player.get("tokens", 0) < total:
+            await interaction.response.send_message(
+                f"❌ Không đủ Tokens! (Cần {total:,}, bạn có {player.get('tokens', 0):,})", ephemeral=True)
+            return
+        player["tokens"] -= total
+        items = player.setdefault("items", {})
+        items["crystal"] = items.get("crystal", 0) + qty
+        save_player(player)
+        await interaction.response.send_message(
+            f"✅ Đã mua **{qty}x Crystal 💎** (-{total:,} Tokens). Tokens còn: **{player['tokens']:,}** • "
+            f"Crystal: **{items['crystal']}** (đủ {ALLY_CRYSTAL_PER_TICKET} viên thì dùng `/crystal`)")
+
+_NB_PREV_TOKEN_INIT = TokenShopView.__init__
+def _nb_token_init(self, user, player):
+    _NB_PREV_TOKEN_INIT(self, user, player)
+    btn = discord.ui.Button(label=f"💎 Mua Crystal ({TOKEN_CRYSTAL_PRICE} Token)", style=discord.ButtonStyle.primary, row=1)
+    async def _cb(interaction: discord.Interaction):
+        if interaction.user.id != user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên shop của bạn!", ephemeral=True)
+            return
+        await interaction.response.send_modal(TokenCrystalModal())
+    btn.callback = _cb
+    self.add_item(btn)
+TokenShopView.__init__ = _nb_token_init
+
+# ---------------------------- /rank & /coinrank ----------------------------
+def get_all_players_raw():
+    docs = []
+    if use_mongo and players_collection is not None:
+        try:
+            for d in players_collection.find({}, {"user_id": 1, "username": 1, "xp": 1, "prestige": 1, "xu": 1}):
+                docs.append(d)
+        except Exception as e:
+            print(f"[RANK] lỗi đọc Mongo: {e}", flush=True)
+    else:
+        try:
+            cursor.execute('SELECT player_data_json FROM players')
+            for r in cursor.fetchall():
+                try:
+                    docs.append(json.loads(r[0]))
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"[RANK] lỗi đọc SQLite: {e}", flush=True)
+    return docs
+
+def _nb_build_rank_pages(title, color, entries, my_uid, footer_note):
+    """entries: list[(uid, text)] đã sắp xếp. Trả về list embed (10 người / trang)."""
+    entries = entries[:RANK_MAX_PLAYERS]
+    medals = ["🥇", "🥈", "🥉"]
+    total_pages = max(1, (len(entries) + RANK_PER_PAGE - 1) // RANK_PER_PAGE)
+    my_pos = next((i + 1 for i, (u, _t) in enumerate(entries) if u == str(my_uid)), None)
+    pages = []
+    for p in range(total_pages):
+        lines = []
+        for i in range(p * RANK_PER_PAGE, min(len(entries), (p + 1) * RANK_PER_PAGE)):
+            medal = medals[i] if i < 3 else f"`#{i + 1}`"
+            mark = " 👈 **BẠN**" if entries[i][0] == str(my_uid) else ""
+            lines.append(f"{medal} {entries[i][1]}{mark}")
+        e = discord.Embed(title=title, description="\n".join(lines) or "Chưa có dữ liệu!", color=color)
+        pos_txt = f"Hạng của bạn: #{my_pos}" if my_pos else "Bạn chưa có trong bảng xếp hạng"
+        e.set_footer(text=f"{footer_note} • {pos_txt} • Tổng {len(entries)} người chơi")
+        pages.append(e)
+    return pages
+
+async def handle_rank(ctx_or_interaction):
+    is_inter = isinstance(ctx_or_interaction, discord.Interaction)
+    user = ctx_or_interaction.user if is_inter else ctx_or_interaction.author
+    if is_inter and not ctx_or_interaction.response.is_done():
+        await ctx_or_interaction.response.defer()
+    docs = await asyncio.to_thread(get_all_players_raw)
+    rows = []
+    for d in docs:
+        pres = int(d.get("prestige", 0) or 0)
+        xp = int(d.get("xp", 0) or 0)
+        lvl = calculate_level_from_xp(xp, pres)
+        rows.append((pres, xp, lvl, str(d.get("user_id")), str(d.get("username") or "???")))
+    if not rows:
+        await _eq_send(ctx_or_interaction, content="⚠️ Chưa có người chơi nào trong bảng xếp hạng!")
+        return
+    rows.sort(key=lambda r: (r[0], r[1]), reverse=True)
+    entries = [(r[3], f"**{discord.utils.escape_markdown(r[4])}** — ⭐ Lv.{r[2]} • 👑 P{r[0]}") for r in rows]
+    pages = _nb_build_rank_pages("🏆 BẢNG XẾP HẠNG CẤP ĐỘ", 0xF59E0B, entries, user.id, "Xếp theo Prestige rồi đến Level")
+    await _send_pager(ctx_or_interaction, pages, user.id)
+
+async def handle_coinrank(ctx_or_interaction):
+    is_inter = isinstance(ctx_or_interaction, discord.Interaction)
+    user = ctx_or_interaction.user if is_inter else ctx_or_interaction.author
+    if is_inter and not ctx_or_interaction.response.is_done():
+        await ctx_or_interaction.response.defer()
+    docs = await asyncio.to_thread(get_all_players_raw)
+    rows = [(int(d.get("xu", 0) or 0), str(d.get("user_id")), str(d.get("username") or "???")) for d in docs]
+    if not rows:
+        await _eq_send(ctx_or_interaction, content="⚠️ Chưa có người chơi nào trong bảng xếp hạng!")
+        return
+    rows.sort(key=lambda r: r[0], reverse=True)
+    entries = [(r[1], f"**{discord.utils.escape_markdown(r[2])}** — {XU_EMOJI} **{r[0]:,}** xu") for r in rows]
+    pages = _nb_build_rank_pages(f"{XU_EMOJI} BẢNG XẾP HẠNG XU CÔNG ĐỨC", 0xEAB308, entries, user.id, "Xếp theo số Xu")
+    await _send_pager(ctx_or_interaction, pages, user.id)
+
+@bot.tree.command(name="rank", description="Bảng xếp hạng cấp độ & prestige của người chơi")
+async def slash_rank(interaction: discord.Interaction):
+    await handle_rank(interaction)
+
+@bot.command(name="rank", aliases=["top", "leaderboard"])
+async def prefix_rank(ctx):
+    await handle_rank(ctx)
+
+@bot.tree.command(name="coinrank", description="Bảng xếp hạng Xu công đức của người chơi")
+async def slash_coinrank(interaction: discord.Interaction):
+    await handle_coinrank(interaction)
+
+@bot.command(name="coinrank", aliases=["xurank", "richest"])
+async def prefix_coinrank(ctx):
+    await handle_coinrank(ctx)
+
+# ---------------------------- /loot ----------------------------
+async def handle_loot(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    now = time.time()
+    rem = int(LOOT_COOLDOWN - (now - player.get("last_loot_time", 0.0)))
+    if rem > 0:
+        await _eq_send(ctx_or_interaction,
+                       content=f"⏳ Bạn vừa đi nhặt đồ rồi! Hãy quay lại sau **{rem // 60} phút {rem % 60:02d} giây** nữa.",
+                       ephemeral=True)
+        return
+
+    roll = _nb_rand.random()
+    items = player.setdefault("items", {})
+    if roll < 0.05:
+        items["crystal"] = items.get("crystal", 0) + 1
+        text, color = f"💎 **+1 Crystal** (5% Hiếm!) — Kho: **{items['crystal']}**", 0x06B6D4
+    elif roll < 0.15:
+        player["pull_tickets"] = player.get("pull_tickets", 0.0) + 15.0
+        text, color = "🎟️ **+15 Vé Pull** (10%)!", 0xF59E0B
+    elif roll < 0.35:
+        coin = _nb_rand.randint(10, 200)
+        player["xu"] = player.get("xu", 0) + coin
+        text, color = f"{XU_EMOJI} **+{coin:,} Xu công đức** (20%)", 0xEAB308
+    elif roll < 0.55:
+        text, color = "💨 Bạn lục khắp nơi nhưng **chẳng nhặt được gì cả**... (20%)", 0x6B7280
+    else:
+        t = _nb_rand.randint(1, 3)
+        player["pull_tickets"] = player.get("pull_tickets", 0.0) + float(t)
+        text, color = f"🎟️ **+{t} Vé Pull** (45%)", 0x10B981
+
+    player["last_loot_time"] = now
+    save_player(player)
+    embed = discord.Embed(
+        title="🎒 NHẶT ĐỒ (LOOT)",
+        description=f"👤 **{user.display_name}** đi dạo quanh Gensokyo và nhặt được:\n\n{text}",
+        color=color
+    )
+    embed.set_footer(text="Hồi chiêu /loot: 10 phút • Dùng /cooldown để xem thời gian hồi")
+    await _eq_send(ctx_or_interaction, embed=embed)
+
+@bot.tree.command(name="loot", description="Đi nhặt đồ: crystal, vé pull, xu (hồi chiêu 10 phút)")
+async def slash_loot(interaction: discord.Interaction):
+    await handle_loot(interaction)
+
+@bot.command(name="loot")
+async def prefix_loot(ctx):
+    await handle_loot(ctx)
+
+# ---------------------------- /cooldown ----------------------------
+def _nb_cd_text(sec) -> str:
+    sec = int(sec)
+    if sec <= 0:
+        return "✅ **Sẵn sàng!**"
+    h, m, s = sec // 3600, (sec % 3600) // 60, sec % 60
+    if h > 0:
+        return f"⏳ **{h} giờ {m:02d} phút {s:02d} giây**"
+    return f"⏳ **{m} phút {s:02d} giây**"
+
+async def handle_cooldown(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    now = time.time()
+    is_adm = is_authorized_admin(user.id)
+
+    raid_rem = raid_cd_remaining(player, user.id)
+    daily_rem = get_seconds_until_midnight_vn() if player.get("last_daily_date") == get_today_vn() else 0
+    ev_rem = 0 if is_adm else max(0, int(3600 - (now - player.get("last_event_raid_time", 0.0))))
+    loot_rem = max(0, int(LOOT_COOLDOWN - (now - player.get("last_loot_time", 0.0))))
+
+    ev_note = "" if EVENT_CONFIG.get("active", True) else "\n   └ 🚫 *Sự kiện hiện đang đóng*"
+    embed = discord.Embed(
+        title=f"⏱️ THỜI GIAN HỒI CHIÊU - {user.display_name.upper()}",
+        description=(
+            f"⚔️ **/raid** *(mở hoặc tham gia đều tính hồi 15 phút)*\n   └ {_nb_cd_text(raid_rem)}\n\n"
+            f"🎁 **/daily** *(reset 00:00 giờ VN)*\n   └ " + ("✅ **Sẵn sàng!**" if daily_rem <= 0 else f"✔️ Đã nhận hôm nay • reset sau {_nb_cd_text(daily_rem)}") + "\n\n"
+            f"🎃 **/event raid** *(hồi 1 tiếng)*\n   └ {_nb_cd_text(ev_rem)}{ev_note}\n\n"
+            f"🎒 **/loot** *(hồi 10 phút)*\n   └ {_nb_cd_text(loot_rem)}"
+        ),
+        color=0x3B82F6
+    )
+    embed.set_footer(text="Hakurei Shrine • Admin được miễn hồi chiêu /raid và /event raid")
+    await _eq_send(ctx_or_interaction, embed=embed)
+
+@bot.tree.command(name="cooldown", description="Xem thời gian hồi của /raid, /daily, /event raid, /loot")
+async def slash_cooldown(interaction: discord.Interaction):
+    await handle_cooldown(interaction)
+
+@bot.command(name="cooldown", aliases=["cd"])
+async def prefix_cooldown(ctx):
+    await handle_cooldown(ctx)
+
+# ---------------------------- /help: tự thêm mục lệnh mới ----------------------------
+_NB_PREV_HELP = send_help_paged
+async def send_help_paged(ctx_or_interaction, embed):
+    try:
+        embed.add_field(
+            name="🆕 LỆNH MỚI",
+            value=(
+                "• `/rank` : Bảng xếp hạng cấp độ & prestige.\n"
+                "• `/coinrank` : Bảng xếp hạng Xu công đức.\n"
+                "• `/loot` : Nhặt đồ (crystal, vé, xu) • hồi 10 phút.\n"
+                "• `/cooldown` : Xem hồi chiêu /raid, /daily, /event raid, /loot.\n"
+                "• `/defend` : Mặc giáp (Giáp Gaia / Chain Armor).\n"
+                "• `/shop` : Có thêm Katana (+50 ATK) & Chain Armor (+100 HP) giá 25k xu."
+            ),
+            inline=False
+        )
+    except Exception as e:
+        print(f"[NB] lỗi thêm help: {e}", flush=True)
+    return await _NB_PREV_HELP(ctx_or_interaction, embed)
+
+# ===================== HẾT KHỐI RANK/LOOT/COOLDOWN/TÂN THỦ =====================
 
 import sys
 
