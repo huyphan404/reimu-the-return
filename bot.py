@@ -21628,7 +21628,7 @@ import random as _fa_rand
 import sys as _fa_sys
 
 # ---------------------------- 1. CẤU HÌNH ----------------------------
-FATERIA_ACE2_IMG = "https://media.discordapp.net/attachments/1527157582115111077/1565380110478217306/244ca225-b88b-4ffb-b1d6-3b807c5048b6.png?ex=6ae4b155&is=6ae35fd5&hm=36cc356108d8a1fdd38d8e1f7dee228ade5aba06e1ed1b8e0369efe123305b1e&=&format=webp&quality=lossless&width=384&height=362"
+FATERIA_ACE2_IMG = "https://media.discordapp.net/attachments/1543072032034521228/1566801952841670816/f2fbe3a8-0631-4275-a74b-71a51250f6f2.png?ex=6ae9dd87&is=6ae88c07&hm=4a01528decae5aac55aaf4cb1ab9bfbe60ff776f72b17e9dbbf2b026c3f7dcc5&=&format=webp&quality=lossless&width=1024&height=962"
 FATERIA_ACE2_SHARDS = 10            # khấu trừ 10 Fateria Shards
 FATERIA_ACE2_PRESTIGE = 4           # cần Prestige 4+
 FATERIA_ACE2_DMG_BONUS = 0.25       # cộng vào HỆ SỐ của mọi chiêu gây sát thương (Clone attack). Muốn +0.5 thì đổi thành 0.5
