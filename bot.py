@@ -10614,6 +10614,7 @@ async def handle_battle(ctx_or_interaction):
                 "image": c.get("image", "")
             })
 
+    opp_cards = npc_inject_t_and_gear(opp_cards, o_buff_pwr, o_buff_hp)
     # [UPDATE] 25% gặp đội hình của người chơi khác
     if random.random() < 0.25:
         try:
@@ -10976,6 +10977,12 @@ async def handle_battle(ctx_or_interaction):
 
 
         curr_oc_power = oc["power"]
+        if not o_fate_locked_now and not stunned_oc:
+            curr_oc_power, _npc_logs, _npc_gif = npc_tcard_attack(oc, pc, curr_oc_power, r_cnt)
+            if _npc_gif and not turn_image:
+                turn_image = _npc_gif
+            battle_logs.extend(_npc_logs)
+            turn_actions.extend(_npc_logs)
         if not o_fate_locked_now:
             if oc["cid"] == 19 and oc.get("is_ace2") and not o_marisa:
                 if random.random() < 0.30:
@@ -11235,6 +11242,8 @@ async def handle_battle(ctx_or_interaction):
         # 🟢 Đúng 8 khoảng trắng (ngang hàng với 'for' và 'if pc["current_hp"] <= 0:')
         eq_fenrir_post(pc, oc, _eq_oc_mark, turn_actions)
         eq_gaia_post(pc, _eq_pc_mark, curr_oc_power, oc["power"], turn_actions)
+        eq_fenrir_post(oc, pc, _eq_pc_mark, turn_actions)
+        eq_gaia_post(oc, _eq_oc_mark, curr_pc_power, pc["power"], turn_actions)
 
         if pc["current_hp"] <= 0:
             pc["current_hp"] = 0
@@ -22374,7 +22383,7 @@ async def handle_coinflip(ctx_or_interaction, bet, side):
         win = (result == pick)
         net = bet if win else -bet
         player["xu"] = player.get("xu", 0) + net
-        _gamble_record(player, "coinflip", net)
+        _gq = _gamble_record(player, "coinflip", net)
         save_player(player)
         _gamble_last[user.id] = time.time()
 
@@ -22390,6 +22399,8 @@ async def handle_coinflip(ctx_or_interaction, bet, side):
             ),
             color=0x10B981 if win else 0xEF4444
         )
+        if _gq:
+            embed.add_field(name="📜 Nhiệm Vụ Ngày:", value="\n".join(_gq), inline=False)
         embed.set_footer(text=f"Coinflip: {s['wins']}/{s['games']} thắng • Lãi/lỗ tổng {s['profit']:+,} xu • Cược tối đa {COINFLIP_MAX_BET:,}")
         await _eq_send(ctx_or_interaction, embed=embed)
 
@@ -22422,7 +22433,7 @@ async def handle_slot(ctx_or_interaction, bet):
         mult, label = _slot_eval(reels)
         net = bet * mult - bet
         player["xu"] = player.get("xu", 0) + net
-        _gamble_record(player, "slot", net)
+        _gq = _gamble_record(player, "slot", net)
         save_player(player)
         _gamble_last[user.id] = time.time()
 
@@ -22448,6 +22459,8 @@ async def handle_slot(ctx_or_interaction, bet):
                    f"💀 Còn lại: mất cược"),
             inline=False
         )
+        if _gq:
+            embed.add_field(name="📜 Nhiệm Vụ Ngày:", value="\n".join(_gq), inline=False)
         embed.set_footer(text=f"Slot: {s['wins']}/{s['games']} thắng • Lãi/lỗ tổng {s['profit']:+,} xu • Cược tối đa {SLOT_MAX_BET:,}")
         await _eq_send(ctx_or_interaction, embed=embed)
 
@@ -23347,7 +23360,7 @@ async def send_help_paged(ctx_or_interaction, embed):
 #   - Từ người thứ 3: mỗi người +5% HP & ATK gốc của Boss (skill + hồi máu tăng theo)
 # ------------------------------------------------------------------------------
 BOSS_SCALE_FREE_PLAYERS = 2
-BOSS_SCALE_PER_PLAYER = 0.05
+BOSS_SCALE_PER_PLAYER = 0.20
 _BOSS_SCALE = contextvars.ContextVar("boss_scale", default=1.0)
 
 def boss_scale_factor(n_players: int) -> float:
@@ -23387,7 +23400,7 @@ def _bs_notice_embed(raid_data, n, f):
     return discord.Embed(
         title="📈 BOSS SCALING - BOSS MẠNH LÊN THEO SỐ DŨNG GIẢ!",
         description=(
-            f"👹 **{name}** đối mặt **{n} dũng giả** (từ người thứ 3 mỗi người +5%).\n"
+            f"👹 **{name}** đối mặt **{n} dũng giả** (từ người thứ 3 mỗi người +20%).\n"
             f"🔺 Boss nhận **+{pct}% HP & ATK gốc** (sát thương skill và lượng hồi máu cũng tăng theo)!"
         ),
         color=0xF97316
@@ -24280,12 +24293,15 @@ async def handle_loot(ctx_or_interaction):
         text, color = f"🎟️ **+{t} Vé Pull** (45%)", 0x10B981
 
     player["last_loot_time"] = now
+    _lq = update_daily_quest_progress(player, "loot", 1)
     save_player(player)
     embed = discord.Embed(
         title="🎒 NHẶT ĐỒ (LOOT)",
         description=f"👤 **{user.display_name}** đi dạo quanh Gensokyo và nhặt được:\n\n{text}",
         color=color
     )
+    if _lq:
+        embed.add_field(name="📜 Nhiệm Vụ Ngày:", value="\n".join(_lq), inline=False)
     embed.set_footer(text="Hồi chiêu /loot: 10 phút • Dùng /cooldown để xem thời gian hồi")
     await _eq_send(ctx_or_interaction, embed=embed)
 
@@ -24705,6 +24721,452 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 await channel.send(f"⚠️ Trận PvP gặp lỗi kỹ thuật: `{type(e).__name__}: {e}` (đã ghi vào log).")
         except Exception:
             pass
+# ==============================================================================
+# [UPDATE] QUEST 4 NHIỆM VỤ + REDO + NPC CÓ THẺ T / TRANG BỊ TRONG /BATTLE
+# ==============================================================================
+import random as _npc_rand   # random chuẩn (tránh proxy Liềm Hỗn Mang)
+
+DAILY_QUEST_COUNT = 4
+DAILY_ALL_BONUS_XP_PCT = 150      # 150% XP cần để lên cấp
+DAILY_ALL_BONUS_XU = 10000        # 10,000 Xu
+DAILY_QUEST_REDO_COST = 5000      # phí Redo
+
+DAILY_QUEST_POOL = [
+    {"type": "pull", "name": "Quay thẻ Touhou gacha", "targets": [10, 20], "reward_range": (2, 5)},
+    {"type": "battle", "name": "Chiến đấu PvE Battle", "targets": [10, 15, 20], "reward_range": (2, 5)},
+    {"type": "daily", "name": "Điểm danh hàng ngày (/daily)", "targets": [1], "reward_range": (1, 2)},
+    {"type": "pvp", "name": "Thách đấu PvP đại chiến", "targets": [3, 4, 5], "reward_range": (2, 5)},
+    {"type": "raid", "name": "Hạ gục Boss Raid bất kỳ (Reimu/Seiki/Mahoraga/Fateria/Jotaro/Han Seiki)",
+     "targets": [1, 2, 3], "reward_range": (5, 7)},
+    {"type": "gamble", "name": "Cờ bạc (/coinflip, /slot) thắng tổng cộng",
+     "target_range": (6000, 20000), "target_step": 500, "reward_range": (3, 6)},
+    {"type": "loot", "name": "Nhặt đồ (/loot)", "targets": [3, 4, 5, 6], "reward_range": (2, 4)},
+]
+
+
+def _build_daily_quest(item, qid):
+    if item.get("target_range"):
+        lo, hi = item["target_range"]
+        step = item.get("target_step", 500)
+        target = _npc_rand.randrange(lo, hi + 1, step)
+    else:
+        target = _npc_rand.choice(item["targets"])
+    reward = _npc_rand.randint(item["reward_range"][0], item["reward_range"][1])
+    return {
+        "id": qid, "type": item["type"], "name": item["name"],
+        "target": target, "current": 0, "reward": reward,
+        "completed": False, "claimed": False
+    }
+
+
+def ensure_daily_quests(player: dict, force_reset: bool = False) -> dict:
+    today = get_today_vn()
+    dq = player.get("daily_quests")
+    if force_reset or not dq or dq.get("date") != today:
+        chosen = _npc_rand.sample(DAILY_QUEST_POOL, DAILY_QUEST_COUNT)
+        quests = [_build_daily_quest(item, i + 1) for i, item in enumerate(chosen)]
+        player["daily_quests"] = {"date": today, "quests": quests, "all_completed_claimed": False}
+    else:
+        # Người chơi còn quest bản cũ (3 cái) -> tự bù thêm cho đủ 4, KHÔNG reset tiến độ
+        qs = dq.setdefault("quests", [])
+        while len(qs) < DAILY_QUEST_COUNT:
+            used = {q["type"] for q in qs}
+            cand = [it for it in DAILY_QUEST_POOL if it["type"] not in used] or DAILY_QUEST_POOL
+            qs.append(_build_daily_quest(_npc_rand.choice(cand), len(qs) + 1))
+    return player["daily_quests"]
+
+
+def redo_daily_quests(player: dict) -> int:
+    """Chỉ đổi các nhiệm vụ CHƯA hoàn thành (giữ nguyên nhiệm vụ đã xong để không bị farm thưởng)."""
+    dq = ensure_daily_quests(player)
+    qs = dq["quests"]
+    n = 0
+    for i, q in enumerate(qs):
+        if q.get("completed"):
+            continue
+        used = {x["type"] for j, x in enumerate(qs) if j != i}
+        cand = [it for it in DAILY_QUEST_POOL if it["type"] not in used and it["type"] != q["type"]]
+        if not cand:
+            cand = [it for it in DAILY_QUEST_POOL if it["type"] not in used]
+        qs[i] = _build_daily_quest(_npc_rand.choice(cand), q["id"])
+        n += 1
+    return n
+
+
+def update_daily_quest_progress(player: dict, quest_type: str, amount: int = 1) -> list:
+    dq = ensure_daily_quests(player)
+    notifs = []
+    for q in dq.get("quests", []):
+        if q["type"] == quest_type and not q.get("completed", False):
+            q["current"] = min(q["target"], q["current"] + amount)
+            if q["current"] >= q["target"]:
+                q["completed"] = True
+                if not q.get("claimed", False):
+                    q["claimed"] = True
+                    player["pull_tickets"] += float(q["reward"])
+                    notifs.append(f"🎯 **Hoàn thành Nhiệm vụ Ngày:** *{q['name']}* ({q['target']:,}/{q['target']:,}) ➔ Nhận ngay **+{q['reward']} Vé Pull**! 🎟️")
+
+    quests = dq.get("quests", [])
+    if quests and all(q.get("completed", False) for q in quests) and not dq.get("all_completed_claimed", False):
+        dq["all_completed_claimed"] = True
+        player["pull_tickets"] += 10.0
+        player["xu"] = player.get("xu", 0) + DAILY_ALL_BONUS_XU
+        xp_gain, old_l, new_l = grant_xp_percent(player, DAILY_ALL_BONUS_XP_PCT)
+        lvl_txt = f"\n🌟 **LÊN CẤP {new_l}!**" if new_l > old_l else ""
+        notifs.append(
+            f"👑 **HOÀN THÀNH TOÀN BỘ {len(quests)}/{len(quests)} NHIỆM VỤ NGÀY!**\n"
+            "⛩️ **Reimu:** *\"10 lượt pull đây, lo mà sử dụng cẩn thận\"*\n"
+            f"🎁 Thưởng thêm: **+10 Vé Pull** • **+{DAILY_ALL_BONUS_XU:,} {XU_EMOJI} Xu** • "
+            f"**+{DAILY_ALL_BONUS_XP_PCT}% XP lên cấp** (= +{xp_gain:,} XP){lvl_txt}"
+        )
+    return notifs
+
+
+# Ghi nhận cờ bạc: trả về danh sách thông báo quest (thắng bao nhiêu xu thì cộng bấy nhiêu)
+def _gamble_record(player: dict, game: str, net: int):
+    s = _gamble_stat(player, game)
+    s["games"] += 1
+    if net > 0:
+        s["wins"] += 1
+    s["profit"] += net
+    if net > 0:
+        return update_daily_quest_progress(player, "gamble", net)
+    return []
+
+
+def build_quest_embed(player: dict) -> discord.Embed:
+    dq = ensure_daily_quests(player)
+    quests = dq.get("quests", [])
+    done = sum(1 for q in quests if q.get("completed"))
+    total = len(quests)
+    embed = discord.Embed(
+        title=f"📜 NHIỆM VỤ HÀNG NGÀY ({done}/{total} HOÀN THÀNH)",
+        description=(
+            f"📅 **Hôm nay:** `{dq.get('date', get_today_vn())}` *(Giờ Việt Nam - GMT+7)*\n"
+            f"⏱️ **Tự động làm mới sau:** `{format_time_until_midnight_vn()}` *(vào đúng 00:00 nửa đêm)*\n\n"
+            f"⛩️ Hoàn thành cả {total} nhiệm vụ để nhận quà đặc biệt từ Reimu!"
+        ),
+        color=0xF59E0B if done < total else 0x10B981
+    )
+    for q in quests:
+        progress = min(q["current"], q["target"])
+        pct = progress / q["target"] if q["target"] > 0 else 1.0
+        bar = "▰" * int(pct * 8) + "▱" * (8 - int(pct * 8))
+        status = "✅ **ĐÃ XONG** (Đã nhận vé)" if q.get("claimed") else ("🎯 Đang thực hiện" if progress > 0 else "⏳ Chưa bắt đầu")
+        unit = f" {XU_EMOJI}" if q["type"] == "gamble" else ""
+        embed.add_field(
+            name=f"Nhiệm vụ #{q['id']}: {q['name']}"[:250],
+            value=f"• Tiến độ: `[{bar}]` **{progress:,}/{q['target']:,}**{unit}\n• Thưởng: **+{q['reward']} Vé Pull** 🎟️\n• Trạng thái: {status}",
+            inline=False
+        )
+    all_done = dq.get("all_completed_claimed", False)
+    bonus_status = "✅ ĐÃ NHẬN THƯỞNG!" if all_done else ("🎁 SẴN SÀNG NHẬN!" if done >= total else f"🔒 Hoàn thành thêm {total - done} nhiệm vụ để mở khóa")
+    embed.add_field(
+        name=f"👑 QUÀ ĐẶC BIỆT KHI XONG {total}/{total} NHIỆM VỤ:",
+        value=(f"• **+10 Vé Pull** 🎟️\n• **+{DAILY_ALL_BONUS_XP_PCT}% XP cần để lên cấp** ✨\n"
+               f"• **+{DAILY_ALL_BONUS_XU:,} Xu** {XU_EMOJI}\n• Trạng thái: **{bonus_status}**"),
+        inline=False
+    )
+    embed.set_footer(text=f"Vé: {player.get('pull_tickets', 0):.2f} • Xu: {player.get('xu', 0):,} • Redo ({DAILY_QUEST_REDO_COST:,} Xu) chỉ đổi nhiệm vụ CHƯA xong")
+    return embed
+
+
+class QuestRedoView(discord.ui.View):
+    def __init__(self, user_id):
+        super().__init__(timeout=180)
+        self.user_id = user_id
+        btn = discord.ui.Button(label=f"🔄 Redo nhiệm vụ chưa xong ({DAILY_QUEST_REDO_COST:,} Xu)",
+                                style=discord.ButtonStyle.danger, row=0)
+        btn.callback = self.on_redo
+        self.add_item(btn)
+
+    async def on_redo(self, interaction: discord.Interaction):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("❌ Đây không phải bảng của bạn! Hãy tự gõ `/quest`.", ephemeral=True)
+            return
+        player = get_player(interaction.user.id, interaction.user.display_name)
+        dq = ensure_daily_quests(player)
+        if not [q for q in dq["quests"] if not q.get("completed")]:
+            await interaction.response.send_message("✅ Bạn đã hoàn thành hết nhiệm vụ, không còn gì để Redo!", ephemeral=True)
+            return
+        if player.get("xu", 0) < DAILY_QUEST_REDO_COST:
+            await interaction.response.send_message(
+                f"❌ Không đủ Xu! (Cần {DAILY_QUEST_REDO_COST:,}, bạn có {player.get('xu', 0):,} {XU_EMOJI})", ephemeral=True)
+            return
+        player["xu"] -= DAILY_QUEST_REDO_COST
+        n = redo_daily_quests(player)
+        save_player(player)
+        await interaction.response.edit_message(embed=build_quest_embed(player), view=self)
+        await interaction.followup.send(
+            f"🔄 Đã Redo **{n}** nhiệm vụ chưa hoàn thành (-{DAILY_QUEST_REDO_COST:,} {XU_EMOJI}). Xu còn: **{player['xu']:,}**",
+            ephemeral=True)
+
+
+async def handle_quest(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    ensure_daily_quests(player)
+    save_player(player)
+    embed = build_quest_embed(player)
+    view = QuestRedoView(user.id)
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed, view=view)
+    else:
+        await ctx_or_interaction.send(embed=embed, view=view)
+
+
+# ==============================================================================
+# NPC TRONG /BATTLE: 20% CÓ THẺ T (ACE 1/2, 1-3 CON) • 20% CÓ VŨ KHÍ/GIÁP
+# ==============================================================================
+NPC_T_CHANCE = 0.20
+NPC_GEAR_CHANCE = 0.20
+NPC_T_POOL = ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"]
+
+
+def npc_inject_t_and_gear(opp_cards, o_buff_pwr, o_buff_hp):
+    try:
+        if not opp_cards:
+            return opp_cards
+        # ---- 20%: thay 1-3 lá bằng thẻ T (Ace 1 hoặc Ace 2 ngẫu nhiên) ----
+        if _npc_rand.random() < NPC_T_CHANCE:
+            pool = [t for t in NPC_T_POOL if t in CARDS_DATA]
+            k = min(_npc_rand.randint(1, 3), len(opp_cards), len(pool))
+            slots = _npc_rand.sample(range(len(opp_cards)), k)
+            picks = _npc_rand.sample(pool, k)
+            for slot, tid in zip(slots, picks):
+                c = CARDS_DATA[tid]
+                ace = (tid in EVOL_CONFIG) and (_npc_rand.random() < 0.5)
+                pw = c["power"] + o_buff_pwr + (ACE_POWER_BUFF if ace else 0)
+                hp = c["hp"] + o_buff_hp + (ACE_HP_BUFF if ace else 0)
+                opp_cards[slot] = {
+                    "cid": tid,
+                    "name": f"[Ace 2 ⭐⭐] #{tid} {c['name']}" if ace else f"#{tid} {c['name']}",
+                    "raw_name": c["name"], "rank": c.get("rank", "T"),
+                    "power": pw, "hp": hp, "current_hp": hp,
+                    "is_ace2": ace, "base_power": c["power"], "base_hp": c["hp"],
+                    "skill": CHARACTER_DETAILS.get(tid, {}).get("skill_name", "Kỹ năng nhóm T"),
+                    "image": c.get("image", "")
+                }
+        # ---- 20%: cả đội NPC có vũ khí và/hoặc giáp ----
+        if _npc_rand.random() < NPC_GEAR_CHANCE:
+            weapons = [("nanh_fenrir", "Nanh Fenrir 🐺", FENRIR_ATK), (LIEM_ID, "Liềm Hỗn Mang 🌙", LIEM_ATK), (KATANA_ID, "Katana Tân Thủ ⚔️", KATANA_ATK)]
+            armors = [("giap_gaia", "Giáp Gaia 🛡️", GAIA_HP), (CHAIN_ID, "Chain Armor 🔗", CHAIN_HP)]
+            w = _npc_rand.random() < 0.5
+            a = _npc_rand.random() < 0.5
+            if not w and not a:
+                if _npc_rand.random() < 0.5:
+                    w = True
+                else:
+                    a = True
+            weapon = _npc_rand.choice(weapons) if w else None
+            armor = _npc_rand.choice(armors) if a else None
+            gear_txt = " + ".join(x[1] for x in (weapon, armor) if x)
+            for card in opp_cards:
+                if weapon:
+                    card["power"] += weapon[2]
+                    if weapon[0] == "nanh_fenrir":
+                        card["eq_fenrir"] = True
+                if armor:
+                    card["hp"] += armor[2]
+                    card["current_hp"] += armor[2]
+                    if armor[0] == "giap_gaia":
+                        card["eq_gaia"] = True
+                card["skill"] = f"{card.get('skill', '')} | 🎒 Trang bị NPC: {gear_txt}"
+                card["raw_name"] = f"{card['raw_name']} 🎒"
+    except Exception as e:
+        print(f"[NPC] lỗi inject T/gear: {e}", flush=True)
+    return opp_cards
+
+
+def npc_tcard_attack(oc, pc, power, rnd):
+    """Kỹ năng (bản rút gọn) của thẻ T khi làm NPC. Trả về (sát thương, logs, gif)."""
+    logs, gif = [], None
+    try:
+        cid = str(oc.get("cid")).lower()
+        if cid not in NPC_T_POOL:
+            return power, logs, gif
+        ace = bool(oc.get("is_ace2"))
+        er = oc.get("erased_skill") or ""
+        st = oc.setdefault("npc_st", {})
+        mx = oc.get("hp") or 1
+        tmx = pc.get("hp") or pc.get("max_hp") or 1
+        base = power
+        tag = f"NPC {'[Ace 2]' if ace else '[T]'} #{cid} {oc.get('raw_name', '')}"
+
+        def mul(m):
+            nonlocal power
+            power = int(base * m) + (power - base)
+
+        def heal(pct, label):
+            before = oc["current_hp"]
+            oc["current_hp"] = min(mx, before + int(mx * pct))
+            got = oc["current_hp"] - before
+            if got > 0:
+                logs.append(f"💚 **{tag}** - **{label}**: hồi **+{got:,} HP**!")
+
+        # --- sát thương theo thời gian đang chạy (Kisami) ---
+        if st.get("poison_left", 0) > 0:
+            pct = KISAMI_POISON_PCTS[3 - st["poison_left"]]
+            d = int(tmx * pct)
+            power += d
+            st["poison_left"] -= 1
+            logs.append(f"☠️ **{tag}** - **Dịch miên**: độc tố gây thêm **{d:,} DMG** ({int(pct * 100)}% Máu Tối Đa)!")
+        if st.get("burn_left", 0) > 0:
+            d = int(tmx * 0.03)
+            power += d
+            st["burn_left"] -= 1
+            logs.append(f"🔥 **{tag}** - **Nhiệt băng**: bỏng gây thêm **{d:,} DMG** (3% Máu Tối Đa)!")
+
+        r = _npc_rand.random()
+
+        if cid == "t1":
+            if ace:
+                if er != "t1_cleave":
+                    d = int(tmx * 0.02)
+                    power += d
+                    logs.append(f"🪓 **{tag}** - **Cleave**: +**{d:,} DMG** (2% Máu Tối Đa)!")
+                if er != "t1_bong" and not st.get("bong") and r < 0.20:
+                    st["bong"] = 1
+                    mul(1.75)
+                    d = int(tmx * 0.10)
+                    power += d
+                    gif = T1_ACE2_CONFIG["bong_khai_niem"]["gif"]
+                    logs.append(f"🌑 **{tag}** tung **Bóng Khái Niệm**! ×1.75 sát thương + **{d:,} DMG** (10% Máu Tối Đa)!")
+                elif er != "t1_med" and not st.get("med") and r < 0.55 and oc["current_hp"] < mx:
+                    st["med"] = 1
+                    heal(0.40, "Medicine Sign")
+                    gif = T1_HEAL_GIF
+            else:
+                if er != "t1_spark" and not st.get("spark") and r < 0.30:
+                    st["spark"] = 1
+                    mul(1.5)
+                    gif = T1_SPARK_GIF
+                    logs.append(f"🌟 **{tag}** tung **Master Spark**! ×1.5 sát thương!")
+                elif er != "t1_med" and not st.get("med") and r < 0.50 and oc["current_hp"] < mx:
+                    st["med"] = 1
+                    heal(0.30, "Medicine Sign")
+                    gif = T1_HEAL_GIF
+
+        elif cid == "t2":
+            if er != "t2_adapt":
+                heal(0.065 if ace else 0.05, "The True Adapt")
+            if er != "t2_kiem" and r < 0.30:
+                m = 1.75 if ace else 1.5
+                mul(m)
+                gif = T2_THOAI_MA_GIF
+                logs.append(f"🔱 **{tag}** vung **Thoái Ma Kiếm**! ×{m:g} sát thương!")
+
+        elif cid == "t3":
+            if er != "t3_vampire":
+                heal(0.05, "True Vampire")
+            blood_ok = er != "t3_blood" and not st.get("blood")
+            lo = 0.30 if blood_ok else 0.0
+            if blood_ok and r < 0.30:
+                st["blood"] = 1
+                m = 2.0 if ace else 1.5
+                mul(m)
+                gif = T3_BLOOD_GIF
+                logs.append(f"💥 **{tag}** tung **Blood chain**! ×{m:g} sát thương!")
+            elif er != "t3_dark" and st.get("dark", 0) < 3 and lo <= r < lo + (0.30 if ace else 0.20):
+                st["dark"] = st.get("dark", 0) + 1
+                mul(1.5 if ace else 1.0)
+                d = int(tmx * 0.05)
+                power += d
+                gif = T3_DARK_GIF
+                logs.append(f"🌑 **{tag}** tung **Dark chain**! +**{d:,} DMG** (5% Máu Tối Đa) *(Lần {st['dark']}/3)*")
+
+        elif cid == "t4":
+            if er != "t4_save_loop" and st.get("save", 0) < 2 and _npc_rand.random() < 0.15:
+                st["save"] = st.get("save", 0) + 1
+                heal(0.50, "Save loop")
+                gif = CARDS_DATA["t4"]["passive"]["gif"]
+            if er != "t4_clone_attack" and st.get("clone", 0) < 2 and r < 0.40:
+                st["clone"] = st.get("clone", 0) + 1
+                key = _npc_rand.choice(["thunder_blaze", "the_fallen_hero", "ice_spear"])
+                info = CARDS_DATA["t4"]["skills"]["clone_attack"]["clones"][key]
+                m = info["multiplier"] + (0.25 if ace else 0.0)
+                mul(m)
+                gif = info["gif"]
+                logs.append(f"🪆 **{tag}** - **Clone attack: {info['name']}**! ×{m:g} sát thương! *(Lần {st['clone']}/2)*")
+
+        elif cid == "t5":
+            if er != "t5_rage" and not st.get("rage_used") and oc["current_hp"] < mx * 0.5:
+                st["rage_used"] = 1
+                st["rage_turns"] = 2
+                logs.append(f"😡 **{tag}** - **Rage**: máu dưới 50%! Đánh thường ×1.2 trong 2 turn!")
+            used = False
+            if er != "t5_barrage" and st.get("barrage", 0) < 2 and r < 0.40:
+                st["barrage"] = st.get("barrage", 0) + 1
+                mul(1.5)
+                gif = T5_GIF_BARRAGE_A1
+                used = True
+                logs.append(f"👊 **{tag}** tung **Stand Barrage**! ×1.5 sát thương! *(Lần {st['barrage']}/2)*")
+            elif ace and er != "t5_skull" and not st.get("skull") and 0.40 <= r < 0.65:
+                st["skull"] = 1
+                mul(2.2)
+                gif = T5_GIF_SKULL
+                used = True
+                logs.append(f"💀 **{tag}** tung **Skull Breaker**! ×2.2 sát thương!")
+            if st.get("rage_turns", 0) > 0:
+                if not used:
+                    mul(1.2)
+                    logs.append(f"😡 **{tag}** đang **Rage**: đòn đánh thường ×1.2!")
+                st["rage_turns"] -= 1
+
+        elif cid == "t6":
+            stacks = st.get("stacks", 0)
+            if er != "t6_burst" and stacks > 0 and st.get("burst", 0) < KANAE_MAX_BURST and r < KANAE_BURST_CHANCE:
+                bonus = int(base * KANAE_STACK_BONUS * stacks)
+                mul(KANAE_BURST_MULT)
+                power += bonus
+                st["burst"] = st.get("burst", 0) + 1
+                st["stacks"] = 0
+                gif = KANAE_SKILL_GIF
+                logs.append(f"🌸 **{tag}** kích nổ **Bộc Phát Ấn Điểm**! ×1.5 + **{bonus:,} DMG** từ {stacks} tầng ấn!")
+            elif er != "t6_mark":
+                st["stacks"] = stacks + 1
+
+        elif cid == "t7":
+            if ace:
+                if er != "t7_nhietbang" and not st.get("nb") and r < 0.30:
+                    st["nb"] = 1
+                    mul(2.0)
+                    st["burn_left"] = 2
+                    gif = KISAMI_GIF_NHIETBANG
+                    logs.append(f"🔥❄️ **{tag}** tung **Nhiệt băng**! ×2.0 sát thương + bỏng 2 turn!")
+                elif st.get("nb") and er != "t7_cumul":
+                    mul(1.5)
+                    logs.append(f"⚗️ **{tag}** - **Cộng dồn hóa học**: đánh thường ×1.5!")
+            else:
+                if er != "t7_dichmien" and not st.get("dm") and r < 0.30:
+                    st["dm"] = 1
+                    st["poison_left"] = 3
+                    gif = KISAMI_GIF_DICHMIEN
+                    logs.append(f"☠️ **{tag}** tung **Dịch miên**! Gây độc 3 lượt (6% / 10% / 5% Máu Tối Đa)!")
+
+        elif cid == "t8":
+            if er != "t8_fuga":
+                st["fuga"] = st.get("fuga", 0) + 1
+            if er != "t8_fuga" and st["fuga"] >= T8_FUGA_INTERVAL:
+                st["fuga"] = 0
+                mul(T8_FUGA_MULT)
+                gif = T8_FUGA_GIF
+                logs.append(f"🔥 **{tag}** - **FUGA** bùng nổ! ×{T8_FUGA_MULT:g} sát thương!")
+            elif er != "t8_slash" and st.get("slash", 0) < 2 and r < 0.25:
+                st["slash"] = st.get("slash", 0) + 1
+                m = 2.2 if ace else 2.0
+                mul(m)
+                gif = T8_SLASH_GIF
+                logs.append(f"⚔️ **{tag}** tung **Trảm kích**! ×{m:g} sát thương! *(Lần {st['slash']}/2)*")
+            elif (not ace) and er != "t8_bat" and not st.get("bat") and r < 0.45:
+                st["bat"] = 1
+                d = int(tmx * 0.20)
+                power += d
+                gif = T8_BAT_GIF
+                logs.append(f"🩸 **{tag}** tung **Bát**! +**{d:,} DMG** (20% Máu Tối Đa)!")
+    except Exception as e:
+        print(f"[NPC] lỗi npc_tcard_attack: {e}", flush=True)
+    return power, logs, gif
 
 import sys
 
