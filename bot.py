@@ -23362,7 +23362,7 @@ async def send_help_paged(ctx_or_interaction, embed):
 #   - Từ người thứ 3: mỗi người +5% HP & ATK gốc của Boss (skill + hồi máu tăng theo)
 # ------------------------------------------------------------------------------
 BOSS_SCALE_FREE_PLAYERS = 2
-BOSS_SCALE_PER_PLAYER = 0.20
+BOSS_SCALE_PER_PLAYER = 0.12
 _BOSS_SCALE = contextvars.ContextVar("boss_scale", default=1.0)
 
 def boss_scale_factor(n_players: int) -> float:
@@ -23402,7 +23402,7 @@ def _bs_notice_embed(raid_data, n, f):
     return discord.Embed(
         title="📈 BOSS SCALING - BOSS MẠNH LÊN THEO SỐ DŨNG GIẢ!",
         description=(
-            f"👹 **{name}** đối mặt **{n} dũng giả** (từ người thứ 3 mỗi người +20%).\n"
+            f"👹 **{name}** đối mặt **{n} dũng giả** (từ người thứ 3 mỗi người +15%).\n"
             f"🔺 Boss nhận **+{pct}% HP & ATK gốc** (sát thương skill và lượng hồi máu cũng tăng theo)!"
         ),
         color=0xF97316
@@ -25276,7 +25276,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None, admin=True):
     embed.add_field(
         name="🐞 Nội Tại & Kỹ Năng (Phase 2 giữ nguyên kỹ năng):",
         value=(
-            "• 🔄 **Return to Zero (Passive):** **Miễn nhiễm 100% hiệu ứng** (choáng, đóng băng, time stop, bỏng, ảo giác, xóa kỹ năng, khóa kỹ năng...). Chỉ nhận **sát thương**!\n"
+            "• 🔄 **Return to Zero (Passive - 50%):** Có **50% tỉ lệ miễn nhiễm toàn bộ hiệu ứng** (choáng, đóng băng, time stop, bỏng, ảo giác, xóa kỹ năng...); 50% còn lại Boss vẫn dính hiệu ứng bình thường!\n"
             "• 👊 **Muda Muda! (30%):** Loạt đấm **×1.5 sát thương** chia đều tiền tuyến.\n"
             "• 🐸 **Life creater (25%):** Tạo sinh vật **25% máu Boss**, **tank trọn sát thương** trong **2 turn** rồi biến mất.\n"
             "• ♾️ **Death loop (10%):** **Vòng lặp giết ngay** toàn bộ thẻ tiền tuyến, **không thể chặn**!\n"
@@ -25284,6 +25284,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None, admin=True):
             "• 💚 **Heal (15%):** Hồi **20% máu tối đa**."
         ),
         inline=False
+    )
     )
     embed.add_field(
         name="🎁 Phần Thưởng (hạ cả 2 Phase):",
@@ -25329,7 +25330,7 @@ async def execute_raid(channel, raid_data):
 
 # ---------------- RETURN TO ZERO ----------------
 def _gio_nullify(B, notes, start_idx):
-    """Gạt bỏ MỌI hiệu ứng người chơi đặt lên Boss, chỉ giữ lại sát thương."""
+    """Gạt bỏ hiệu ứng người chơi đặt lên Boss với tỉ lệ 50%."""
     fx = []
     if B.get("stunned"):
         fx.append("choáng / đóng băng / ngưng động")
@@ -25345,18 +25346,29 @@ def _gio_nullify(B, notes, start_idx):
         fx.append("giáo băng cầm chân")
     if B.get("erased"):
         fx.append("xóa kỹ năng")
-        for i in range(start_idx, len(notes)):
-            if "**[Bóng Khái Niệm]**" in str(notes[i]):
-                notes[i] = "🛡️ **[Return to Zero]** Kỹ năng của Giorno không thể bị xóa!"
-    B["stunned"] = False
-    B["mind"] = 0
-    B["freeze"] = 0
-    B["molten"] = 0
-    B["fate"] = 0
-    B["ice"] = 0
-    B["erased"] = None
-    B["locked_now"] = False
-    return fx
+
+    # Nếu không có hiệu ứng nào được gán lên Boss thì bỏ qua
+    if not fx:
+        return [], False
+
+    # Tỉ lệ 50% kích hoạt Return to Zero
+    if _gio_rand.random() < 0.50:
+        if B.get("erased"):
+            for i in range(start_idx, len(notes)):
+                if "**[Bóng Khái Niệm]**" in str(notes[i]):
+                    notes[i] = "🛡️ **[Return to Zero (50%)]** Kỹ năng của Giorno không thể bị xóa!"
+        B["stunned"] = False
+        B["mind"] = 0
+        B["freeze"] = 0
+        B["molten"] = 0
+        B["fate"] = 0
+        B["ice"] = 0
+        B["erased"] = None
+        B["locked_now"] = False
+        return fx, True  # True: Hóa giải thành công
+    else:
+        # 50% còn lại: Return to Zero KHÔNG kích hoạt -> Boss chịu hiệu ứng bình thường
+        return fx, False  # False: Thất bại, Boss bị dính hiệu ứng
 
 
 # ---------------- 1 PHASE ----------------
@@ -25391,9 +25403,29 @@ async def _gio_run_phase(channel, battle_msg, combatants, phase, all_turns):
         boss_fx = []
         fx_all = []
 
+# ---------- Debuff đang đè lên Boss (khi Return to Zero 50% không hóa giải được) ----------
+        if B.get("mind", 0) > 0:
+            B["mind"] -= 1
+            if _gio_rand.random() < 0.20:
+                B["hp"] = max(0, B["hp"] - power)
+                boss_fx.append(f"🌀 **[Red Eye Mind]** Boss mất kiểm soát, tự gây **{power:,} DMG** lên bản thân! (Còn {B['mind']} lượt)")
+        if B.get("molten", 0) > 0:
+            B["molten"] -= 1
+            _applied, B["true_accum"], _cap = apply_raid_true_damage(int(max_hp * 0.02), B["true_accum"], B["true_cap"], "Bỏng Mặt Đất (Utsuho)")
+            if _applied > 0:
+                B["hp"] = max(0, B["hp"] - _applied)
+                boss_fx.append(f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Boss **{_applied:,} DMG**! (Còn {B['molten']} lượt)")
+        if B.get("freeze", 0) > 0:
+            B["freeze"] -= 1
+            if _gio_rand.random() < 0.45:
+                B["stunned"] = True
+                boss_fx.append(f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%)! (Còn {B['freeze']} lượt duy trì)")
+
         # ---------- LƯỢT ĐÁNH NGƯỜI CHƠI ----------
         hp_before = B["hp"]
         round_dmg = 0
+        fx_blocked = []
+        fx_hit = []
         for c in active:
             ac = c["team_cards"][c["current_card_index"]]
             if ac.get("giorno_stun", 0) > 0:
@@ -25402,7 +25434,12 @@ async def _gio_run_phase(channel, battle_msg, combatants, phase, all_turns):
                 continue
             start_idx = len(notes)
             d = _jt_player_attack(c, ac, rounds, B, notes)
-            fx_all.extend(_gio_nullify(B, notes, start_idx))
+            fx_res, null_ok = _gio_nullify(B, notes, start_idx)
+            if fx_res:
+                if null_ok:
+                    fx_blocked.extend(fx_res)
+                else:
+                    fx_hit.extend(fx_res)
             round_dmg += d
             c["total_dmg"] += d
 
@@ -25410,9 +25447,12 @@ async def _gio_run_phase(channel, battle_msg, combatants, phase, all_turns):
         lost = hp_before - B["hp"]
         player_atk_str = f"Toàn quân gây **{round_dmg:,} DMG** lên Giorno!"
 
-        if fx_all:
-            uniq = ", ".join(sorted(set(fx_all)))
-            boss_fx.append(f"🔄 **[Return to Zero]** Mọi hiệu ứng bị đưa về số không ({uniq}) — Giorno chỉ nhận sát thương!")
+        if fx_blocked:
+            uniq = ", ".join(sorted(set(fx_blocked)))
+            boss_fx.append(f"🔄 **[Return to Zero (50%)]** Kích hoạt thành công! Mọi hiệu ứng bị đưa về số không ({uniq}) — Giorno không bị ảnh hưởng!")
+        if fx_hit:
+            uniq_h = ", ".join(sorted(set(fx_hit)))
+            boss_fx.append(f"⚠️ **[Return to Zero (50%)]** Không kích hoạt! Giorno đã bị dính hiệu ứng: **{uniq_h}**!")
 
         # ---------- SINH VẬT LIFE CREATER TANK SÁT THƯƠNG ----------
         if life_turns > 0 and life_hp > 0:
