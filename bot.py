@@ -25439,7 +25439,7 @@ async def _gio_run_phase(channel, battle_msg, combatants, phase, all_turns):
         if B["hp"] <= 0:
             action_log = "💥 **Giorno Giovanna đã bị đánh bại!**"
         else:
-            opts = [("muda", 0.30), ("life", 0.20), ("death", 0.5), ("punch", 0.35), ("heal", 0.10)]
+            opts = [("muda", 0.30), ("life", 0.20), ("death", 0.05), ("punch", 0.35), ("heal", 0.10)]
             if life_turns > 0:                       # đang có sinh vật thì không tạo thêm
                 opts = [o for o in opts if o[0] != "life"]
             roll = _gio_rand.random()
