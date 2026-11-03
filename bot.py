@@ -25743,6 +25743,841 @@ async def execute_giorno_raid(channel, raid_data):
 
 # ===================== HẾT KHỐI GIORNO =====================
 
+# ==============================================================================
+[UPDATE SILVER CHARIOT] THẺ T9 
+# ==============================================================================
+T9_UNLOCK_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/2a/b1/lXEl1hXvrYlLuXxKZeQ.gif"
+T9_BARRAGE_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/59/55/Awx1cEtUBzyNfR5B.gif"
+T9_SWORD_GIF = "https://static2.klipy.com/ii/a15b48460c436e1e92c85ffc680932cc/b1/d9/4ybX4VDv.gif"
+T9_DANCE_GIF = "https://static2.klipy.com/ii/9ed0121ed465c12e1f3dda331ed33f0e/5d/c2/wMrXrMZA9Wqi6T4v.gif"
+T9_EVOL_GIF = "https://static2.klipy.com/ii/39f2394ae36df6e199be9eb7c9fa1012/a6/bf/6gJtvPAR.gif"
+T9_LULLABY_GIF = "https://static2.klipy.com/ii/35ccce3d852f7995dd2da910f2abd795/be/11/octfsAlz.gif"
+T9_REQUIEM_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/b2/10/mWG9JKQsXc7z.gif"
+ 
+T9_BASE_POWER = 670            # <<< bạn chưa đưa chỉ số, tự chỉnh 2 số này
+T9_BASE_HP = 6200
+T9_SHARDS_UNLOCK = 15
+T9_ACE2_PRESTIGE = 4
+T9_ACE2_KEEP_ACE1_SKILLS = False   # True: Ace 2 vẫn giữ Fencing Barrage + Sword shot
+T9_ACE2_KEEP_DANCE = False          # True: Ace 2 vẫn giữ passive Vũ điệu
+T9_RAID_TRUE_CAP_PCT = 0.25        # trần sát thương % máu cộng dồn lên Boss (raid thường/event)
+T9_SHARD_ALIASES = ("chariot", "t9", "silverchariot", "silver_chariot", "chariot_shard", "scr", "giorno", "giovanna")
+ 
+# ---------------------------- 2. ĐĂNG KÝ THẺ T9 VÀO CÁC BẢNG CÓ SẴN ----------------------------
+CARDS_DATA["t9"] = {
+    "id": "t9", "name": "Silver Chariot", "rank": "T",
+    "power": T9_BASE_POWER, "hp": T9_BASE_HP,
+    "image": T9_UNLOCK_GIF, "unlock_gif": T9_UNLOCK_GIF,
+    "passive": {"name": "Vũ điệu", "gif": T9_DANCE_GIF,
+                "desc": "Máu dưới 50%: tháo giáp, nhận thêm 5% sát thương, +5% tỉ lệ kích skill, 10% đánh thường 2 lần/turn"},
+    "skills": {
+        "fencing_barrage": {"name": "Fencing Barrage", "chance": 0.25, "gif": T9_BARRAGE_GIF},
+        "sword_shot": {"name": "Sword shot", "chance": 0.20, "gif": T9_SWORD_GIF},
+    }
+}
+CARD_ALIASES.update({"silverchariot": "t9", "silver_chariot": "t9", "chariot": "t9", "t9": "t9", "scr": "t9"})
+T_ACE2_PRESTIGE_REQ["t9"] = T9_ACE2_PRESTIGE
+T_PRESTIGE_NAMES["t9"] = "Silver Chariot"
+if "t9" not in EVOL_ORDER:
+    EVOL_ORDER.append("t9")
+EVOL_T_SHARD["t9"] = ("chariot", T9_SHARDS_UNLOCK)
+if "t9" not in NPC_T_POOL:
+    NPC_T_POOL.append("t9")
+ 
+CHARACTER_DETAILS["t9"] = {
+    "title": "Hiệp Sĩ Bạc (Nhóm T-Đặc Biệt)",
+    "skill_name": "Vũ điệu • Fencing Barrage • Sword shot",
+    "skill_desc": (
+        f"Silver Chariot ({T9_BASE_POWER} ATK / {T9_BASE_HP:,} HP). Mở khóa bằng {T9_SHARDS_UNLOCK} Chariot Shards.\n"
+        "• Fencing Barrage (25%): ×1.5 sát thương, tối đa 2 lần/trận.\n"
+        "• Sword shot (20%): ×2.5 sát thương, 1 lần/trận, sau đó khóa skill 2 turn.\n"
+        "• Vũ điệu (Passive): máu <50% nhận thêm 5% sát thương, +5% tỉ lệ skill, 10% đánh thường 2 lần."
+    )
+}
+EVOL_CONFIG["t9"] = {
+    "id": "t9", "key": "chariot", "name": "Silver Chariot",
+    "title": "[#t9] Silver Chariot Requiem - Ace 2 ⭐⭐", "ace_level": "Ace 2 ⭐⭐",
+    "required_cards": 0, "required_pulls": 0, "required_shards": 0,
+    "evol_gif": T9_EVOL_GIF,
+    "skill_name": "Silver Chariot Requiem",
+    "skill_desc": "Passive giảm chỉ số địch • Ru ngủ • The Requiem",
+    "bonus_power": 300, "bonus_hp": 300
+}
+ 
+# ---------------------------- 3. ĐỔI TÊN SHARD GIORNO -> CHARIOT ----------------------------
+SHARD_DISPLAY_NAMES.pop("giorno", None)
+SHARD_DISPLAY_NAMES["chariot"] = "Chariot Shards"
+SHARD_EMOJIS.pop("giorno", None)
+SHARD_EMOJIS["chariot"] = "🗡️"
+SHARD_TRADE_KEYS[:] = [("chariot" if k == "giorno" else k) for k in SHARD_TRADE_KEYS]
+if "chariot" not in SHARD_TRADE_KEYS:
+    SHARD_TRADE_KEYS.append("chariot")
+ 
+_T9_PREV_NORM_SHARD = normalize_shard_key
+def normalize_shard_key(raw: str):
+    s = (raw or "").lower().strip().replace(" ", "_")
+    if s in ("chariot", "chariot_shard", "chariot_shards", "silverchariot", "silver_chariot", "t9", "scr",
+             "giorno", "giovanna", "giorno_shard", "gio"):
+        return "chariot"
+    return _T9_PREV_NORM_SHARD(raw)
+ 
+_T9_PREV_GET_PLAYER = get_player
+def get_player(user_id, username="Visitor"):
+    data = _T9_PREV_GET_PLAYER(user_id, username)
+    try:
+        sh = data.setdefault("shards", {})
+        if "giorno" in sh:                      # người chơi cũ: chuyển Giorno Shard sang Chariot Shard
+            sh["chariot"] = sh.get("chariot", 0) + int(sh.pop("giorno") or 0)
+        else:
+            sh.setdefault("chariot", 0)
+    except Exception as e:
+        print(f"[T9] lỗi migrate shard: {e}", flush=True)
+    return data
+ 
+ 
+# ---------------------------- 4. LÕI KỸ NĂNG (dùng chung mọi chế độ) ----------------------------
+def t9_combat_turn(st: dict, card: dict, is_ace2: bool = False, skills_locked: bool = False,
+                   target_max_hp: int = 1, is_boss: bool = False, cap_fn=None):
+    res = {"multiplier": 1.0, "hp_cut": 0, "atk_cut": 0.0, "sleep_cards": 0, "sleep_enemy": 0,
+           "req": None, "heal_self": 0.0, "heal_allies": 0.0, "gif": None, "logs": []}
+    logs = res["logs"]
+    erased = card.get("erased_skill")
+    tag = "[Ace 2] [#t9] Silver Chariot" if is_ace2 else "[T] [#t9] Silver Chariot"
+    mx = int(card.get("max_hp") or card.get("hp") or 1)
+    cur = int(card.get("current_hp", mx))
+    target_max_hp = max(1, int(target_max_hp or 1))
+    locked = bool(skills_locked)
+ 
+    # Sword shot: đang thu hồi kiếm -> chỉ đánh thường
+    if st.get("lock_left", 0) > 0:
+        st["lock_left"] -= 1
+        locked = True
+        logs.append(f"🗡️ **{tag}** đang thu hồi kiếm sau Sword shot: chỉ có thể đánh thường! (Còn {st['lock_left']} turn khóa)")
+ 
+    # Passive Vũ điệu
+    dance = ((not is_ace2) or T9_ACE2_KEEP_DANCE) and erased != "t9_dance" and cur < mx * 0.5
+    card["t9_dance"] = bool(dance)
+    rate = 0.05 if dance else 0.0
+    if dance:
+        res["gif"] = T9_DANCE_GIF
+        logs.append(f"💃 **{tag}** - **Vũ điệu**: máu dưới 50%, tháo giáp! Nhận thêm **5% sát thương**, **+5% tỉ lệ kích skill**, 10% đánh thường 2 lần!")
+ 
+    used = False
+    if not locked:
+        opts = []
+        if (not is_ace2) or T9_ACE2_KEEP_ACE1_SKILLS:
+            if erased != "t9_barrage" and st.get("barrage", 0) < 2:
+                opts.append(("barrage", 0.25 + rate))
+            if erased != "t9_sword" and st.get("sword", 0) < 1:
+                opts.append(("sword", 0.20 + rate))
+        if is_ace2:
+            if erased != "t9_lullaby":
+                opts.append(("lullaby", 0.30 + rate))
+            if erased != "t9_requiem":
+                opts.append(("requiem", 0.25 + rate))
+        random.shuffle(opts)
+        for key, ch in opts:
+            if random.random() >= ch:
+                continue
+            used = True
+            if key == "barrage":
+                st["barrage"] = st.get("barrage", 0) + 1
+                res["multiplier"] = 1.5
+                res["gif"] = T9_BARRAGE_GIF
+                logs.append(f"⚔️ **{tag}** tung **Fencing Barrage** ({int(ch * 100)}%)! Chém hàng loạt đòn gây **×1.5 sát thương** *(Lần {st['barrage']}/2)*")
+            elif key == "sword":
+                st["sword"] = st.get("sword", 0) + 1
+                st["lock_left"] = 2
+                res["multiplier"] = 2.5
+                res["gif"] = T9_SWORD_GIF
+                logs.append(f"🗡️ **{tag}** bắn **Sword shot** ({int(ch * 100)}%)! Mũi kiếm gây **×2.5 sát thương** *(1 lần/trận)* — phải thu hồi kiếm, **khóa skill 2 turn**!")
+            elif key == "lullaby":
+                res["sleep_cards"] = random.choice([2, 3])
+                res["sleep_enemy"] = random.choice([2, 3])
+                res["heal_allies"] = 0.45
+                res["heal_self"] = 0.10
+                res["gif"] = T9_LULLABY_GIF
+                logs.append(
+                    f"🌙 **{tag}** hát **RU NGỦ** ({int(ch * 100)}%)! Địch ngủ **{res['sleep_enemy']} turn**, đồng minh ngủ **{res['sleep_cards']} turn** "
+                    f"(đồng minh được hồi **45% HP** nhưng nhận thêm **20% sát thương**, bản thân hồi **10% HP**). Trong lúc này Silver Chariot chỉ đánh thường!"
+                )
+            else:
+                counter = random.random() < 0.60
+                res["req"] = "counter" if counter else "retreat"
+                res["gif"] = T9_REQUIEM_GIF
+                if counter:
+                    logs.append(f"🎯 **{tag}** kích hoạt **THE REQUIEM** ({int(ch * 100)}%)! Địch lao vào tấn công (60%) — nếu đánh trúng sẽ bị **phản 120% sát thương** (mất hiệu lực nếu trượt)!")
+                else:
+                    logs.append(f"🛡️ **{tag}** kích hoạt **THE REQUIEM** ({int(ch * 100)}%)! Địch cảm nhận hơi thở chết chóc và **cẩn trọng lùi ra xa** (40%), không dám đánh trong turn này!")
+            break
+ 
+    # 10% đánh thường 2 lần khi đang Vũ điệu
+    if dance and not used and random.random() < 0.10:
+        res["multiplier"] *= 2.0
+        logs.append(f"💃 **{tag}** - **Vũ điệu**: đánh thường **2 lần** trong 1 turn (×2 sát thương)!")
+ 
+    # Passive Ace 2: giảm hp|atk địch (50%/turn) — Boss 5%, địch thường 30%
+    if is_ace2 and erased != "t9_drain" and random.random() < 0.50:
+        pct = 0.05 if is_boss else 0.30
+        raw = int(target_max_hp * pct)
+        cut = int(cap_fn(raw, "Passive Silver Chariot Requiem")) if cap_fn else raw
+        res["hp_cut"] = cut
+        res["atk_cut"] = pct
+        if is_boss and raw > 0 and cut <= 0:
+            logs.append(f"🪞 **{tag}** - **Hào quang Requiem** (50%): sát thương chuẩn đã chạm trần nên chỉ **giảm {int(pct * 100)}% sát thương** của địch trong turn này!")
+        else:
+            logs.append(f"🪞 **{tag}** - **Hào quang Requiem** (50%): địch bị bào mòn **-{cut:,} HP** ({int(pct * 100)}% máu tối đa) và **giảm {int(pct * 100)}% sát thương** trong turn này!")
+    return res
+ 
+try:
+    _LIEM_FUNC_VARS["t9_combat_turn"] = "card"      # để Liềm Hỗn Mang cộng +2% tỉ lệ skill cho Silver Chariot
+except Exception:
+    pass
+ 
+ 
+# ---------------------------- 5. HÀM HỖ TRỢ ----------------------------
+def _t9_front(c):
+    cards = c.get("team_cards", [])
+    i = c.get("current_card_index", 0)
+    return cards[i] if i < len(cards) else None
+ 
+def _t9_is(card) -> bool:
+    return str(card.get("cid")).lower() == "t9"
+ 
+def _t9_ally_sleeping(active, ac) -> bool:
+    """True nếu có Silver Chariot (Ace 2) trong đội đang ru ngủ đồng minh và ac không phải Silver Chariot."""
+    if _t9_is(ac):
+        return False
+    for c2 in active or []:
+        k = _t9_front(c2)
+        if k is None or k is ac or not _t9_is(k):
+            continue
+        st = (c2.get("t3_state") or {}).get("t9") or {}
+        if st.get("ally_sleep", 0) > 0:
+            return True
+    return False
+ 
+def _t9_boss_hit(fr, amount) -> bool:
+    """Gây sát thương lên Boss từ bên trong hàm hook (ghi vào biến cục bộ của trận đang chạy)."""
+    try:
+        loc = fr.f_locals
+        B = loc.get("B")
+        if isinstance(B, dict) and "hp" in B:
+            B["hp"] = max(0, B["hp"] - int(amount))
+            return True
+        for nm in ("p2_hp", "p1_hp"):
+            if nm in loc and isinstance(loc[nm], (int, float)):
+                if globals().get("_FA_FRAME_OK"):
+                    return bool(_fa_frame_write(fr, {nm: max(0, int(loc[nm]) - int(amount))}))
+                return False
+    except Exception as e:
+        print(f"[T9] lỗi boss_hit: {e}", flush=True)
+    return False
+ 
+def _t9_story_boss_hit(fr, amount) -> bool:
+    try:
+        loc = fr.f_locals
+        B = loc.get("B")
+        if isinstance(B, dict) and "hp" in B:
+            B["hp"] = max(0, B["hp"] - int(amount))
+            return True
+        for nm in ("rumia_hp", "cirno_hp"):
+            if nm in loc and isinstance(loc[nm], (int, float)):
+                if globals().get("_FA_FRAME_OK"):
+                    return bool(_fa_frame_write(fr, {nm: max(0, int(loc[nm]) - int(amount))}))
+                return False
+    except Exception as e:
+        print(f"[T9] lỗi story_boss_hit: {e}", flush=True)
+    return False
+ 
+def _t9_raid_core(c, ac, dmg, active, boss_max_hp, cap_fn):
+    st = c.setdefault("t3_state", {}).setdefault("t9", {})
+    logs = []
+    if st.get("pending_reflect", 0) > 0:
+        add = int(st.pop("pending_reflect"))
+        dmg += add
+        logs.append(f"🎯 **[The Requiem]** Phần phản đòn tích lũy giáng thêm **+{add:,} DMG** lên Boss!")
+    locked = st.get("ally_sleep", 0) > 0 or st.get("boss_sleep", 0) > 0
+    st["req"] = None
+    st["atk_cut"] = 0.0
+    r = t9_combat_turn(st, ac, bool(ac.get("is_ace2")), locked, boss_max_hp, True, cap_fn)
+    dmg = int(dmg * r["multiplier"]) + r["hp_cut"]
+    logs.extend(r["logs"])
+    if r["sleep_cards"]:
+        st["ally_sleep"] = r["sleep_cards"]
+        st["boss_sleep"] = r["sleep_enemy"]
+        healed = 0
+        for c2 in active or []:
+            k = _t9_front(c2)
+            if k is None or k is ac or _t9_is(k):
+                continue
+            kmx = int(k.get("max_hp") or 1)
+            before = k["current_hp"]
+            k["current_hp"] = min(kmx, before + int(kmx * r["heal_allies"]))
+            healed += max(0, k["current_hp"] - before)
+        smx = int(ac.get("max_hp") or 1)
+        b2 = ac["current_hp"]
+        ac["current_hp"] = min(smx, b2 + int(smx * r["heal_self"]))
+        logs.append(f"💚 Ru ngủ: đồng minh được hồi tổng **+{healed:,} HP** (45%), Silver Chariot hồi **+{ac['current_hp'] - b2:,} HP** (10%)!")
+    stun = st.get("boss_sleep", 0) > 0
+    if stun:
+        logs.append(f"💤 **Boss đang ngủ say**, không thể ra đòn! (còn {st['boss_sleep']} turn kể cả hiệp này)")
+    if r["req"]:
+        st["req"] = r["req"]
+    if r["atk_cut"]:
+        st["atk_cut"] = r["atk_cut"]
+    return dmg, stun, r["gif"], logs
+ 
+ 
+# ---------------------------- 6. RAID THƯỜNG / EVENT (Reimu, Seiki, Mahoraga, Fateria P1, Kizuna) ----------------------------
+_T9_PREV_RAID_ATTACK = t7_raid_attack
+def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
+    card_dmg, boss_stunned, turn_image, notif = _T9_PREV_RAID_ATTACK(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L)
+    try:
+        if _t9_is(ac):
+            max_hp = L.get("p2_max_hp") or L.get("p1_max_hp") or 100000
+            cap_total = int(max_hp * T9_RAID_TRUE_CAP_PCT)
+ 
+            def cap_fn(amt, label):
+                used = sum(x.get("t9_true_used", 0) for x in (active or []))
+                ok = max(0, min(int(amt), cap_total - used))
+                c["t9_true_used"] = c.get("t9_true_used", 0) + ok
+                return ok
+ 
+            card_dmg, stun, gif, logs = _t9_raid_core(c, ac, card_dmg, active, max_hp, cap_fn)
+            if stun:
+                boss_stunned = True
+            if gif and not turn_image:
+                turn_image = gif
+            if logs:
+                notif = (notif + "\n" if notif else "") + "\n".join(f"({c['username']}) {l}" for l in logs)
+        elif _t9_ally_sleeping(active, ac):
+            card_dmg = 0
+            notif = (notif + "\n" if notif else "") + f"💤 **{ac['name']}** ({c['username']}) đang **NGỦ SAY** vì Ru ngủ, không thể ra đòn!"
+        ac["t9_hp_mark"] = ac["current_hp"]
+    except Exception as e:
+        print(f"[T9] lỗi raid_attack: {e}", flush=True)
+    return card_dmg, boss_stunned, turn_image, notif
+ 
+# ---------------------------- 7. RAID DẠNG B (Jotaro, Han Seiki, Sukuna, Fateria P2, Giorno) ----------------------------
+_T9_PREV_JT_PLAYER = _jt_player_attack
+def _jt_player_attack(c, ac, rnd, B, notes):
+    try:
+        if not _t9_is(ac) and _t9_ally_sleeping(B.get("active"), ac):
+            notes.append(f"💤 **{ac['name']}** ({c['username']}) đang **NGỦ SAY** vì Ru ngủ, không thể ra đòn!")
+            ac["t9_hp_mark"] = ac["current_hp"]
+            return 0
+    except Exception as e:
+        print(f"[T9] lỗi jt sleep: {e}", flush=True)
+    dmg = _T9_PREV_JT_PLAYER(c, ac, rnd, B, notes)
+    try:
+        if _t9_is(ac):
+            def cap_fn(amt, label):
+                applied, B["true_accum"], cap_msg = apply_raid_true_damage(int(amt), B["true_accum"], B["true_cap"], label)
+                return applied
+ 
+            dmg, stun, gif, logs = _t9_raid_core(c, ac, dmg, B.get("active"), B["max_hp"], cap_fn)
+            if stun:
+                B["stunned"] = True
+            if gif and not B.get("gif"):
+                B["gif"] = gif
+            notes.extend(f"({c['username']}) {l}" for l in logs)
+        ac["t9_hp_mark"] = ac["current_hp"]
+    except Exception as e:
+        print(f"[T9] lỗi jt_attack: {e}", flush=True)
+    return dmg
+ 
+# ---------------------------- 8. SAU KHI BOSS RA ĐÒN: Requiem / Ru ngủ (+20% ST) / giảm ST / Vũ điệu ----------------------------
+_T9_PREV_AFTER_BOSS = t7_raid_after_boss
+def t7_raid_after_boss(active, boss_log) -> str:
+    res = _T9_PREV_AFTER_BOSS(active, boss_log)
+    extra = []
+    fr = _t9_sys._getframe(1)
+    try:
+        holders = []
+        for c in active or []:
+            k = _t9_front(c)
+            if k is not None and _t9_is(k):
+                holders.append((c, k, (c.get("t3_state") or {}).get("t9") or {}))
+        ally_sleep = any(st.get("ally_sleep", 0) > 0 for _c, _k, st in holders)
+        atk_cut = max([float(st.get("atk_cut", 0.0) or 0.0) for _c, _k, st in holders] or [0.0])
+        for c in active or []:
+            k = _t9_front(c)
+            if k is None:
+                continue
+            mark = k.pop("t9_hp_mark", None)
+            if mark is None:
+                continue
+            is_scr = _t9_is(k)
+            lost = mark - k["current_hp"]
+            st = (c.get("t3_state") or {}).get("t9") or {}
+            req = st.get("req") if is_scr else None
+            if lost <= 0:
+                if req == "counter":
+                    extra.append(f"🎯 **[The Requiem]** ({c['username']}) Boss không đánh trúng — chiêu thức **mất hiệu lực**!")
+                if is_scr:
+                    st["req"] = None
+                continue
+            mx = int(k.get("max_hp") or mark)
+            if req in ("counter", "retreat"):
+                k["current_hp"] = mark
+                st["req"] = None
+                if req == "counter":
+                    refl = int(lost * 1.2)
+                    if not _t9_boss_hit(fr, refl):
+                        st["pending_reflect"] = st.get("pending_reflect", 0) + refl
+                        extra.append(f"🎯 **[The Requiem]** ({c['username']}) Silver Chariot **PHẢN ĐÒN 120%**: tích **{refl:,} DMG** giáng lên Boss ở đòn kế tiếp!")
+                    else:
+                        extra.append(f"🎯 **[The Requiem]** ({c['username']}) Silver Chariot miễn nhiễm và **PHẢN LẠI {refl:,} DMG (120%)** lên Boss!")
+                else:
+                    extra.append(f"🛡️ **[The Requiem]** ({c['username']}) Boss cẩn trọng lùi ra xa, Silver Chariot không bị thương!")
+                continue
+            adj = 0
+            if atk_cut > 0:
+                adj -= int(lost * atk_cut)
+            if is_scr:
+                if k.get("t9_dance"):
+                    adj += int(lost * 0.05)
+            elif ally_sleep:
+                adj += int(lost * 0.20)
+            if adj != 0:
+                k["current_hp"] = min(mx, k["current_hp"] - adj)
+                if adj > 0:
+                    extra.append(f"💤 **{k['name']}** ({c['username']}) chịu thêm **{adj:,} DMG** " + ("(Vũ điệu: tháo giáp +5%)" if is_scr else "(đang ngủ: +20% sát thương)"))
+                else:
+                    extra.append(f"🪞 **{k['name']}** ({c['username']}) giảm **{-adj:,} DMG** nhờ hào quang Requiem!")
+            if is_scr:
+                st["req"] = None
+        for c, k, st in holders:
+            if st.get("ally_sleep", 0) > 0:
+                st["ally_sleep"] -= 1
+            if st.get("boss_sleep", 0) > 0:
+                st["boss_sleep"] -= 1
+            st["atk_cut"] = 0.0
+    except Exception as e:
+        print(f"[T9] lỗi after_boss: {e}", flush=True)
+    finally:
+        del fr
+    return res + (("\n" + "\n".join(extra)) if extra else "")
+ 
+ 
+# ---------------------------- 9. BATTLE / PVP / STORY ----------------------------
+def _t9_duel_turn(card, power, guard, gif, stunned, log_lists, fr):
+    name = fr.f_code.co_name
+    loc = fr.f_locals
+    mode = "duel" if name in ("handle_battle", "run_pvp_match") else "story"
+    enemy = None
+    if name == "handle_battle":
+        enemy = loc.get("oc") if loc.get("pc") is card else None
+    elif name == "run_pvp_match":
+        if loc.get("cc") is card:
+            enemy = loc.get("tc")
+        elif loc.get("tc") is card:
+            enemy = loc.get("cc")
+    if mode == "duel" and enemy is None:
+        return power, guard, gif
+    if enemy is not None:
+        tmax = int(enemy.get("max_hp") or enemy.get("hp") or 1)
+    else:
+        B = loc.get("B")
+        tmax = int(loc.get("rumia_max_hp") or loc.get("cirno_max_hp") or (B.get("max_hp") if isinstance(B, dict) else 0) or 10000)
+ 
+    st = card.setdefault("t9_state", {})
+    card["t9_req"] = None
+    card["t9_atk_cut"] = 0.0
+    sleeping = (enemy.get("t9_asleep", 0) > 0) if enemy is not None else (st.get("boss_sleep", 0) > 0)
+    r = t9_combat_turn(st, card, bool(card.get("is_ace2")), bool(stunned) or sleeping, tmax, mode == "story", None)
+    power = int(power * r["multiplier"])
+    for lst in log_lists:
+        lst.extend(r["logs"])
+    gif = gif or r["gif"]
+ 
+    if r["hp_cut"]:
+        if enemy is not None:
+            enemy["current_hp"] = max(0, enemy["current_hp"] - r["hp_cut"])
+        else:
+            power += r["hp_cut"]
+    if r["atk_cut"]:
+        card["t9_atk_cut"] = r["atk_cut"]
+    if r["heal_self"]:
+        mx = int(card.get("max_hp") or card.get("hp") or 1)
+        before = card["current_hp"]
+        card["current_hp"] = min(mx, before + int(mx * r["heal_self"]))
+        msg = f"💚 Ru ngủ: Silver Chariot hồi **+{card['current_hp'] - before:,} HP** (10%)!"
+        for lst in log_lists:
+            lst.append(msg)
+    if r["sleep_enemy"]:
+        if enemy is not None:
+            enemy["t9_asleep"] = r["sleep_enemy"]
+        else:
+            st["boss_sleep"] = r["sleep_enemy"]
+    if enemy is None and st.get("boss_sleep", 0) > 0:
+        st["boss_sleep"] -= 1
+        guard = True
+        for lst in log_lists:
+            lst.append("💤 **Boss đang ngủ say**, không thể phản công!")
+    if r["req"] == "retreat":
+        guard = True
+    elif r["req"] == "counter":
+        card["t9_req"] = "counter"
+    card["t9_pre"] = card["current_hp"]
+    return power, guard, gif
+ 
+_T9_PREV_KASEN = kasen_duel_apply
+def kasen_duel_apply(card, power, stunned, log_lists):
+    power, guard, gif = _T9_PREV_KASEN(card, power, stunned, log_lists)
+    try:
+        if _t9_is(card):
+            fr = _t9_sys._getframe(1)
+            try:
+                power, guard, gif = _t9_duel_turn(card, power, guard, gif, stunned, log_lists, fr)
+            finally:
+                del fr
+    except Exception as e:
+        print(f"[T9] lỗi duel hook: {e}", flush=True)
+    return power, guard, gif
+ 
+# Battle / PvP: xử lý địch ngủ, Requiem phản đòn, giảm ST, Vũ điệu
+_T9_PREV_FENRIR_POST = eq_fenrir_post
+def eq_fenrir_post(att, tgt, tgt_mark, logs):
+    _T9_PREV_FENRIR_POST(att, tgt, tgt_mark, logs)
+    try:
+        base = tgt_mark
+        tgt_is_scr = _t9_is(tgt)
+        if tgt_is_scr:
+            pre = tgt.pop("t9_pre", None)
+            if pre is not None and tgt_mark is not None:
+                base = max(tgt_mark, pre)
+        if att.get("t9_asleep", 0) > 0:
+            att["t9_asleep"] -= 1
+            if base is not None and tgt["current_hp"] < base:
+                tgt["current_hp"] = base
+                logs.append(f"💤 **{att['name']}** đang **NGỦ SAY** (Ru ngủ) nên đòn đánh bị vô hiệu! (Còn {att['t9_asleep']} turn)")
+            else:
+                logs.append(f"💤 **{att['name']}** đang ngủ say, không thể ra đòn! (Còn {att['t9_asleep']} turn)")
+            return
+        if tgt_is_scr and base is not None:
+            lost = base - tgt["current_hp"]
+            req = tgt.get("t9_req")
+            tgt["t9_req"] = None
+            cut = float(tgt.get("t9_atk_cut", 0.0) or 0.0)
+            tgt["t9_atk_cut"] = 0.0
+            mx = int(tgt.get("max_hp") or tgt.get("hp") or base)
+            if lost > 0:
+                if req == "counter":
+                    tgt["current_hp"] = base
+                    refl = int(lost * 1.2)
+                    att["current_hp"] -= refl
+                    logs.append(f"🎯 **[The Requiem]** **{att['name']}** lao vào đúng bẫy! Silver Chariot miễn nhiễm và **PHẢN LẠI {refl:,} DMG (120%)**!")
+                else:
+                    adj = 0
+                    if cut > 0:
+                        adj -= int(lost * cut)
+                    if tgt.get("t9_dance"):
+                        adj += int(lost * 0.05)
+                    if adj:
+                        tgt["current_hp"] = min(mx, tgt["current_hp"] - adj)
+                        if adj > 0:
+                            logs.append(f"💃 **[Vũ điệu]** Silver Chariot tháo giáp, chịu thêm **{adj:,} DMG** (+5%)!")
+                        else:
+                            logs.append(f"🪞 **[Hào quang Requiem]** Giảm **{-adj:,} DMG** từ đòn địch!")
+            elif req == "counter":
+                logs.append("🎯 **[The Requiem]** Địch không đánh trúng — chiêu thức **mất hiệu lực**!")
+    except Exception as e:
+        print(f"[T9] lỗi fenrir_post: {e}", flush=True)
+ 
+# Story: phản đòn / giảm ST / Vũ điệu
+_T9_PREV_TAKE_DMG = eq_take_damage
+def eq_take_damage(card, dmg, logs=None, skill=False):
+    try:
+        if _t9_is(card):
+            req = card.get("t9_req")
+            if req == "counter":
+                card["t9_req"] = None
+                refl = int(dmg * 1.2)
+                fr = _t9_sys._getframe(1)
+                try:
+                    ok = _t9_story_boss_hit(fr, refl)
+                finally:
+                    del fr
+                if logs is not None:
+                    logs.append(f"🎯 **[The Requiem]** Silver Chariot miễn nhiễm và **PHẢN LẠI {refl:,} DMG (120%)**" + ("" if ok else " (không ghi nhận được lên Boss)") + "!")
+                return
+            cut = float(card.get("t9_atk_cut", 0.0) or 0.0)
+            if cut > 0:
+                dmg = int(int(dmg) * (1.0 - cut))
+            if card.get("t9_dance"):
+                dmg = int(int(dmg) * 1.05)
+    except Exception as e:
+        print(f"[T9] lỗi take_damage: {e}", flush=True)
+    return _T9_PREV_TAKE_DMG(card, dmg, logs, skill)
+ 
+# ---------------------------- 10. SANG PHASE 2 / RESET ----------------------------
+_T9_PREV_RESET = reset_sakuya3_phase
+def reset_sakuya3_phase(c: dict):
+    _T9_PREV_RESET(c)
+    c["t9_true_used"] = 0
+    for card in c.get("team_cards", []):
+        for k in ("t9_state", "t9_req", "t9_atk_cut", "t9_dance", "t9_pre", "t9_asleep", "t9_hp_mark"):
+            card.pop(k, None)
+ 
+# ---------------------------- 11. BÓNG KHÁI NIỆM XÓA SKILL T9 ----------------------------
+_T9_PREV_ERASE = apply_bong_khai_niem_card
+def apply_bong_khai_niem_card(target_card: dict):
+    if _t9_is(target_card) and not target_card.get("erased_skill"):
+        if target_card.get("is_ace2"):
+            pool = [("t9_drain", "Hào quang Requiem"), ("t9_lullaby", "Ru ngủ"), ("t9_requiem", "The Requiem")]
+            if T9_ACE2_KEEP_DANCE:
+                pool.append(("t9_dance", "Vũ điệu"))
+            if T9_ACE2_KEEP_ACE1_SKILLS:
+                pool += [("t9_barrage", "Fencing Barrage"), ("t9_sword", "Sword shot")]
+        else:
+            pool = [("t9_dance", "Vũ điệu"), ("t9_barrage", "Fencing Barrage"), ("t9_sword", "Sword shot")]
+        key, name = random.choice(pool)
+        target_card["erased_skill"] = key
+        target_card["erased_skill_name"] = name
+        return f"🌑 **[Bóng Khái Niệm]** Đã xóa ngẫu nhiên 1 kỹ năng duy nhất **[{name}]** của **{target_card['name']}**! *(Tối đa mất 1 chiêu)*"
+    return _T9_PREV_ERASE(target_card)
+ 
+# ---------------------------- 12. NPC TRONG /BATTLE ----------------------------
+_T9_PREV_NPC = npc_tcard_attack
+def npc_tcard_attack(oc, pc, power, rnd):
+    try:
+        if str(oc.get("cid")).lower() == "t9":
+            logs, gif = [], None
+            st = oc.setdefault("npc_st", {})
+            er = oc.get("erased_skill") or ""
+            tag = f"NPC [T] #t9 {oc.get('raw_name', 'Silver Chariot')}"
+            r = random.random()
+            if er != "t9_barrage" and st.get("barrage", 0) < 2 and r < 0.25:
+                st["barrage"] = st.get("barrage", 0) + 1
+                power = int(power * 1.5)
+                gif = T9_BARRAGE_GIF
+                logs.append(f"⚔️ **{tag}** tung **Fencing Barrage**! ×1.5 sát thương! *(Lần {st['barrage']}/2)*")
+            elif er != "t9_sword" and not st.get("sword") and 0.25 <= r < 0.45:
+                st["sword"] = 1
+                power = int(power * 2.5)
+                gif = T9_SWORD_GIF
+                logs.append(f"🗡️ **{tag}** bắn **Sword shot**! ×2.5 sát thương!")
+            return power, logs, gif
+    except Exception as e:
+        print(f"[T9] lỗi npc: {e}", flush=True)
+    return _T9_PREV_NPC(oc, pc, power, rnd)
+ 
+# ---------------------------- 13. ĐỔI MẢNH /t translate loai_shard:chariot ----------------------------
+_T9_PREV_TRANSLATE = handle_translate_shard
+async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
+    key = str(loai_shard or "").lower().strip()
+    if key not in T9_SHARD_ALIASES:
+        return await _T9_PREV_TRANSLATE(ctx_or_interaction, loai_shard)
+    is_inter = isinstance(ctx_or_interaction, discord.Interaction)
+    user = ctx_or_interaction.user if is_inter else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    shards = player.setdefault("shards", {})
+    cur = shards.get("chariot", 0)
+    card = CARDS_DATA["t9"]
+    if cur < T9_SHARDS_UNLOCK:
+        msg = (f"❌ **Không đủ mảnh!** Bạn có **{cur}/{T9_SHARDS_UNLOCK} Chariot Shards**.\n"
+               f"💡 *Mẹo: Chariot Shard rơi từ Boss Giorno Giovanna.*")
+        if is_inter:
+            await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else:
+            await ctx_or_interaction.send(msg)
+        return
+    shards["chariot"] = cur - T9_SHARDS_UNLOCK
+    unl = player.setdefault("unlocked_cards", [])
+    if "t9" not in unl:
+        unl.append("t9")
+    inv = player.setdefault("inventory", {})
+    inv["t9"] = inv.get("t9", 0) + 1
+    save_player(player)
+    embed = discord.Embed(
+        title="🗡️ QUY ĐỔI THÀNH CÔNG: SILVER CHARIOT!",
+        description=(
+            f"✨ **Chúc mừng {user.mention}!** Bạn đã dung hợp **{T9_SHARDS_UNLOCK} Chariot Shards**!\n\n"
+            f"🎴 **THẺ NHẬN ĐƯỢC:** **[T] #t9 Silver Chariot**\n"
+            f"• ⚔️ ATK **{card['power']:,}** | ❤️ HP **{card['hp']:,}**\n"
+            "• ⚔️ **Fencing Barrage (25%):** ×1.5 sát thương (tối đa 2 lần/trận)\n"
+            "• 🗡️ **Sword shot (20%):** ×2.5 sát thương (1 lần/trận), sau đó khóa skill 2 turn\n"
+            "• 💃 **Vũ điệu (Passive):** máu <50%: +5% sát thương nhận, +5% tỉ lệ skill, 10% đánh thường 2 lần\n\n"
+            f"📦 **Mảnh còn lại:** `{shards['chariot']}` | 🎒 **Kho thẻ:** `{inv['t9']}` lá"
+        ),
+        color=0xCBD5E1
+    )
+    embed.set_image(url=T9_UNLOCK_GIF)
+    embed.set_footer(text="Dùng /team add id_the:t9 để đưa Silver Chariot vào đội hình!")
+    if is_inter:
+        await ctx_or_interaction.response.send_message(embed=embed)
+    else:
+        await ctx_or_interaction.send(embed=embed)
+ 
+# ---------------------------- 14. TIẾN HÓA ACE 2 + /evol required ----------------------------
+def execute_chariot_ace2(player):
+    _blk = ace2_prestige_block(player, "t9")
+    if _blk:
+        return False, _blk, None
+    if is_card_ace2(player, "t9"):
+        return False, "⚠️ **[#t9] Silver Chariot** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
+    inv = player.get("inventory", {}) or {}
+    if not (is_card_unlocked(player, "t9") or inv.get("t9", 0) > 0):
+        return False, (f"❌ **Bạn chưa mở khóa thẻ [#t9] Silver Chariot (Ace 1)!**\n"
+                       f"• Thu thập **{T9_SHARDS_UNLOCK} Chariot Shards** rồi dùng `/t translate loai_shard:chariot` trước."), None
+    items = player.setdefault("items", {})
+    if items.get("requiem_arrow", 0) < 1:
+        return False, ("❌ Bạn cần **1 Requiem Arrow 🏹** để tiến hóa Silver Chariot lên Ace 2!\n"
+                       "💡 *Rơi từ Boss Giorno Giovanna (5%).*"), None
+    items["requiem_arrow"] -= 1
+    player.setdefault("evolutions", {})["t9"] = 2
+    save_player(player)
+    embed = discord.Embed(
+        title="🌟 TIẾN HÓA THÀNH CÔNG: [#t9] SILVER CHARIOT REQUIEM - ACE 2 ⭐⭐!",
+        description=(
+            "🏹 **Mũi tên Requiem đã đánh thức Silver Chariot Requiem!**\n\n"
+            "🪞 **Hào quang Requiem (Passive 50%/turn):** địch thường **-30% HP & -30% sát thương**; Boss **-5%** (chạm trần sát thương chuẩn thì chỉ giảm sát thương)\n"
+            "🌙 **Ru ngủ (30%):** địch & đồng minh ngủ 2-3 turn (tính riêng), đồng minh hồi 45% HP nhưng nhận +20% sát thương, bản thân hồi 10% HP; Silver Chariot chỉ đánh thường\n"
+            "🎯 **The Requiem (25%):** 60% địch tấn công bị **phản 120% sát thương**, 40% địch lùi ra xa; mất hiệu lực nếu trượt\n\n"
+            f"📉 **Chi phí:** 1 Requiem Arrow (còn `{items['requiem_arrow']}`)\n"
+            "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn!"
+        ),
+        color=0xCBD5E1
+    )
+    embed.set_image(url=T9_EVOL_GIF)
+    embed.set_footer(text="Touhou Evolution System • Silver Chariot Ace 2 Activated • Card ID #t9")
+    return True, "", embed
+ 
+_T9_PREV_EXEC_EVOL = execute_card_evolution
+def execute_card_evolution(player, cid):
+    if str(cid).strip().lower() in ("t9", "chariot", "silverchariot", "scr"):
+        return execute_chariot_ace2(player)
+    return _T9_PREV_EXEC_EVOL(player, cid)
+ 
+_T9_PREV_EVOL_REQ = evol_req_data
+def evol_req_data(player, key, stage):
+    if key == "t9" and stage == 2:
+        inv = player.get("inventory", {}) or {}
+        items = player.get("items", {}) or {}
+        own = is_card_unlocked(player, "t9") or inv.get("t9", 0) > 0
+        arrow = items.get("requiem_arrow", 0)
+        pr = player.get("prestige", 0)
+        rows = [
+            _rq(own, f"Sở hữu thẻ {evol_tag('t9')} {evol_name('t9')} (Ace 1)"),
+            _rq(arrow >= 1, f"Requiem Arrow 🏹: {arrow}/1"),
+            _rq(pr >= T9_ACE2_PRESTIGE, f"Prestige {T9_ACE2_PRESTIGE}+ (hiện tại P{pr})"),
+        ]
+        if _raw_ace2(player, "t9"):
+            return rows, ("done" if is_card_ace2(player, "t9") else "locked")
+        return rows, ("ready" if all(x[0] for x in rows) else "no")
+    return _T9_PREV_EVOL_REQ(player, key, stage)
+ 
+# ---------------------------- 15. GIAO DIỆN /check & /card_info ----------------------------
+class ChariotCardView(discord.ui.View):
+    def __init__(self, user_id=None, back_index: int = 0, show_ace: bool = False):
+        super().__init__(timeout=180)
+        self.user_id = user_id
+        self.back_index = back_index
+        self.show_ace = show_ace
+        self._build()
+ 
+    def _build(self):
+        self.clear_items()
+        if self.show_ace:
+            toggle = discord.ui.Button(label="⭐ Xem Bản Ace 1", style=discord.ButtonStyle.secondary, emoji="🔄", row=0)
+        else:
+            toggle = discord.ui.Button(label="🌟 Xem Ace 2 ⭐⭐", style=discord.ButtonStyle.success, emoji="✨", row=0)
+        toggle.callback = self.on_toggle
+        self.add_item(toggle)
+        back = discord.ui.Button(label="📖 Quay lại danh sách nhân vật", style=discord.ButtonStyle.primary, row=0)
+        back.callback = self.on_back
+        self.add_item(back)
+ 
+    def get_embed(self):
+        card = CARDS_DATA["t9"]
+        player = get_player(self.user_id) if self.user_id else None
+        lvl = player.get("level", 1) if player else 1
+        owned = player.get("inventory", {}).get("t9", 0) if player else 0
+        shards = player.get("shards", {}).get("chariot", 0) if player else 0
+        arrows = player.get("items", {}).get("requiem_arrow", 0) if player else 0
+        ace = self.show_ace
+        pw = card["power"] + (ACE_POWER_BUFF if ace else 0)
+        hp = card["hp"] + (ACE_HP_BUFF if ace else 0)
+        embed = discord.Embed(
+            title="🌟 [Ace 2 ⭐⭐] #t9 SILVER CHARIOT REQUIEM (THỨC TỈNH)" if ace else "🗡️ [THẺ ĐẶC BIỆT NHÓM T] #t9 SILVER CHARIOT",
+            description=("🔥 **Đang xem: ACE 2 ⭐⭐** *(+300 ATK / +300 HP)*" if ace else
+                         f"✨ Mở khóa bằng **{T9_SHARDS_UNLOCK} Chariot Shards** (`/t translate loai_shard:chariot`).\n✨ **Có thể tiến hóa Ace 2 ⭐⭐!**"),
+            color=0xCBD5E1
+        )
+        embed.set_image(url=T9_EVOL_GIF if ace else T9_UNLOCK_GIF)
+        embed.add_field(
+            name="⚔️ SỨC MẠNH & CHỈ SỐ:",
+            value=f"• ⚔️ **ATK:** `{pw:,}` | ❤️ **HP:** `{hp:,}`\n• 🛡️ **Trong đội hình (Lv.{lvl}):** `{pw + (lvl - 1) * 15:,}` ATK | `{hp + (lvl - 1) * 45:,}` HP",
+            inline=False
+        )
+        if ace:
+            skills = (
+                "🪞 **Hào quang Requiem (Passive 50%/turn):** địch thường **-30% HP & -30% sát thương**; Boss **-5%** (chạm trần sát thương chuẩn thì chỉ giảm sát thương).\n"
+                "🌙 **Ru ngủ (30%):** địch & đồng minh ngủ **2-3 turn** (roll riêng cho Boss/địch và cho đồng minh); đồng minh hồi **45% HP** nhưng nhận thêm **20% sát thương**, bản thân hồi **10% HP**; trong lúc này chỉ đánh thường. *(Battle/PvP 1v1: chỉ hồi bản thân)*\n"
+                "🎯 **The Requiem (25%):** **60%** địch tấn công sẽ bị **phản 120% sát thương**, **40%** địch cẩn trọng lùi ra xa; mất hiệu lực nếu trượt."
+            )
+            if T9_ACE2_KEEP_DANCE:
+                skills += "\n💃 **Vũ điệu (Passive):** vẫn giữ nguyên từ Ace 1."
+            if T9_ACE2_KEEP_ACE1_SKILLS:
+                skills += "\n⚔️ Giữ **Fencing Barrage** & **Sword shot** từ Ace 1."
+        else:
+            skills = (
+                "⚔️ **Fencing Barrage (25%):** chém hàng loạt đòn gây **×1.5 sát thương** (tối đa 2 lần/trận).\n"
+                "🗡️ **Sword shot (20%):** bắn mũi kiếm **×2.5 sát thương** (1 lần/trận), sau đó **khóa skill 2 turn** (chỉ đánh thường/passive) để thu hồi kiếm.\n"
+                "💃 **Vũ điệu (Passive):** máu dưới 50%: tháo giáp, nhận thêm **5% sát thương**, **+5% tỉ lệ kích skill**, **10% đánh thường 2 lần** trong 1 turn."
+            )
+        embed.add_field(name="🔮 KỸ NĂNG:", value=skills, inline=False)
+        if player:
+            pr = player.get("prestige", 0)
+            if is_card_ace2(player, "t9"):
+                badge = "🌟 ĐÃ THỨC TỈNH ACE 2"
+            elif owned > 0 and arrows >= 1 and pr >= T9_ACE2_PRESTIGE:
+                badge = "🟢 Đủ điều kiện! Dùng `/evol id_hoac_ten:t9`"
+            else:
+                badge = f"🔴 Chưa đủ (Requiem Arrow {arrows}/1 | Prestige P{pr}/{T9_ACE2_PRESTIGE})"
+            embed.add_field(name="🎒 TÚI ĐỒ CỦA BẠN:", value=f"• Sở hữu: **{owned}** lá\n• 🗡️ Chariot Shards: **{shards}**\n• Cảnh giới: **{badge}**", inline=False)
+        embed.set_footer(text="Thẻ nhóm T đặc biệt • Hoạt động trong Raid, Event, Battle, PvP, Story")
+        return embed
+ 
+    async def on_toggle(self, interaction: discord.Interaction):
+        self.show_ace = not self.show_ace
+        self._build()
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+ 
+    async def on_back(self, interaction: discord.Interaction):
+        v = CharacterCheckView(current_index=self.back_index, user_id=self.user_id)
+        await interaction.response.edit_message(embed=v.get_current_embed(), view=v)
+ 
+_T9_PREV_CC_REBUILD = CharacterCheckView.rebuild_items
+def _t9_cc_rebuild(self):
+    _T9_PREV_CC_REBUILD(self)
+    try:
+        btn = discord.ui.Button(label="#t9 Chariot", style=discord.ButtonStyle.secondary, emoji="🗡️")
+        async def _cb(interaction: discord.Interaction, _self=self):
+            kv = ChariotCardView(_self.user_id, _self.current_index)
+            await interaction.response.edit_message(embed=kv.get_embed(), view=kv)
+        btn.callback = _cb
+        self.add_item(btn)
+    except Exception as e:
+        # trang Sakuya đã đầy hàng nút -> bỏ qua, vẫn xem được bằng /check t9
+        pass
+CharacterCheckView.rebuild_items = _t9_cc_rebuild
+ 
+_T9_PREV_CHECK = handle_check_character
+async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
+    if nhan_vat and str(nhan_vat).strip().lower().replace("#", "").replace(" ", "") in ("t9", "chariot", "silverchariot", "scr"):
+        user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+        cv = ChariotCardView(user.id, 0)
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=cv.get_embed(), view=cv)
+        else:
+            await ctx_or_interaction.send(embed=cv.get_embed(), view=cv)
+        return
+    return await _T9_PREV_CHECK(ctx_or_interaction, nhan_vat)
+ 
+# ===================== HẾT KHỐI SILVER CHARIOT =====================
 import sys
 
 def start_bot_safely():
