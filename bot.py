@@ -25285,7 +25285,6 @@ async def spawn_boss_raid(channel, author=None, boss_type=None, admin=True):
         ),
         inline=False
     )
-    )
     embed.add_field(
         name="🎁 Phần Thưởng (hạ cả 2 Phase):",
         value=(f"• 🐞 **{int(GIORNO_SHARD_RATE * 100)}%** rơi **Giorno Shard**\n"
