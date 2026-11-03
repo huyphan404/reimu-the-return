@@ -25281,7 +25281,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None, admin=True):
             "• 🐸 **Life creater (25%):** Tạo sinh vật **25% máu Boss**, **tank trọn sát thương** trong **2 turn** rồi biến mất.\n"
             "• ♾️ **Death loop (10%):** **Vòng lặp giết ngay** toàn bộ thẻ tiền tuyến, **không thể chặn**!\n"
             "• 💥 **Life punch (20%):** **×1.5 sát thương** lên **1 mục tiêu** và **choáng 1-2 turn**.\n"
-            "• 💚 **Heal (15%):** Hồi **20% máu tối đa**."
+            "• 💚 **Heal (15%):** Hồi **10% máu tối đa**."
         ),
         inline=False
     )
@@ -25528,8 +25528,8 @@ async def _gio_run_phase(channel, battle_msg, combatants, phase, all_turns):
             elif chosen == "heal":
                 B["gif"] = GIORNO_GIF_HEAL
                 old = B["hp"]
-                B["hp"] = min(max_hp, B["hp"] + int(max_hp * 0.20))
-                action_log = f"💚 **[KỸ NĂNG] Giorno** thi triển **Heal (15%)**! Hồi **+{B['hp'] - old:,} HP** (20% máu tối đa)!"
+                B["hp"] = min(max_hp, B["hp"] + int(max_hp * 0.10))
+                action_log = f"💚 **[KỸ NĂNG] Giorno** thi triển **Heal (15%)**! Hồi **+{B['hp'] - old:,} HP** (10% máu tối đa)!"
             else:
                 each = max(100, power // n)
                 action_log = f"⚔️ Giorno đánh thường tổng **{power:,} DMG**, chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!"
