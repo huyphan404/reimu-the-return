@@ -13076,6 +13076,7 @@ async def prefix_boss_status(ctx, *args):
     app_commands.Choice(name="Seiki Dị Hình - Dị Tà Đệ Nhất Pháp Sư", value="seiki"),
     app_commands.Choice(name="Reimu Dị Hình - 2 Phase Siêu Cấp", value="reimu"),
     app_commands.Choice(name="Kujo Jotaro - Stone Ocean (110k HP / 9k5 DMG)", value="jotaro"),
+    app_commands.Choice(name="Giorno Giovanna - Trùm Mafia Nước Ý", value="giorno"),
     app_commands.Choice(name="Ngẫu nhiên tỉ lệ 1/4 giữa 4 Boss", value="random")
 ])
 async def slash_boss_admin(interaction: discord.Interaction, action: str, loai_boss: str = "random"):
@@ -16822,6 +16823,7 @@ async def handle_raid_open(ctx_or_interaction, boss="han_seiki"):
     app_commands.Choice(name="Mahoraga - Bát Ách Kiếm Thần Tướng", value="mahoraga"),
     app_commands.Choice(name="Fateria - Thao Túng Số Phận", value="fateria"),
     app_commands.Choice(name="Han Seiki the Prime One (Yêu cầu Lv.50)", value="han_seiki"),
+    app_commands.Choice(name="Giorno Giovanna - Trùm Mafia Nước Ý", value="giorno"),
 ])
 async def slash_raid(interaction: discord.Interaction, boss: str = "han_seiki"):
     await handle_raid_open(interaction, boss)
@@ -25167,6 +25169,540 @@ def npc_tcard_attack(oc, pc, power, rnd):
     except Exception as e:
         print(f"[NPC] lỗi npc_tcard_attack: {e}", flush=True)
     return power, logs, gif
+# ==============================================================================
+# [UPDATE GIORNO] BOSS RAID: GIORNO GIOVANNA - TRÙM MAFIA NƯỚC Ý (2 PHASE)
+# ==============================================================================
+import random as _gio_rand   # random chuẩn (tránh proxy Liềm)
+
+# ---------------- CẤU HÌNH (chỉnh ở đây) ----------------
+GIORNO_GIF_P1 = "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/86/71/fsRZdUIl.gif"
+GIORNO_GIF_P2 = GIORNO_GIF_P1            # muốn Phase 1 dùng ảnh khác thì đổi dòng GIORNO_GIF_P1
+GIORNO_GIF_MUDA = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/c1/3c/bP47q81tEN6uu3F6bCtU.gif"
+GIORNO_GIF_LIFE = "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/fc/09/hXX2ozKc.gif"
+GIORNO_GIF_DEATH = "https://static2.klipy.com/ii/d6b0ce929193df3c242ac34b5654d2ce/6f/16/yJj9zfTl.gif"
+GIORNO_GIF_PUNCH = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/3c/6b/sgXawmWWgf5F6.gif"
+GIORNO_GIF_HEAL = "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/32/2e/eIBl8mzT.gif"
+GIORNO_GIF_PASSIVE = None                # bạn chưa đưa gif passive -> dán link vào đây nếu có
+
+GIORNO_SHARD_RATE = 0.14                 # 14% rơi Giorno Shard
+GIORNO_ARROW_RATE = 0.01                 # 1% rơi Requiem Arrow (item tiến hóa)
+GIORNO_XP_RATE = 0.50                    # 50% nhận XP
+GIORNO_XP_MULT = 2.0                     # = 2x XP hiện tại trong cấp
+GIORNO_TICKETS_P1 = 15.0                  # vé thưởng khi hạ Phase 1 (đặt 0 nếu không muốn)
+GIORNO_TICKETS_P2 = 25.0                 # vé thưởng khi hạ Phase 2 (đặt 0 nếu không muốn)
+GIORNO_LIFE_OVERFLOW = False             # False: sinh vật tank TRỌN sát thương (phần dư mất luôn); True: phần dư chạm Boss
+GIORNO_DEATHLOOP_IGNORE_REVIVE = True    # True: Death loop bỏ qua cả hồi sinh (Liềm, Sakuya Ace 3, ...)
+GIORNO_MAX_ROUNDS = 70
+
+GIORNO_BOSS_CONFIG = _ScaledBossCfg({
+    "id": "giorno",
+    "name": "Giorno Giovanna - Trùm Mafia Nước Ý (Phase 1)",
+    "desc": "Kẻ mang giấc mơ của Gang-Star. Mọi nỗ lực đều bị đưa về con số không!",
+    "reimu_quote": "Khí tức này... mọi chiêu thức của chúng ta đều như bị nuốt chửng! Đừng để hắn đưa tất cả về số không!",
+    "image": GIORNO_GIF_P1,
+    "hp": 180000, "power": 15000,
+    "max_players": 6, "cooldown_seconds": 15 * 60,
+})
+GIORNO_BOSS_PHASE2_CONFIG = _ScaledBossCfg({
+    "id": "giorno_phase2",
+    "name": "Giorno Giovanna - Trùm Mafia Nước Ý (Phase 2)",
+    "image": GIORNO_GIF_P2,
+    "hp": 220000, "power": 20000,
+})
+
+# ---------------- ITEM / SHARD ----------------
+ITEMS_DATABASE["requiem_arrow"] = {
+    "id": "requiem_arrow", "name": "Requiem Arrow 🏹", "usable": False, "tradeable": True,
+    "desc": "Mũi tên Requiem huyền thoại, vật phẩm tiến hóa đặc biệt. Rơi từ Boss Giorno Giovanna (1%)."
+}
+SHARD_DISPLAY_NAMES["giorno"] = "Giorno Shards"
+SHARD_EMOJIS["giorno"] = "🐞"
+if "giorno" not in SHARD_TRADE_KEYS:
+    SHARD_TRADE_KEYS.append("giorno")
+
+_GIO_PREV_NORM_SHARD = normalize_shard_key
+def normalize_shard_key(raw: str):
+    s = (raw or "").lower().strip()
+    if s in ("giorno", "giovanna", "giorno_shard", "gio"):
+        return "giorno"
+    return _GIO_PREV_NORM_SHARD(raw)
+
+# ---------------- ĐĂNG KÝ VÀO /raid ----------------
+RAID_BOSS_LABELS["giorno"] = "Giorno Giovanna - Trùm Mafia Nước Ý"
+RAID_BOSS_ALIASES.update({"giorno": "giorno", "giovanna": "giorno", "giornogiovanna": "giorno", "gio": "giorno"})
+
+# Cho phép Fateria Ace 2 "tua ngược" hoạt động trong trận Giorno
+try:
+    _FA_MODE_FUNCS.add("_gio_run_phase")
+except Exception:
+    pass
+
+
+# ---------------- SPAWN (phòng chờ 2 phút) ----------------
+_GIO_PREV_SPAWN = spawn_boss_raid
+async def spawn_boss_raid(channel, author=None, boss_type=None, admin=True):
+    global active_raid, boss_cooldown_until
+    if boss_type != "giorno":
+        return await _GIO_PREV_SPAWN(channel, author, boss_type=boss_type, admin=admin)
+
+    if active_raid is not None:
+        if active_raid.get("task") and not active_raid["task"].done():
+            active_raid["task"].cancel()
+        active_raid = None
+
+    cfg = GIORNO_BOSS_CONFIG
+    p2 = GIORNO_BOSS_PHASE2_CONFIG
+    raid_data = {
+        "channel_id": channel.id, "boss_type": "giorno", "boss_config": cfg,
+        "participants": [], "names": [],
+        "created_at": datetime.now().isoformat(), "created_timestamp": time.time(),
+        "start_event": asyncio.Event(), "started": False, "closed": False,
+        "msg": None, "view": None, "task": None
+    }
+    active_raid = raid_data
+    is_admin = (author is not None) and admin
+    title = ("🚨 [ADMIN TRIỆU HỒI] CẢNH BÁO KHẨN CẤP: GIORNO GIOVANNA GIÁNG LÂM!" if is_admin
+             else "🚨 CẢNH BÁO KHẨN CẤP: GIORNO GIOVANNA GIÁNG LÂM!")
+    admin_line = f"👑 **Được triệu hồi bởi Admin:** {author.mention}\n\n" if is_admin else ""
+    embed = discord.Embed(
+        title=title,
+        description=f"{admin_line}🌸 **Reimu:** *\"{cfg['reimu_quote']}\"*\n\n🐞 **{cfg['name']}**\n*{cfg['desc']}*",
+        color=0xEAB308
+    )
+    embed.set_image(url=cfg["image"])
+    embed.add_field(name="❤️ Máu Boss (HP):", value=f"• Phase 1: **{cfg['hp']:,} HP**\n• Phase 2: **{p2['hp']:,} HP**", inline=True)
+    embed.add_field(name="⚔️ Sát Thương:", value=f"• Phase 1: **{cfg['power']:,} DMG** *(chia đều)*\n• Phase 2: **{p2['power']:,} DMG** *(chia đều)*", inline=True)
+    embed.add_field(name=f"👥 Người Tham Gia (0/{cfg['max_players']}):", value="Chưa có ai", inline=False)
+    embed.add_field(
+        name="🐞 Nội Tại & Kỹ Năng (Phase 2 giữ nguyên kỹ năng):",
+        value=(
+            "• 🔄 **Return to Zero (Passive):** **Miễn nhiễm 100% hiệu ứng** (choáng, đóng băng, time stop, bỏng, ảo giác, xóa kỹ năng, khóa kỹ năng...). Chỉ nhận **sát thương**!\n"
+            "• 👊 **Muda Muda! (30%):** Loạt đấm **×1.5 sát thương** chia đều tiền tuyến.\n"
+            "• 🐸 **Life creater (25%):** Tạo sinh vật **25% máu Boss**, **tank trọn sát thương** trong **2 turn** rồi biến mất.\n"
+            "• ♾️ **Death loop (10%):** **Vòng lặp giết ngay** toàn bộ thẻ tiền tuyến, **không thể chặn**!\n"
+            "• 💥 **Life punch (20%):** **×1.5 sát thương** lên **1 mục tiêu** và **choáng 1-2 turn**.\n"
+            "• 💚 **Heal (15%):** Hồi **20% máu tối đa**."
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="🎁 Phần Thưởng (hạ cả 2 Phase):",
+        value=(f"• 🐞 **{int(GIORNO_SHARD_RATE * 100)}%** rơi **Giorno Shard**\n"
+               f"• 🏹 **{int(GIORNO_ARROW_RATE * 100)}%** rơi **Requiem Arrow** (item tiến hóa)\n"
+               f"• ✨ **{int(GIORNO_XP_RATE * 100)}%** nhận **×{GIORNO_XP_MULT:g} XP** hiện tại trong cấp"),
+        inline=False
+    )
+    embed.add_field(
+        name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
+        value="Có **2 phút** để bấm **'Tham Gia'**. Hết giờ sẽ tự khai màn nếu có người tham gia!",
+        inline=False
+    )
+    embed.set_footer(text=f"Bấm 'Tham Gia' để xuất trận • Miễn phí • {'Admin Force Spawn' if is_admin else 'Mở bằng /raid'}")
+    view = RaidJoinView(raid_data)
+    raid_data["view"] = view
+    msg = await channel.send(embed=embed, view=view)
+    raid_data["msg"] = msg
+    raid_data["task"] = asyncio.create_task(raid_timer_lifecycle(channel, raid_data, view))
+
+
+# ---------------- DISPATCH TRẬN ----------------
+_GIO_PREV_EXECUTE_RAID = execute_raid
+async def execute_raid(channel, raid_data):
+    global active_raid, boss_cooldown_until
+    if raid_data.get("boss_type") != "giorno":
+        return await _GIO_PREV_EXECUTE_RAID(channel, raid_data)
+    active_raid = None
+    boss_cooldown_until = max(boss_cooldown_until, time.time() + GIORNO_BOSS_CONFIG["cooldown_seconds"])
+    n = len(raid_data.get("participants", []) or [])
+    f = boss_scale_factor(n)
+    token = _BOSS_SCALE.set(f)          # Boss Scaling theo số dũng giả (như các boss raid thường)
+    try:
+        if f > 1.0:
+            try:
+                await channel.send(embed=_bs_notice_embed(raid_data, n, f))
+            except Exception:
+                pass
+        await execute_giorno_raid(channel, raid_data)
+    finally:
+        _BOSS_SCALE.reset(token)
+
+
+# ---------------- RETURN TO ZERO ----------------
+def _gio_nullify(B, notes, start_idx):
+    """Gạt bỏ MỌI hiệu ứng người chơi đặt lên Boss, chỉ giữ lại sát thương."""
+    fx = []
+    if B.get("stunned"):
+        fx.append("choáng / đóng băng / ngưng động")
+    if B.get("mind", 0) > 0:
+        fx.append("ảo giác tâm trí")
+    if B.get("freeze", 0) > 0:
+        fx.append("đóng băng kéo dài")
+    if B.get("molten", 0) > 0:
+        fx.append("bỏng mặt đất")
+    if B.get("fate", 0) > 0:
+        fx.append("khóa kỹ năng")
+    if B.get("ice", 0) > 0:
+        fx.append("giáo băng cầm chân")
+    if B.get("erased"):
+        fx.append("xóa kỹ năng")
+        for i in range(start_idx, len(notes)):
+            if "**[Bóng Khái Niệm]**" in str(notes[i]):
+                notes[i] = "🛡️ **[Return to Zero]** Kỹ năng của Giorno không thể bị xóa!"
+    B["stunned"] = False
+    B["mind"] = 0
+    B["freeze"] = 0
+    B["molten"] = 0
+    B["fate"] = 0
+    B["ice"] = 0
+    B["erased"] = None
+    B["locked_now"] = False
+    return fx
+
+
+# ---------------- 1 PHASE ----------------
+async def _gio_run_phase(channel, battle_msg, combatants, phase, all_turns):
+    cfg = GIORNO_BOSS_CONFIG if phase == 1 else GIORNO_BOSS_PHASE2_CONFIG
+    max_hp = cfg["hp"]
+    power = cfg["power"]
+    color = 0xEAB308 if phase == 1 else 0xB45309
+    B = {
+        "hp": max_hp, "max_hp": max_hp, "stunned": False, "mind": 0, "freeze": 0, "molten": 0,
+        "erased": None, "fate": 0, "locked_now": False, "ice": 0, "gif": None,
+        "true_cap": int(max_hp * 0.50), "true_accum": 0,
+        "boss_type": "giorno", "boss_name": cfg["name"], "active": []
+    }
+    life_hp = 0
+    life_max = 0
+    life_turns = 0
+    rounds = 0
+
+    while B["hp"] > 0 and rounds < GIORNO_MAX_ROUNDS:
+        active = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
+        if not active:
+            break
+        rounds += 1
+        front = [c["team_cards"][c["current_card_index"]] for c in active]
+        n = len(front)
+        B["stunned"] = False
+        B["gif"] = None
+        B["active"] = active
+        B["locked_now"] = False
+        notes = []
+        boss_fx = []
+        fx_all = []
+
+        # ---------- LƯỢT ĐÁNH NGƯỜI CHƠI ----------
+        hp_before = B["hp"]
+        round_dmg = 0
+        for c in active:
+            ac = c["team_cards"][c["current_card_index"]]
+            if ac.get("giorno_stun", 0) > 0:
+                ac["giorno_stun"] -= 1
+                notes.append(f"💫 **{ac['name']}** ({c['username']}) đang **choáng** vì Life punch, không thể ra đòn! (Còn {ac['giorno_stun']} turn)")
+                continue
+            start_idx = len(notes)
+            d = _jt_player_attack(c, ac, rounds, B, notes)
+            fx_all.extend(_gio_nullify(B, notes, start_idx))
+            round_dmg += d
+            c["total_dmg"] += d
+
+        B["hp"] = max(0, B["hp"] - round_dmg)
+        lost = hp_before - B["hp"]
+        player_atk_str = f"Toàn quân gây **{round_dmg:,} DMG** lên Giorno!"
+
+        if fx_all:
+            uniq = ", ".join(sorted(set(fx_all)))
+            boss_fx.append(f"🔄 **[Return to Zero]** Mọi hiệu ứng bị đưa về số không ({uniq}) — Giorno chỉ nhận sát thương!")
+
+        # ---------- SINH VẬT LIFE CREATER TANK SÁT THƯƠNG ----------
+        if life_turns > 0 and life_hp > 0:
+            if lost > 0:
+                absorbed = min(lost, life_hp)
+                life_hp -= absorbed
+                spill = lost - absorbed
+                B["hp"] = hp_before - (spill if GIORNO_LIFE_OVERFLOW else 0)
+                player_atk_str += f"\n🐸 **[Sinh vật Life creater]** tank **{absorbed:,} DMG** thay Giorno (còn {max(0, life_hp):,}/{life_max:,} HP)!"
+            life_turns -= 1
+            if life_hp <= 0:
+                life_turns = 0
+                boss_fx.append("🐸 **[Life creater]** Sinh vật đã bị đánh tan!")
+            elif life_turns <= 0:
+                life_hp = 0
+                boss_fx.append("🐸 **[Life creater]** Hết 2 turn, sinh vật biến mất!")
+        elif life_turns > 0:
+            life_turns = 0
+
+        # ---------- HÀNH ĐỘNG CỦA BOSS ----------
+        action_log = ""
+        hit_logs = []
+        forced = []
+        if B["hp"] <= 0:
+            action_log = "💥 **Giorno Giovanna đã bị đánh bại!**"
+        else:
+            opts = [("muda", 0.30), ("life", 0.20), ("death", 0.5), ("punch", 0.35), ("heal", 0.10)]
+            if life_turns > 0:                       # đang có sinh vật thì không tạo thêm
+                opts = [o for o in opts if o[0] != "life"]
+            roll = _gio_rand.random()
+            acc_p = 0.0
+            chosen = None
+            for key, ch in opts:
+                acc_p += ch
+                if roll < acc_p:
+                    chosen = key
+                    break
+
+            if chosen == "muda":
+                B["gif"] = GIORNO_GIF_MUDA
+                total = int(power * 1.5)
+                each = max(100, total // n)
+                action_log = f"👊 **[KỸ NĂNG] Giorno** tung **Muda Muda! (30%)**! Loạt đấm **{total:,} DMG** (×1.5), chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!"
+                for c in active:
+                    _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds)
+            elif chosen == "life":
+                B["gif"] = GIORNO_GIF_LIFE
+                life_max = int(max_hp * 0.25)
+                life_hp = life_max
+                life_turns = 2
+                action_log = f"🐸 **[KỸ NĂNG] Giorno** tung **Life creater (25%)**! Tạo sinh vật **{life_max:,} HP** (25% máu Boss), **tank trọn sát thương trong 2 turn**!"
+            elif chosen == "death":
+                B["gif"] = GIORNO_GIF_DEATH
+                for c in active:
+                    tac = c["team_cards"][c["current_card_index"]]
+                    tac["current_hp"] = 0
+                    forced.append(tac)
+                names = ", ".join(f"**{t['name']}**" for t in forced)
+                action_log = f"♾️ **[KỸ NĂNG TỐI THƯỢNG] Giorno** kích hoạt **Death loop (10%)**! Vòng lặp tử thần giết ngay {names} — **không thể chặn đòn**!"
+            elif chosen == "punch":
+                B["gif"] = GIORNO_GIF_PUNCH
+                tc = _gio_rand.choice(active)
+                tac = tc["team_cards"][tc["current_card_index"]]
+                total = int(power * 1.5)
+                action_log = f"💥 **[KỸ NĂNG] Giorno** tung **Life punch (20%)**! Đòn **{total:,} DMG** (×1.5) giáng thẳng vào **{tac['name']}** ({tc['username']})!"
+                hp_b = tac["current_hp"]
+                _jt_boss_hit(tc, tac, total, B, hit_logs, rounds)
+                if tac["current_hp"] < hp_b:
+                    dur = _gio_rand.choice([1, 2])
+                    tac["giorno_stun"] = dur
+                    action_log += f"\n💫 **{tac['name']}** bị **CHOÁNG {dur} turn** do sinh khí hỗn loạn!"
+                else:
+                    action_log += f"\n🛡️ **{tac['name']}** chặn được đòn nên **không bị choáng**!"
+            elif chosen == "heal":
+                B["gif"] = GIORNO_GIF_HEAL
+                old = B["hp"]
+                B["hp"] = min(max_hp, B["hp"] + int(max_hp * 0.20))
+                action_log = f"💚 **[KỸ NĂNG] Giorno** thi triển **Heal (15%)**! Hồi **+{B['hp'] - old:,} HP** (20% máu tối đa)!"
+            else:
+                each = max(100, power // n)
+                action_log = f"⚔️ Giorno đánh thường tổng **{power:,} DMG**, chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!"
+                for c in active:
+                    _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds, normal=True)
+
+        if hit_logs:
+            pass  # hiển thị ở field riêng bên dưới
+
+        # ---------- DỌN HIỆU ỨNG BẢO HỘ RỒI ÁP LẠI DEATH LOOP ----------
+        action_log += t7_raid_after_boss(active, action_log)
+        kasen_restore_guard(active)
+        tick_wonder_guard(active)
+        restore_t4_save_loop(active, rounds)
+        for tac in forced:
+            tac["current_hp"] = 0
+        forced_ids = {id(t) for t in forced}
+
+        # ---------- THAY THẺ ----------
+        push_logs = []
+        for c in active:
+            ac = c["team_cards"][c["current_card_index"]]
+            if ac["current_hp"] <= 0:
+                ac["current_hp"] = 0
+                if not (GIORNO_DEATHLOOP_IGNORE_REVIVE and id(ac) in forced_ids):
+                    _g = sakuya3_raid_revive(c, push_logs)
+                    if _g:
+                        B["gif"] = _g
+                        continue
+                c["current_card_index"] += 1
+                if c["current_card_index"] < len(c["team_cards"]):
+                    push_logs.append(f"💀 **{ac['name']}** gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
+                else:
+                    c["is_alive"] = False
+                    push_logs.append(f"☠️ **{c['username']}** đã hết thẻ bài và tử trận!")
+
+        # ---------- EMBED ----------
+        life_txt = f" | 🐸 Sinh vật: **{max(0, life_hp):,}/{life_max:,}** ({life_turns} turn)" if life_turns > 0 and life_hp > 0 else ""
+        desc = f"❤️ **Máu Boss:** `{get_hp_bar(B['hp'], max_hp)}` **{B['hp']:,}/{max_hp:,} HP**{life_txt}"
+        fields = [("💥 Tiền Tuyến Tấn Công:", _jt_cut(player_atk_str, 500), False)]
+        if notes:
+            fields.append(("✨ Kỹ Năng Thẻ Bài:", _jt_cut("\n".join(notes), 800), False))
+        if boss_fx:
+            fields.append(("🔄 Passive / Hiệu Ứng Boss:", _jt_cut("\n".join(boss_fx), 600), False))
+        fields.append(("👺 Phản Kích Của Boss:", _jt_cut(action_log, 1000), False))
+        if hit_logs:
+            fields.append(("🛡️ Phản Ứng Phòng Thủ:", _jt_cut("\n".join(hit_logs), 600), False))
+        if push_logs:
+            fields.append(("🔄 Thay Đổi Tiền Tuyến:", _jt_cut("\n".join(push_logs), 600), False))
+        fields.append(("🛡️ Tình Trạng Tiền Tuyến:", _jt_cut(_pr_status_lines(combatants), 800), False))
+
+        round_embed = discord.Embed(title=f"🐞 HIỆP {rounds} - GIORNO GIOVANNA (PHASE {phase})", description=desc, color=color)
+        for fname, fval, finl in fields:
+            round_embed.add_field(name=fname, value=fval, inline=finl)
+        if B["gif"]:
+            round_embed.set_image(url=B["gif"])
+        else:
+            round_embed.set_thumbnail(url=cfg["image"])
+
+        all_turns.append({
+            "round": rounds, "phase": phase,
+            "title": f"Phase {phase} - Hiệp {rounds}: Giorno Giovanna",
+            "short_label": f"P{phase} - H{rounds}",
+            "short_desc": f"Boss còn {B['hp']:,} HP",
+            "desc": f"🐞 **{cfg['name']}**\n{desc}",
+            "color": color, "image": B["gif"], "fields": fields
+        })
+        try:
+            await battle_msg.edit(embed=round_embed)
+        except Exception:
+            pass
+        if B["hp"] <= 0:
+            break
+        await asyncio.sleep(3.0)
+
+    return B["hp"], rounds, max_hp
+
+
+# ---------------- TOÀN BỘ TRẬN ----------------
+async def execute_giorno_raid(channel, raid_data):
+    participants = raid_data["participants"]
+    if not participants:
+        await channel.send("🐞 Giorno Giovanna đã rời đi vì không có ai nghênh chiến...")
+        return
+    cfg = GIORNO_BOSS_CONFIG
+    p2 = GIORNO_BOSS_PHASE2_CONFIG
+
+    combatants = _sk_make_combatants(participants)
+    for _c in combatants:
+        _c["eq_boss_fenrir"] = False        # Giorno không có trang bị
+
+    init_embed = discord.Embed(
+        title="⚔️ ĐẠI CHIẾN BẮT ĐẦU: GIORNO GIOVANNA - TRÙM MAFIA NƯỚC Ý (PHASE 1)",
+        description=(
+            f"🌸 **Reimu:** *\"{cfg['reimu_quote']}\"*\n\n"
+            f"🔥 **{len(combatants)} Dũng Giả** đã dàn trận nghênh chiến! Theo dõi từng hiệp trực tiếp bên dưới!"
+        ),
+        color=0xEAB308
+    )
+    init_embed.set_thumbnail(url=cfg["image"])
+    init_embed.add_field(name=f"❤️ Máu {cfg['name']}:", value=f"`{get_hp_bar(cfg['hp'], cfg['hp'])}` **{cfg['hp']:,}/{cfg['hp']:,} HP**", inline=False)
+    battle_msg = await channel.send(embed=init_embed)
+    await asyncio.sleep(2.0)
+
+    all_turns = []
+    hp1, r1, mx1 = await _gio_run_phase(channel, battle_msg, combatants, 1, all_turns)
+    if hp1 > 0:
+        fail = discord.Embed(
+            title="❌ QUÂN ĐOÀN THẤT THỦ TRƯỚC GIORNO GIOVANNA (PHASE 1)!",
+            description=f"Toàn bộ dũng giả đã bị đưa về số không sau {r1} hiệp!\nGiorno còn **{hp1:,}/{mx1:,} HP**.\n⏳ Hồi chiêu **15 phút** đã kích hoạt!",
+            color=0xEF4444
+        )
+        fail.set_thumbnail(url=cfg["image"])
+        await channel.send(embed=fail, view=OpenDetailsView(all_turns))
+        return
+
+    # ---------- THƯỞNG PHASE 1 ----------
+    if GIORNO_TICKETS_P1 > 0:
+        for uid in participants:
+            p = get_player(uid)
+            p["pull_tickets"] += GIORNO_TICKETS_P1
+            save_player(p)
+
+    # ---------- PHASE 2 ----------
+    alert = discord.Embed(
+        title="🚨 GIORNO GIOVANNA THỨC TỈNH! (PHASE 2)",
+        description=(
+            "🐞 *\"Ngươi sẽ không bao giờ chạm tới được chân lý...\"*\n\n"
+            f"❤️ **Máu:** **`{p2['hp']:,} HP`** | ⚔️ **Sát thương:** **`{p2['power']:,} DMG`** (chia đều)\n"
+            "🔄 Kỹ năng không đổi, **Return to Zero** vẫn miễn nhiễm mọi hiệu ứng!\n\n"
+            "✨ **PHÉP MÀU THANH TẨY:** Toàn bộ thẻ bài của dũng giả được **hồi sinh và hồi 100% sinh lực**!"
+        ),
+        color=0xB45309
+    )
+    alert.set_image(url=GIORNO_GIF_P2)
+    battle_msg = await channel.send(embed=alert)
+    await asyncio.sleep(2.5)
+    _sk_reset_phase(combatants)
+    for c in combatants:
+        for card in c["team_cards"]:
+            card.pop("giorno_stun", None)
+
+    hp2, r2, mx2 = await _gio_run_phase(channel, battle_msg, combatants, 2, all_turns)
+    if hp2 > 0:
+        fail = discord.Embed(
+            title="❌ QUÂN ĐOÀN THẤT THỦ TRƯỚC GIORNO GIOVANNA (PHASE 2)!",
+            description=(
+                f"**Phase 1:** 🎉 Hạ gục sau **{r1} hiệp** (quà Phase 1 đã được bảo lưu!)\n"
+                f"**Phase 2:** ❌ Thất thủ sau **{r2} hiệp** — Giorno còn **{hp2:,}/{mx2:,} HP**.\n"
+                "⏳ Hồi chiêu **15 phút** đã kích hoạt!"
+            ),
+            color=0xEF4444
+        )
+        fail.set_thumbnail(url=p2["image"])
+        await channel.send(embed=fail, view=OpenDetailsView(all_turns))
+        return
+
+    # ---------- CHIẾN THẮNG: PHÁT THƯỞNG ----------
+    total_dmg = sum(c["total_dmg"] for c in combatants)
+    lines = []
+    for uid in participants:
+        p = get_player(uid)
+        old_lvl = calculate_level_from_xp(p.get("xp", 0), p.get("prestige", 0))
+        got = []
+        if GIORNO_TICKETS_P2 > 0:
+            p["pull_tickets"] += GIORNO_TICKETS_P2
+            got.append(f"🎟️ **+{GIORNO_TICKETS_P2:.0f} Vé Pull**")
+        sh = p.setdefault("shards", {})
+        it = p.setdefault("items", {})
+        if _gio_rand.random() < GIORNO_SHARD_RATE:
+            sh["giorno"] = sh.get("giorno", 0) + 1
+            got.append(f"🐞 **+1 Giorno Shard** ({int(GIORNO_SHARD_RATE * 100)}%! Kho: {sh['giorno']})")
+        if _gio_rand.random() < GIORNO_ARROW_RATE:
+            it["requiem_arrow"] = it.get("requiem_arrow", 0) + 1
+            got.append(f"🏹 **+1 Requiem Arrow** ({int(GIORNO_ARROW_RATE * 100)}% Cực Hiếm! Kho: {it['requiem_arrow']})")
+        if _gio_rand.random() < GIORNO_XP_RATE:
+            _l, xp_in, needed, _r = get_level_progress(p.get("xp", 0), p.get("prestige", 0))
+            gain = int(xp_in * GIORNO_XP_MULT)
+            if gain > 0:
+                p["xp"] += gain
+                got.append(f"✨ **+{gain:,} XP** ({int(GIORNO_XP_RATE * 100)}% - ×{GIORNO_XP_MULT:g} XP cấp hiện tại [{xp_in:,}/{needed:,}])")
+        for n_ in update_daily_quest_progress(p, "raid", 1) + update_event_quest_progress(p, "raid", 1):
+            got.append(n_)
+        save_player(p)
+        new_lvl = calculate_level_from_xp(p.get("xp", 0), p.get("prestige", 0))
+        lvl_txt = f" 🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+        lines.append(f"🏆 **{p['username']}**:{lvl_txt}\n   └ " + ("\n   └ ".join(got) if got else "Không có gì thêm"))
+
+    final = discord.Embed(
+        title="🏆 KẾT QUẢ ĐẠI CHIẾN: GIORNO GIOVANNA - TOÀN THẮNG!",
+        description=(
+            "🌸 **Reimu thở phào:** *\"Phù... cuối cùng cũng thoát khỏi vòng lặp số không đó. Mọi người làm tốt lắm!\"*\n\n"
+            f"**Phase 1:** 🎉 Hạ gục sau **{r1} hiệp**\n"
+            f"**Phase 2:** 🎉 Hạ gục sau **{r2} hiệp**\n"
+            f"💥 **Tổng Sát Thương:** **{total_dmg:,} DMG**\n"
+            "⏳ **Hồi chiêu Boss tiếp theo:** **15 phút**"
+        ),
+        color=0x10B981
+    )
+    final.set_thumbnail(url=p2["image"])
+    chunk, clen, idx = [], 0, 1
+    for ln in lines:
+        if chunk and clen + len(ln) > 950:
+            final.add_field(name=f"🎁 Phần Thưởng (nhóm {idx}):", value="\n".join(chunk), inline=False)
+            chunk, clen, idx = [], 0, idx + 1
+        chunk.append(_jt_cut(ln, 900))
+        clen += len(ln) + 1
+    if chunk:
+        final.add_field(name=f"🎁 Phần Thưởng (nhóm {idx}):", value="\n".join(chunk), inline=False)
+    await channel.send(embed=final, view=OpenDetailsView(all_turns))
+
+# ===================== HẾT KHỐI GIORNO =====================
 
 import sys
 
