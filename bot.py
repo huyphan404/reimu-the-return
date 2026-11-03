@@ -25744,7 +25744,7 @@ async def execute_giorno_raid(channel, raid_data):
 # ===================== HẾT KHỐI GIORNO =====================
 
 # ==============================================================================
-[UPDATE SILVER CHARIOT] THẺ T9 
+# [UPDATE SILVER CHARIOT] THẺ T9 
 # ==============================================================================
 T9_UNLOCK_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/2a/b1/lXEl1hXvrYlLuXxKZeQ.gif"
 T9_BARRAGE_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/59/55/Awx1cEtUBzyNfR5B.gif"
