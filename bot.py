@@ -25977,9 +25977,9 @@ def t9_combat_turn(st: dict, card: dict, is_ace2: bool = False, skills_locked: b
         res["multiplier"] *= 2.0
         logs.append(f"💃 **{tag}** - **Vũ điệu**: đánh thường **2 lần** trong 1 turn (×2 sát thương)!")
  
-    # Passive Ace 2: giảm hp|atk địch (50%/turn) — Boss 5%, địch thường 30%
+    # Passive Ace 2: giảm hp|atk địch (50%/turn) — Boss 5%, địch thường 15%
     if is_ace2 and erased != "t9_drain" and random.random() < 0.50:
-        pct = 0.05 if is_boss else 0.30
+        pct = 0.05 if is_boss else 0.15
         raw = int(target_max_hp * pct)
         cut = int(cap_fn(raw, "Passive Silver Chariot Requiem")) if cap_fn else raw
         res["hp_cut"] = cut
@@ -26494,7 +26494,7 @@ def execute_chariot_ace2(player):
         title="🌟 TIẾN HÓA THÀNH CÔNG: [#t9] SILVER CHARIOT REQUIEM - ACE 2 ⭐⭐!",
         description=(
             "🏹 **Mũi tên Requiem đã đánh thức Silver Chariot Requiem!**\n\n"
-            "🪞 **Hào quang Requiem (Passive 50%/turn):** địch thường **-30% HP & -30% sát thương**; Boss **-5%** (chạm trần sát thương chuẩn thì chỉ giảm sát thương)\n"
+            "🪞 **Hào quang Requiem (Passive 50%/turn):** địch thường **-15% HP & -15% sát thương**; Boss **-5%** (chạm trần sát thương chuẩn thì chỉ giảm sát thương)\n"
             "🌙 **Ru ngủ (30%):** địch & đồng minh ngủ 2-3 turn (tính riêng), đồng minh hồi 45% HP nhưng nhận +20% sát thương, bản thân hồi 10% HP; Silver Chariot chỉ đánh thường\n"
             "🎯 **The Requiem (25%):** 60% địch tấn công bị **phản 120% sát thương**, 40% địch lùi ra xa; mất hiệu lực nếu trượt\n\n"
             f"📉 **Chi phí:** 1 Requiem Arrow (còn `{items['requiem_arrow']}`)\n"
@@ -26575,7 +26575,7 @@ class ChariotCardView(discord.ui.View):
         )
         if ace:
             skills = (
-                "🪞 **Hào quang Requiem (Passive 50%/turn):** địch thường **-30% HP & -30% sát thương**; Boss **-5%** (chạm trần sát thương chuẩn thì chỉ giảm sát thương).\n"
+                "🪞 **Hào quang Requiem (Passive 50%/turn):** địch thường **-15% HP & -15% sát thương**; Boss **-5%** (chạm trần sát thương chuẩn thì chỉ giảm sát thương).\n"
                 "🌙 **Ru ngủ (30%):** địch & đồng minh ngủ **2-3 turn** (roll riêng cho Boss/địch và cho đồng minh); đồng minh hồi **45% HP** nhưng nhận thêm **20% sát thương**, bản thân hồi **10% HP**; trong lúc này chỉ đánh thường. *(Battle/PvP 1v1: chỉ hồi bản thân)*\n"
                 "🎯 **The Requiem (25%):** **60%** địch tấn công sẽ bị **phản 120% sát thương**, **40%** địch cẩn trọng lùi ra xa; mất hiệu lực nếu trượt."
             )
