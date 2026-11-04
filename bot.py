@@ -26639,6 +26639,774 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
     return await _T9_PREV_CHECK(ctx_or_interaction, nhan_vat)
  
 # ===================== HẾT KHỐI SILVER CHARIOT =====================
+# ==============================================================================
+# [UPDATE] /sac RANK • /item check MŨI TÊN • PRESTIGE 6+ (MAX LV 9900, TRỪ 200 LV)
+#          • /train (P6+) • COOLDOWN TRAIN
+# ==============================================================================
+import math as _lv_math
+import copy as _tr_copy
+import contextvars
+
+# ------------------------------------------------------------------------------
+# 1. CẤP ĐỘ & PRESTIGE
+# ------------------------------------------------------------------------------
+MAX_LEVEL_P5_PLUS = 9900      # cấp tối đa từ Prestige 5 trở đi
+PRESTIGE_LATE_REQ_LVL = 500   # cấp tối thiểu để Prestige lên P6, P7, ... (chỉnh tại đây)
+PRESTIGE_LATE_COST = 200      # mỗi lần Prestige (từ P5 lên) bị trừ 200 cấp
+
+def get_max_level(prestige: int = 0) -> int:
+    prestige = int(prestige or 0)
+    if prestige <= 1:
+        return 100
+    if prestige == 2:
+        return 150
+    if prestige == 3:
+        return 200
+    if prestige == 4:
+        return 500
+    return MAX_LEVEL_P5_PLUS
+
+def calculate_level_from_xp(total_xp: int, prestige_or_player=0) -> int:
+    """Tính cấp bằng công thức (nhanh, không lặp 9900 vòng)."""
+    if total_xp is None or total_xp <= 0:
+        return 1
+    p_lvl = prestige_or_player.get("prestige", 0) if isinstance(prestige_or_player, dict) else int(prestige_or_player or 0)
+    max_lvl = get_max_level(p_lvl)
+    n = int((-3 + _lv_math.sqrt(9 + 4 * total_xp / 25)) / 2)
+    n = max(0, n)
+    while 25 * (n + 1) * (n + 4) <= total_xp:
+        n += 1
+    while n > 0 and 25 * n * (n + 3) > total_xp:
+        n -= 1
+    return max(1, min(max_lvl, n + 1))
+
+def get_prestige_info(current_p: int):
+    next_p = current_p + 1
+    table = {
+        1: {"next_p": 1, "req_lvl": 50, "pulls": 50.0, "tokens": 100, "xp_mult": 2.0},
+        2: {"next_p": 2, "req_lvl": 100, "pulls": 50.0, "tokens": 150, "xp_mult": 3.5},
+        3: {"next_p": 3, "req_lvl": 150, "pulls": 50.0, "tokens": 250, "xp_mult": 5.0},
+        4: {"next_p": 4, "req_lvl": 200, "pulls": 50.0, "tokens": 300, "xp_mult": 7.5},
+        5: {"next_p": 5, "req_lvl": 500, "pulls": 50.0, "tokens": 1000, "xp_mult": 10.0},
+    }
+    if next_p in table:
+        return table[next_p]
+    return {"next_p": next_p, "req_lvl": PRESTIGE_LATE_REQ_LVL, "pulls": 50.0, "tokens": 120, "xp_mult": 10.0}
+
+
+class PrestigeConfirmView(discord.ui.View):
+    def __init__(self, user, player, p_info):
+        super().__init__(timeout=90)
+        self.user = user
+        self.player = player
+        self.p_info = p_info
+
+    @discord.ui.button(label="👑 Xác Nhận Chuyển Sinh (Prestige)", style=discord.ButtonStyle.danger, emoji="⚡")
+    async def confirm_prestige(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên chuyển sinh của bạn!", ephemeral=True)
+            return
+
+        player = get_player(self.user.id, self.user.display_name)   # đọc lại dữ liệu mới nhất
+        old_p = player.get("prestige", 0)
+        p_info = get_prestige_info(old_p)
+        cur_lvl = player.get("level", 1)
+        req_lvl = p_info["req_lvl"]
+        if cur_lvl < req_lvl:
+            await interaction.response.send_message(f"❌ Bạn chưa đạt cấp độ yêu cầu! (Cần Lv.{req_lvl}, hiện tại Lv.{cur_lvl})", ephemeral=True)
+            return
+
+        for child in self.children:
+            child.disabled = True
+
+        new_p = p_info["next_p"]
+        old_tickets = player.get("pull_tickets", 0.0)
+        late = old_p >= 5
+        if late:
+            new_lvl = max(1, cur_lvl - PRESTIGE_LATE_COST)
+            new_xp = get_total_xp_for_level(new_lvl)
+        else:
+            new_xp = 0
+
+        player["prestige"] = new_p
+        player["xp"] = new_xp
+        player["pull_tickets"] = float(p_info["pulls"])
+        player["tokens"] = player.get("tokens", 0) + p_info["tokens"]
+        save_player(player)
+        final_lvl = calculate_level_from_xp(new_xp, new_p)
+
+        if late:
+            lvl_line = f"📉 **Trừ cấp độ:** `Lv.{cur_lvl}` ➔ **`Lv.{final_lvl}`** *(-{PRESTIGE_LATE_COST} cấp)*"
+        else:
+            lvl_line = "🔄 **Đặt lại cấp độ:** `Lv.0 (0 XP)`"
+
+        embed_success = discord.Embed(
+            title=f"🎉 CHUYỂN SINH THÀNH CÔNG: CHÀO MỪNG ĐẾN PRESTIGE {new_p}!",
+            description=(
+                f"⛩️ **Chúc mừng {self.user.mention} đã đạt cảnh giới Chuyển Sinh mới!**\n\n"
+                f"📊 **Cấp bậc mới:** `Prestige {new_p}` *(Trước: P{old_p})*\n"
+                f"{lvl_line}\n"
+                f"🔓 **Cấp tối đa:** **Lv.{get_max_level(new_p)}**\n"
+                f"🎟️ **Làm mới kho Pull:** Thu hồi {old_tickets:.1f} vé cũ ➔ Cấp mới **+{int(p_info['pulls'])} Vé Pull**!\n"
+                f"💎 **Thưởng Tokens:** **+{p_info['tokens']} Tokens** (Tổng kho: `{player['tokens']:,}` tokens)\n"
+                f"⚡ **Đặc quyền:** **x{p_info['xp_mult']:g} XP Bonus** vĩnh viễn!"
+                + (f"\n🏋️ **Mở khóa lệnh `/train`** (Prestige {TRAIN_REQ_PRESTIGE}+)!" if new_p >= TRAIN_REQ_PRESTIGE else "")
+            ),
+            color=0xF59E0B
+        )
+        embed_success.set_thumbnail(url="https://c.tenor.com/gc4ws16CrTYAAAAC/reimu-touhou.gif")
+        embed_success.set_footer(text="Dùng /token để mở Token Shop • Dùng /team để kiểm tra cấp độ mới")
+        await interaction.response.edit_message(content=None, embed=embed_success, view=self)
+        self.stop()
+
+    @discord.ui.button(label="❌ Hủy Bỏ", style=discord.ButtonStyle.secondary)
+    async def cancel_prestige(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên của bạn!", ephemeral=True)
+            return
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(content="🚫 Đã hủy thao tác chuyển sinh.", view=self)
+        self.stop()
+
+
+async def handle_prestige(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    cur_p = player.get("prestige", 0)
+    cur_lvl = player.get("level", 1)
+    p_info = get_prestige_info(cur_p)
+    late = cur_p >= 5
+
+    req_ok = cur_lvl >= p_info["req_lvl"]
+    status_str = "🟢 **ĐỦ ĐIỀU KIỆN CHUYỂN SINH!**" if req_ok else f"🔴 **Chưa đủ cấp độ** (Cần Lv.{p_info['req_lvl']:,} • Hiện tại: Lv.{cur_lvl})"
+    if late:
+        warn = (f"• ⚠️ **Lưu ý:** Chuyển sinh từ P5 trở lên chỉ **trừ {PRESTIGE_LATE_COST} cấp** "
+                f"(Lv.{cur_lvl} ➔ Lv.{max(1, cur_lvl - PRESTIGE_LATE_COST)}), **toàn bộ vé pull cũ được làm mới** thành vé thưởng mới!")
+    else:
+        warn = "• ⚠️ **Lưu ý cốt lõi:** Khi chuyển sinh, cấp độ sẽ đặt lại về **Lv.0** và **toàn bộ vé pull tích lũy cũ sẽ được làm mới** thành số vé thưởng mới!"
+
+    embed = discord.Embed(
+        title=f"👑 HỆ THỐNG CHUYỂN SINH - PRESTIGE (HIỆN TẠI: P{cur_p})",
+        description=(
+            f"👤 **Người chơi:** {user.mention} • Cấp hiện tại: **Lv.{cur_lvl}**\n"
+            f"⚡ **Quyền lợi hiện tại:** **x{get_prestige_xp_multiplier(cur_p):g} XP Bonus**\n"
+            f"💎 **Tokens sở hữu:** **{player.get('tokens', 0):,}** tokens\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🌟 **MỤC TIÊU TIẾP THEO: PRESTIGE {p_info['next_p']}**\n"
+            f"• 🎯 **Yêu cầu:** Đạt tối thiểu **Cấp {p_info['req_lvl']}**\n"
+            f"• 🎁 **Phần thưởng:** **+{int(p_info['pulls'])} Vé Pull** 🎟️ & **+{p_info['tokens']} Tokens** 💎\n"
+            f"• 🔓 **Cấp tối đa mới:** **Lv.{get_max_level(p_info['next_p'])}**\n"
+            f"• ⚡ **Hệ số XP:** **x{p_info['xp_mult']:g} XP**\n"
+            f"{warn}\n"
+            f"• 📦 **Sức chứa kho mới:** **{STORAGE_BASE_BY_PRESTIGE.get(p_info['next_p'], STORAGE_BASE_MAX):,}** slot!\n"
+            + (f"• 🏋️ **Từ Prestige {TRAIN_REQ_PRESTIGE}:** mở khóa lệnh `/train`!\n" if p_info['next_p'] == TRAIN_REQ_PRESTIGE else "")
+            + f"• 📌 **Trạng thái:** {status_str}"
+        ),
+        color=0xF59E0B if req_ok else 0x3B82F6
+    )
+    embed.set_footer(text="Bấm 'Xác Nhận Chuyển Sinh' bên dưới để tiến hành!")
+    view = PrestigeConfirmView(user, player, p_info)
+    if not req_ok:
+        view.children[0].disabled = True
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed, view=view)
+    else:
+        await ctx_or_interaction.send(embed=embed, view=view)
+
+
+# ------------------------------------------------------------------------------
+# 2. /item check: CHIA 2 TRANG + NÚT MŨI TÊN
+# ------------------------------------------------------------------------------
+async def handle_item_check(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    p_items = player.get("items", {})
+    act = get_active_equipment(player)
+    lines = []
+    for ik, iv in ITEMS_DATABASE.items():
+        cnt = p_items.get(ik, 0)
+        tag = " `[E - Có thể Dùng]`" if iv.get("usable") else ""
+        worn = " ✅ **(Đang trang bị)**" if ik in act.values() else ""
+        lines.append(f"• **{iv['name']}**{tag}{worn}: `{cnt}` cái\n  └ *{iv['desc']}*")
+    half = (len(lines) + 1) // 2
+    chunks = [lines[:half], lines[half:]] if len(lines) > 1 else [lines]
+    pages = []
+    for n, chunk in enumerate(chunks):
+        e = discord.Embed(
+            title=f"🎒 KHO VẬT PHẨM (ITEMS) - {user.display_name.upper()}",
+            description="\n\n".join(chunk)[:4000] or "Trống",
+            color=0x3B82F6
+        )
+        e.set_footer(text=f"Trang {n + 1}/{len(chunks)} • Dùng /item use giap_gaia hoặc /weapond để trang bị")
+        pages.append(e)
+    await _send_pager(ctx_or_interaction, pages, user.id)
+
+
+# ------------------------------------------------------------------------------
+# 3. /sac RANK: sac toàn bộ thẻ trùng theo hạng (SS / S / A / B / C / all)
+#    - Luôn giữ lại 1 lá mỗi loại, bỏ qua thẻ khóa
+#    - Thẻ nằm trong Auto Keep (/auto sac) sẽ KHÔNG bị sac
+# ------------------------------------------------------------------------------
+SAC_RANK_ALIASES = {"ss": "SS", "s": "S", "a": "A", "b": "B", "c": "C", "all": "ALL", "tatca": "ALL"}
+
+def sac_rank_plan(player: dict, rank: str):
+    ranks = list(SAC_VALUES.keys()) if rank == "ALL" else [rank]
+    keep = {str(x) for x in (player.get("auto_keep") or [])}
+    inv = player.get("inventory", {}) or {}
+    plan, kept_names = [], []
+    for cid in CARD_ORDER:
+        card = CARDS_DATA.get(cid)
+        if not card or card.get("rank") not in ranks:
+            continue
+        owned = inv.get(str(cid), 0)
+        if owned < 2 or is_card_locked(player, cid):
+            continue
+        if str(cid) in keep:
+            kept_names.append(card["name"])
+            continue
+        plan.append((cid, owned - 1, SAC_VALUES[card["rank"]]))
+    return plan, kept_names
+
+class SacRankConfirmView(discord.ui.View):
+    def __init__(self, user, rank):
+        super().__init__(timeout=60)
+        self.user = user
+        self.rank = rank
+
+    @discord.ui.button(label="✅ Xác Nhận Sac Toàn Bộ", style=discord.ButtonStyle.success)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên của bạn!", ephemeral=True)
+            return
+        for child in self.children:
+            child.disabled = True
+        player = get_player(self.user.id, self.user.display_name)
+        plan, kept = sac_rank_plan(player, self.rank)
+        if not plan:
+            await interaction.response.edit_message(content="⚠️ Không còn thẻ thừa nào để quy đổi!", embed=None, view=self)
+            self.stop()
+            return
+        inv = player.setdefault("inventory", {})
+        total_cards, total_xu = 0, 0
+        for cid, qty, val in plan:
+            inv[str(cid)] = max(1, inv.get(str(cid), 0) - qty)
+            total_cards += qty
+            total_xu += qty * val
+        player["xu"] = player.get("xu", 0) + total_xu
+        save_player(player)
+        embed = discord.Embed(
+            title="♻️ SAC TOÀN BỘ THÀNH CÔNG!",
+            description=(
+                f"🎴 Đã quy đổi **{total_cards:,} thẻ thừa** ({len(plan)} loại, hạng **{self.rank}**)\n"
+                f"{XU_EMOJI} **+{total_xu:,} Xu công đức** (Tổng: **{player['xu']:,}**)\n"
+                f"🛡️ Auto Keep giữ lại: **{len(kept)}** loại\n"
+                f"📦 Kho chứa: **{get_storage_used(player)}/{get_storage_cap(player)}** slot"
+            ),
+            color=0x10B981
+        )
+        await interaction.response.edit_message(content=None, embed=embed, view=self)
+        self.stop()
+
+    @discord.ui.button(label="❌ Hủy", style=discord.ButtonStyle.secondary)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên của bạn!", ephemeral=True)
+            return
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(content="🚫 Đã hủy quy đổi.", embed=None, view=self)
+        self.stop()
+
+_SAC_PREV_HANDLE = handle_sac
+async def handle_sac(ctx_or_interaction, id_the, so_luong: int = 1):
+    key = str(id_the or "").strip().lower()
+    rank = SAC_RANK_ALIASES.get(key)
+    if rank is None:
+        return await _SAC_PREV_HANDLE(ctx_or_interaction, id_the, so_luong)   # sac 1 thẻ như cũ
+
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    plan, kept = sac_rank_plan(player, rank)
+    if not plan:
+        msg = f"⚠️ Không có thẻ trùng nào hạng **{rank}** để quy đổi!" + (f" (Auto Keep đang giữ {len(kept)} loại)" if kept else "")
+        await _eq_send(ctx_or_interaction, content=msg, ephemeral=True)
+        return
+    total_cards = sum(q for _c, q, _v in plan)
+    total_xu = sum(q * v for _c, q, v in plan)
+    lines = [f"• #{disp_id(c)} {CARDS_DATA[c]['name']} ×**{q}** (+{q * v:,})" for c, q, v in plan[:15]]
+    if len(plan) > 15:
+        lines.append(f"... và **{len(plan) - 15}** loại khác")
+    warn_ev = [CARDS_DATA[c]["name"] for c, _q, _v in plan if c in EVOL_CONFIG and not is_card_ace2(player, c)]
+    desc = (f"♻️ Sac **toàn bộ thẻ thừa** hạng **{rank}** (giữ lại 1 lá mỗi loại)\n\n" + "\n".join(lines) +
+            f"\n\n🎴 Tổng: **{total_cards:,} thẻ** ➜ {XU_EMOJI} **+{total_xu:,} Xu**\n"
+            f"🛡️ Auto Keep đang bảo vệ: **{len(kept)}** loại")
+    if warn_ev:
+        desc += "\n⚠️ **Có thẻ là nguyên liệu tiến hóa Ace 2:** " + ", ".join(warn_ev[:8]) + "\n*(Hãy cho vào Auto Keep ở `/auto sac` nếu muốn giữ!)*"
+    embed = discord.Embed(title="♻️ XÁC NHẬN SAC TOÀN BỘ THEO HẠNG", description=desc[:4000], color=0xF59E0B)
+    view = SacRankConfirmView(user, rank)
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        await ctx_or_interaction.response.send_message(embed=embed, view=view)
+    else:
+        await ctx_or_interaction.send(embed=embed, view=view)
+
+
+# ------------------------------------------------------------------------------
+# 4. /train (Prestige 6+ và Admin)
+# ------------------------------------------------------------------------------
+TRAIN_REQ_PRESTIGE = 6
+TRAIN_COOLDOWN = 5 * 60
+TRAIN_MAX_LEVEL = 500
+TRAIN_HP_PER_LV = 1000
+TRAIN_ATK_PER_LV = 500
+TRAIN_WAIT = 120
+TRAIN_JOIN_NEEDS_P6 = True      # False: ai cũng được bấm Tham Gia phòng train
+
+_TRAIN_LVL = contextvars.ContextVar("train_lvl", default=0)
+_TRAIN_NO_DROP = contextvars.ContextVar("train_no_drop", default=None)
+active_train = None
+
+# --- 4.1 Cộng chỉ số theo cấp train vào MỌI config Boss (kể cả Phase 2 & Boss event) ---
+def _train_cfg_getitem(self, key):
+    v = dict.__getitem__(self, key)
+    if key in ("hp", "power") and isinstance(v, (int, float)) and not isinstance(v, bool):
+        f = _BOSS_SCALE.get()
+        if f != 1.0:
+            v = int(v * f)
+        t = _TRAIN_LVL.get()
+        if t > 0:
+            v = int(v) + t * (TRAIN_HP_PER_LV if key == "hp" else TRAIN_ATK_PER_LV)
+    return v
+_ScaledBossCfg.__getitem__ = _train_cfg_getitem
+
+for _n in ("EVENT_BOSS_CONFIG", "EVENT_BOSS_PHASE2_CONFIG", "SUKUNA_BOSS_CONFIG", "SUKUNA_BOSS_PHASE2_CONFIG"):
+    _v = globals().get(_n)
+    if isinstance(_v, dict) and not isinstance(_v, _ScaledBossCfg):
+        globals()[_n] = _ScaledBossCfg(_v)
+
+# --- 4.2 TRAIN KHÔNG DROP: khôi phục mọi thay đổi phần thưởng khi save trong ngữ cảnh train ---
+_TR_KEEP = ("pull_tickets", "xp", "level", "shards", "items", "tokens", "xu", "daily_quests", "event_progress")
+
+_TR_PREV_GET_PLAYER = get_player
+def get_player(user_id, username="Visitor"):
+    data = _TR_PREV_GET_PLAYER(user_id, username)
+    reg = _TRAIN_NO_DROP.get()
+    if reg is not None:
+        try:
+            reg[id(data)] = (data, {k: _tr_copy.deepcopy(data.get(k)) for k in _TR_KEEP if k in data})
+        except Exception as e:
+            print(f"[TRAIN] lỗi snapshot: {e}", flush=True)
+    return data
+
+_TR_PREV_SAVE_PLAYER = save_player
+def save_player(player_data):
+    reg = _TRAIN_NO_DROP.get()
+    if reg is not None:
+        try:
+            ent = reg.get(id(player_data))
+            if ent and ent[0] is player_data:
+                for k, v in ent[1].items():
+                    player_data[k] = _tr_copy.deepcopy(v)
+        except Exception as e:
+            print(f"[TRAIN] lỗi khôi phục thưởng: {e}", flush=True)
+    return _TR_PREV_SAVE_PLAYER(player_data)
+
+# --- 4.3 Danh sách Boss ---
+TRAIN_BOSSES = {
+    "reimu":     ("Reimu Dị Hình", 6, "BOSS_CONFIG"),
+    "seiki":     ("Seiki Dị Hình", 6, "SEIKI_BOSS_CONFIG"),
+    "jotaro":    ("Kujo Jotaro", 6, "JOTARO_BOSS_CONFIG"),
+    "mahoraga":  ("Mahoraga - Bát Ách Kiếm Thần Tướng", 6, "MAHORAGA_BOSS_CONFIG"),
+    "fateria":   ("Fateria - Khuôn Mẫu Của Số Phận", 6, "FATERIA_BOSS_CONFIG"),
+    "giorno":    ("Giorno Giovanna", 6, "GIORNO_BOSS_CONFIG"),
+    "han_seiki": ("Han Seiki the Prime One", 10, "PRIME_BOSS_CONFIG"),
+    "kizuna":    ("Kizuna - Huyết Ma Đế (Event)", 6, "EVENT_BOSS_CONFIG"),
+    "sukuna":    ("Ryomen Sukuna (Event)", 10, "SUKUNA_BOSS_CONFIG"),
+}
+TRAIN_ALIASES = {
+    "reimu": "reimu", "reimudihinh": "reimu", "seiki": "seiki", "seikidihinh": "seiki",
+    "jotaro": "jotaro", "kujo": "jotaro", "mahoraga": "mahoraga", "fateria": "fateria",
+    "giorno": "giorno", "giovanna": "giorno",
+    "hanseiki": "han_seiki", "prime": "han_seiki", "primeone": "han_seiki",
+    "kizuna": "kizuna", "sukuna": "sukuna",
+}
+
+def _train_norm_boss(raw):
+    k = str(raw or "").lower().strip().replace(" ", "").replace("_", "").replace("-", "")
+    return TRAIN_ALIASES.get(k)
+
+def _train_cfg(key):
+    return globals()[TRAIN_BOSSES[key][2]]
+
+def train_cd_remaining(player: dict, uid=None) -> int:
+    if uid is not None and is_authorized_admin(uid):
+        return 0
+    last = player.get("last_train_time", 0.0) or 0.0
+    return max(0, int(TRAIN_COOLDOWN - (time.time() - last)))
+
+def _train_busy_reason():
+    check_and_clean_expired_raid()
+    if active_train is not None:
+        return "🏋️ Đang có một phòng **/train** khác! Hãy đợi trận hiện tại kết thúc (hoặc người mở bấm **Hủy Train**)."
+    if active_raid is not None or active_prime_raid is not None:
+        return "🚨 Đang có phòng Raid khác! Hãy đợi trận hiện tại kết thúc."
+    if active_event_raid is not None or event_raid_busy:
+        return "🎃 Đang có phòng Event Boss! Hãy đợi trận hiện tại kết thúc."
+    return None
+
+async def _train_reply(ctx_or_interaction, msg):
+    if isinstance(ctx_or_interaction, discord.Interaction):
+        if ctx_or_interaction.response.is_done():
+            await ctx_or_interaction.followup.send(msg, ephemeral=True)
+        else:
+            await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+    else:
+        await ctx_or_interaction.send(msg)
+
+def _train_room_embed(key, lvl, author, is_admin):
+    label, max_p, _n = TRAIN_BOSSES[key]
+    cfg = _train_cfg(key)
+    hp_bonus, atk_bonus = lvl * TRAIN_HP_PER_LV, lvl * TRAIN_ATK_PER_LV
+    base_hp, base_atk = cfg["hp"], cfg["power"]     # đọc ngoài ngữ cảnh train -> chỉ số gốc
+    embed = discord.Embed(
+        title=f"🏋️ [TRAIN] PHÒNG LUYỆN TẬP: {label.upper()} - CẤP {lvl}",
+        description=(
+            f"👑 **Mở bởi:** {author.mention}{' *(Admin)*' if is_admin else ''}\n\n"
+            f"🐲 **{label}** được cường hóa **Lv.{lvl}**!\n"
+            f"⚠️ **Chế độ TRAIN: Boss KHÔNG rơi bất kỳ phần thưởng nào** (vé, XP, mảnh, vật phẩm, tiến độ nhiệm vụ)."
+        ),
+        color=0x0EA5E9
+    )
+    try:
+        embed.set_image(url=cfg["image"])
+    except Exception:
+        pass
+    embed.add_field(name="❤️ Máu Boss (Phase 1):", value=f"**{base_hp + hp_bonus:,} HP**\n*(Gốc {base_hp:,} + {hp_bonus:,})*", inline=True)
+    embed.add_field(name="⚔️ Sát Thương:", value=f"**{base_atk + atk_bonus:,} DMG**\n*(Gốc {base_atk:,} + {atk_bonus:,})*", inline=True)
+    embed.add_field(name=f"👥 Người Tham Gia (1/{max_p}):", value=author.display_name, inline=False)
+    embed.add_field(
+        name="📜 Quy Tắc:",
+        value=(f"• Mỗi cấp = **+{TRAIN_HP_PER_LV:,} HP** & **+{TRAIN_ATK_PER_LV:,} ATK** (cộng cho mọi Phase)\n"
+               f"• Tối đa **{max_p}** người • Chờ **2 phút** rồi tự khai màn\n"
+               f"• Hồi chiêu `/train`: **5 phút** (Admin được miễn)\n"
+               f"• Cần **Prestige {TRAIN_REQ_PRESTIGE}+** để tham gia"),
+        inline=False
+    )
+    embed.set_footer(text="Bấm 'Tham Gia' để xuất trận • Miễn phí")
+    return embed
+
+
+class TrainJoinView(discord.ui.View):
+    def __init__(self, rd):
+        super().__init__(timeout=None)
+        self.rd = rd
+
+    @discord.ui.button(label="⚔️ Tham Gia Train (Miễn phí)", style=discord.ButtonStyle.success, emoji="🏋️", row=0)
+    async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        rd = self.rd
+        if rd.get("started") or rd.get("closed"):
+            await interaction.response.send_message("Trận train đã bắt đầu hoặc thời gian chuẩn bị đã kết thúc!", ephemeral=True)
+            return
+        uid = interaction.user.id
+        if uid in rd["participants"]:
+            await interaction.response.send_message("Bạn đã có tên trong danh sách rồi!", ephemeral=True)
+            return
+        if len(rd["participants"]) >= rd["max_players"]:
+            await interaction.response.send_message(f"Đội hình đã đầy ({rd['max_players']} người)!", ephemeral=True)
+            return
+        player = get_player(uid, interaction.user.display_name)
+        is_adm = is_authorized_admin(uid)
+        if TRAIN_JOIN_NEEDS_P6 and not is_adm and player.get("prestige", 0) < TRAIN_REQ_PRESTIGE:
+            await interaction.response.send_message(f"🔒 Cần **Prestige {TRAIN_REQ_PRESTIGE}+** để tham gia train! (Hiện tại: P{player.get('prestige', 0)})", ephemeral=True)
+            return
+        rem = train_cd_remaining(player, uid)
+        if rem > 0:
+            await interaction.response.send_message(f"⏳ Bạn đang hồi chiêu /train! Chờ thêm **{rem // 60} phút {rem % 60:02d} giây**.", ephemeral=True)
+            return
+        if not _prime_prepare_team(player):
+            await interaction.response.send_message("⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` trước nhé!", ephemeral=True)
+            return
+        if not is_adm:
+            player["last_train_time"] = time.time()
+        save_player(player)
+
+        rd["participants"].append(uid)
+        rd["names"].append(interaction.user.display_name)
+        count = len(rd["participants"])
+        await interaction.response.send_message(f"🏋️ {interaction.user.mention} đã tham gia train! ({count}/{rd['max_players']})")
+        try:
+            embed = interaction.message.embeds[0]
+            embed.set_field_at(2, name=f"👥 Người Tham Gia ({count}/{rd['max_players']}):", value=", ".join(rd["names"]), inline=False)
+            await interaction.message.edit(embed=embed, view=self)
+        except Exception:
+            pass
+        if count >= rd["max_players"]:
+            rd["start_event"].set()
+
+    @discord.ui.button(label="Hủy Train", style=discord.ButtonStyle.danger, emoji="🛑", row=0)
+    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        global active_train
+        rd = self.rd
+        uid = interaction.user.id
+        if rd.get("started") or rd.get("closed"):
+            await interaction.response.send_message("⚠️ Trận đã bắt đầu hoặc đã đóng, không thể hủy!", ephemeral=True)
+            return
+        if not (is_authorized_admin(uid) or uid == rd.get("opener_id")):
+            await interaction.response.send_message("⛔ Chỉ **người mở phòng** hoặc **Admin** mới được hủy!", ephemeral=True)
+            return
+        rd["closed"] = True
+        for u in rd.get("participants", []):
+            try:
+                p = get_player(u)
+                p["last_train_time"] = 0.0
+                save_player(p)
+            except Exception as e:
+                print(f"[TRAIN] lỗi hoàn cooldown: {e}", flush=True)
+        if active_train is rd:
+            active_train = None
+        try:
+            rd["start_event"].set()
+        except Exception:
+            pass
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(content=f"🛑 **Phòng train đã bị hủy bởi {interaction.user.mention}.** Cooldown được hoàn lại.", view=self)
+
+
+async def train_lifecycle(channel, rd, view):
+    global active_train, event_raid_busy
+    try:
+        try:
+            await asyncio.wait_for(rd["start_event"].wait(), timeout=TRAIN_WAIT)
+        except asyncio.TimeoutError:
+            pass
+        for child in view.children:
+            child.disabled = True
+        if rd.get("msg"):
+            try:
+                await rd["msg"].edit(view=view)
+            except Exception:
+                pass
+        if rd.get("started") or rd.get("closed"):
+            return
+        parts = rd.get("participants", [])
+        if not parts:
+            rd["closed"] = True
+            await channel.send("🌌 Phòng train đóng lại vì không có ai tham gia.")
+            return
+
+        rd["started"] = True
+        key, lvl = rd["boss_key"], rd["train_level"]
+        label = TRAIN_BOSSES[key][0]
+        await channel.send(
+            f"⏰ **HẾT THỜI GIAN CHUẨN BỊ!** ⚔️ **{len(parts)} dũng giả** ({', '.join(rd['names'])}) bước vào luyện tập với "
+            f"**{label} Lv.{lvl}** — **TRẬN TRAIN BẮT ĐẦU!** *(Không có phần thưởng)*"
+        )
+        is_ev = key in ("kizuna", "sukuna")
+        t_lvl = _TRAIN_LVL.set(lvl)
+        t_nd = _TRAIN_NO_DROP.set({})
+        if is_ev:
+            event_raid_busy = True
+        try:
+            if key == "han_seiki":
+                await execute_prime_raid(channel, rd)
+            elif key == "kizuna":
+                await execute_event_raid(channel, rd)
+            elif key == "sukuna":
+                await execute_sukuna_raid(channel, rd)
+            else:
+                await execute_raid(channel, rd)
+        except Exception as e:
+            print(f"[TRAIN] lỗi khi chạy trận: {e}", flush=True)
+            try:
+                await channel.send(f"⚠️ Sự cố kỹ thuật trong trận train: `{e}`")
+            except Exception:
+                pass
+        finally:
+            _TRAIN_NO_DROP.reset(t_nd)
+            _TRAIN_LVL.reset(t_lvl)
+            if is_ev:
+                event_raid_busy = False
+        try:
+            await channel.send(embed=discord.Embed(
+                title="🏋️ KẾT THÚC TRẬN TRAIN",
+                description=(f"Boss **{label} Lv.{lvl}**.\n"
+                             "⚠️ Mọi phần thưởng hiển thị ở trên (vé, XP, mảnh, vật phẩm, nhiệm vụ) **CHỈ LÀ HIỂN THỊ, KHÔNG được cộng** vào tài khoản vì đây là chế độ train.\n"
+                             "⏳ Hồi chiêu `/train` kế tiếp: **5 phút**."),
+                color=0x0EA5E9))
+        except Exception:
+            pass
+    except asyncio.CancelledError:
+        return
+    except Exception as ex:
+        print(f"[TRAIN] lỗi lifecycle: {ex}", flush=True)
+    finally:
+        if active_train is rd:
+            active_train = None
+
+
+async def handle_train(ctx_or_interaction, boss="reimu", level=1):
+    global active_train
+    is_inter = isinstance(ctx_or_interaction, discord.Interaction)
+    user = ctx_or_interaction.user if is_inter else ctx_or_interaction.author
+    channel = ctx_or_interaction.channel
+    is_adm = is_authorized_admin(user.id)
+    player = get_player(user.id, user.display_name)
+
+    if not is_adm and player.get("prestige", 0) < TRAIN_REQ_PRESTIGE:
+        await _train_reply(ctx_or_interaction, f"🔒 **Lệnh /train đang bị khóa!** Cần **Prestige {TRAIN_REQ_PRESTIGE}+** (hiện tại: P{player.get('prestige', 0)}).")
+        return
+    key = _train_norm_boss(boss)
+    if key is None:
+        await _train_reply(ctx_or_interaction, "❌ Boss không hợp lệ! Chọn: `reimu`, `seiki`, `jotaro`, `mahoraga`, `fateria`, `giorno`, `hanseiki`, `kizuna`, `sukuna`.")
+        return
+    try:
+        lvl = int(level)
+    except (ValueError, TypeError):
+        lvl = 0
+    if lvl < 1 or lvl > TRAIN_MAX_LEVEL:
+        await _train_reply(ctx_or_interaction, f"❌ Cấp Boss phải từ **1** đến **{TRAIN_MAX_LEVEL}**!")
+        return
+    reason = _train_busy_reason()
+    if reason:
+        await _train_reply(ctx_or_interaction, reason)
+        return
+    rem = train_cd_remaining(player, user.id)
+    if rem > 0:
+        await _train_reply(ctx_or_interaction, f"⏳ /train đang hồi chiêu! Chờ thêm **{rem // 60} phút {rem % 60:02d} giây**.")
+        return
+    if key == "han_seiki" and not is_adm and player.get("level", 1) < 50:
+        await _train_reply(ctx_or_interaction, f"⛔ Mở Han Seiki yêu cầu tối thiểu **Lv.50** (hiện tại Lv.{player.get('level', 1)}).")
+        return
+    if not _prime_prepare_team(player):
+        await _train_reply(ctx_or_interaction, "⚠️ Bạn chưa sở hữu thẻ bài nào! Hãy gõ `/pull` trước nhé!")
+        return
+    if not is_adm:
+        player["last_train_time"] = time.time()
+    save_player(player)
+
+    label, max_p, _n = TRAIN_BOSSES[key]
+    rd = {
+        "channel_id": channel.id, "boss_type": key, "boss_key": key,
+        "boss_config": _train_cfg(key), "train_level": lvl, "max_players": max_p,
+        "participants": [user.id], "names": [user.display_name], "opener_id": user.id,
+        "created_timestamp": time.time(), "start_event": asyncio.Event(),
+        "started": False, "closed": False, "msg": None, "view": None, "task": None
+    }
+    active_train = rd
+
+    text = f"🏋️ **{user.display_name}** mở phòng luyện tập **{label} Lv.{lvl}**!"
+    if is_inter:
+        await ctx_or_interaction.response.send_message(text)
+    else:
+        await ctx_or_interaction.send(text)
+    view = TrainJoinView(rd)
+    rd["view"] = view
+    msg = await channel.send(embed=_train_room_embed(key, lvl, user, is_adm), view=view)
+    rd["msg"] = msg
+    rd["task"] = asyncio.create_task(train_lifecycle(channel, rd, view))
+
+
+@bot.tree.command(name="train", description="[Prestige 6+] Mở phòng luyện tập Boss tùy chỉnh cấp độ (không drop, hồi 5 phút)")
+@app_commands.describe(boss="Chọn Boss muốn luyện tập", level=f"Cấp Boss (1-{TRAIN_MAX_LEVEL}): mỗi cấp +1,000 HP & +500 ATK")
+@app_commands.choices(boss=[
+    app_commands.Choice(name="Reimu Dị Hình", value="reimu"),
+    app_commands.Choice(name="Seiki Dị Hình", value="seiki"),
+    app_commands.Choice(name="Kujo Jotaro", value="jotaro"),
+    app_commands.Choice(name="Mahoraga - Bát Ách Kiếm Thần Tướng", value="mahoraga"),
+    app_commands.Choice(name="Fateria - Khuôn Mẫu Số Phận", value="fateria"),
+    app_commands.Choice(name="Giorno Giovanna", value="giorno"),
+    app_commands.Choice(name="Han Seiki the Prime One", value="han_seiki"),
+    app_commands.Choice(name="Kizuna - Huyết Ma Đế (Event)", value="kizuna"),
+    app_commands.Choice(name="Ryomen Sukuna (Event)", value="sukuna"),
+])
+async def slash_train(interaction: discord.Interaction, boss: str, level: int = 1):
+    await handle_train(interaction, boss, level)
+
+@bot.command(name="train")
+async def prefix_train(ctx, boss: str = "reimu", level: int = 1):
+    await handle_train(ctx, boss, level)
+
+@bot.command(name="trainreset")
+async def prefix_train_reset(ctx):
+    """Admin: gỡ phòng train bị kẹt."""
+    global active_train, event_raid_busy
+    if not is_authorized_admin(ctx.author.id):
+        await ctx.send("⛔ Từ chối quyền truy cập!")
+        return
+    if active_train is not None and active_train.get("task") and not active_train["task"].done():
+        active_train["task"].cancel()
+    active_train = None
+    event_raid_busy = False
+    await ctx.send("🧹 Đã reset phòng /train bị kẹt!")
+
+# --- Chặn /raid và /event raid khi đang có phòng train ---
+_TR_PREV_RAID_OPEN = handle_raid_open
+async def handle_raid_open(ctx_or_interaction, boss="han_seiki"):
+    if active_train is not None:
+        await _train_reply(ctx_or_interaction, "🏋️ Đang có phòng **/train**! Hãy đợi trận train kết thúc rồi mở raid.")
+        return
+    return await _TR_PREV_RAID_OPEN(ctx_or_interaction, boss)
+
+_TR_PREV_EVENT_OPEN = handle_event_raid_open
+async def handle_event_raid_open(ctx_or_interaction):
+    if active_train is not None:
+        await _train_reply(ctx_or_interaction, "🏋️ Đang có phòng **/train**! Hãy đợi trận train kết thúc rồi mở Event Boss.")
+        return
+    return await _TR_PREV_EVENT_OPEN(ctx_or_interaction)
+
+
+# ------------------------------------------------------------------------------
+# 5. /cooldown: THÊM /train (KHÓA nếu chưa đạt P6)
+# ------------------------------------------------------------------------------
+async def handle_cooldown(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    now = time.time()
+    is_adm = is_authorized_admin(user.id)
+
+    raid_rem = raid_cd_remaining(player, user.id)
+    daily_rem = get_seconds_until_midnight_vn() if player.get("last_daily_date") == get_today_vn() else 0
+    ev_rem = 0 if is_adm else max(0, int(3600 - (now - player.get("last_event_raid_time", 0.0))))
+    loot_rem = max(0, int(LOOT_COOLDOWN - (now - player.get("last_loot_time", 0.0))))
+    ev_note = "" if EVENT_CONFIG.get("active", True) else "\n   └ 🚫 *Sự kiện hiện đang đóng*"
+
+    if (not is_adm) and player.get("prestige", 0) < TRAIN_REQ_PRESTIGE:
+        train_txt = f"🔒 **Khóa** — cần Prestige {TRAIN_REQ_PRESTIGE}+ (hiện tại P{player.get('prestige', 0)})"
+    else:
+        train_txt = _nb_cd_text(train_cd_remaining(player, user.id))
+
+    embed = discord.Embed(
+        title=f"⏱️ THỜI GIAN HỒI CHIÊU - {user.display_name.upper()}",
+        description=(
+            f"⚔️ **/raid** *(mở hoặc tham gia đều tính hồi 15 phút)*\n   └ {_nb_cd_text(raid_rem)}\n\n"
+            f"🎁 **/daily** *(reset 00:00 giờ VN)*\n   └ " + ("✅ **Sẵn sàng!**" if daily_rem <= 0 else f"✔️ Đã nhận hôm nay • reset sau {_nb_cd_text(daily_rem)}") + "\n\n"
+            f"🎃 **/event raid** *(hồi 1 tiếng)*\n   └ {_nb_cd_text(ev_rem)}{ev_note}\n\n"
+            f"🎒 **/loot** *(hồi 10 phút)*\n   └ {_nb_cd_text(loot_rem)}\n\n"
+            f"🏋️ **/train** *(hồi 5 phút • Prestige {TRAIN_REQ_PRESTIGE}+)*\n   └ {train_txt}"
+        ),
+        color=0x3B82F6
+    )
+    embed.set_footer(text="Hakurei Shrine • Admin được miễn hồi chiêu /raid, /event raid và /train")
+    await _eq_send(ctx_or_interaction, embed=embed)
+
+# ------------------------------------------------------------------------------
+# 6. /help: thêm dòng /train
+# ------------------------------------------------------------------------------
+_TR_PREV_HELP = send_help_paged
+async def send_help_paged(ctx_or_interaction, embed):
+    try:
+        embed.add_field(
+            name="🏋️ LỆNH TRAIN (Prestige 6+)",
+            value=(f"• `/train <boss> <cấp 1-{TRAIN_MAX_LEVEL}>` : Luyện tập Boss tùy chỉnh (+1,000 HP / +500 ATK mỗi cấp), "
+                   "không drop gì, hồi 5 phút.\n• `/sac SS|S|A|B|C|all` : Sac toàn bộ thẻ trùng theo hạng (Auto Keep được bảo vệ)."),
+            inline=False
+        )
+    except Exception as e:
+        print(f"[TRAIN] lỗi thêm help: {e}", flush=True)
+    return await _TR_PREV_HELP(ctx_or_interaction, embed)
+
+# ===================== HẾT KHỐI UPDATE TRAIN / PRESTIGE / SAC =====================
 import sys
 
 def start_bot_safely():
