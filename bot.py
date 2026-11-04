@@ -15219,7 +15219,6 @@ class AdminGiveGroup(app_commands.Group, name="admin_give", description="[CHỦ 
         nguoi_dung="Người nhận (để trống nếu tự cấp cho bản thân)"
     )
     @app_commands.choices(vat_pham=[
-        @app_commands.choices(vat_pham=[
         app_commands.Choice(name="Thánh Lõi (thanh_loi)", value="thanh_loi"),
         app_commands.Choice(name="Kẹo Halloween 🍬 (keo_halloween)", value="keo_halloween"),
         app_commands.Choice(name="Rương Halloween Ma Quái [E] (ruong_halloween_e)", value="ruong_halloween_e"),
