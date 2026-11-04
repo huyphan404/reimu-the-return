@@ -15219,16 +15219,17 @@ class AdminGiveGroup(app_commands.Group, name="admin_give", description="[CHỦ 
         nguoi_dung="Người nhận (để trống nếu tự cấp cho bản thân)"
     )
     @app_commands.choices(vat_pham=[
+        @app_commands.choices(vat_pham=[
         app_commands.Choice(name="Thánh Lõi (thanh_loi)", value="thanh_loi"),
         app_commands.Choice(name="Kẹo Halloween 🍬 (keo_halloween)", value="keo_halloween"),
         app_commands.Choice(name="Rương Halloween Ma Quái [E] (ruong_halloween_e)", value="ruong_halloween_e"),
+        app_commands.Choice(name="Đĩa Ký Ức Jotaro 💿 (dia_ky_uc_jotaro)", value="dia_ky_uc_jotaro"),
+        app_commands.Choice(name="Mũi Tên Requiem 🏹 (requiem_arrow)", value="requiem_arrow"),
+        app_commands.Choice(name="Crystal 💎 (crystal)", value="crystal"),
+        app_commands.Choice(name="Quạt Giấy 🪭 (quat_giay)", value="quat_giay"),
         app_commands.Choice(name="Nanh Fenrir 🐺 (nanh_fenrir)", value="nanh_fenrir"),
         app_commands.Choice(name="Liềm Hỗn Mang 🌙 (liem_hon_mang)", value="liem_hon_mang"),
-        app_commands.Choice(name="Giáp Gaia 🛡️ (giap_gaia)", value="giap_gaia"),
-        app_commands.Choice(name="Quạt Giấy 🪭 (quat_giay)", value="quat_giay"),
-        app_commands.Choice(name="Đĩa Ký Ức Jotaro 💿 (dia_ky_uc_jotaro)", value="dia_ky_uc_jotaro"),
-        app_commands.Choice(name="Nanh Fenrir 🐺", value="nanh_fenrir"),
-        app_commands.Choice(name="Giáp Gaia 🛡️", value="giap_gaia")
+        app_commands.Choice(name="Giáp Gaia 🛡️ (giap_gaia)", value="giap_gaia")
     ])
     async def slash_admin_give_item(self, interaction: discord.Interaction, vat_pham: str, so_luong: int = 1, nguoi_dung: Optional[Union[discord.Member, discord.User]] = None):
         if not is_authorized_admin(interaction.user.id):
