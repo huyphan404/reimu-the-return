@@ -25932,7 +25932,7 @@ def t9_combat_turn(st: dict, card: dict, is_ace2: bool = False, skills_locked: b
         if is_ace2:
             if erased != "t9_lullaby":
                 opts.append(("lullaby", 0.30 + rate))
-            if erased != "t9_requiem":
+            if erased != "t9_requiem" and st.get("requiem", 0) < 2:
                 opts.append(("requiem", 0.25 + rate))
         random.shuffle(opts)
         for key, ch in opts:
@@ -25961,13 +25961,15 @@ def t9_combat_turn(st: dict, card: dict, is_ace2: bool = False, skills_locked: b
                     f"(đồng minh được hồi **45% HP** nhưng nhận thêm **20% sát thương**, bản thân hồi **10% HP**). Trong lúc này Silver Chariot chỉ đánh thường!"
                 )
             else:
+                st["requiem"] = st.get("requiem", 0) + 1
                 counter = random.random() < 0.60
                 res["req"] = "counter" if counter else "retreat"
                 res["gif"] = T9_REQUIEM_GIF
+                req_count_text = f"*(Lần {st['requiem']}/2)*"
                 if counter:
-                    logs.append(f"🎯 **{tag}** kích hoạt **THE REQUIEM** ({int(ch * 100)}%)! Địch lao vào tấn công (60%) — nếu đánh trúng sẽ bị **phản 120% sát thương** (mất hiệu lực nếu trượt)!")
+                    logs.append(f"🎯 **{tag}** kích hoạt **THE REQUIEM** ({int(ch * 100)}%)! Địch lao vào tấn công (60%) — nếu đánh trúng sẽ bị **phản 120% sát thương** (mất hiệu lực nếu trượt)! {req_count_text}")
                 else:
-                    logs.append(f"🛡️ **{tag}** kích hoạt **THE REQUIEM** ({int(ch * 100)}%)! Địch cảm nhận hơi thở chết chóc và **cẩn trọng lùi ra xa** (40%), không dám đánh trong turn này!")
+                    logs.append(f"🛡️ **{tag}** kích hoạt **THE REQUIEM** ({int(ch * 100)}%)! Địch cảm nhận hơi thở chết chóc và **cẩn trọng lùi ra xa** (40%), không dám đánh trong turn này! {req_count_text}")
             break
  
     # 10% đánh thường 2 lần khi đang Vũ điệu
