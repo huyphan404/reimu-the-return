@@ -16471,7 +16471,7 @@ PRIME_BOSS_CONFIG = {
     "reimu_quote": "Khí tức này... không phải thứ mà con người nên đối mặt. Tất cả đồng lòng, đừng để hắn đảo ngược cuộc chiến!",
     "image": PRIME_GIF_SPAWN,
     "hp": 200000,
-    "power": 11000,
+    "power": 14500,
     "dmg_reduction": 0.20,
     "kill_heal_pct": 0.025,
     "skills": {
@@ -16640,7 +16640,7 @@ async def spawn_prime_raid(channel, author, is_admin=False):
         name="⚖️ Nội Tại & Kỹ Năng:",
         value=(
             "• 🛡️ **Linh hồn của công lý (Passive):** Giảm **20% sát thương nhận vào**. Mỗi lần hạ được **1 thẻ bài**, hồi **1,5% máu tối đa**!\n"
-            "• 🔄 **Phản chuyển Niệm Bóng (25%):** Đảo ngược khái niệm, giáng đòn hủy diệt **2.2x sát thương gốc (24,200 DMG)** chia đều tiền tuyến!\n"
+            "• 🔄 **Phản chuyển Niệm Bóng (25%):** Đảo ngược khái niệm, giáng đòn hủy diệt **2.2x sát thương gốc (31,900 DMG)** chia đều tiền tuyến!\n"
             "• 🧩 **Gán ghép (15%):** Tập hợp các khái niệm gán lại, **hồi 20% máu tối đa**!\n"
             "• ♾️ **Nhị Phân Vô Cực khái niệm (10%):** Đòn kết liễu — **hạ gục ngay 1 mục tiêu ngẫu nhiên (1 hit)**, "
             "**BỎ QUA mọi kỹ năng phòng thủ** (Yukari, Kizuna, Hong Meiling, Reimu, Seiki, Kasen...)!"
