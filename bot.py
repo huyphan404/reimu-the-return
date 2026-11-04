@@ -7405,6 +7405,14 @@ async def slash_admin_add_shard(interaction: discord.Interaction, loai_shard: st
         s_key = "fateria"
     elif s_key in ["kanae", "t6", "wasuko", "kanae_shard"]:
         s_key = "kanae"
+    elif s_key in ["chariot", "t9", "silverchariot", "silver_chariot", "scr", "giorno", "giovanna"]:
+        s_key = "chariot"
+    elif s_key in ["jotaro", "t5", "kujo"]:
+        s_key = "jotaro"
+    elif s_key in ["kisami", "t7", "mikawa"]:
+        s_key = "kisami"
+    elif s_key in ["sukuna", "t8", "finger", "ryomen"]:
+        s_key = "sukuna"
     elif s_key in ["thanh_loi", "thanhloi", "core", "loi"]:
         s_key = "thanh_loi"
     shards = target_player.setdefault("shards", {})
@@ -7444,6 +7452,12 @@ async def prefix_admin_add_shard(ctx, loai_shard: str = "seiki", quantity: int =
         s_key = "kanae"
     elif s_key in ["jotaro", "t5", "kujo"]:
         s_key = "jotaro"
+    elif s_key in ["chariot", "t9", "silverchariot", "silver_chariot", "scr", "giorno", "giovanna"]:
+        s_key = "chariot"
+    elif s_key in ["kisami", "t7", "mikawa"]:
+        s_key = "kisami"
+    elif s_key in ["sukuna", "t8", "finger", "ryomen"]:
+        s_key = "sukuna"
     elif s_key in ["thanh_loi", "thanhloi", "core", "loi"]:
         s_key = "thanh_loi"
     shards = target_player.setdefault("shards", {})
@@ -7515,6 +7529,7 @@ def do_remove_shard(target_player: dict, s_key: str, so_luong: int):
     app_commands.Choice(name="Kanae Shards (kanae)", value="kanae"),
     app_commands.Choice(name="Kisami Shards (kisami)", value="kisami"),
     app_commands.Choice(name="Sukuna Finger (sukuna)", value="sukuna"),
+    app_commands.Choice(name="Chariot Shards (chariot)", value="chariot"),
     app_commands.Choice(name="Thánh Lõi (thanh_loi)", value="thanh_loi")
 ])
 async def slash_admin_remove_shard(interaction: discord.Interaction, nguoi_dung: Union[discord.Member, discord.User], loai_shard: str, so_luong: int = 1):
@@ -7563,7 +7578,7 @@ async def prefix_admin_remove_shard(ctx, member: discord.Member = None, loai_sha
 
     s_key = normalize_shard_key(loai_shard)
     if not s_key:
-        await ctx.send(f"❌ Loại mảnh `{loai_shard}` không hợp lệ! (Hợp lệ: seiki, mahoraga, kizuna, fateria, thanh_loi)")
+        await ctx.send(f"❌ Loại mảnh `{loai_shard}` không hợp lệ! (Hợp lệ: seiki, mahoraga, kizuna, fateria, jotaro, kanae, kisami, sukuna, chariot, thanh_loi)")
         return
 
     target_player = get_player(member.id, member.display_name)
@@ -9768,6 +9783,17 @@ async def handle_view_shards(ctx_or_interaction):
         ),
         inline=False
     )
+    chariot_shards = shards_dict.get("chariot", 0)
+    embed.add_field(
+        name="🗡️ Chariot Shards (Silver Chariot):",
+        value=(
+            f"• Hiện có: **`{chariot_shards}/10` Chariot Shards** (Kho thẻ #t9: {player['inventory'].get('t9', 0)} lá)\n"
+            f"• Tiến độ: `{get_hp_bar(min(15, chariot_shards), 15)}` ({min(100, chariot_shards * 15)}%)\n"
+            f"• Đổi thẻ: `/t translate loai_shard:chariot` khi đủ 10 mảnh\n"
+            f"• Nguồn rơi: Rơi từ Boss **Giorno Giovanna** (14%)."
+        ),
+        inline=False
+    )
     embed.set_thumbnail(url=card_info["image"])
     if isinstance(ctx_or_interaction, discord.Interaction):
         await ctx_or_interaction.response.send_message(embed=embed)
@@ -9785,7 +9811,8 @@ class ShardGroup(app_commands.Group, name="t", description="Quản lý kho mản
         app_commands.Choice(name="Kanae Shards (10 mảnh -> Thẻ [T] #6 Kanae)", value="kanae"),
         app_commands.Choice(name="Mảnh Fateria (20 mảnh -> Thẻ [T] #t4 Fateria)", value="fateria"),
         app_commands.Choice(name="Kisami Shards (10 mảnh -> Thẻ [T] #t7 Kisami)", value="kisami"),
-        app_commands.Choice(name="Sukuna Finger (10 ngón -> Thẻ [T] #t8 Sukuna)", value="sukuna")
+        app_commands.Choice(name="Sukuna Finger (10 ngón -> Thẻ [T] #t8 Sukuna)", value="sukuna"),
+        app_commands.Choice(name="Chariot Shards (15 mảnh -> Thẻ [T] #t9 Silver Chariot)", value="chariot")
     ])
     async def slash_t_translate(self, interaction: discord.Interaction, loai_shard: str = "seiki"):
         await handle_translate_shard(interaction, loai_shard)
@@ -15057,6 +15084,8 @@ class ItemGroup(app_commands.Group, name="item", description="Quản lý kho v�
         app_commands.Choice(name="Kẹo Halloween", value="keo_halloween"),
         app_commands.Choice(name="Rương Halloween [E]", value="ruong_halloween_e"),
         app_commands.Choice(name="Đĩa Ký Ức Jotaro 💿 (dia_ky_uc_jotaro)", value="dia_ky_uc_jotaro"),
+        app_commands.Choice(name="Requiem Arrow 🏹 (requiem_arrow)", value="requiem_arrow"),
+        app_commands.Choice(name="Crystal 💎 (crystal)", value="crystal"),
         app_commands.Choice(name="Quạt Giấy 🪭 (quat_giay)", value="quat_giay"),
         app_commands.Choice(name="Nanh Fenrir 🐺 (nanh_fenrir)", value="nanh_fenrir"),
         app_commands.Choice(name="Liềm Hỗn Mang 🌙 (liem_hon_mang)", value="liem_hon_mang"),
@@ -15259,6 +15288,10 @@ async def prefix_admin_give_item(ctx, vat_pham: str = "thanh_loi", so_luong: int
     if clean_vp in ["thanhloi", "thanh_loi", "core", "loi"]: clean_vp = "thanh_loi"
     elif clean_vp in ["keo", "candy", "keo_halloween"]: clean_vp = "keo_halloween"
     elif clean_vp in ["ruong", "ruong_halloween", "ruong_halloween_e"]: clean_vp = "ruong_halloween_e"
+    elif clean_vp in ["requiem", "arrow", "requiem_arrow", "tenrequiem"]: clean_vp = "requiem_arrow"
+    elif clean_vp in ["crystal", "tinhthe"]: clean_vp = "crystal"
+    elif clean_vp in ["quat", "quatgiay", "quat_giay"]: clean_vp = "quat_giay"
+    elif clean_vp in ["jotaro", "dia", "dia_ky_uc_jotaro"]: clean_vp = "dia_ky_uc_jotaro"
 
     if clean_vp not in ITEMS_DATABASE:
         await ctx.send(f"❌ Mã vật phẩm `{vat_pham}` không tồn tại! (Hợp lệ: `thanh_loi`, `keo_halloween`, `ruong_halloween_e`)")
@@ -25185,12 +25218,18 @@ GIORNO_GIF_PUNCH = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c161
 GIORNO_GIF_HEAL = "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/32/2e/eIBl8mzT.gif"
 GIORNO_GIF_PASSIVE = None                # bạn chưa đưa gif passive -> dán link vào đây nếu có
 
-GIORNO_SHARD_RATE = 0.14                 # 14% rơi Giorno Shard
-GIORNO_ARROW_RATE = 0.01                 # 1% rơi Requiem Arrow (item tiến hóa)
-GIORNO_XP_RATE = 0.50                    # 50% nhận XP
-GIORNO_XP_MULT = 2.0                     # = 2x XP hiện tại trong cấp
-GIORNO_TICKETS_P1 = 15.0                  # vé thưởng khi hạ Phase 1 (đặt 0 nếu không muốn)
-GIORNO_TICKETS_P2 = 25.0                 # vé thưởng khi hạ Phase 2 (đặt 0 nếu không muốn)
+# --- Phase 1 ---
+GIORNO_P1_SHARD_RATE = 0.07              # 7% rơi Chariot Shard
+GIORNO_P1_ARROW_RATE = 0.01              # 1% rơi Requiem Arrow
+GIORNO_P1_XP_RATE = 0.50                 # 50% nhận XP
+GIORNO_P1_XP_MULT = 1.5                  # = 1,5x XP hiện tại trong cấp
+GIORNO_TICKETS_P1 = 20.0                 # 100% nhận 20 vé
+# --- Phase 2 ---
+GIORNO_P2_SHARD_RATE = 0.12              # 12% rơi Chariot Shard
+GIORNO_P2_ARROW_RATE = 0.05              # 5% rơi Requiem Arrow
+GIORNO_P2_XP_RATE = 0.50                 # 50% nhận XP
+GIORNO_P2_XP_MULT = 2.0                  # = 2x XP hiện tại trong cấp
+GIORNO_TICKETS_P2 = 20.0                 # 100% nhận 20 vé
 GIORNO_LIFE_OVERFLOW = False             # False: sinh vật tank TRỌN sát thương (phần dư mất luôn); True: phần dư chạm Boss
 GIORNO_DEATHLOOP_IGNORE_REVIVE = True    # True: Death loop bỏ qua cả hồi sinh (Liềm, Sakuya Ace 3, ...)
 GIORNO_MAX_ROUNDS = 70
@@ -25216,10 +25255,10 @@ ITEMS_DATABASE["requiem_arrow"] = {
     "id": "requiem_arrow", "name": "Requiem Arrow 🏹", "usable": False, "tradeable": True,
     "desc": "Mũi tên Requiem huyền thoại, vật phẩm tiến hóa đặc biệt. Rơi từ Boss Giorno Giovanna (1%)."
 }
-SHARD_DISPLAY_NAMES["giorno"] = "Giorno Shards"
-SHARD_EMOJIS["giorno"] = "🐞"
-if "giorno" not in SHARD_TRADE_KEYS:
-    SHARD_TRADE_KEYS.append("giorno")
+SHARD_DISPLAY_NAMES["chariot"] = "Chariot Shards"
+SHARD_EMOJIS["chariot"] = "🗡️"
+if "chariot" not in SHARD_TRADE_KEYS:
+    SHARD_TRADE_KEYS.append("chariot")
 
 _GIO_PREV_NORM_SHARD = normalize_shard_key
 def normalize_shard_key(raw: str):
@@ -25287,10 +25326,17 @@ async def spawn_boss_raid(channel, author=None, boss_type=None, admin=True):
         inline=False
     )
     embed.add_field(
-        name="🎁 Phần Thưởng (hạ cả 2 Phase):",
-        value=(f"• 🐞 **{int(GIORNO_SHARD_RATE * 100)}%** rơi **Giorno Shard**\n"
-               f"• 🏹 **{int(GIORNO_ARROW_RATE * 100)}%** rơi **Requiem Arrow** (item tiến hóa)\n"
-               f"• ✨ **{int(GIORNO_XP_RATE * 100)}%** nhận **×{GIORNO_XP_MULT:g} XP** hiện tại trong cấp"),
+        name="🎁 Phần Thưởng:",
+        value=(
+            f"• 📦 **Phase 1:** 100% **{GIORNO_TICKETS_P1:.0f} Vé Pull** | "
+            f"{int(GIORNO_P1_XP_RATE * 100)}% **×{GIORNO_P1_XP_MULT:g} XP** | "
+            f"{int(GIORNO_P1_ARROW_RATE * 100)}% **Requiem Arrow** 🏹 | "
+            f"{int(GIORNO_P1_SHARD_RATE * 100)}% **Chariot Shard** 🗡️\n"
+            f"• 💎 **Phase 2:** 100% **{GIORNO_TICKETS_P2:.0f} Vé Pull** | "
+            f"{int(GIORNO_P2_XP_RATE * 100)}% **×{GIORNO_P2_XP_MULT:g} XP** | "
+            f"{int(GIORNO_P2_ARROW_RATE * 100)}% **Requiem Arrow** 🏹 | "
+            f"{int(GIORNO_P2_SHARD_RATE * 100)}% **Chariot Shard** 🗡️"
+        ),
         inline=False
     )
     embed.add_field(
@@ -25608,7 +25654,33 @@ async def _gio_run_phase(channel, battle_msg, combatants, phase, all_turns):
 
     return B["hp"], rounds, max_hp
 
-
+def _gio_reward_roll(p, phase, raid_data=None):
+    """Phát thưởng 1 phase cho người chơi p (chưa save). Trả về list dòng hiển thị."""
+    if phase == 1:
+        tickets, s_rate, a_rate = GIORNO_TICKETS_P1, GIORNO_P1_SHARD_RATE, GIORNO_P1_ARROW_RATE
+        x_rate, x_mult = GIORNO_P1_XP_RATE, GIORNO_P1_XP_MULT
+    else:
+        tickets, s_rate, a_rate = GIORNO_TICKETS_P2, GIORNO_P2_SHARD_RATE, GIORNO_P2_ARROW_RATE
+        x_rate, x_mult = GIORNO_P2_XP_RATE, GIORNO_P2_XP_MULT
+    got = []
+    if tickets > 0:
+        p["pull_tickets"] += tickets
+        got.append(f"🎟️ **+{tickets:.0f} Vé Pull** (100%)")
+    sh = p.setdefault("shards", {})
+    it = p.setdefault("items", {})
+    if _gio_rand.random() < s_rate:
+        sh["chariot"] = sh.get("chariot", 0) + 1
+        got.append(f"🗡️ **+1 Chariot Shard** ({s_rate * 100:g}%! Kho: {sh['chariot']})")
+    if _gio_rand.random() < a_rate:
+        it["requiem_arrow"] = it.get("requiem_arrow", 0) + 1
+        got.append(f"🏹 **+1 Requiem Arrow** ({a_rate * 100:g}% Cực Hiếm! Kho: {it['requiem_arrow']})")
+    if _gio_rand.random() < x_rate:
+        _l, xp_in, needed, _r = get_level_progress(p.get("xp", 0), p.get("prestige", 0))
+        gain = int(xp_in * x_mult)
+        if gain > 0:
+            p["xp"] += gain
+            got.append(f"✨ **+{gain:,} XP** ({x_rate * 100:g}% - ×{x_mult:g} XP cấp hiện tại [{xp_in:,}/{needed:,}])")
+    return got
 # ---------------- TOÀN BỘ TRẬN ----------------
 async def execute_giorno_raid(channel, raid_data):
     participants = raid_data["participants"]
@@ -25648,11 +25720,12 @@ async def execute_giorno_raid(channel, raid_data):
         return
 
     # ---------- THƯỞNG PHASE 1 ----------
-    if GIORNO_TICKETS_P1 > 0:
-        for uid in participants:
-            p = get_player(uid)
-            p["pull_tickets"] += GIORNO_TICKETS_P1
-            save_player(p)
+    p1_lines = []
+    for uid in participants:
+        p = get_player(uid)
+        got1 = _gio_reward_roll(p, 1, raid_data)
+        save_player(p)
+        p1_lines.append(f"🏆 **{p['username']}**:\n   └ " + "\n   └ ".join(got1))
 
     # ---------- PHASE 2 ----------
     alert = discord.Embed(
@@ -25694,24 +25767,7 @@ async def execute_giorno_raid(channel, raid_data):
     for uid in participants:
         p = get_player(uid)
         old_lvl = calculate_level_from_xp(p.get("xp", 0), p.get("prestige", 0))
-        got = []
-        if GIORNO_TICKETS_P2 > 0:
-            p["pull_tickets"] += GIORNO_TICKETS_P2
-            got.append(f"🎟️ **+{GIORNO_TICKETS_P2:.0f} Vé Pull**")
-        sh = p.setdefault("shards", {})
-        it = p.setdefault("items", {})
-        if _gio_rand.random() < GIORNO_SHARD_RATE:
-            sh["giorno"] = sh.get("giorno", 0) + 1
-            got.append(f"🐞 **+1 Giorno Shard** ({int(GIORNO_SHARD_RATE * 100)}%! Kho: {sh['giorno']})")
-        if _gio_rand.random() < GIORNO_ARROW_RATE:
-            it["requiem_arrow"] = it.get("requiem_arrow", 0) + 1
-            got.append(f"🏹 **+1 Requiem Arrow** ({int(GIORNO_ARROW_RATE * 100)}% Cực Hiếm! Kho: {it['requiem_arrow']})")
-        if _gio_rand.random() < GIORNO_XP_RATE:
-            _l, xp_in, needed, _r = get_level_progress(p.get("xp", 0), p.get("prestige", 0))
-            gain = int(xp_in * GIORNO_XP_MULT)
-            if gain > 0:
-                p["xp"] += gain
-                got.append(f"✨ **+{gain:,} XP** ({int(GIORNO_XP_RATE * 100)}% - ×{GIORNO_XP_MULT:g} XP cấp hiện tại [{xp_in:,}/{needed:,}])")
+        got = _gio_reward_roll(p, 2, raid_data)
         for n_ in update_daily_quest_progress(p, "raid", 1) + update_event_quest_progress(p, "raid", 1):
             got.append(n_)
         save_player(p)
@@ -25731,6 +25787,8 @@ async def execute_giorno_raid(channel, raid_data):
         color=0x10B981
     )
     final.set_thumbnail(url=p2["image"])
+    if p1_lines:
+        final.add_field(name="📦 Phần Thưởng Phase 1 (đã trao):", value=_jt_cut("\n".join(p1_lines), 1000), inline=False)
     chunk, clen, idx = [], 0, 1
     for ln in lines:
         if chunk and clen + len(ln) > 950:
