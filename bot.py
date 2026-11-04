@@ -23655,6 +23655,7 @@ def _t2a_raid_core(c, ac, dmg, heal_mult=1.0):
         total = int(min(0.90, c["mahoraga_adapt_turns"] * 0.05) * 100)
         gif = T2A_PHAP_GIF
         lines.append(f"☸️ **{tag}** hô vang **PHÁP LUÂN!** (20%) Lập tức **+25% thích nghi**! Kháng sát thương hiện tại: **{total}%** *(Lần {st['phap']}/{T2A_PHAP_MAX})*")
+    return dmg, lines, gif
 
 _T2A_PREV_RAID_ATTACK = t7_raid_attack
 def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
@@ -25762,7 +25763,7 @@ T9_ACE2_KEEP_ACE1_SKILLS = False   # True: Ace 2 vẫn giữ Fencing Barrage + S
 T9_ACE2_KEEP_DANCE = False          # True: Ace 2 vẫn giữ passive Vũ điệu
 T9_RAID_TRUE_CAP_PCT = 0.25        # trần sát thương % máu cộng dồn lên Boss (raid thường/event)
 T9_SHARD_ALIASES = ("chariot", "t9", "silverchariot", "silver_chariot", "chariot_shard", "scr", "giorno", "giovanna")
- 
+import sys as _t9_sys
 # ---------------------------- 2. ĐĂNG KÝ THẺ T9 VÀO CÁC BẢNG CÓ SẴN ----------------------------
 CARDS_DATA["t9"] = {
     "id": "t9", "name": "Silver Chariot", "rank": "T",
