@@ -7805,13 +7805,13 @@ class EvolSelectView(discord.ui.View):
             return
         await do_evolve_interaction(interaction, self.player, "t3")
 
-    @discord.ui.button(label="🔮 [#t1] Tiến Hóa Seiki Ace 2 (10 Mảnh + Ace2 Marisa/Reimu/Sakuya)", style=discord.ButtonStyle.secondary, emoji="♾️", row=3)
+    @discord.ui.button(label="🔮 [#t1] Tiến Hóa Seiki Ace 2 (10 Mảnh + Ace2 Marisa/Reimu/Sakuya + P2)", style=discord.ButtonStyle.secondary, emoji="♾️", row=3)
     async def button_evol_seiki(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
             return
         await do_evolve_interaction(interaction, self.player, "t1")
-    @discord.ui.button(label="⏱️ [#t5] Tiến Hóa Jotaro Ace 2 (10 Mảnh + Đĩa Ký Ức)", style=discord.ButtonStyle.primary, emoji="⭐", row=4)
+    @discord.ui.button(label="⏱️ [#t5] Tiến Hóa Jotaro Ace 2 (10 Mảnh + Đĩa Ký Ức + P4)", style=discord.ButtonStyle.primary, emoji="⭐", row=4)
     async def button_evol_jotaro(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
             await interaction.response.send_message("❌ Đây không phải giao diện của bạn!", ephemeral=True)
@@ -9758,7 +9758,7 @@ async def handle_view_shards(ctx_or_interaction):
             f"• Hiện có: **`{jotaro_shards}/15` mảnh** (Kho thẻ #t5: {player['inventory'].get('t5', 0)} lá)\n"
             f"• Tiến độ: `{get_hp_bar(min(15, jotaro_shards), 15)}`\n"
             f"• Đổi thẻ: `/t translate loai_shard:jotaro` khi đủ 15 mảnh\n"
-            f"• Ace 2: cần thêm **10 mảnh** + **Đĩa Ký Ức Jotaro 💿**\n"
+            f"• Ace 2: cần thêm **10 mảnh** + **Đĩa Ký Ức Jotaro 💿** + **Prestige 4+**\n"
             f"• Nguồn rơi: Boss **Kujo Jotaro** (5% mảnh, 1% Đĩa Ký Ức)"
         ),
         inline=False
@@ -18606,7 +18606,8 @@ async def send_equip_drop_report(channel, raid_data):
                 description=f"🏆 **{name}** đã nhận được **{info['name']}**!\n{info['desc']}",
                 color=info["color"]
             )
-            emb.set_thumbnail(url=info["image"])
+            if info.get("image"):
+                emb.set_thumbnail(url=info["image"])
             await channel.send(embed=emb)
     except Exception as e:
         print(f"[EQ] lỗi send_equip_drop_report: {e}", flush=True)
@@ -18675,7 +18676,8 @@ async def handle_equip_item(ctx_or_interaction, player, item_id: str):
         description=f"📌 **Vị trí:** {info['slot_name']}\n{info['desc']}\n\n*(Dùng lại lệnh để tháo ra. Chỉ số được cộng khi vào trận.)*",
         color=info["color"]
     )
-    embed.set_thumbnail(url=info["image"])
+    if info.get("image"):
+        embed.set_thumbnail(url=info["image"])
     await _eq_send(ctx_or_interaction, embed=embed)
 
 @bot.tree.command(name="weapond", description="Trang bị / tháo / đổi vũ khí (Nanh Fenrir 🐺 hoặc Liềm Hỗn Mang 🌙)")
@@ -24063,9 +24065,9 @@ KATANA_ID, KATANA_ATK = "katana", 50
 CHAIN_ID, CHAIN_HP = "chain_armor", 100
 TOKEN_CRYSTAL_PRICE = 25         # 65 token / 1 crystal
 
-# Link ảnh tạm (dùng lại ảnh có sẵn). Muốn đẹp thì thay bằng link ảnh của bạn.
-KATANA_IMG = FENRIR_IMG
-CHAIN_IMG = GAIA_IMG
+# Katana / Chain Armor không có ảnh riêng
+KATANA_IMG = None
+CHAIN_IMG = None
 
 # ---------------------------- TRANG BỊ TÂN THỦ ----------------------------
 EQUIPMENT_DB[KATANA_ID] = {
