@@ -9362,7 +9362,7 @@ async def handle_collection(ctx_or_interaction):
 
     t_lines = []
     shards_cnt = player.get("shards", {}).get("seiki", 0)
-    for t_cid in ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"]:
+    for t_cid in ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"]:
         if t_cid in CARDS_DATA:
             t_card = CARDS_DATA[t_cid]
             t_cnt = player["inventory"].get(t_cid, 0)
@@ -9407,6 +9407,12 @@ async def handle_collection(ctx_or_interaction):
                 t_shard_info = f"   └ 🫳 **Sukuna Finger:** `{_sf}/{T8_SHARDS_UNLOCK}` ngón tay"
                 if _sf >= T8_SHARDS_UNLOCK:
                     t_shard_info += " ✨ *(Đủ ngón! Dùng `/t translate loai_shard:sukuna` để đổi ngay!)*"
+            elif t_cid == "t9":
+                _cs = player.get("shards", {}).get("chariot", 0)
+                _arrow = player.get("items", {}).get("requiem_arrow", 0)
+                t_shard_info = f"   └ 🗡️ **Chariot Shards:** `{_cs}/{T9_SHARDS_UNLOCK}` mảnh | 🏹 **Requiem Arrow:** `{_arrow}/1`"
+                if _cs >= T9_SHARDS_UNLOCK:
+                    t_shard_info += " ✨ *(Đủ mảnh! Dùng `/t translate loai_shard:chariot` để đổi ngay!)*"
             elif t_cid == "t4":
                 fateria_shards = player.get("shards", {}).get("fateria", 0)
                 t_shard_info = f"   └ ⏳ **Mảnh Fateria:** `{fateria_shards}/20` mảnh"
@@ -15584,7 +15590,7 @@ def _jt_player_attack(c, ac, rnd, B, notes):
     dmg = ac["power"]
 
     def setgif(u):
-        if u and not B.get("gif"):
+        if u is not None and str(u) and not B.get("gif"):
             B["gif"] = u
 
     if cid == 18 and is_ace and not c.get("sakuya_stun_used") and random.random() < 0.40:
@@ -18566,6 +18572,10 @@ def eq_raid_after_boss(active, boss_log) -> str:
 
 def t7_raid_after_boss(active, boss_log) -> str:
     base = _t7_raid_after_boss_core(active, boss_log)
+    try:
+        _rg_apply_priority(active)
+    except Exception as _rg_e:
+        print(f"[RG] lỗi gif priority: {_rg_e}", flush=True)
     try:
         return base + eq_raid_after_boss(active, boss_log)
     except Exception as e:
@@ -27407,6 +27417,125 @@ async def send_help_paged(ctx_or_interaction, embed):
     return await _TR_PREV_HELP(ctx_or_interaction, embed)
 
 # ===================== HẾT KHỐI UPDATE TRAIN / PRESTIGE / SAC =====================
+# ==============================================================================
+# [UPDATE] ƯU TIÊN GIF CỦA RAIDER TRONG /RAID (GIF AUTO PASSIVE 100% XẾP CUỐI)
+# ==============================================================================
+import contextvars as _rg_cv
+import sys as _rg_sys
+
+_RG_RAID_CTX = _rg_cv.ContextVar("rg_raid_ctx", default=False)
+
+class _AutoGif(str):
+    """GIF của passive tự kích hoạt 100%/turn: trong raid coi như 'rỗng' để không chặn GIF skill khác."""
+    def __bool__(self):
+        return not _RG_RAID_CTX.get()
+
+# Danh sách auto passive 100%: muốn thêm passive khác thì bọc _AutoGif(...) tương tự 2 dòng dưới
+T2_PASSIVE_GIF = _AutoGif(T2_PASSIVE_GIF)                                   # Mahoraga - The True Adapt
+EVOL_CONFIG[12]["skill_gif"] = _AutoGif(EVOL_CONFIG[12]["skill_gif"])       # Remilia Ace 2 - Gungnir
+
+_RG_LOOP_FUNCS = {
+    "execute_raid", "execute_event_raid", "execute_jotaro_raid", "execute_prime_raid",
+    "_sk_run_phase", "execute_fateria_phase2", "_gio_run_phase"
+}
+
+def _rg_find_loop_frame():
+    f = _rg_sys._getframe(1)
+    d = 0
+    while f is not None and d < 25:
+        if f.f_code.co_name in _RG_LOOP_FUNCS:
+            return f
+        f = f.f_back
+        d += 1
+    return None
+
+def _rg_record(c, gif):
+    """Ghi lại GIF đầu tiên (không phải auto passive) mà raider tạo ra trong hiệp."""
+    try:
+        if gif and not c.get("_rg_gif"):
+            c["_rg_gif"] = str(gif)
+    except Exception:
+        pass
+
+def _rg_apply_priority(active):
+    """Gọi sau khi Boss ra đòn: trả GIF của raider về làm GIF hiển thị của hiệp."""
+    if not _RG_RAID_CTX.get():
+        return
+    chosen = None
+    for c in active or []:
+        g = c.pop("_rg_gif", None)
+        if g and chosen is None:
+            chosen = str(g)
+    fr = _rg_find_loop_frame()
+    if fr is None:
+        return
+    try:
+        loc = fr.f_locals
+        B = loc.get("B")
+        if isinstance(B, dict) and "gif" in B:                 # Jotaro / Han Seiki / Sukuna / Fateria P2 / Giorno
+            cur = B.get("gif")
+            if chosen:
+                B["gif"] = chosen
+            elif isinstance(cur, _AutoGif):
+                B["gif"] = str(cur)                            # không có gì khác -> hiện GIF auto passive
+        elif "turn_image" in loc:                              # Reimu / Seiki / Mahoraga / Fateria P1 / Kizuna
+            cur = loc["turn_image"]
+            new = chosen or (str(cur) if isinstance(cur, _AutoGif) else None)
+            if new and globals().get("_FA_FRAME_OK"):
+                _fa_frame_write(fr, {"turn_image": new})
+    except Exception as e:
+        print(f"[RG] lỗi apply gif: {e}", flush=True)
+    finally:
+        del fr
+
+# --- Ghi nhận GIF của raider (boss kiểu turn_image) ---
+_RG_PREV_RAID_ATTACK = t7_raid_attack
+def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
+    res = _RG_PREV_RAID_ATTACK(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L)
+    try:
+        if _RG_RAID_CTX.get():
+            _rg_record(c, res[2])
+    except Exception:
+        pass
+    return res
+
+_RG_PREV_MEILING = meiling_raid_turn
+def meiling_raid_turn(c, ac):
+    res = _RG_PREV_MEILING(c, ac)
+    try:
+        if _RG_RAID_CTX.get() and res and res[1]:
+            _rg_record(c, res[1])
+    except Exception:
+        pass
+    return res
+
+# --- Ghi nhận GIF của raider (boss kiểu B dict) ---
+_RG_PREV_JT_PLAYER = _jt_player_attack
+def _jt_player_attack(c, ac, rnd, B, notes):
+    d = _RG_PREV_JT_PLAYER(c, ac, rnd, B, notes)
+    try:
+        if _RG_RAID_CTX.get():
+            _rg_record(c, B.get("gif"))
+    except Exception:
+        pass
+    return d
+
+# --- Bật "chế độ raid" cho mọi trận raid / event / train ---
+def _rg_ctx_wrap(fn):
+    async def _rg_wrapped(*a, **k):
+        tok = _RG_RAID_CTX.set(True)
+        try:
+            return await fn(*a, **k)
+        finally:
+            _RG_RAID_CTX.reset(tok)
+    return _rg_wrapped
+
+execute_raid = _rg_ctx_wrap(execute_raid)
+execute_prime_raid = _rg_ctx_wrap(execute_prime_raid)
+execute_event_raid = _rg_ctx_wrap(execute_event_raid)
+execute_sukuna_raid = _rg_ctx_wrap(execute_sukuna_raid)
+
+# ===================== HẾT KHỐI ƯU TIÊN GIF RAID =====================
 import sys
 
 def start_bot_safely():
