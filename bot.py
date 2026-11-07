@@ -16863,6 +16863,7 @@ async def handle_raid_open(ctx_or_interaction, boss="han_seiki"):
     app_commands.Choice(name="Fateria - Thao Túng Số Phận", value="fateria"),
     app_commands.Choice(name="Han Seiki the Prime One (Yêu cầu Lv.50)", value="han_seiki"),
     app_commands.Choice(name="Giorno Giovanna - Trùm Mafia Nước Ý", value="giorno"),
+    app_commands.Choice(name="Kenjaku - Xác Gojo (2 Phase)", value="kenjaku"),
 ])
 async def slash_raid(interaction: discord.Interaction, boss: str = "han_seiki"):
     await handle_raid_open(interaction, boss)
@@ -27538,6 +27539,928 @@ execute_event_raid = _rg_ctx_wrap(execute_event_raid)
 execute_sukuna_raid = _rg_ctx_wrap(execute_sukuna_raid)
 
 # ===================== HẾT KHỐI ƯU TIÊN GIF RAID =====================
+# ==============================================================================
+# [UPDATE KENJAKU] BOSS RAID: KENJAKU TRONG THÂN XÁC GOJO (2 PHASE + BODY SWAP)
+# ==============================================================================
+import random as _kj_rand
+
+# ---------------- GIF / ẢNH (đổi link ở đây nếu cần) ----------------
+KJ_GIF_P1 = "https://static2.klipy.com/ii/7607a26399874a14744aa5e7accfa062/1c/4f/rhcB4zG1.gif"
+KJ_IMG_P2 = "https://media.discordapp.net/attachments/1527157582115111077/1568624880323268608/images.png?ex=6af07f43&is=6aef2dc3&hm=2cc224638937696c5b4e7251b61b770c3479c55e83f83aa59e2e010a61d37bd6&=&format=webp&quality=lossless"
+KJ_GIF_THUONG = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/87/0a/ntpBSTTh3hcna.gif"
+KJ_GIF_HACH = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/0d/ae/qsltIx3V9EyLZ5hyCmRS.gif"
+KJ_GIF_DOMAIN_P1 = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/37/07/311gtOqMb0xLp6mRI0S.gif"
+KJ_GIF_HUSIK = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/74/90/3Z3YaVUv4Mqw9EJxu.gif"
+KJ_GIF_PHAN = "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/27/09/J42M443d.gif"
+KJ_GIF_SWAP = "https://static2.klipy.com/ii/f87f46a2c5aeaeed4c68910815f73eaf/38/d1/UBUvHnFX.gif"
+KJ_GIF_DOMAIN_P2 = "https://static2.klipy.com/ii/d7aec6f6f171607374b2065c836f92f4/93/d5/TI4MrdAL.gif"
+KJ_GIF_DOMAIN_BREAK = "https://klipy.com/gifs/jujutsu-kaisen-sukuna-35"   # <<< link trang web, nên thay bằng link gif trực tiếp
+KJ_GIF_HUSIK200 = "https://static2.klipy.com/ii/e7539ef2aad336edaa067c28ee130b3c/15/a3/iB4KkjqsjDJM53ReE.mp4"   # mp4: Discord có thể không hiện
+
+# ---------------- CẤU HÌNH ----------------
+KJ_P1_REDUCE = 0.30            # Vô hạ hạn: giảm 30% sát thương ĐÁNH THƯỜNG nhận vào
+KJ_DOMAIN_MAX = 2              # lĩnh vực tối đa 2 lần / phase
+KJ_P2_DOMAIN_NORMAL_ONLY = False   # True: Phase 2 trong lúc lĩnh vực Boss cũng chỉ đánh thường
+KJ_BODY_MULT = 10              # đổi xác: x10 máu & tấn công của lá bài
+KJ_MAHORAGA_BREAK = 0.20       # Phase 2: có Mahoraga trong đội -> 20% phá lĩnh vực (1 lần, thất bại không thử lại)
+KJ_MAX_ROUNDS = 70
+KJ_XP_FLAT = 3500
+KJ_XP_MULT = 1.5
+
+KENJAKU_BOSS_CONFIG = _ScaledBossCfg({
+    "id": "kenjaku",
+    "name": "Kenjaku trong thân xác Gojo (Phase 1)",
+    "desc": "Đó có còn là sensei Gojo không vậy…? Kẻ chiếm thân xác kẻ mạnh nhất đã xuất hiện!",
+    "reimu_quote": "Đó... có còn là sensei Gojo không vậy…? Khí tức này không phải của người ấy! Mọi người cẩn thận!",
+    "image": KJ_GIF_P1,
+    "hp": 150000, "power": 9000,
+    "max_players": 6, "cooldown_seconds": 15 * 60,
+})
+KENJAKU_BOSS_PHASE2_CONFIG = _ScaledBossCfg({
+    "id": "kenjaku_phase2",
+    "name": "Kenjaku trong thân xác Gojo (Phase 2)",
+    "image": KJ_IMG_P2,
+    "hp": 220000, "power": 14000,
+})
+
+# ---------------- MẢNH YUTA ----------------
+SHARD_DISPLAY_NAMES["yuta"] = "Yuta Shards"
+SHARD_EMOJIS["yuta"] = "💍"
+if "yuta" not in SHARD_TRADE_KEYS:
+    SHARD_TRADE_KEYS.append("yuta")
+
+_KJ_PREV_NORM_SHARD = normalize_shard_key
+def normalize_shard_key(raw: str):
+    s = (raw or "").lower().strip()
+    if s in ("yuta", "okkotsu", "yuta_shard", "yuta_shards"):
+        return "yuta"
+    return _KJ_PREV_NORM_SHARD(raw)
+
+# ---------------- ĐĂNG KÝ VÀO /raid ----------------
+RAID_BOSS_LABELS["kenjaku"] = "Kenjaku - Xác Gojo"
+RAID_BOSS_ALIASES.update({"kenjaku": "kenjaku", "gojo": "kenjaku", "gojosatoru": "kenjaku", "sensei": "kenjaku"})
+
+# Cho phép Fateria Ace 2 "tua ngược" & ưu tiên GIF hoạt động trong trận này
+try:
+    _FA_MODE_FUNCS.add("_kj_run_phase")
+except Exception:
+    pass
+try:
+    _RG_LOOP_FUNCS.add("_kj_run_phase")
+except Exception:
+    pass
+
+# ---------------- BÓNG KHÁI NIỆM CÓ THỂ XÓA SKILL CỦA GOJO ----------------
+_KJ_PREV_ERASE_BOSS = apply_bong_khai_niem_boss
+def apply_bong_khai_niem_boss(boss_type: str, phase: int, erased_skill_current):
+    if boss_type == "kenjaku":
+        if erased_skill_current:
+            return erased_skill_current, f"🛡️ **[Giới Hạn Bóng Khái Niệm]** Boss đã bị xóa chiêu **[{erased_skill_current}]** trước đó! (Tối đa 1 chiêu)"
+        key, name = _kj_rand.choice([("thuong", "Thương tối đa!"), ("hach", "Hách!"), ("linhvuc", "Triển khai lĩnh vực"),
+                                     ("husik", "Hư thức tử"), ("phan", "Phản chuyển")])
+        return key, f"🌑 **[Bóng Khái Niệm]** Đã xóa ngẫu nhiên 1 chiêu của Boss: **[{name}]**!"
+    return _KJ_PREV_ERASE_BOSS(boss_type, phase, erased_skill_current)
+
+# ==============================================================================
+# BẢNG SKILL KHI ĐỔI XÁC (PHASE 2) - KHÔNG GIỚI HẠN SỐ LẦN
+# s1 = bản thường, s2 = bản Ace 2, p1/p2 = nội tại. Chỉnh tại đây nếu muốn đổi chiêu cho phù hợp.
+# Khóa của skill: n=tên, ch=tỉ lệ, m=hệ số sát thương (0 = không gây sát thương), t="all"(chia đều tiền tuyến)/"one"(đơn mục tiêu)
+#   stun_all/stun_one(turn) • freeze(turn,45% mất lượt) • freeze_all • mind(turn) • poison • burn=(turn,%máu)
+#   guard=(loại,turn,%,phản) loại: invul/reduce/dodge • heal(%máu body) • lock(turn khóa skill đối thủ)
+#   healcut(%) • pct_max/pct_cur(% máu tối đa/hiện tại mục tiêu) • stack(Kanae) • pick(random 1 trong nhiều chiêu con)
+# ==============================================================================
+KJ_SW = {
+    "4": {"s2": [
+        {"n": "Trip To The Old Station", "ch": .30, "m": 2.2, "t": "one"},
+        {"n": "⸮⸮⸮ : Last Word !", "ch": .25, "m": 3.5, "t": "one", "stun_one": 1}]},
+    "9": {"s2": [{"n": "Ripples of 495 Years", "ch": .25, "m": 0, "t": "one", "pct_cur": .50}]},
+    "12": {"p2": {"extra": .03}},
+    "13": {"s2": [{"n": "Nuclear Spell Card", "ch": .30, "m": 3.5, "t": "one", "burn": (3, .02)}]},
+    "15": {"s2": [{"n": "Vô Tưởng Chuyển Sinh", "ch": .40, "m": 1.0, "t": "one", "guard": ("invul", 1, 0, 0)}]},
+    "17": {"s2": [{"n": "Triệu Hoán Vong Cốt", "ch": .35, "m": .8, "t": "all", "guard": ("invul", 1, 0, 0)}]},
+    "18": {"s2": [{"n": "Thời Gian Đóng Băng", "ch": .40, "m": 1.0, "t": "all", "stun_all": 1}]},
+    "19": {"s2": [{"n": "Master Spark", "ch": .30, "m": 2.5, "t": "one"}]},
+    "21": {"s2": [{"n": "Red Eye Mind Explosion", "ch": .25, "m": 1.0, "t": "one", "mind": 4}]},
+    "23": {"s2": [{"n": "Perfect Freeze", "ch": .40, "m": 1.0, "t": "one", "freeze": 2}]},
+    "24": {"s2": [{"n": "Rainbow Taijiquan", "ch": .30, "m": 1.2, "t": "one", "guard": ("reduce", 1, .15, 0)}]},
+    "t1": {
+        "s1": [{"n": "Master Spark", "ch": .30, "m": 1.5, "t": "one"},
+               {"n": "Medicine Sign", "ch": .20, "m": 0, "t": "one", "heal": .30},
+               {"n": "Fantasy Seal", "ch": .40, "m": 0, "t": "one", "guard": ("invul", 1, 0, 0)}],
+        "s2": [{"n": "Bóng Khái Niệm", "ch": .20, "m": 1.75, "t": "one", "pct_max": .10},
+               {"n": "Medicine Sign", "ch": .35, "m": 0, "t": "one", "heal": .40},
+               {"n": "Fantasy Seal", "ch": .50, "m": 0, "t": "one", "guard": ("invul", 1, 0, 0)}],
+        "p2": {"extra": .02}},
+    "t2": {
+        "p1": {"heal": .05}, "p2": {"heal": .065},
+        "s1": [{"n": "Thoái Ma Kiếm", "ch": .30, "m": 1.5, "t": "one"}],
+        "s2": [{"n": "Thoái Ma Kiếm", "ch": .30, "m": 1.75, "t": "one"}]},
+    "t3": {
+        "p1": {"heal": .05},
+        "s1": [{"n": "Blood chain", "ch": .30, "m": 1.5, "t": "one"},
+               {"n": "Dark chain", "ch": .20, "m": 1.0, "t": "one", "pct_max": .05}],
+        "s2": [{"n": "Wonder guard", "ch": .20, "m": 0, "t": "one", "guard": ("invul", 3, 0, .60)},
+               {"n": "Blood chain", "ch": .30, "m": 2.0, "t": "one"},
+               {"n": "Dark chain", "ch": .30, "m": 1.5, "t": "one", "pct_max": .05}]},
+    "t4": {
+        "p1": {"save": .15},
+        "s1": [{"n": "Fate loop", "ch": .20, "m": 1.0, "t": "all", "lock": 2},
+               {"n": "Clone attack", "ch": .40, "m": 0, "t": "all", "pick": [
+                   {"n": "Thunder blaze", "m": 2.3, "t": "all"},
+                   {"n": "The fallen hero", "m": 1.5, "t": "all", "healcut": .30},
+                   {"n": "Ice spear", "m": 1.5, "t": "all", "freeze_all": 2}]}],
+        "s2": [{"n": "Fate loop", "ch": .20, "m": 1.0, "t": "all", "lock": 2},
+               {"n": "Clone attack", "ch": .40, "m": 0, "t": "all", "pick": [
+                   {"n": "Thunder blaze", "m": 2.55, "t": "all"},
+                   {"n": "The fallen hero", "m": 1.75, "t": "all", "healcut": .30},
+                   {"n": "Ice spear", "m": 1.75, "t": "all", "freeze_all": 2}]}]},
+    "t5": {
+        "s1": [{"n": "Stand Barrage", "ch": .40, "m": 1.5, "t": "all"},
+               {"n": "Iggy Throw", "ch": .40, "m": 0, "t": "one", "stun_one": 1}],
+        "s2": [{"n": "Stand Barrage", "ch": .40, "m": 1.5, "t": "all"},
+               {"n": "Skull Breaker", "ch": .25, "m": 2.2, "t": "one"},
+               {"n": "Time Stop", "ch": .20, "m": 0, "t": "all", "stun_all": 1}]},
+    "t6": {"p1": {"stack": True},
+           "s1": [{"n": "Bộc Phát Ấn Điểm", "ch": .35, "m": 1.5, "t": "one", "stack": True}]},
+    "t7": {
+        "s1": [{"n": "Dịch miên", "ch": .30, "m": 1.0, "t": "one", "poison": True},
+               {"n": "Ảo ảnh hương", "ch": .25, "m": 0, "t": "one", "mind": 2}],
+        "s2": [{"n": "Nhiệt băng", "ch": .30, "m": 2.0, "t": "one", "burn": (2, .03), "freeze": 2},
+               {"n": "Khúc xạ ánh sáng", "ch": .25, "m": 0, "t": "one", "guard": ("dodge", 3, .40, 0)}]},
+    "t8": {
+        "p1": {"fuga": 5},
+        "s1": [{"n": "Trảm kích", "ch": .25, "m": 2.0, "t": "all"},
+               {"n": "Bát", "ch": .20, "m": 0, "t": "one", "pct_max": .20},
+               {"n": "Phục Ma Ngự Trù Tử", "ch": .15, "m": 1.2, "t": "all", "burn": (2, .03)}],
+        "s2": [{"n": "Trảm kích", "ch": .25, "m": 2.2, "t": "all"},
+               {"n": "Phục Ma Ngự Trù Tử", "ch": .10, "m": 1.5, "t": "all", "burn": (3, .05)}]},
+    "t9": {
+        "s1": [{"n": "Fencing Barrage", "ch": .25, "m": 1.5, "t": "all"},
+               {"n": "Sword shot", "ch": .20, "m": 2.5, "t": "one"}],
+        "s2": [{"n": "Ru ngủ", "ch": .30, "m": 0, "t": "all", "stun_all": 2},
+               {"n": "The Requiem", "ch": .25, "m": 0, "t": "one", "guard": ("invul", 1, 0, 1.2)}]},
+}
+
+def _kj_swap_info(sw):
+    d = KJ_SW.get(str(sw["cid"]).lower(), {})
+    ace = bool(sw.get("ace"))
+    skills = list(d.get("s2" if ace else "s1") or [])
+    pas = dict(d.get("p1", {}))
+    if ace:
+        pas.update(d.get("p2", {}))
+    return skills, pas
+
+def _kj_swap_action(B, active, sw, power, rnd, hit_logs, locked):
+    """Hành động của Boss khi đang dùng thân xác lá bài (skill không giới hạn lần)."""
+    skills, pas = _kj_swap_info(sw)
+    st = sw["st"]
+    n = len(active)
+    mx = B["max_hp"]
+    extra = pas.get("extra", 0.0)
+    name = sw["name"]
+    out = []
+
+    if pas.get("heal"):
+        old = B["hp"]
+        B["hp"] = min(mx, B["hp"] + int(mx * pas["heal"]))
+        if B["hp"] > old:
+            out.append(f"💚 **[Nội tại thân xác {name}]** Boss hồi **+{B['hp'] - old:,} HP**!")
+    if pas.get("save") and _kj_rand.random() < pas["save"]:
+        old = B["hp"]
+        B["hp"] = min(mx, B["hp"] + int(mx * 0.50))
+        B["guard"] = {"kind": "invul", "turns": 1, "pct": 0, "reflect": 0}
+        out.append(f"🔄 **[Save loop]** Boss hồi **+{B['hp'] - old:,} HP** và miễn nhiễm sát thương lượt tới!")
+
+    def _hit(c, tac, dmg, normal=False):
+        if dmg > 0 and extra:
+            dmg += int(tac["max_hp"] * extra)
+        _jt_boss_hit(c, tac, dmg, B, hit_logs, rnd, normal=normal)
+
+    # ---- chọn skill ----
+    chosen = None
+    if not locked:
+        elig = []
+        for sk in skills:
+            if sk.get("stack") and st.get("stacks", 0) <= 0:
+                continue
+            if sk.get("heal") and B["hp"] >= B["max_hp"]:
+                continue
+            elig.append(sk)
+        roll, acc = _kj_rand.random(), 0.0
+        for sk in elig:
+            acc += sk["ch"]
+            if roll < acc:
+                chosen = sk
+                break
+
+    if chosen is not None:
+        sk = dict(chosen)
+        sname = sk["n"]
+        if sk.get("pick"):
+            sub = _kj_rand.choice(sk["pick"])
+            sk.update(sub)
+            sname = f"{chosen['n']}: {sub['n']}"
+        B["gif"] = B.get("gif") or sw.get("gif")
+        m = sk.get("m", 1.0)
+        base = int(power * m)
+        stacks = 0
+        if sk.get("stack"):
+            stacks = st.get("stacks", 0)
+            base += int(power * 1.2 * stacks)
+            st["stacks"] = 0
+        if sk.get("t") == "all":
+            targets = list(active)
+        else:
+            targets = [_kj_rand.choice(active)]
+        if sk.get("t") == "all" and base > 0:
+            each = max(100, base // n)
+            for c in targets:
+                _hit(c, c["team_cards"][c["current_card_index"]], each)
+            dmg_txt = f"**{base:,} DMG** chia đều **{each:,}** lên {n} thẻ"
+        elif base > 0 or sk.get("pct_cur"):
+            c = targets[0]
+            tac = c["team_cards"][c["current_card_index"]]
+            dmg = base
+            if sk.get("pct_cur"):
+                dmg = int(max(0, tac["current_hp"]) * sk["pct_cur"])
+            if sk.get("pct_max"):
+                dmg += int(tac["max_hp"] * sk["pct_max"])
+            _hit(c, tac, dmg)
+            dmg_txt = f"**{dmg:,} DMG** lên **{tac['name']}** ({c['username']})"
+        else:
+            dmg_txt = "không gây sát thương trực tiếp"
+        out.append(f"💠 **[KỸ NĂNG] Boss trong thân xác {name}** dùng **{sname}** ({int(sk['ch'] * 100)}%): {dmg_txt}!")
+
+        # ---- hiệu ứng đi kèm ----
+        if sk.get("stun_all"):
+            B["dom_turns"] = max(B["dom_turns"], sk["stun_all"])
+            out.append(f"⏱️ Toàn bộ tiền tuyến bị **NGƯNG ĐỘNG {sk['stun_all']} turn**!")
+        if sk.get("stun_one"):
+            c = targets[0]
+            tac = c["team_cards"][c["current_card_index"]]
+            tac["kj_stun"] = sk["stun_one"]
+            out.append(f"💫 **{tac['name']}** ({c['username']}) bị **choáng {sk['stun_one']} turn**!")
+        if sk.get("freeze"):
+            c = targets[0]
+            tac = c["team_cards"][c["current_card_index"]]
+            tac["kj_freeze"] = sk["freeze"]
+            out.append(f"❄️ **{tac['name']}** bị đóng băng: **45% mất lượt** trong {sk['freeze']} turn!")
+        if sk.get("freeze_all"):
+            for c in active:
+                c["team_cards"][c["current_card_index"]]["kj_freeze"] = sk["freeze_all"]
+            out.append(f"❄️ Toàn bộ tiền tuyến bị cầm chân: **45% mất lượt** trong {sk['freeze_all']} turn!")
+        if sk.get("mind"):
+            c = targets[0]
+            tac = c["team_cards"][c["current_card_index"]]
+            tac["kj_mind"] = sk["mind"]
+            out.append(f"🌀 **{tac['name']}** bị ảo giác: **20% tự đánh bản thân** trong {sk['mind']} turn!")
+        if sk.get("poison"):
+            c = targets[0]
+            c["team_cards"][c["current_card_index"]]["kj_poison"] = 3
+            out.append("☠️ Mục tiêu bị **nhiễm độc 3 lượt** (6% / 10% / 5% máu tối đa)!")
+        if sk.get("burn"):
+            B["burn"] = tuple(sk["burn"])
+            out.append(f"🔥 Mặt đất bùng cháy: tiền tuyến mất **{int(sk['burn'][1] * 100)}% máu tối đa/turn** trong {sk['burn'][0]} turn!")
+        if sk.get("guard"):
+            k, t, p, r = sk["guard"]
+            B["guard"] = {"kind": k, "turns": t, "pct": p, "reflect": r}
+            out.append(f"🛡️ Boss dựng phòng thủ **{k}** trong {t} lượt tới" + (f" (phản {int(r * 100)}%)" if r else "") + "!")
+        if sk.get("heal"):
+            old = B["hp"]
+            B["hp"] = min(mx, B["hp"] + int(mx * sk["heal"]))
+            out.append(f"💚 Boss hồi **+{B['hp'] - old:,} HP**!")
+        if sk.get("lock"):
+            B["pl_lock"] = sk["lock"]
+            out.append(f"⛓️ Đối thủ **không thể dùng skill** trong {sk['lock']} turn!")
+        if sk.get("healcut"):
+            B["healcut"] = sk["healcut"]
+            out.append(f"🗡️ Hiệu quả hồi máu của đối thủ **giảm {int(sk['healcut'] * 100)}%**!")
+        if stacks:
+            out.append(f"🌸 Kích nổ **{stacks} tầng ấn**!")
+        return "\n".join(out)
+
+    # ---- đánh thường ----
+    if locked:
+        out.append("⛓️ **[Fate loop]** Kỹ năng của Boss đang bị khóa, chỉ có thể đánh thường!")
+    total = power
+    if pas.get("fuga"):
+        st["fuga"] = st.get("fuga", 0) + 1
+        if st["fuga"] >= pas["fuga"]:
+            st["fuga"] = 0
+            total = int(power * 3.0)
+            out.append("🔥 **[FUGA]** Mũi tên lửa bùng nổ: đòn đánh **×3 sát thương**!")
+    if pas.get("stack"):
+        st["stacks"] = st.get("stacks", 0) + 1
+        out.append(f"🌸 **[Dấu Ấn Anh Đào]** Boss tích **{st['stacks']} tầng ấn**!")
+    each = max(100, total // n)
+    out.append(f"⚔️ Boss (thân xác {name}) đánh thường tổng **{total:,} DMG**, chia đều **{each:,} DMG** lên {n} thẻ!")
+    for c in active:
+        _hit(c, c["team_cards"][c["current_card_index"]], each, normal=True)
+    return "\n".join(out)
+
+# ==============================================================================
+# HÀNH ĐỘNG CỦA GOJO (CHƯA ĐỔI XÁC)
+# ==============================================================================
+def _kj_gojo_action(B, active, power, phase, st, rnd, hit_logs, normal_only, locked):
+    n = len(active)
+    er = B["erased"]
+    log = ""
+    chosen = None
+    if locked:
+        log = "⛓️ **[Fate loop]** Kỹ năng của Boss đang bị khóa, chỉ có thể đánh thường!\n"
+    elif not normal_only:
+        opts = [("thuong", .22), ("hach", .25)]
+        if st["dom_uses"] < KJ_DOMAIN_MAX and B["dom_turns"] == 0:
+            opts.append(("linhvuc", .15))
+        if phase == 1:
+            opts.append(("husik", .12))
+        opts.append(("phan", .10))
+        roll, acc = _kj_rand.random(), 0.0
+        for key, ch in opts:
+            if er == key:
+                continue
+            acc += ch
+            if roll < acc:
+                chosen = key
+                break
+
+    if chosen == "thuong":
+        B["gif"] = KJ_GIF_THUONG
+        st["s1_turn"] = rnd
+        total = int(power * 1.5)
+        each = max(100, total // n)
+        log += f"🔴 **[KỸ NĂNG] Kenjaku** tung **Thương tối đa! (22%)**! **{total:,} DMG** (×1.5), chia đều **{each:,}** lên {n} thẻ!"
+        for c in active:
+            _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rnd)
+    elif chosen == "hach":
+        if phase == 2 and st["combo"] and er != "husik":
+            st["combo"] = False
+            B["gif"] = KJ_GIF_HUSIK200
+            total = int(power * 2.0)
+            each = max(100, total // n)
+            log += (f"🟣 **[KỸ NĂNG TỐI THƯỢNG] Kenjaku** nối đòn: **Hách!** hóa thành **HƯ THỨC TỬ 200%**! "
+                    f"**{total:,} DMG** (×2.0), chia đều **{each:,}** lên {n} thẻ!")
+            for c in active:
+                _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rnd)
+        else:
+            B["gif"] = KJ_GIF_HACH
+            total = int(power * 1.2)
+            c = _kj_rand.choice(active)
+            tac = c["team_cards"][c["current_card_index"]]
+            log += f"🔵 **[KỸ NĂNG] Kenjaku** tung **Hách! (25%)**! **{total:,} DMG** (×1.2) lên **{tac['name']}** ({c['username']})!"
+            _jt_boss_hit(c, tac, total, B, hit_logs, rnd)
+    elif chosen == "husik":
+        B["gif"] = KJ_GIF_HUSIK
+        total = int(power * 1.75)
+        each = max(100, total // n)
+        log += f"🟣 **[KỸ NĂNG] Kenjaku** tung **Hư thức tử! (12%)**! **{total:,} DMG** (×1.75), chia đều **{each:,}** lên {n} thẻ!"
+        for c in active:
+            _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rnd)
+    elif chosen == "phan":
+        B["gif"] = KJ_GIF_PHAN
+        old = B["hp"]
+        B["hp"] = min(B["max_hp"], B["hp"] + int(B["max_hp"] * 0.20))
+        log += f"💚 **[KỸ NĂNG] Kenjaku** thi triển **Phản chuyển (10%)**! Hồi **+{B['hp'] - old:,} HP** (20% máu tối đa)!"
+    elif chosen == "linhvuc":
+        st["dom_uses"] += 1
+        B["gif"] = KJ_GIF_DOMAIN_P1 if phase == 1 else KJ_GIF_DOMAIN_P2
+        turns = 2 if phase == 1 else _kj_rand.choice([3, 4])
+        B["dom_turns"] = turns
+        txt = "triển khai lĩnh vực trong **0,2 giây**" if phase == 1 else "triển khai lĩnh vực"
+        log += (f"🌌 **[KỸ NĂNG] Kenjaku** {txt}! (15%) *(lần {st['dom_uses']}/{KJ_DOMAIN_MAX})* "
+                f"Toàn bộ đối thủ bị **STUN {turns} turn** từ hiệp sau!")
+        if phase == 1:
+            log += "\n🎯 Trong lúc lĩnh vực, Kenjaku chỉ đánh thường (15% chí mạng +25% sát thương)."
+        else:
+            has_maho = any(str(k.get("cid")).lower() == "t2" for c in B.get("all", []) for k in c.get("team_cards", []))
+            if has_maho:
+                if _kj_rand.random() < KJ_MAHORAGA_BREAK:
+                    B["dom_turns"] = 0
+                    B["gif"] = KJ_GIF_DOMAIN_BREAK
+                    log += "\n⚔️ **[Mahoraga]** Thần tướng **PHÁ HỦY LÃNH ĐỊA** thành công (20%)! Lĩnh vực vỡ vụn!"
+                else:
+                    log += "\n⚔️ **[Mahoraga]** cố phá lãnh địa nhưng **thất bại** (20%) — không thể thử lại!"
+    else:
+        total = power
+        crit_txt = ""
+        if normal_only and phase == 1 and _kj_rand.random() < 0.15:
+            total = int(power * 1.25)
+            crit_txt = " 💥 **CHÍ MẠNG (+25%)!**"
+        each = max(100, total // n)
+        log += f"⚔️ Kenjaku đánh thường tổng **{total:,} DMG**{crit_txt}, chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!"
+        for c in active:
+            _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rnd, normal=True)
+    return log
+
+# ==============================================================================
+# 1 PHASE
+# ==============================================================================
+async def _kj_run_phase(channel, battle_msg, combatants, phase, all_turns):
+    cfg = KENJAKU_BOSS_CONFIG if phase == 1 else KENJAKU_BOSS_PHASE2_CONFIG
+    max_hp0 = cfg["hp"]
+    power = cfg["power"]
+    color = 0x60A5FA if phase == 1 else 0x7C3AED
+    B = {
+        "hp": max_hp0, "max_hp": max_hp0, "stunned": False, "mind": 0, "freeze": 0, "molten": 0,
+        "erased": None, "fate": 0, "locked_now": False, "ice": 0, "gif": None,
+        "true_cap": int(max_hp0 * 0.50), "true_accum": 0,
+        "boss_type": "kenjaku", "boss_name": cfg["name"], "active": [], "all": combatants,
+        "guard": None, "swap": None, "dom_turns": 0, "burn": None, "pl_lock": 0, "healcut": 0.0
+    }
+    st = {"dom_uses": 0, "combo": False, "s1_turn": -1}
+    rounds = 0
+
+    while B["hp"] > 0 and rounds < KJ_MAX_ROUNDS:
+        active = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
+        if not active:
+            break
+        rounds += 1
+        front = [c["team_cards"][c["current_card_index"]] for c in active]
+        n = len(front)
+        B["stunned"] = False
+        B["gif"] = None
+        B["active"] = active
+        B["locked_now"] = B["fate"] > 0
+        if B["fate"] > 0:
+            B["fate"] -= 1
+        notes, boss_fx, hit_logs = [], [], []
+
+        # ---------- Debuff đang đè lên Boss ----------
+        if B["mind"] > 0:
+            B["mind"] -= 1
+            if _kj_rand.random() < 0.20:
+                B["hp"] = max(0, B["hp"] - power)
+                boss_fx.append(f"🌀 **[Red Eye Mind]** Boss mất kiểm soát, tự gây **{power:,} DMG**! (Còn {B['mind']} lượt)")
+        if B["molten"] > 0:
+            B["molten"] -= 1
+            _ap, B["true_accum"], _cap = apply_raid_true_damage(int(B["max_hp"] * 0.02), B["true_accum"], B["true_cap"], "Bỏng Mặt Đất (Utsuho)")
+            if _ap > 0:
+                B["hp"] = max(0, B["hp"] - _ap)
+                boss_fx.append(f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Boss **{_ap:,} DMG**! (Còn {B['molten']} lượt)")
+        if B["freeze"] > 0:
+            B["freeze"] -= 1
+            if _kj_rand.random() < 0.45:
+                B["stunned"] = True
+                boss_fx.append(f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%)! (Còn {B['freeze']} lượt)")
+
+        # ---------- Hiệu ứng Boss đè lên người chơi (cháy / độc) ----------
+        if B["burn"]:
+            b_turns, b_pct = B["burn"]
+            tot = 0
+            for k in front:
+                d = int(k["max_hp"] * b_pct)
+                k["current_hp"] -= d
+                tot += d
+            boss_fx.append(f"🔥 **[Mặt đất cháy]** Tiền tuyến chịu tổng **{tot:,} DMG** ({int(b_pct * 100)}% máu tối đa/thẻ)! (Còn {b_turns - 1} turn)")
+            B["burn"] = (b_turns - 1, b_pct) if b_turns > 1 else None
+        for c in active:
+            k = c["team_cards"][c["current_card_index"]]
+            if k.get("kj_poison", 0) > 0:
+                pct = KISAMI_POISON_PCTS[3 - k["kj_poison"]]
+                d = int(k["max_hp"] * pct)
+                k["current_hp"] -= d
+                k["kj_poison"] -= 1
+                boss_fx.append(f"☠️ **[Độc]** **{k['name']}** ({c['username']}) mất **{d:,} HP** ({int(pct * 100)}% máu tối đa)!")
+
+        frozen_now = B["dom_turns"] > 0
+        if frozen_now:
+            B["dom_turns"] -= 1
+        normal_only = (frozen_now and not B["swap"]
+                       and (phase == 1 or KJ_P2_DOMAIN_NORMAL_ONLY))
+
+        pre_hp = {id(k): k["current_hp"] for k in front}
+        hp_before = B["hp"]
+
+        # ---------- Lượt đánh của người chơi ----------
+        round_dmg, p1_cut = 0, 0
+        for c in active:
+            ac = c["team_cards"][c["current_card_index"]]
+            if frozen_now:
+                has_wg = str(ac["cid"]).lower() == "t3" and c.get("t3_state", {}).get("wonder_guard_turns", 0) > 0
+                if not has_wg:
+                    notes.append(f"⏱️ **{ac['name']}** ({c['username']}) bị **STUN** bởi lĩnh vực/ngưng động, không thể ra đòn!")
+                    continue
+                B["stunned"] = True
+                notes.append(f"🛡️ **[Wonder Guard]** **{ac['name']}** ({c['username']}) miễn nhiễm stun và **PHẢN NGƯỢC** làm Boss bị ngưng động!")
+            if ac.get("kj_stun", 0) > 0:
+                ac["kj_stun"] -= 1
+                notes.append(f"💫 **{ac['name']}** ({c['username']}) đang **choáng**, không thể ra đòn!")
+                continue
+            if ac.get("kj_freeze", 0) > 0:
+                ac["kj_freeze"] -= 1
+                if _kj_rand.random() < 0.45:
+                    notes.append(f"❄️ **{ac['name']}** ({c['username']}) bị đóng băng (45%), mất lượt!")
+                    continue
+            if ac.get("kj_mind", 0) > 0:
+                ac["kj_mind"] -= 1
+                if _kj_rand.random() < 0.20:
+                    ac["current_hp"] -= ac["power"]
+                    notes.append(f"🌀 **{ac['name']}** ({c['username']}) ảo giác, **tự đánh bản thân {ac['power']:,} DMG**!")
+            if B["pl_lock"] > 0:
+                d = ac["power"]
+            else:
+                d = _jt_player_attack(c, ac, rounds, B, notes)
+            if phase == 1 and not B["swap"]:
+                cut = int(min(d, ac["power"]) * KJ_P1_REDUCE)
+                d -= cut
+                p1_cut += cut
+            round_dmg += d
+            c["total_dmg"] += d
+        if B["pl_lock"] > 0:
+            B["pl_lock"] -= 1
+            notes.append("⛓️ **[Fate loop]** Đối thủ đang bị khóa skill, chỉ đánh thường!")
+
+        if B["healcut"] > 0:
+            for k in front:
+                b = pre_hp.get(id(k))
+                if b is not None and k["current_hp"] > b:
+                    k["current_hp"] = b + int((k["current_hp"] - b) * (1.0 - B["healcut"]))
+
+        B["hp"] = max(0, B["hp"] - round_dmg)
+        player_atk_str = f"Toàn quân gây **{round_dmg:,} DMG** lên Boss!"
+        if p1_cut > 0:
+            boss_fx.append(f"♾️ **[Vô hạ hạn]** Đòn đánh thường bị chặn bớt **{p1_cut:,} DMG** (-30%)!")
+
+        # ---------- Phòng thủ của Boss (từ skill thân xác đã dùng ở lượt trước) ----------
+        g = B["guard"]
+        if g and g["turns"] > 0:
+            lost = hp_before - B["hp"]
+            if lost > 0:
+                if g["kind"] == "invul":
+                    B["hp"] = hp_before
+                    player_atk_str += "\n🛡️ Boss **MIỄN NHIỄM** toàn bộ sát thương hiệp này!"
+                    if g.get("reflect"):
+                        refl = int(lost * g["reflect"])
+                        each = max(50, refl // n)
+                        for k in front:
+                            k["current_hp"] -= each
+                        player_atk_str += f"\n↩️ Phản lại **{refl:,} DMG** ({int(g['reflect'] * 100)}%) lên tiền tuyến!"
+                elif g["kind"] == "reduce":
+                    B["hp"] = hp_before - int(lost * (1.0 - g["pct"]))
+                    player_atk_str += f"\n🛡️ Boss giảm **{int(g['pct'] * 100)}%** sát thương nhận!"
+                elif g["kind"] == "dodge" and _kj_rand.random() < g["pct"]:
+                    B["hp"] = hp_before
+                    player_atk_str += f"\n💨 Boss **NÉ HOÀN TOÀN** đòn tấn công ({int(g['pct'] * 100)}%)!"
+            g["turns"] -= 1
+            if g["turns"] <= 0:
+                B["guard"] = None
+
+        # ---------- PASSIVE PHASE 2: ĐỔI XÁC ----------
+        if B["hp"] <= 0 and phase == 2 and not B["swap"]:
+            dead = [(c, k) for c in combatants for k in c["team_cards"] if k["current_hp"] <= 0]
+            if dead:
+                c_d, k_d = _kj_rand.choice(dead)
+                B["swap"] = {"cid": k_d["cid"], "ace": bool(k_d.get("is_ace2")), "name": k_d["name"], "st": {}, "gif": None}
+                B["max_hp"] = int(k_d["max_hp"] * KJ_BODY_MULT)
+                B["hp"] = B["max_hp"]
+                power = int(k_d["power"] * KJ_BODY_MULT)
+                B["true_cap"] = int(B["max_hp"] * 0.50)
+                B["true_accum"] = 0
+                B.update({"stunned": False, "mind": 0, "freeze": 0, "molten": 0, "erased": None,
+                          "fate": 0, "locked_now": False, "ice": 0, "guard": None, "healcut": 0.0})
+                B["gif"] = KJ_GIF_SWAP
+                boss_fx.append(
+                    f"🔁 **[Passive - Body swap]** Kenjaku vừa bị hạ gục... liền **chiếm thân xác {k_d['name']}** "
+                    f"của **{c_d['username']}**! Chỉ số **×{KJ_BODY_MULT}**: ❤️ **{B['max_hp']:,} HP** | ⚔️ **{power:,} ATK** — dùng skill của lá bài này **không giới hạn số lần**!"
+                )
+            else:
+                boss_fx.append("🔁 **[Body swap]** Không có lá bài nào đã chết để chiếm thân xác — Kenjaku tan biến!")
+
+        # ---------- HÀNH ĐỘNG CỦA BOSS ----------
+        action_log = ""
+        if B["hp"] <= 0:
+            action_log = "💥 **Kenjaku đã bị đánh bại hoàn toàn!**"
+        elif B["stunned"]:
+            action_log = "❄️ Boss bị ngưng động/bối rối, không thể ra đòn trong hiệp này!"
+        else:
+            ice_block = False
+            if B["ice"] > 0:
+                B["ice"] -= 1
+                if _kj_rand.random() < 0.40:
+                    ice_block = True
+            if ice_block:
+                action_log = "❄️ **[Ice spear]** Giáo băng cầm chân Boss, không thể tấn công lượt này!"
+            elif B["swap"]:
+                action_log = _kj_swap_action(B, active, B["swap"], power, rounds, hit_logs, B["locked_now"])
+            else:
+                action_log = _kj_gojo_action(B, active, power, phase, st, rounds, hit_logs, normal_only, B["locked_now"])
+
+        # ---------- Dọn hiệu ứng bảo hộ ----------
+        action_log += t7_raid_after_boss(active, action_log)
+        kasen_restore_guard(active)
+        tick_wonder_guard(active)
+        restore_t4_save_loop(active, rounds)
+
+        # ---------- Thay thẻ ----------
+        push_logs = []
+        kills = 0
+        for c in active:
+            ac = c["team_cards"][c["current_card_index"]]
+            if ac["current_hp"] <= 0:
+                ac["current_hp"] = 0
+                _g = sakuya3_raid_revive(c, push_logs)
+                if _g:
+                    B["gif"] = _g
+                    continue
+                kills += 1
+                c["current_card_index"] += 1
+                if c["current_card_index"] < len(c["team_cards"]):
+                    push_logs.append(f"💀 **{ac['name']}** gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
+                else:
+                    c["is_alive"] = False
+                    push_logs.append(f"☠️ **{c['username']}** đã hết thẻ bài và tử trận!")
+
+        if phase == 2 and not B["swap"] and st["s1_turn"] == rounds and kills > 0 and not st["combo"]:
+            st["combo"] = True
+            boss_fx.append("🟣 **[Hư thức tử 200%]** Thương tối đa đã hạ gục mục tiêu! Lần tới **Hách!** kích hoạt sẽ biến thành **Hư thức tử ×2.0 chia đều**!")
+
+        # ---------- Embed ----------
+        extra_txt = ""
+        if B["swap"]:
+            extra_txt += f" | 🔁 Thân xác: **{B['swap']['name']}**"
+        if B["dom_turns"] > 0:
+            extra_txt += f" | 🌌 Lĩnh vực: **{B['dom_turns']}** turn"
+        if st["combo"]:
+            extra_txt += " | 🟣 Combo sẵn sàng"
+        desc = f"❤️ **Máu Boss:** `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**{extra_txt}"
+        fields = [("💥 Tiền Tuyến Tấn Công:", _jt_cut(player_atk_str, 600), False)]
+        if notes:
+            fields.append(("✨ Kỹ Năng Thẻ Bài:", _jt_cut("\n".join(notes), 800), False))
+        if boss_fx:
+            fields.append(("🔄 Passive / Hiệu Ứng Boss:", _jt_cut("\n".join(boss_fx), 800), False))
+        fields.append(("👺 Phản Kích Của Boss:", _jt_cut(action_log, 1000), False))
+        if hit_logs:
+            fields.append(("🛡️ Phản Ứng Phòng Thủ:", _jt_cut("\n".join(hit_logs), 600), False))
+        if push_logs:
+            fields.append(("🔄 Thay Đổi Tiền Tuyến:", _jt_cut("\n".join(push_logs), 600), False))
+        fields.append(("🛡️ Tình Trạng Tiền Tuyến:", _jt_cut(_pr_status_lines(combatants), 800), False))
+
+        round_embed = discord.Embed(title=f"🕶️ HIỆP {rounds} - KENJAKU/GOJO (PHASE {phase})", description=desc, color=color)
+        for fname, fval, finl in fields:
+            round_embed.add_field(name=fname, value=fval, inline=finl)
+        if B["gif"]:
+            round_embed.set_image(url=B["gif"])
+        else:
+            round_embed.set_thumbnail(url=cfg["image"])
+        all_turns.append({
+            "round": rounds, "phase": phase,
+            "title": f"Phase {phase} - Hiệp {rounds}: Kenjaku",
+            "short_label": f"P{phase} - H{rounds}",
+            "short_desc": f"Boss còn {B['hp']:,} HP",
+            "desc": f"🕶️ **{cfg['name']}**\n{desc}",
+            "color": color, "image": B["gif"], "fields": fields
+        })
+        try:
+            await battle_msg.edit(embed=round_embed)
+        except Exception:
+            pass
+        if B["hp"] <= 0:
+            break
+        await asyncio.sleep(3.0)
+
+    return B["hp"], rounds, B["max_hp"]
+
+# ==============================================================================
+# PHẦN THƯỞNG
+# ==============================================================================
+def _kj_reward(p, phase):
+    tickets = 10.0 if phase == 1 else 20.0
+    shard_rate = 0.05 if phase == 1 else 0.08
+    got = []
+    p["xp"] = p.get("xp", 0) + KJ_XP_FLAT
+    got.append(f"✨ **+{KJ_XP_FLAT:,} XP** (100%)")
+    if _kj_rand.random() < 0.50:
+        _l, xp_in, needed, _r = get_level_progress(p.get("xp", 0), p.get("prestige", 0))
+        gain = int(xp_in * KJ_XP_MULT)
+        if gain > 0:
+            p["xp"] += gain
+            got.append(f"✨ **+{gain:,} XP** (50% - ×{KJ_XP_MULT:g} XP cấp hiện tại [{xp_in:,}/{needed:,}])")
+    if _kj_rand.random() < 0.60:
+        p["pull_tickets"] += tickets
+        got.append(f"🎟️ **+{tickets:.0f} Vé Pull** (60%)")
+    if _kj_rand.random() < shard_rate:
+        sh = p.setdefault("shards", {})
+        sh["yuta"] = sh.get("yuta", 0) + 1
+        got.append(f"💍 **+1 Yuta Shard** ({shard_rate * 100:g}% Hiếm! Kho: {sh['yuta']})")
+    return got
+
+# ==============================================================================
+# TOÀN BỘ TRẬN
+# ==============================================================================
+async def execute_kenjaku_raid(channel, raid_data):
+    participants = raid_data["participants"]
+    if not participants:
+        await channel.send("🕶️ Kenjaku đã rời đi vì không có ai nghênh chiến...")
+        return
+    cfg = KENJAKU_BOSS_CONFIG
+    p2 = KENJAKU_BOSS_PHASE2_CONFIG
+
+    combatants = _sk_make_combatants(participants)
+    for _c in combatants:
+        _c["eq_boss_fenrir"] = False
+
+    init_embed = discord.Embed(
+        title="⚔️ ĐẠI CHIẾN BẮT ĐẦU: KENJAKU TRONG THÂN XÁC GOJO (PHASE 1)",
+        description=(f"🌸 **Reimu:** *\"{cfg['reimu_quote']}\"*\n\n"
+                     f"🔥 **{len(combatants)} Dũng Giả** đã dàn trận nghênh chiến! Theo dõi từng hiệp trực tiếp bên dưới!"),
+        color=0x60A5FA
+    )
+    init_embed.set_thumbnail(url=cfg["image"])
+    init_embed.add_field(name=f"❤️ Máu {cfg['name']}:", value=f"`{get_hp_bar(cfg['hp'], cfg['hp'])}` **{cfg['hp']:,}/{cfg['hp']:,} HP**", inline=False)
+    battle_msg = await channel.send(embed=init_embed)
+    await asyncio.sleep(2.0)
+
+    all_turns = []
+    hp1, r1, mx1 = await _kj_run_phase(channel, battle_msg, combatants, 1, all_turns)
+    if hp1 > 0:
+        fail = discord.Embed(
+            title="❌ QUÂN ĐOÀN THẤT THỦ TRƯỚC KENJAKU (PHASE 1)!",
+            description=f"Toàn bộ dũng giả đã gục sau {r1} hiệp!\nBoss còn **{hp1:,}/{mx1:,} HP**.\n⏳ Hồi chiêu **15 phút** đã kích hoạt!",
+            color=0xEF4444
+        )
+        fail.set_thumbnail(url=cfg["image"])
+        await channel.send(embed=fail, view=OpenDetailsView(all_turns))
+        return
+
+    # ---------- THƯỞNG PHASE 1 ----------
+    p1_lines = []
+    for uid in participants:
+        p = get_player(uid)
+        got1 = _kj_reward(p, 1)
+        save_player(p)
+        p1_lines.append(f"🏆 **{p['username']}**:\n   └ " + "\n   └ ".join(got1))
+
+    # ---------- PHASE 2 ----------
+    alert = discord.Embed(
+        title="🚨 KENJAKU LỘ DIỆN THẬT SỰ! (PHASE 2)",
+        description=(
+            "🕶️ *\"Thân xác này... quả nhiên rất tiện dụng.\"*\n\n"
+            f"❤️ **Máu:** **`{p2['hp']:,} HP`** | ⚔️ **Sát thương:** **`{p2['power']:,} DMG`** (chia đều)\n"
+            "🔁 **Body swap:** Khi bị hạ gục, Boss chiếm thân xác **1 lá bài đã chết** của đội bạn (×10 máu & ATK), dùng skill của lá bài đó **không giới hạn lần**!\n"
+            "🌌 **Lĩnh vực:** Stun toàn đội 3-4 turn (có Mahoraga trong đội: 20% phá hủy).\n"
+            "🟣 **Hư thức tử 200%:** Thương tối đa hạ được mục tiêu ➜ Hách! kế tiếp biến thành đòn kết liễu ×2.0 chia đều.\n\n"
+            "✨ **PHÉP MÀU THANH TẨY:** Toàn bộ thẻ bài của dũng giả được **hồi sinh và hồi 100% sinh lực**!"
+        ),
+        color=0x7C3AED
+    )
+    alert.set_image(url=KJ_IMG_P2)
+    battle_msg = await channel.send(embed=alert)
+    await asyncio.sleep(2.5)
+    _sk_reset_phase(combatants)
+    for c in combatants:
+        for card in c["team_cards"]:
+            for k in ("kj_stun", "kj_freeze", "kj_mind", "kj_poison"):
+                card.pop(k, None)
+
+    hp2, r2, mx2 = await _kj_run_phase(channel, battle_msg, combatants, 2, all_turns)
+    if hp2 > 0:
+        fail = discord.Embed(
+            title="❌ QUÂN ĐOÀN THẤT THỦ TRƯỚC KENJAKU (PHASE 2)!",
+            description=(f"**Phase 1:** 🎉 Hạ gục sau **{r1} hiệp** (quà Phase 1 đã được bảo lưu!)\n"
+                         f"**Phase 2:** ❌ Thất thủ sau **{r2} hiệp** — Boss còn **{hp2:,}/{mx2:,} HP**.\n"
+                         "⏳ Hồi chiêu **15 phút** đã kích hoạt!"),
+            color=0xEF4444
+        )
+        fail.set_thumbnail(url=p2["image"])
+        if p1_lines:
+            fail.add_field(name="📦 Phần Thưởng Phase 1 Đã Nhận:", value=_jt_cut("\n".join(p1_lines), 1000), inline=False)
+        await channel.send(embed=fail, view=OpenDetailsView(all_turns))
+        return
+
+    # ---------- CHIẾN THẮNG ----------
+    total_dmg = sum(c["total_dmg"] for c in combatants)
+    lines = []
+    for uid in participants:
+        p = get_player(uid)
+        old_lvl = calculate_level_from_xp(p.get("xp", 0), p.get("prestige", 0))
+        got = _kj_reward(p, 2)
+        for n_ in update_daily_quest_progress(p, "raid", 1) + update_event_quest_progress(p, "raid", 1):
+            got.append(n_)
+        save_player(p)
+        new_lvl = calculate_level_from_xp(p.get("xp", 0), p.get("prestige", 0))
+        lvl_txt = f" 🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+        lines.append(f"🏆 **{p['username']}**:{lvl_txt}\n   └ " + "\n   └ ".join(got))
+
+    final = discord.Embed(
+        title="🏆 KẾT QUẢ ĐẠI CHIẾN: KENJAKU - TOÀN THẮNG!",
+        description=(
+            "🌸 **Reimu thở phào:** *\"Phù... cuối cùng thì kẻ chiếm xác đó cũng biến mất. Mong sensei sớm được yên nghỉ...\"*\n\n"
+            f"**Phase 1:** 🎉 Hạ gục sau **{r1} hiệp**\n**Phase 2:** 🎉 Hạ gục sau **{r2} hiệp**\n"
+            f"💥 **Tổng Sát Thương:** **{total_dmg:,} DMG**\n⏳ **Hồi chiêu Boss tiếp theo:** **15 phút**"
+        ),
+        color=0x10B981
+    )
+    final.set_thumbnail(url=p2["image"])
+    if p1_lines:
+        final.add_field(name="📦 Phần Thưởng Phase 1 (đã trao):", value=_jt_cut("\n".join(p1_lines), 1000), inline=False)
+    chunk, clen, idx = [], 0, 1
+    for ln in lines:
+        if chunk and clen + len(ln) > 950:
+            final.add_field(name=f"🎁 Phần Thưởng Phase 2 (nhóm {idx}):", value="\n".join(chunk), inline=False)
+            chunk, clen, idx = [], 0, idx + 1
+        chunk.append(_jt_cut(ln, 900))
+        clen += len(ln) + 1
+    if chunk:
+        final.add_field(name=f"🎁 Phần Thưởng Phase 2 (nhóm {idx}):", value="\n".join(chunk), inline=False)
+    await channel.send(embed=final, view=OpenDetailsView(all_turns))
+
+# ==============================================================================
+# DISPATCH TRẬN + SPAWN PHÒNG CHỜ
+# ==============================================================================
+_KJ_PREV_EXECUTE_RAID = execute_raid
+async def execute_raid(channel, raid_data):
+    global active_raid, boss_cooldown_until
+    if raid_data.get("boss_type") != "kenjaku":
+        return await _KJ_PREV_EXECUTE_RAID(channel, raid_data)
+    active_raid = None
+    boss_cooldown_until = max(boss_cooldown_until, time.time() + KENJAKU_BOSS_CONFIG["cooldown_seconds"])
+    n = len(raid_data.get("participants", []) or [])
+    f = boss_scale_factor(n)
+    tok_s = _BOSS_SCALE.set(f)
+    tok_r = _RG_RAID_CTX.set(True)
+    try:
+        if f > 1.0:
+            try:
+                await channel.send(embed=_bs_notice_embed(raid_data, n, f))
+            except Exception:
+                pass
+        await execute_kenjaku_raid(channel, raid_data)
+    finally:
+        _RG_RAID_CTX.reset(tok_r)
+        _BOSS_SCALE.reset(tok_s)
+
+_KJ_PREV_SPAWN = spawn_boss_raid
+async def spawn_boss_raid(channel, author=None, boss_type=None, admin=True):
+    global active_raid, boss_cooldown_until
+    if boss_type != "kenjaku":
+        return await _KJ_PREV_SPAWN(channel, author, boss_type=boss_type, admin=admin)
+
+    if active_raid is not None:
+        if active_raid.get("task") and not active_raid["task"].done():
+            active_raid["task"].cancel()
+        active_raid = None
+
+    cfg = KENJAKU_BOSS_CONFIG
+    p2 = KENJAKU_BOSS_PHASE2_CONFIG
+    raid_data = {
+        "channel_id": channel.id, "boss_type": "kenjaku", "boss_config": cfg,
+        "participants": [], "names": [],
+        "created_at": datetime.now().isoformat(), "created_timestamp": time.time(),
+        "start_event": asyncio.Event(), "started": False, "closed": False,
+        "msg": None, "view": None, "task": None
+    }
+    active_raid = raid_data
+    is_admin = (author is not None) and admin
+    title = ("🚨 [ADMIN TRIỆU HỒI] ĐÓ CÒN LÀ SENSEI GOJO KHÔNG VẬY…?" if is_admin
+             else "🚨 BOSS: ĐÓ CÒN LÀ SENSEI GOJO KHÔNG VẬY…?")
+    admin_line = f"👑 **Được triệu hồi bởi Admin:** {author.mention}\n\n" if is_admin else ""
+    embed = discord.Embed(
+        title=title,
+        description=f"{admin_line}🌸 **Reimu:** *\"{cfg['reimu_quote']}\"*\n\n🕶️ **Kenjaku trong thân xác Gojo xuất hiện!**\n*{cfg['desc']}*",
+        color=0x60A5FA
+    )
+    embed.set_image(url=cfg["image"])
+    embed.add_field(name="❤️ Máu Boss (HP):", value=f"• Phase 1: **{cfg['hp']:,} HP**\n• Phase 2: **{p2['hp']:,} HP**", inline=True)
+    embed.add_field(name="⚔️ Sát Thương:", value=f"• Phase 1: **{cfg['power']:,} DMG** *(chia đều)*\n• Phase 2: **{p2['power']:,} DMG** *(chia đều)*", inline=True)
+    embed.add_field(name=f"👥 Người Tham Gia (0/{cfg['max_players']}):", value="Chưa có ai", inline=False)
+    embed.add_field(
+        name="🕶️ Phase 1 - Nội Tại & Kỹ Năng:",
+        value=(
+            "• ♾️ **Vô hạ hạn (Passive):** Giảm **30% sát thương đánh thường** phải nhận.\n"
+            "• 🔴 **Thương tối đa! (22%):** ×1.5 sát thương chia đều tiền tuyến.\n"
+            "• 🔵 **Hách! (25%):** ×1.2 sát thương đơn mục tiêu.\n"
+            "• 🌌 **Triển khai lĩnh vực (15%, tối đa 2 lần):** Stun toàn bộ đối thủ **2 turn** (Boss chỉ đánh thường, 15% chí mạng +25%).\n"
+            "• 🟣 **Hư thức tử! (12%):** ×1.75 sát thương chia đều tiền tuyến.\n"
+            "• 💚 **Phản chuyển (10%):** Hồi 20% máu tối đa."
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="👹 Phase 2 - Thức Tỉnh:",
+        value=(
+            "• 🔁 **Body swap (Passive):** Khi bị hạ gục, chiếm thân xác **1 lá bài đã chết** của đội bạn, **×10 máu & ATK**, dùng skill lá bài đó **không giới hạn lần**!\n"
+            "• 🌌 **Lĩnh vực:** Stun toàn đội **3-4 turn** (có Mahoraga: 20% phá hủy lãnh địa, thất bại không thử lại).\n"
+            "• 🟣 **Hư thức tử 200%:** Sau khi **Thương tối đa** hạ được mục tiêu, **Hách!** kế tiếp biến thành ×2.0 chia đều."
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="🎁 Phần Thưởng (mỗi Phase):",
+        value=(f"• ✨ **{KJ_XP_FLAT:,} XP** (100%) | **50%** nhận thêm **×{KJ_XP_MULT:g} XP** cấp hiện tại\n"
+               "• 🎟️ **60%** nhận **10 Vé (P1) / 20 Vé (P2)**\n"
+               "• 💍 **5% (P1) / 8% (P2)** rơi **Yuta Shard**"),
+        inline=False
+    )
+    embed.add_field(name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
+                    value="Có **2 phút** để bấm **'Tham Gia'**. Hết giờ sẽ tự khai màn nếu có người tham gia!", inline=False)
+    embed.set_footer(text=f"Bấm 'Tham Gia' để xuất trận • Miễn phí • {'Admin Force Spawn' if is_admin else 'Mở bằng /raid'}")
+    view = RaidJoinView(raid_data)
+    raid_data["view"] = view
+    msg = await channel.send(embed=embed, view=view)
+    raid_data["msg"] = msg
+    raid_data["task"] = asyncio.create_task(raid_timer_lifecycle(channel, raid_data, view))
+
+# ===================== HẾT KHỐI KENJAKU =====================
 import sys
 
 def start_bot_safely():
