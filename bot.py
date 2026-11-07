@@ -6548,12 +6548,12 @@ async def execute_event_raid(channel, raid_data):
         tickets = 20.0 if t_roll < 0.10 else (15.0 if t_roll < 0.50 else 10.0)
         p["pull_tickets"] += tickets
 
-        c_roll = random.random()
+        c_roll = event_roll()
         candies = 100 if c_roll < 0.10 else (50 if c_roll < 0.40 else 0)
         if candies > 0: p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + candies
 
         shard_got = False
-        if random.random() < 0.025:
+        if event_roll() < 0.025:
             p_shards["kizuna"] = p_shards.get("kizuna", 0) + 1
             shard_got = True
 
@@ -7150,12 +7150,12 @@ async def execute_event_raid(channel, raid_data):
             tickets = 20.0 if t_roll < 0.10 else (15.0 if t_roll < 0.50 else 10.0)
             p["pull_tickets"] += tickets
 
-            c_roll = random.random()
+            c_roll = event_roll()
             candies = 120 if c_roll < 0.50 else (70 if c_roll < 0.80 else 0)
             if candies > 0: p_items["keo_halloween"] = p_items.get("keo_halloween", 0) + candies
 
             shard_got = False
-            if random.random() < 0.07:
+            if event_roll() < 0.07:
                 p_shards["kizuna"] = p_shards.get("kizuna", 0) + 1
                 shard_got = True
 
@@ -20078,11 +20078,11 @@ async def execute_sukuna_raid(channel, raid_data):
         old_lvl = p.get("level", 1)
         p["pull_tickets"] += 30.0
         got = ["🎟️ **+30 Vé Pull** (100%)"]
-        if random.random() < 0.05:
+        if event_roll() < 0.05:
             sh = p.setdefault("shards", {})
             sh["sukuna"] = sh.get("sukuna", 0) + 1
             got.append(f"🫳 **+1 Sukuna Finger** (5% Cực Hiếm! Kho: {sh['sukuna']})")
-        if random.random() < 0.90:
+        if event_roll() < 0.90:
             p["xp"] = p.get("xp", 0) + 3000
             got.append("✨ **+3,000 XP** (90%)")
         for n_ in update_event_quest_progress(p, "event_raid", 1):
@@ -20137,11 +20137,11 @@ async def execute_sukuna_raid(channel, raid_data):
         old_lvl = p.get("level", 1)
         p["pull_tickets"] += 30.0
         got = ["🎟️ **+30 Vé Pull** (100%)"]
-        if random.random() < 0.07:  # 7% rơi Sukuna Finger ở Phase 2
+        if event_roll() < 0.07:  # 7% rơi Sukuna Finger ở Phase 2
             sh = p.setdefault("shards", {})
             sh["sukuna"] = sh.get("sukuna", 0) + 1
             got.append(f"🫳 **+1 Sukuna Finger** (7% Cực Hiếm! Kho: {sh['sukuna']})")
-        if random.random() < 0.90:  # 90% nhận 3500 XP
+        if event_roll() < 0.90:  # 90% nhận 3500 XP
             p["xp"] = p.get("xp", 0) + 3500
             got.append("✨ **+3,500 XP** (90%)")
         save_player(p)
@@ -28461,6 +28461,56 @@ async def spawn_boss_raid(channel, author=None, boss_type=None, admin=True):
     raid_data["task"] = asyncio.create_task(raid_timer_lifecycle(channel, raid_data, view))
 
 # ===================== HẾT KHỐI KENJAKU =====================
+# ==============================================================================
+# [UPDATE ADMIN BOOST] /admin boost - x1.5 TỈ LỆ RƠI ĐỒ CỦA EVENT BOSS (KIZUNA / SUKUNA)
+# ==============================================================================
+EVENT_DROP_BOOST = False
+EVENT_DROP_BOOST_MULT = 1.5
+
+def event_roll() -> float:
+    """Thay cho random.random() ở các chỗ rơi đồ Event Boss.
+    Boost bật: chia roll cho 1.5 nên P(roll < x) = min(1, x*1.5)."""
+    r = random.random()
+    return (r / EVENT_DROP_BOOST_MULT) if EVENT_DROP_BOOST else r
+
+async def handle_admin_boost(ctx_or_interaction):
+    global EVENT_DROP_BOOST
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    if not is_authorized_admin(user.id):
+        await _eq_send(ctx_or_interaction, content="⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Lệnh chỉ dành cho chủ bot.", ephemeral=True)
+        return
+    EVENT_DROP_BOOST = not EVENT_DROP_BOOST
+    if EVENT_DROP_BOOST:
+        embed = discord.Embed(
+            title="🚀 [ADMIN] ĐÃ BẬT BOOST RƠI ĐỒ EVENT BOSS!",
+            description=(
+                f"✨ Tỉ lệ rơi đồ của **Event Boss (Kizuna / Sukuna)** hiện **×{EVENT_DROP_BOOST_MULT:g}** (tối đa 100%).\n"
+                "• 🩸 Kizuna: Mảnh Kizuna, Kẹo Halloween\n"
+                "• 👹 Sukuna: Sukuna Finger, XP\n"
+                "🔁 Gõ lại `/admin boost` để **tắt**."
+            ),
+            color=0x10B981
+        )
+    else:
+        embed = discord.Embed(
+            title="🛑 [ADMIN] ĐÃ TẮT BOOST RƠI ĐỒ EVENT BOSS!",
+            description="Tỉ lệ rơi đồ Event Boss đã trở về mức gốc.\n🔁 Gõ lại `/admin boost` để bật.",
+            color=0xEF4444
+        )
+    await _eq_send(ctx_or_interaction, embed=embed)
+
+class AdminToolsGroup(app_commands.Group, name="admin", description="[CHỦ BOT DUY NHẤT] Công cụ quản trị"):
+    @app_commands.command(name="boost", description="[Admin] Bật/tắt x1.5 tỉ lệ rơi đồ của Event Boss (/event raid). Gõ lại để tắt")
+    async def boost(self, interaction: discord.Interaction):
+        await handle_admin_boost(interaction)
+
+bot.tree.add_command(AdminToolsGroup())
+
+@bot.command(name="adminboost", aliases=["eventboost"])
+async def prefix_admin_boost(ctx):
+    await handle_admin_boost(ctx)
+
+# ===================== HẾT KHỐI ADMIN BOOST =====================
 import sys
 
 def start_bot_safely():
