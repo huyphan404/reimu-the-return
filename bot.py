@@ -27562,6 +27562,7 @@ KJ_P1_REDUCE = 0.30            # Vô hạ hạn: giảm 30% sát thương ĐÁNH
 KJ_DOMAIN_MAX = 2              # lĩnh vực tối đa 2 lần / phase
 KJ_P2_DOMAIN_NORMAL_ONLY = False   # True: Phase 2 trong lúc lĩnh vực Boss cũng chỉ đánh thường
 KJ_BODY_MULT = 10              # đổi xác: x10 máu & tấn công của lá bài
+KJ_SWAP_RATE_MULT = 0.5        # NERF: sau khi cướp xác, tỉ lệ skill gốc chỉ còn 50% (muốn nhẹ hơn thì đổi 0.7)
 KJ_MAHORAGA_BREAK = 0.20       # Phase 2: có Mahoraga trong đội -> 20% phá lĩnh vực (1 lần, thất bại không thử lại)
 KJ_MAX_ROUNDS = 70
 KJ_XP_FLAT = 3500
@@ -27748,7 +27749,7 @@ def _kj_swap_action(B, active, sw, power, rnd, hit_logs, locked):
             elig.append(sk)
         roll, acc = _kj_rand.random(), 0.0
         for sk in elig:
-            acc += sk["ch"]
+            acc += sk["ch"] * KJ_SWAP_RATE_MULT
             if roll < acc:
                 chosen = sk
                 break
@@ -27789,7 +27790,7 @@ def _kj_swap_action(B, active, sw, power, rnd, hit_logs, locked):
             dmg_txt = f"**{dmg:,} DMG** lên **{tac['name']}** ({c['username']})"
         else:
             dmg_txt = "không gây sát thương trực tiếp"
-        out.append(f"💠 **[KỸ NĂNG] Boss trong thân xác {name}** dùng **{sname}** ({int(sk['ch'] * 100)}%): {dmg_txt}!")
+            out.append(f"💠 **[KỸ NĂNG] Boss trong thân xác {name}** dùng **{sname}** ({int(sk['ch'] * KJ_SWAP_RATE_MULT * 100)}%): {dmg_txt}!")
 
         # ---- hiệu ứng đi kèm ----
         if sk.get("stun_all"):
@@ -28438,7 +28439,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None, admin=True):
     embed.add_field(
         name="👹 Phase 2 - Thức Tỉnh:",
         value=(
-            "• 🔁 **Body swap (Passive):** Khi bị hạ gục, chiếm thân xác **1 lá bài đã chết** của đội bạn, **×10 máu & ATK**, dùng skill lá bài đó **không giới hạn lần**!\n"
+            "• 🔁 **Body swap (Passive):** Khi bị hạ gục, chiếm thân xác **1 lá bài đã chết** của đội bạn, **×10 máu & ATK**, dùng skill lá bài đó **không giới hạn lần** (nhưng **tỉ lệ kích skill giảm 50%**, do chưa quen thân thể mới)!\n"
             "• 🌌 **Lĩnh vực:** Stun toàn đội **3-4 turn** (có Mahoraga: 20% phá hủy lãnh địa, thất bại không thử lại).\n"
             "• 🟣 **Hư thức tử 200%:** Sau khi **Thương tối đa** hạ được mục tiêu, **Hách!** kế tiếp biến thành ×2.0 chia đều."
         ),
