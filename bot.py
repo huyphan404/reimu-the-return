@@ -26664,7 +26664,7 @@ import contextvars
 # 1. CẤP ĐỘ & PRESTIGE
 # ------------------------------------------------------------------------------
 MAX_LEVEL_P5_PLUS = 9900      # cấp tối đa từ Prestige 5 trở đi
-PRESTIGE_LATE_REQ_LVL = 500   # cấp tối thiểu để Prestige lên P6, P7, ... (chỉnh tại đây)
+PRESTIGE_LATE_REQ_LVL = 200   # cấp tối thiểu để Prestige lên P6, P7, ... (chỉnh tại đây)
 PRESTIGE_LATE_COST = 200      # mỗi lần Prestige (từ P5 lên) bị trừ 200 cấp
 
 def get_max_level(prestige: int = 0) -> int:
