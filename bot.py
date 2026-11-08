@@ -28138,9 +28138,9 @@ async def _kj_run_phase(channel, battle_msg, combatants, phase, all_turns):
 
         # ---------- PASSIVE PHASE 2: ĐỔI XÁC ----------
         if B["hp"] <= 0 and phase == 2 and not B["swap"]:
-            dead = [(c, k) for c in combatants for k in c["team_cards"] if k["current_hp"] <= 0]
-            if dead:
-                c_d, k_d = _kj_rand.choice(dead)
+            pool = [(c, k) for c in combatants for k in c["team_cards"]]
+            if pool:
+                c_d, k_d = _kj_rand.choice(pool)
                 B["swap"] = {"cid": k_d["cid"], "ace": bool(k_d.get("is_ace2")), "name": k_d["name"], "st": {}, "gif": None}
                 B["max_hp"] = int(k_d["max_hp"] * KJ_BODY_MULT)
                 B["hp"] = B["max_hp"]
@@ -28151,12 +28151,12 @@ async def _kj_run_phase(channel, battle_msg, combatants, phase, all_turns):
                           "fate": 0, "locked_now": False, "ice": 0, "guard": None, "healcut": 0.0})
                 B["gif"] = KJ_GIF_SWAP
                 boss_fx.append(
-                    f"🔁 **[Passive - Body swap]** Kenjaku vừa bị hạ gục... liền **chiếm thân xác {k_d['name']}** "
+                    f"🔁 **[Passive - Body swap]** Kenjaku vừa bị hạ gục... liền **chiếm ngẫu nhiên thân xác {k_d['name']}** "
                     f"của **{c_d['username']}**! Chỉ số **×{KJ_BODY_MULT}**: ❤️ **{B['max_hp']:,} HP** | ⚔️ **{power:,} ATK** — dùng skill của lá bài này **không giới hạn số lần**! "
                     f"⚠️ Vẫn tính là **Phase 2**: đội bạn **KHÔNG được hồi sinh / hồi máu**!"
                 )
             else:
-                boss_fx.append("🔁 **[Body swap]** Không có lá bài nào đã chết để chiếm thân xác — Kenjaku tan biến!")
+                boss_fx.append("🔁 **[Body swap]** Không có lá bài nào để chiếm thân xác — Kenjaku tan biến!")
 
         # ---------- HÀNH ĐỘNG CỦA BOSS ----------
         action_log = ""
