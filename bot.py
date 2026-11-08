@@ -844,8 +844,8 @@ MAHORAGA_BOSS_CONFIG = {
     "desc": "Thần tướng thuật thức tối thượng - kẻ thích nghi với mọi hiện tượng. Mọi đòn đánh chỉ khiến nó trở nên cứng cáp hơn!",
     "reimu_quote": "Cái thứ yêu quái nào vậy, cái thằng nhóc đầu nhím kia vừa triệu hồi cái gì vậy?",
     "image": "https://kimi-web-img.kimi.ai/img/gbaike-image.cdn.bcebos.com/84b485484cf2279a8a3412643b2a1c4f99bf0cd2",
-    "hp": 95000,
-    "power": 6000,
+    "hp": 100000,
+    "power": 8000,
     "passive_regen_pct": 0.03,
     "passive_adapt_pct": 0.03,
     "max_players": 6,
@@ -860,7 +860,7 @@ MAHORAGA_BOSS_CONFIG = {
             "name": "Thoái Ma Kiếm",
             "chance": 0.25,
             "gif": "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/fd/9a/evpBLiollsxMmiF1wK18.gif",
-            "desc": "25% kích hoạt: Gây 1x sát thương (6,000 DMG) lên MỘT mục tiêu duy nhất - sát thương thuần, KHÔNG chia đều!"
+            "desc": "25% kích hoạt: Gây 1x sát thương (8,000 DMG) lên MỘT mục tiêu duy nhất - sát thương thuần, KHÔNG chia đều!"
         }
     }
 }
@@ -3070,7 +3070,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None, admin=True):
                 "• ♾️ **The True Adapt (100% - THỤ ĐỘNG):**\n"
                 "  - Mỗi hiệp tự hồi phục **3% HP tối đa (2,850 HP)**!\n"
                 "  - Mỗi hiệp **GIẢM 3% sát thương phải nhận** (cộng dồn mỗi hiệp - càng đánh càng cứng)!\n"
-                "• ⚔️ **Thoái Ma Kiếm (25%):** Rút trường kiếm giáng **6,000 DMG sát thương thuần** lên **MỘT mục tiêu** duy nhất (không chia đều)!"
+                "• ⚔️ **Thoái Ma Kiếm (25%):** Rút trường kiếm giáng **8,000 DMG sát thương thuần** lên **MỘT mục tiêu** duy nhất (không chia đều)!"
             ),
             inline=False
         )
@@ -9362,7 +9362,7 @@ async def handle_collection(ctx_or_interaction):
 
     t_lines = []
     shards_cnt = player.get("shards", {}).get("seiki", 0)
-    for t_cid in ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"]:
+    for t_cid in ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10"]:
         if t_cid in CARDS_DATA:
             t_card = CARDS_DATA[t_cid]
             t_cnt = player["inventory"].get(t_cid, 0)
@@ -9413,6 +9413,11 @@ async def handle_collection(ctx_or_interaction):
                 t_shard_info = f"   └ 🗡️ **Chariot Shards:** `{_cs}/{T9_SHARDS_UNLOCK}` mảnh | 🏹 **Requiem Arrow:** `{_arrow}/1`"
                 if _cs >= T9_SHARDS_UNLOCK:
                     t_shard_info += " ✨ *(Đủ mảnh! Dùng `/t translate loai_shard:chariot` để đổi ngay!)*"
+            elif t_cid == "t10":
+                _ys = player.get("shards", {}).get("yuta", 0)
+                t_shard_info = f"   └ 💍 **Yuta Shards:** `{_ys}/{T10_SHARDS_UNLOCK}` mảnh"
+                if _ys >= T10_SHARDS_UNLOCK:
+                    t_shard_info += " ✨ *(Đủ mảnh! Dùng `/t translate loai_shard:yuta` để đổi ngay!)*"
             elif t_cid == "t4":
                 fateria_shards = player.get("shards", {}).get("fateria", 0)
                 t_shard_info = f"   └ ⏳ **Mảnh Fateria:** `{fateria_shards}/20` mảnh"
@@ -9524,7 +9529,7 @@ async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
     if cur_shards < needed_shards:
         shard_names = {"seiki": "Mảnh Seiki", "mahoraga": "Mảnh Mahoraga", "kizuna": "Mảnh Kizuna", "fateria": "Fateria Shards"}
         shard_name_display = shard_names.get(shard_key, "Mảnh")
-        hint_text = "Tham gia đánh Boss Raid (Seiki Dị Hình hoặc Reimu Dị Hình) để nhận tỉ lệ 2.5% rơi mảnh Seiki!" if shard_key == "seiki" else "Tham gia đánh Boss Raid Mahoraga 95K HP để nhận tỉ lệ 5% rơi mảnh Mahoraga!"
+        hint_text = "Tham gia đánh Boss Raid (Seiki Dị Hình hoặc Reimu Dị Hình) để nhận tỉ lệ 2.5% rơi mảnh Seiki!" if shard_key == "seiki" else "Tham gia đánh Boss Raid Mahoraga 100K HP để nhận tỉ lệ 5% rơi mảnh Mahoraga!"
         msg = (
             f"❌ **Không đủ mảnh quy đổi!**\n"
             f"• Bạn đang có: **{cur_shards}/{needed_shards} {shard_name_display}**\n"
@@ -9724,7 +9729,7 @@ async def handle_view_shards(ctx_or_interaction):
             f"• Tiến độ: `{get_hp_bar(min(10, mahoraga_shards), 10)}` ({min(100, mahoraga_shards * 10)}%)\n"
             f"• Thẻ quy đổi: **[T] #t2 Mahoraga Bát ách kiếm thần tướng** (Kho: {has_mahoraga} lá)\n"
             f"• Thao tác: Gõ `/t translate loai_shard:mahoraga` khi đủ 10 mảnh để quy đổi ngay!\n"
-            f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Mahoraga** (95K HP)."
+            f"• Nguồn rơi: Tỉ lệ **5%** khi tham gia diệt Boss **Mahoraga** (100K HP)."
         ),
         inline=False
     )
@@ -9818,7 +9823,8 @@ class ShardGroup(app_commands.Group, name="t", description="Quản lý kho mản
         app_commands.Choice(name="Mảnh Fateria (20 mảnh -> Thẻ [T] #t4 Fateria)", value="fateria"),
         app_commands.Choice(name="Kisami Shards (10 mảnh -> Thẻ [T] #t7 Kisami)", value="kisami"),
         app_commands.Choice(name="Sukuna Finger (10 ngón -> Thẻ [T] #t8 Sukuna)", value="sukuna"),
-        app_commands.Choice(name="Chariot Shards (15 mảnh -> Thẻ [T] #t9 Silver Chariot)", value="chariot")
+        app_commands.Choice(name="Chariot Shards (15 mảnh -> Thẻ [T] #t9 Silver Chariot)", value="chariot"),
+        app_commands.Choice(name="Yuta Shards (5 mảnh -> Thẻ [T] #t10 Yuta)", value="yuta")
     ])
     async def slash_t_translate(self, interaction: discord.Interaction, loai_shard: str = "seiki"):
         await handle_translate_shard(interaction, loai_shard)
@@ -13037,7 +13043,7 @@ async def slash_boss_status(interaction: discord.Interaction):
     check_and_clean_expired_raid()
     now = time.time()
     embed = discord.Embed(title="👹 TRẠNG THÁI BOSS RAID: REIMU DỊ HÌNH (2 PHASE)", color=0xDC2626)
-    embed.add_field(name="👺 Bát Ách Kiếm Thần Tướng Mahoraga (Single Phase):", value=f"• 95,000 HP | 6,000 DMG (chia đều)\n• Nội tại The True Adapt (100%): tự hồi 3% HP tối đa (2,850 HP) và GIẢM 3% sát thương phải nhận mỗi lượt (cộng dồn)!\n• Kỹ năng Thoái Ma Kiếm (25%): 6,000 DMG sát thương thuần lên 1 mục tiêu duy nhất!\n• Phần thưởng: 10% 20 vé, 40% 15 vé, 50% 10 vé, 5% Mảnh Mahoraga!", inline=False)
+    embed.add_field(name="👺 Bát Ách Kiếm Thần Tướng Mahoraga (Single Phase):", value=f"• 100,000 HP | 8,000 DMG (chia đều)\n• Nội tại The True Adapt (100%): tự hồi 3% HP tối đa (3,000 HP) và GIẢM 3% sát thương phải nhận mỗi lượt (cộng dồn)!\n• Kỹ năng Thoái Ma Kiếm (25%): 8,000 DMG sát thương thuần lên 1 mục tiêu duy nhất!\n• Phần thưởng: 10% 20 vé, 40% 15 vé, 50% 10 vé, 5% Mảnh Mahoraga!", inline=False)
     embed.add_field(name="👹 Seiki Dị Hình (2 Phase):", value=f"• Phase 1: HP {SEIKI_BOSS_CONFIG['hp']:,} | {SEIKI_BOSS_CONFIG['power']:,} DMG (chia đều) + nội tại hồi 1.5% HP\n• Phase 2 Thức Tỉnh: HP {SEIKI_BOSS_PHASE2_CONFIG['hp']:,} | {SEIKI_BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều) + Cleave +10% Máu tối đa mục tiêu + Nuclear Spell Card (10%) 10K DMG toàn tiền tuyến!", inline=False)
     embed.set_thumbnail(url=BOSS_CONFIG["image"])
     embed.add_field(name="❤️ Chỉ Số 2 Phase:", value=f"• Phase 1: HP {BOSS_CONFIG['hp']:,} | Đánh thường {BOSS_CONFIG['power']:,} DMG (chia đều)\n• Phase 2: HP {BOSS_PHASE2_CONFIG['hp']:,} | Đánh thường {BOSS_PHASE2_CONFIG['power']:,} DMG (chia đều)", inline=True)
@@ -16476,8 +16482,8 @@ PRIME_BOSS_CONFIG = {
     "desc": "Kẻ thao túng khái niệm tối thượng. Mọi quy luật đều có thể bị đảo ngược trong tay hắn!",
     "reimu_quote": "Khí tức này... không phải thứ mà con người nên đối mặt. Tất cả đồng lòng, đừng để hắn đảo ngược cuộc chiến!",
     "image": PRIME_GIF_SPAWN,
-    "hp": 200000,
-    "power": 14500,
+    "hp": 265000,
+    "power": 22000,
     "dmg_reduction": 0.20,
     "kill_heal_pct": 0.025,
     "skills": {
@@ -16646,7 +16652,7 @@ async def spawn_prime_raid(channel, author, is_admin=False):
         name="⚖️ Nội Tại & Kỹ Năng:",
         value=(
             "• 🛡️ **Linh hồn của công lý (Passive):** Giảm **20% sát thương nhận vào**. Mỗi lần hạ được **1 thẻ bài**, hồi **1,5% máu tối đa**!\n"
-            "• 🔄 **Phản chuyển Niệm Bóng (25%):** Đảo ngược khái niệm, giáng đòn hủy diệt **2.2x sát thương gốc (31,900 DMG)** chia đều tiền tuyến!\n"
+            "• 🔄 **Phản chuyển Niệm Bóng (25%):** Đảo ngược khái niệm, giáng đòn hủy diệt **2.2x sát thương gốc (48,400 DMG)** chia đều tiền tuyến!\n"
             "• 🧩 **Gán ghép (15%):** Tập hợp các khái niệm gán lại, **hồi 20% máu tối đa**!\n"
             "• ♾️ **Nhị Phân Vô Cực khái niệm (10%):** Đòn kết liễu — **hạ gục ngay 1 mục tiêu ngẫu nhiên (1 hit)**, "
             "**BỎ QUA mọi kỹ năng phòng thủ** (Yukari, Kizuna, Hong Meiling, Reimu, Seiki, Kasen...)!"
@@ -21426,6 +21432,8 @@ async def execute_fateria_phase2(channel, raid_data, combatants, all_turns, p1_r
             color=0xEF4444
         )
         fail.set_thumbnail(url=cfg["image"])
+        if p1_lines:
+            fail.add_field(name="📦 Phần Thưởng Phase 1 Đã Nhận:", value=_jt_cut("\n".join(p1_lines), 1000), inline=False)
         await channel.send(embed=fail, view=OpenDetailsView(all_turns))
         return
 
@@ -22832,6 +22840,10 @@ def eq_fenrir_post(att, tgt, tgt_mark, logs):
             # đẩy GIF skill của đồng minh vào biến turn_image của trận đang chạy
             if g and globals().get("_FA_FRAME_OK"):
                 fr = _fa_sys._getframe(1)
+                _hops = 0
+                while fr is not None and fr.f_code.co_name == "eq_fenrir_post" and _hops < 10:
+                    fr = fr.f_back
+                    _hops += 1
                 try:
                     if "turn_image" in fr.f_locals:
                         _fa_frame_write(fr, {"turn_image": g})
@@ -23741,6 +23753,15 @@ _T2A_MODE_BY_FUNC = {
     "story_s3_player_turn": "meiling",
 }
 
+def _t2a_caller_frame():
+    """Lấy frame của hàm chiến đấu thật, bỏ qua các wrapper bọc ngoài (T9, Kasen...)."""
+    f = _t2a_sys._getframe(2)   # 0 = helper, 1 = wrapper T2A, 2 = bên gọi
+    hops = 0
+    while f is not None and f.f_code.co_name in ("kasen_duel_apply", "eq_take_damage") and hops < 10:
+        f = f.f_back
+        hops += 1
+    return f
+
 def _t2a_duel_turn(card, power, stunned, log_lists, mode, fr):
     gif = None
     erased = card.get("erased_skill")
@@ -23804,9 +23825,9 @@ def kasen_duel_apply(card, power, stunned, log_lists):
     power, guard, gif = _T2A_PREV_KASEN(card, power, stunned, log_lists)
     try:
         if _t2a_active(card):
-            fr = _t2a_sys._getframe(1)
+            fr = _t2a_caller_frame()
             try:
-                mode = _T2A_MODE_BY_FUNC.get(fr.f_code.co_name)
+                mode = _T2A_MODE_BY_FUNC.get(fr.f_code.co_name) if fr is not None else None
                 if mode:
                     power, g2 = _t2a_duel_turn(card, power, stunned, log_lists, mode, fr)
                     gif = gif or g2
@@ -23858,9 +23879,9 @@ _T2A_PREV_TAKE_DMG = eq_take_damage
 def eq_take_damage(card, dmg, logs=None, skill=False):
     try:
         if _t2a_active(card) and card.get("erased_skill") != "t2_adapt":
-            fr = _t2a_sys._getframe(1)
+            fr = _t2a_caller_frame()
             try:
-                name = fr.f_code.co_name
+                name = fr.f_code.co_name if fr is not None else ""
             finally:
                 del fr
             if name in ("run_story_rumia_battle", "run_story_cirno_battle"):
@@ -25737,9 +25758,18 @@ async def execute_giorno_raid(channel, raid_data):
     for uid in participants:
         p = get_player(uid)
         got1 = _gio_reward_roll(p, 1, raid_data)
+        for n_ in update_daily_quest_progress(p, "raid", 1) + update_event_quest_progress(p, "raid", 1):
+            got1.append(n_)
         save_player(p)
         p1_lines.append(f"🏆 **{p['username']}**:\n   └ " + "\n   └ ".join(got1))
 
+    if p1_lines:
+        _e1 = discord.Embed(
+            title="🎁 PHẦN THƯỞNG PHASE 1: GIORNO GIOVANNA (ĐÃ TRAO)",
+            description=_jt_cut("\n".join(p1_lines), 3800),
+            color=0xEAB308
+        )
+        await channel.send(embed=_e1)
     # ---------- PHASE 2 ----------
     alert = discord.Embed(
         title="🚨 GIORNO GIOVANNA THỨC TỈNH! (PHASE 2)",
@@ -25771,6 +25801,8 @@ async def execute_giorno_raid(channel, raid_data):
             color=0xEF4444
         )
         fail.set_thumbnail(url=p2["image"])
+        if p1_lines:
+            fail.add_field(name="📦 Phần Thưởng Phase 1 Đã Nhận:", value=_jt_cut("\n".join(p1_lines), 1000), inline=False)
         await channel.send(embed=fail, view=OpenDetailsView(all_turns))
         return
 
@@ -25781,8 +25813,6 @@ async def execute_giorno_raid(channel, raid_data):
         p = get_player(uid)
         old_lvl = calculate_level_from_xp(p.get("xp", 0), p.get("prestige", 0))
         got = _gio_reward_roll(p, 2, raid_data)
-        for n_ in update_daily_quest_progress(p, "raid", 1) + update_event_quest_progress(p, "raid", 1):
-            got.append(n_)
         save_player(p)
         new_lvl = calculate_level_from_xp(p.get("xp", 0), p.get("prestige", 0))
         lvl_txt = f" 🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
@@ -28122,7 +28152,8 @@ async def _kj_run_phase(channel, battle_msg, combatants, phase, all_turns):
                 B["gif"] = KJ_GIF_SWAP
                 boss_fx.append(
                     f"🔁 **[Passive - Body swap]** Kenjaku vừa bị hạ gục... liền **chiếm thân xác {k_d['name']}** "
-                    f"của **{c_d['username']}**! Chỉ số **×{KJ_BODY_MULT}**: ❤️ **{B['max_hp']:,} HP** | ⚔️ **{power:,} ATK** — dùng skill của lá bài này **không giới hạn số lần**!"
+                    f"của **{c_d['username']}**! Chỉ số **×{KJ_BODY_MULT}**: ❤️ **{B['max_hp']:,} HP** | ⚔️ **{power:,} ATK** — dùng skill của lá bài này **không giới hạn số lần**! "
+                    f"⚠️ Vẫn tính là **Phase 2**: đội bạn **KHÔNG được hồi sinh / hồi máu**!"
                 )
             else:
                 boss_fx.append("🔁 **[Body swap]** Không có lá bài nào đã chết để chiếm thân xác — Kenjaku tan biến!")
@@ -28288,9 +28319,17 @@ async def execute_kenjaku_raid(channel, raid_data):
     for uid in participants:
         p = get_player(uid)
         got1 = _kj_reward(p, 1)
+        for n_ in update_daily_quest_progress(p, "raid", 1) + update_event_quest_progress(p, "raid", 1):
+            got1.append(n_)
         save_player(p)
         p1_lines.append(f"🏆 **{p['username']}**:\n   └ " + "\n   └ ".join(got1))
-
+    if p1_lines:
+        _e1 = discord.Embed(
+            title="🎁 PHẦN THƯỞNG PHASE 1: KENJAKU (ĐÃ TRAO)",
+            description=_jt_cut("\n".join(p1_lines), 3800),
+            color=0x60A5FA
+        )
+        await channel.send(embed=_e1)
     # ---------- PHASE 2 ----------
     alert = discord.Embed(
         title="🚨 KENJAKU LỘ DIỆN THẬT SỰ! (PHASE 2)",
@@ -28335,8 +28374,6 @@ async def execute_kenjaku_raid(channel, raid_data):
         p = get_player(uid)
         old_lvl = calculate_level_from_xp(p.get("xp", 0), p.get("prestige", 0))
         got = _kj_reward(p, 2)
-        for n_ in update_daily_quest_progress(p, "raid", 1) + update_event_quest_progress(p, "raid", 1):
-            got.append(n_)
         save_player(p)
         new_lvl = calculate_level_from_xp(p.get("xp", 0), p.get("prestige", 0))
         lvl_txt = f" 🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
@@ -28512,6 +28549,622 @@ async def prefix_admin_boost(ctx):
     await handle_admin_boost(ctx)
 
 # ===================== HẾT KHỐI ADMIN BOOST =====================
+# ==============================================================================
+# [UPDATE YUTA] THẺ T10 YUTA OKKOTSU (ACE 1 + ACE 2 + RIKA)
+# ==============================================================================
+import sys as _t10_sys
+
+T10_UNLOCK_GIF = "https://static2.klipy.com/ii/a15b48460c436e1e92c85ffc680932cc/c4/38/Xg0TAWdk.gif"
+T10_SLASH_GIF = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/e1/f0/9pLQYNsdaGeFr.gif"
+T10_HEAL_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/e6/12/n5JwaWuZ6keTR.gif"
+T10_EVOL_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/b1/04/0li7kXVEVHz0.gif"
+T10_RIKA_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/da/41/LEnAxUPAsGfD.gif"
+T10_BEAM_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/36/6d/LVJbf2bOSci4K2Reqj.gif"
+T10_COPY_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/01/99/yVOiFJU3eFgh5SE8.gif"
+T10_SLASH2_GIF = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/39/e0/RhxRX8Lj2favXqWhHr.gif"
+T10_CURSE_GIF = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/5e/4c/rFLJyaKVIu7NSFr.gif"
+
+# ---------------- CẤU HÌNH (chỉnh số ở đây) ----------------
+T10_BASE_POWER = 500
+T10_BASE_HP = 6000
+T10_SHARDS_UNLOCK = 5            # đổi thẻ Ace 1
+T10_SHARDS_ACE2 = 10             # tiến hóa Ace 2
+T10_ACE2_PRESTIGE = 3
+T10_RAID_TRUE_CAP_PCT = 0.25     # trần sát thương % máu (skill copy) cộng dồn lên Boss
+# Ace 1
+T10_A1_SLASH_MULT, T10_A1_SLASH_CH, T10_A1_SLASH_MAX = 1.2, 0.25, 2
+T10_A1_HEAL_CH, T10_A1_HEAL_PCT = 0.30, 0.20
+# Ace 2
+T10_A2_SLASH_MULT, T10_A2_SLASH_CH, T10_A2_SLASH_MAX = 1.5, 0.25, 2
+T10_A2_DARK_CHANCE, T10_A2_DARK_MULT = 0.20, 3.0     # "hắc hiểm": 20% khi Resolute Slash kích hoạt -> x3
+T10_A2_CURSE_CH = 0.15
+T10_RIKA_RATIO = 0.75
+T10_RIKA_SUMMON_CHANCE = 0.50
+T10_RIKA_NAME = "Rika (Triệu Hồi)"
+T10_RIKA_BEAM_CHANCE, T10_RIKA_BEAM_MULT = 0.12, 3.0
+T10_RIKA_BEAM_MIN_TURNS = 2                # Rika phải chiến đấu cùng Yuta đủ 2 turn trước đó
+T10_RIKA_BEAM_USE_YUTA_ATK = False         # False: x3 ATK của Rika | True: x3 ATK của Yuta
+T10_COPY_CHANCE, T10_COPY_MAX = 0.25, 2
+T10_SHARD_ALIASES = ("yuta", "t10", "okkotsu", "yutaokkotsu", "yuta_shard", "yuta_shards")
+
+# ---------------- ĐĂNG KÝ THẺ ----------------
+CARDS_DATA["t10"] = {
+    "id": "t10", "name": "Yuta Okkotsu", "rank": "T",
+    "power": T10_BASE_POWER, "hp": T10_BASE_HP,
+    "image": T10_UNLOCK_GIF, "unlock_gif": T10_UNLOCK_GIF,
+    "passive": {"name": "Không có", "desc": "Ace 1 không có nội tại."},
+    "skills": {
+        "resolute_slash": {"name": "Resolute Slash", "chance": T10_A1_SLASH_CH, "gif": T10_SLASH_GIF},
+        "phan_chuyen": {"name": "Phản chuyển", "chance": T10_A1_HEAL_CH, "gif": T10_HEAL_GIF},
+    }
+}
+CARD_ALIASES.update({"yuta": "t10", "okkotsu": "t10", "yutaokkotsu": "t10", "t10": "t10"})
+T_ACE2_PRESTIGE_REQ["t10"] = T10_ACE2_PRESTIGE
+T_PRESTIGE_NAMES["t10"] = "Yuta"
+if "t10" not in EVOL_ORDER:
+    EVOL_ORDER.append("t10")
+EVOL_T_SHARD["t10"] = ("yuta", T10_SHARDS_UNLOCK)
+CHARACTER_DETAILS["t10"] = {
+    "title": "Người Được Rika Yêu Thương (Nhóm T-Đặc Biệt)",
+    "skill_name": "Resolute Slash • Phản chuyển • Come here, Rika!",
+    "skill_desc": f"Yuta Okkotsu ({T10_BASE_POWER} ATK / {T10_BASE_HP:,} HP). Mở khóa bằng {T10_SHARDS_UNLOCK} Yuta Shards."
+}
+EVOL_CONFIG["t10"] = {
+    "id": "t10", "key": "yuta", "name": "Yuta Okkotsu",
+    "title": "[#t10] Yuta Okkotsu - Ace 2 ⭐⭐", "ace_level": "Ace 2 ⭐⭐",
+    "required_cards": 0, "required_pulls": 0, "required_shards": T10_SHARDS_ACE2,
+    "evol_gif": T10_EVOL_GIF,
+    "skill_name": "Come here, Rika! • Resolute Slash • Cursed Speech",
+    "skill_desc": "Triệu hồi Rika chiến đấu & tank, True love beam, sao chép skill đồng đội đã ngã.",
+    "bonus_power": 300, "bonus_hp": 300
+}
+# Rika dùng chung cơ chế "quái triệu hồi tank đòn" của T8 (Battle/PvP/Story/Raid đều đã có sẵn)
+if "rika" not in T8_TANK_ORDER:
+    T8_TANK_ORDER = tuple(T8_TANK_ORDER) + ("rika",)
+# Cho Kenjaku (body swap) dùng được skill Yuta
+try:
+    KJ_SW["t10"] = {
+        "s1": [{"n": "Resolute Slash", "ch": .25, "m": 1.2, "t": "one"},
+               {"n": "Phản chuyển", "ch": .30, "m": 0, "t": "one", "heal": .20}],
+        "s2": [{"n": "Resolute Slash", "ch": .25, "m": 1.5, "t": "one"},
+               {"n": "Cursed Speech", "ch": .15, "m": 0, "t": "one", "stun_one": 1}]}
+except Exception:
+    pass
+try:
+    _LIEM_FUNC_VARS["t10_combat_turn"] = "card"     # Liềm Hỗn Mang +2% tỉ lệ skill
+except Exception:
+    pass
+
+
+# ---------------- HÀM HỖ TRỢ ----------------
+def _t10_is(card) -> bool:
+    try:
+        return str(card.get("cid")).lower() == "t10"
+    except Exception:
+        return False
+
+def _t10_dead_allies(team, card):
+    return [k for k in (team or []) if k is not card and str(k.get("cid")).lower() != "t10" and k.get("current_hp", 1) <= 0]
+
+def _t10_alive_allies(team, card):
+    return [k for k in (team or []) if k is not card and k.get("current_hp", 0) > 0]
+
+def _t10_skill_ok(sk) -> bool:
+    return bool(sk.get("pick") or sk.get("m", 0) > 0 or sk.get("pct_max") or sk.get("heal")
+                or sk.get("stun_one") or sk.get("stun_all"))
+
+def _t10_copy_pool(k):
+    d = (globals().get("KJ_SW") or {}).get(str(k.get("cid")).lower(), {})
+    lst = list(d.get("s2" if k.get("is_ace2") else "s1") or []) or list(d.get("s1") or [])
+    return [sk for sk in lst if _t10_skill_ok(sk)]
+
+
+# ---------------- LÕI KỸ NĂNG (dùng chung mọi chế độ) ----------------
+def t10_combat_turn(card, team, enemy_max_hp, is_ace2=False, skills_locked=False, cap_fn=None):
+    """Trả về dict: multiplier, bonus (sát thương cộng thêm), stun (địch mất lượt), gif, logs."""
+    res = {"multiplier": 1.0, "bonus": 0, "stun": False, "gif": None, "logs": []}
+    logs = res["logs"]
+    card.pop("t10_stun_flag", None)
+    st = card.setdefault("t10_state", {})
+    erased = card.get("erased_skill")
+    cap = cap_fn if cap_fn else (lambda amt, label: int(amt))
+    tag = "[Ace 2] [#t10] Yuta" if is_ace2 else "[T] [#t10] Yuta"
+    pw = int(card.get("power", 0))
+    mx = int(card.get("max_hp") or card.get("hp") or 1)
+    enemy_max_hp = max(1, int(enemy_max_hp or 1))
+    team = team or []
+
+    sm = card.get("t8_sum")
+    if erased == "t10_rika" and sm:
+        sm.pop("rika", None)
+
+    # ===================== ACE 2: RIKA =====================
+    if is_ace2 and erased != "t10_rika":
+        rk = (card.get("t8_sum") or {}).get("rika")
+        rika_alive = bool(rk and rk.get("hp", 0) > 0)
+        if not rika_alive:
+            st["copied"] = None      # Rika chết thì mất skill đang chờ
+
+        if rika_alive:
+            prev = st.get("rika_turns", 0)
+            st["rika_turns"] = prev + 1
+            beam = (not skills_locked and erased != "t10_beam" and not st.get("beam")
+                    and prev >= T10_RIKA_BEAM_MIN_TURNS and random.random() < T10_RIKA_BEAM_CHANCE)
+            if beam:
+                st["beam"] = 1
+                base = pw if T10_RIKA_BEAM_USE_YUTA_ATK else rk["atk"]
+                d = int(base * T10_RIKA_BEAM_MULT)
+                res["bonus"] += d
+                res["gif"] = T10_BEAM_GIF
+                logs.append(f"💘 **[Rika]** tung **True love beam** (12%)! Chùm sáng tình yêu gây **×{T10_RIKA_BEAM_MULT:g} = {d:,} DMG**! *(1 lần/trận)*")
+            else:
+                res["bonus"] += rk["atk"]
+                res["gif"] = res["gif"] or T10_RIKA_GIF
+                logs.append(f"👻 **[Rika]** chiến đấu cùng Yuta: +**{rk['atk']:,} DMG** *(còn {rk['hp']:,}/{rk['max_hp']:,} HP)*")
+
+            # ---- Rika skill 2: sao chép skill đồng đội đã ngã ----
+            if not skills_locked and erased != "t10_copy":
+                cp = st.get("copied")
+                if cp:
+                    if random.random() < cp["ch"]:
+                        st["copied"] = None          # dùng xong -> reset để copy tiếp
+                        sk = dict(cp["sk"])
+                        if sk.get("pick"):
+                            sk.update(random.choice(sk["pick"]))
+                        eff = []
+                        if sk.get("m", 0) > 0:
+                            res["multiplier"] = max(res["multiplier"], sk["m"])
+                            eff.append(f"×{sk['m']:g} sát thương")
+                        if sk.get("pct_max"):
+                            d = int(cap(int(enemy_max_hp * sk["pct_max"]), f"Copy {cp['name']}"))
+                            res["bonus"] += d
+                            eff.append(f"+{d:,} DMG ({int(sk['pct_max'] * 100)}% máu tối đa)")
+                        if sk.get("heal"):
+                            before = card["current_hp"]
+                            card["current_hp"] = min(mx, before + int(mx * sk["heal"]))
+                            eff.append(f"hồi +{card['current_hp'] - before:,} HP")
+                        if sk.get("stun_one") or sk.get("stun_all"):
+                            res["stun"] = True
+                            eff.append("địch bị choáng")
+                        res["gif"] = T10_COPY_GIF
+                        logs.append(f"🪞 **{tag}** tung skill sao chép **{cp['name']}** của **{cp['from']}** ({int(cp['ch'] * 100)}%): " + ", ".join(eff or ["hiệu ứng"]) + "!")
+                elif st.get("copies", 0) < T10_COPY_MAX:
+                    cands = [(k, sk) for k in _t10_dead_allies(team, card) for sk in _t10_copy_pool(k)]
+                    if cands and random.random() < T10_COPY_CHANCE:
+                        k, sk = random.choice(cands)
+                        st["copies"] = st.get("copies", 0) + 1
+                        st["copied"] = {"name": sk["n"], "from": k.get("name", "?"), "ch": sk["ch"], "sk": sk}
+                        res["gif"] = res["gif"] or T10_COPY_GIF
+                        logs.append(f"🪞 **[Rika]** sao chép skill **{sk['n']}** của **{k.get('name', '?')}** (25%)! Yuta sẽ dùng nó với tỉ lệ **{int(sk['ch'] * 100)}%** *(Lần copy {st['copies']}/{T10_COPY_MAX})*")
+
+        elif not st.get("rika_used") and random.random() < T10_RIKA_SUMMON_CHANCE:
+            st["rika_used"] = 1
+            st["rika_turns"] = 0
+            r_atk = max(1, int(pw * T10_RIKA_RATIO))
+            r_hp = max(1, int(mx * T10_RIKA_RATIO))
+            card.setdefault("t8_sum", {})["rika"] = {"name": T10_RIKA_NAME, "atk": r_atk, "hp": r_hp, "max_hp": r_hp}
+            res["gif"] = T10_RIKA_GIF
+            logs.append(f"💍 **{tag}** - **Come here, Rika!** (50%) Triệu hồi **Rika** với 75% chỉ số: **{r_atk:,} ATK / {r_hp:,} HP**, chiến đấu cùng và **tank trọn sát thương** thay Yuta!")
+
+    # ===================== SKILL CHỦ ĐỘNG (tối đa 1 chiêu / lượt) =====================
+    if not skills_locked:
+        opts = []
+        if not is_ace2:
+            if erased != "t10_slash" and st.get("slash", 0) < T10_A1_SLASH_MAX:
+                opts.append(("slash", T10_A1_SLASH_CH))
+            if erased != "t10_heal" and not st.get("heal"):
+                hurt = card.get("current_hp", mx) < mx or any(k.get("current_hp", 0) < int(k.get("max_hp") or 1) for k in _t10_alive_allies(team, card))
+                if hurt:
+                    opts.append(("heal", T10_A1_HEAL_CH))
+        else:
+            if erased != "t10_slash" and st.get("slash", 0) < T10_A2_SLASH_MAX:
+                opts.append(("slash", T10_A2_SLASH_CH))
+            if erased != "t10_curse" and not st.get("curse"):
+                opts.append(("curse", T10_A2_CURSE_CH))
+        random.shuffle(opts)
+        for key, ch in opts:
+            if random.random() >= ch:
+                continue
+            if key == "slash":
+                st["slash"] = st.get("slash", 0) + 1
+                if not is_ace2:
+                    res["multiplier"] = max(res["multiplier"], T10_A1_SLASH_MULT)
+                    res["gif"] = T10_SLASH_GIF
+                    logs.append(f"⚔️ **{tag}** tung **Resolute Slash** (25%)! Cú chém chú lực **×{T10_A1_SLASH_MULT:g} sát thương** *(Lần {st['slash']}/{T10_A1_SLASH_MAX})*")
+                else:
+                    dark = random.random() < T10_A2_DARK_CHANCE
+                    m = T10_A2_DARK_MULT if dark else T10_A2_SLASH_MULT
+                    res["multiplier"] = max(res["multiplier"], m)
+                    res["gif"] = T10_SLASH2_GIF
+                    if dark:
+                        logs.append(f"🌑 **{tag}** tung **Resolute Slash** (25%) kèm **HẮC HIỂM** (20%)! Cú chém giáng **×{m:g} sát thương** *(Lần {st['slash']}/{T10_A2_SLASH_MAX})*")
+                    else:
+                        logs.append(f"⚔️ **{tag}** tung **Resolute Slash** (25%)! Cú chém chú lực **×{m:g} sát thương** *(Lần {st['slash']}/{T10_A2_SLASH_MAX})*")
+            elif key == "heal":
+                st["heal"] = 1
+                allies = [k for k in _t10_alive_allies(team, card)]
+                target, who = card, "bản thân"
+                if allies and random.random() < 0.5:
+                    target = random.choice(allies)
+                    who = f"đồng đội **{target.get('name', '?')}**"
+                # nếu mục tiêu đã đầy máu mà bên kia đang thiếu máu thì đổi sang bên thiếu máu
+                tmx = int(target.get("max_hp") or target.get("hp") or 1)
+                if target.get("current_hp", 0) >= tmx:
+                    wounded = [k for k in ([card] + allies) if k.get("current_hp", 0) < int(k.get("max_hp") or k.get("hp") or 1)]
+                    if wounded:
+                        target = random.choice(wounded)
+                        who = "bản thân" if target is card else f"đồng đội **{target.get('name', '?')}**"
+                        tmx = int(target.get("max_hp") or target.get("hp") or 1)
+                before = target["current_hp"]
+                target["current_hp"] = min(tmx, before + int(tmx * T10_A1_HEAL_PCT))
+                res["gif"] = T10_HEAL_GIF
+                logs.append(f"💚 **{tag}** thi triển **Phản chuyển** (30%)! Hồi **+{target['current_hp'] - before:,} HP** (20% máu tối đa) cho {who}! *(1 lần/trận)*")
+            else:
+                st["curse"] = 1
+                res["stun"] = True
+                res["gif"] = T10_CURSE_GIF
+                logs.append(f"🗣️ **{tag}** hô **Cursed Speech** (15%)! Chú ngôn khiến địch **choáng 1 turn**, không thể phản công! *(1 lần/trận)*")
+            break
+    return res
+
+
+# ---------------- HOOK: RAID THƯỜNG / EVENT RAID ----------------
+_T10_PREV_RAID_ATTACK = t7_raid_attack
+def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
+    card_dmg, boss_stunned, turn_image, notif = _T10_PREV_RAID_ATTACK(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L)
+    try:
+        if _t10_is(ac):
+            max_hp = L.get("p2_max_hp") or L.get("p1_max_hp") or 100000
+            cap_total = int(max_hp * T10_RAID_TRUE_CAP_PCT)
+
+            def cap_fn(amt, label):
+                used = sum(x.get("t10_true_used", 0) for x in (active or []))
+                ok = max(0, min(int(amt), cap_total - used))
+                c["t10_true_used"] = c.get("t10_true_used", 0) + ok
+                return ok
+
+            r = t10_combat_turn(ac, c.get("team_cards"), max_hp, bool(ac.get("is_ace2")),
+                                bool(L.get("player_skills_locked")), cap_fn)
+            card_dmg = int(card_dmg * r["multiplier"]) + r["bonus"]
+            if r["stun"]:
+                boss_stunned = True
+            if r["gif"] and not turn_image:
+                turn_image = r["gif"]
+            if r["logs"]:
+                notif = (notif + "\n" if notif else "") + "\n".join(f"({c['username']}) {l}" for l in r["logs"])
+            if t8_alive_summons(ac):
+                ac["t8_base"] = ac["current_hp"]      # để Rika tank đòn Boss ở cuối hiệp
+    except Exception as e:
+        print(f"[T10] lỗi raid_attack: {e}", flush=True)
+    return card_dmg, boss_stunned, turn_image, notif
+
+
+# ---------------- HOOK: JOTARO / HAN SEIKI / SUKUNA / GIORNO / KENJAKU / FATERIA P2 ----------------
+_T10_PREV_JT_ATTACK = t7_jt_attack
+def t7_jt_attack(c, ac, dmg, B, notes):
+    dmg = _T10_PREV_JT_ATTACK(c, ac, dmg, B, notes)
+    try:
+        if _t10_is(ac):
+            def cap_fn(amt, label):
+                applied, B["true_accum"], cap_msg = apply_raid_true_damage(int(amt), B["true_accum"], B["true_cap"], label)
+                return applied
+
+            r = t10_combat_turn(ac, c.get("team_cards"), B["max_hp"], bool(ac.get("is_ace2")), False, cap_fn)
+            dmg = int(dmg * r["multiplier"]) + r["bonus"]
+            if r["stun"]:
+                B["stunned"] = True
+            if r["gif"] and not B.get("gif"):
+                B["gif"] = r["gif"]
+            notes.extend(f"({c['username']}) {l}" for l in r["logs"])
+            if t8_alive_summons(ac):
+                ac["t8_base"] = ac["current_hp"]
+    except Exception as e:
+        print(f"[T10] lỗi jt_attack: {e}", flush=True)
+    return dmg
+
+
+# ---------------- HOOK: STORY ----------------
+_T10_PREV_STORY_APPLY = t7_story_apply
+def t7_story_apply(pc, card_dmg, guard, boss_max_hp, boss_power, logs, team=None, boss_hp=None):
+    card_dmg, guard, stun, gif = _T10_PREV_STORY_APPLY(pc, card_dmg, guard, boss_max_hp, boss_power, logs, team, boss_hp)
+    try:
+        if _t10_is(pc):
+            r = t10_combat_turn(pc, team, boss_max_hp, bool(pc.get("is_ace2")), False, None)
+            card_dmg = int(card_dmg * r["multiplier"]) + r["bonus"]
+            stun = stun or r["stun"]
+            gif = gif or r["gif"]
+            logs.extend(r["logs"])
+    except Exception as e:
+        print(f"[T10] lỗi story_apply: {e}", flush=True)
+    return card_dmg, guard, stun, gif
+
+
+# ---------------- HOOK: BATTLE / PVP ----------------
+# t7_duel_defend được gọi 1 lần/hiệp cho mỗi bên TRƯỚC khi ghi nhận máu -> chỗ tốt để Yuta ra skill.
+# Sát thương thêm (nhân hệ số + Rika + skill copy) trừ thẳng vào máu địch (giống Flandre/Remilia).
+# Cursed Speech: hủy toàn bộ sát thương địch gây lên Yuta trong hiệp (xử lý ở eq_gaia_post bên dưới).
+def _t10_duel_hook(card, cards, actions, fr):
+    name = fr.f_code.co_name
+    loc = fr.f_locals
+    enemy, own_stun = None, False
+    if name == "handle_battle" and loc.get("pc") is card:
+        enemy, own_stun = loc.get("oc"), bool(loc.get("stunned_pc"))
+    elif name == "run_pvp_match":
+        if loc.get("cc") is card:
+            enemy, own_stun = loc.get("tc"), bool(loc.get("c_stunned"))
+        elif loc.get("tc") is card:
+            enemy, own_stun = loc.get("cc"), bool(loc.get("t_stunned"))
+    if enemy is None:
+        return
+    card.pop("t10_stun_flag", None)
+    if own_stun:
+        return
+    cur_img = loc.get("turn_image")
+    tmax = int(enemy.get("max_hp") or enemy.get("hp") or 1)
+    r = t10_combat_turn(card, cards, tmax, bool(card.get("is_ace2")), False, None)
+    actions.extend(r["logs"])
+    extra = int(card.get("power", 0) * (r["multiplier"] - 1.0)) + r["bonus"]
+    if extra > 0 and enemy.get("current_hp", 0) > 0:
+        enemy["current_hp"] = max(0, enemy["current_hp"] - extra)
+        actions.append(f"💥 **{card['name']}** gây thêm **{extra:,} DMG** trực tiếp lên **{enemy['name']}** (hệ số / Rika / skill sao chép)!")
+    if r["stun"]:
+        card["t10_stun_flag"] = True
+        actions.append(f"❄️ **{enemy['name']}** bị choáng, **không thể đánh trả** trong hiệp này!")
+    if r["gif"] and not cur_img and globals().get("_FA_FRAME_OK"):
+        _fa_frame_write(fr, {"turn_image": r["gif"]})
+
+_T10_PREV_DUEL_DEFEND = t7_duel_defend
+def t7_duel_defend(front, cards, incoming, base_power, attacker_stunned, actions):
+    out = _T10_PREV_DUEL_DEFEND(front, cards, incoming, base_power, attacker_stunned, actions)
+    try:
+        if _t10_is(front):
+            fr = _t10_sys._getframe(1)
+            try:
+                _t10_duel_hook(front, cards, actions, fr)
+            finally:
+                del fr
+    except Exception as e:
+        print(f"[T10] lỗi duel hook: {e}", flush=True)
+    return out
+
+_T10_PREV_GAIA_POST = eq_gaia_post
+def eq_gaia_post(card, mark, incoming, base_power, logs):
+    try:
+        if card.pop("t10_stun_flag", False) and mark is not None and card.get("current_hp", 0) < mark:
+            card["current_hp"] = mark
+            logs.append(f"🗣️ **[Cursed Speech]** Địch bị choáng nên đòn đánh trả bị hủy — **{card['name']}** không mất máu!")
+    except Exception as e:
+        print(f"[T10] lỗi stun restore: {e}", flush=True)
+    return _T10_PREV_GAIA_POST(card, mark, incoming, base_power, logs)
+
+
+# ---------------- RESET KHI SANG PHASE 2 / TUA NGƯỢC ----------------
+_T10_PREV_RESET = reset_sakuya3_phase
+def reset_sakuya3_phase(c: dict):
+    _T10_PREV_RESET(c)
+    c["t10_true_used"] = 0
+    for card in c.get("team_cards", []):
+        for k in ("t10_state", "t10_stun_flag"):
+            card.pop(k, None)
+
+
+# ---------------- BÓNG KHÁI NIỆM (SEIKI) XÓA SKILL / PASSIVE CỦA YUTA ----------------
+_T10_PREV_ERASE = apply_bong_khai_niem_card
+def apply_bong_khai_niem_card(target_card: dict):
+    if _t10_is(target_card) and not target_card.get("erased_skill"):
+        if target_card.get("is_ace2"):
+            pool = [("t10_rika", "Come here, Rika!"), ("t10_beam", "True love beam"),
+                    ("t10_copy", "Sao chép skill (Rika)"), ("t10_slash", "Resolute Slash"), ("t10_curse", "Cursed Speech")]
+        else:
+            pool = [("t10_slash", "Resolute Slash"), ("t10_heal", "Phản chuyển")]
+        key, name = random.choice(pool)
+        target_card["erased_skill"] = key
+        target_card["erased_skill_name"] = name
+        if key == "t10_rika" and target_card.get("t8_sum"):
+            target_card["t8_sum"].pop("rika", None)
+        return f"🌑 **[Bóng Khái Niệm]** Đã xóa ngẫu nhiên 1 kỹ năng duy nhất **[{name}]** của **{target_card['name']}**! *(Tối đa mất 1 chiêu)*"
+    return _T10_PREV_ERASE(target_card)
+
+
+# ---------------- ĐỔI MẢNH: /t translate loai_shard:yuta ----------------
+_T10_PREV_TRANSLATE = handle_translate_shard
+async def handle_translate_shard(ctx_or_interaction, loai_shard: str = "seiki"):
+    key = str(loai_shard or "").lower().strip()
+    if key not in T10_SHARD_ALIASES:
+        return await _T10_PREV_TRANSLATE(ctx_or_interaction, loai_shard)
+    is_inter = isinstance(ctx_or_interaction, discord.Interaction)
+    user = ctx_or_interaction.user if is_inter else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    shards = player.setdefault("shards", {})
+    cur = shards.get("yuta", 0)
+    card = CARDS_DATA["t10"]
+    if cur < T10_SHARDS_UNLOCK:
+        msg = (f"❌ **Không đủ mảnh!** Bạn có **{cur}/{T10_SHARDS_UNLOCK} Yuta Shards**.\n"
+               f"💡 *Mẹo: Yuta Shard rơi từ Boss Kenjaku (Xác Gojo).*")
+        if is_inter:
+            await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else:
+            await ctx_or_interaction.send(msg)
+        return
+    shards["yuta"] = cur - T10_SHARDS_UNLOCK
+    unl = player.setdefault("unlocked_cards", [])
+    if "t10" not in unl:
+        unl.append("t10")
+    inv = player.setdefault("inventory", {})
+    inv["t10"] = inv.get("t10", 0) + 1
+    save_player(player)
+    embed = discord.Embed(
+        title="💍 QUY ĐỔI THÀNH CÔNG: YUTA OKKOTSU!",
+        description=(
+            f"✨ **Chúc mừng {user.mention}!** Bạn đã dung hợp **{T10_SHARDS_UNLOCK} Yuta Shards**!\n\n"
+            f"🎴 **THẺ NHẬN ĐƯỢC:** **[T] #t10 Yuta Okkotsu**\n"
+            f"• ⚔️ ATK **{card['power']:,}** | ❤️ HP **{card['hp']:,}**\n"
+            f"• ⚔️ **Resolute Slash (25%):** ×{T10_A1_SLASH_MULT:g} sát thương (tối đa {T10_A1_SLASH_MAX} lần)\n"
+            f"• 💚 **Phản chuyển (30%):** Hồi 20% máu tối đa cho đồng đội hoặc bản thân (1 lần/trận)\n\n"
+            f"📦 **Mảnh còn lại:** `{shards['yuta']}` | 🎒 **Kho thẻ:** `{inv['t10']}` lá"
+        ),
+        color=0x3B82F6
+    )
+    embed.set_image(url=T10_UNLOCK_GIF)
+    embed.set_footer(text="Dùng /team add id_the:t10 để đưa Yuta vào đội hình!")
+    if is_inter:
+        await ctx_or_interaction.response.send_message(embed=embed)
+    else:
+        await ctx_or_interaction.send(embed=embed)
+
+
+# ---------------- TIẾN HÓA ACE 2 + /evol required ----------------
+def execute_yuta_ace2(player):
+    _blk = ace2_prestige_block(player, "t10")
+    if _blk:
+        return False, _blk, None
+    if is_card_ace2(player, "t10"):
+        return False, "⚠️ **[#t10] Yuta Okkotsu** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
+    if not is_card_unlocked(player, "t10") and player.get("inventory", {}).get("t10", 0) <= 0:
+        return False, (f"❌ **Bạn chưa mở khóa thẻ [#t10] Yuta Okkotsu (Ace 1)!**\n"
+                       f"• Thu thập **{T10_SHARDS_UNLOCK} Yuta Shards** rồi dùng `/t translate loai_shard:yuta` để đổi thẻ gốc trước."), None
+    shards = player.setdefault("shards", {})
+    cur = shards.get("yuta", 0)
+    if cur < T10_SHARDS_ACE2:
+        return False, f"❌ **Chưa đủ Yuta Shards để tiến hóa Ace 2!** ({cur}/{T10_SHARDS_ACE2})", None
+    shards["yuta"] = cur - T10_SHARDS_ACE2
+    player.setdefault("evolutions", {})["t10"] = 2
+    save_player(player)
+    embed = discord.Embed(
+        title="🌟 TIẾN HÓA THÀNH CÔNG: [#t10] YUTA OKKOTSU - ACE 2 ⭐⭐!",
+        description=(
+            "💍 **RIKA ĐÃ THỨC TỈNH - BỘ KỸ NĂNG ACE 2:**\n\n"
+            "👻 **Come here, Rika! (Passive 50%):** Triệu hồi Rika với 75% chỉ số Yuta, chiến đấu cùng & **tank trọn sát thương**\n"
+            "💘 **True love beam (Rika - 12%):** ×3 DMG, mở sau khi Rika chiến đấu đủ 2 turn (1 lần/trận)\n"
+            "🪞 **Sao chép skill (Rika - 25%):** Copy 1 skill của đồng đội đã ngã rồi dùng với tỉ lệ của skill đó (tối đa 2 lần copy)\n"
+            "⚔️ **Resolute Slash (25%):** ×1.5 sát thương, 20% **hắc hiểm** ×3 (tối đa 2 lần)\n"
+            "🗣️ **Cursed Speech (15%):** Choáng địch 1 turn (1 lần/trận)\n\n"
+            f"📉 **Chi phí:** {T10_SHARDS_ACE2} Yuta Shards (còn `{shards['yuta']}`)\n"
+            "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn!"
+        ),
+        color=0x3B82F6
+    )
+    embed.set_image(url=T10_EVOL_GIF)
+    embed.set_footer(text="Touhou Evolution System • Yuta Ace 2 Activated • Card ID #t10")
+    return True, "", embed
+
+_T10_PREV_EXEC_EVOL = execute_card_evolution
+def execute_card_evolution(player, cid):
+    if str(cid).strip().lower() in ("t10", "yuta", "okkotsu"):
+        return execute_yuta_ace2(player)
+    return _T10_PREV_EXEC_EVOL(player, cid)
+
+_T10_PREV_EVOL_REQ = evol_req_data
+def evol_req_data(player, key, stage):
+    if key == "t10" and stage == 2:
+        inv = player.get("inventory", {}) or {}
+        shards = player.get("shards", {}) or {}
+        pr = player.get("prestige", 0)
+        own = is_card_unlocked(player, "t10") or inv.get("t10", 0) > 0
+        have = shards.get("yuta", 0)
+        rows = [
+            _rq(own, "Sở hữu thẻ [#t10] Yuta Okkotsu (Ace 1)"),
+            _rq(have >= T10_SHARDS_ACE2, f"Yuta Shards: {have}/{T10_SHARDS_ACE2}"),
+            _rq(pr >= T10_ACE2_PRESTIGE, f"Prestige {T10_ACE2_PRESTIGE}+ (hiện tại P{pr})"),
+        ]
+        if _raw_ace2(player, "t10"):
+            return rows, ("done" if is_card_ace2(player, "t10") else "locked")
+        return rows, ("ready" if all(x[0] for x in rows) else "no")
+    return _T10_PREV_EVOL_REQ(player, key, stage)
+
+
+# ---------------- GIAO DIỆN /check & /card_info ----------------
+class YutaCardView(discord.ui.View):
+    def __init__(self, user_id=None, back_index: int = 0, show_ace: bool = False):
+        super().__init__(timeout=180)
+        self.user_id = user_id
+        self.back_index = back_index
+        self.show_ace = show_ace
+        self._build()
+
+    def _build(self):
+        self.clear_items()
+        if self.show_ace:
+            toggle = discord.ui.Button(label="⭐ Xem Bản Ace 1", style=discord.ButtonStyle.secondary, emoji="🔄", row=0)
+        else:
+            toggle = discord.ui.Button(label="🌟 Xem Ace 2 ⭐⭐", style=discord.ButtonStyle.success, emoji="✨", row=0)
+        toggle.callback = self.on_toggle
+        self.add_item(toggle)
+        back = discord.ui.Button(label="📖 Quay lại danh sách nhân vật", style=discord.ButtonStyle.primary, row=0)
+        back.callback = self.on_back
+        self.add_item(back)
+
+    def get_embed(self):
+        card = CARDS_DATA["t10"]
+        player = get_player(self.user_id) if self.user_id else None
+        lvl = player.get("level", 1) if player else 1
+        owned = player.get("inventory", {}).get("t10", 0) if player else 0
+        shards = player.get("shards", {}).get("yuta", 0) if player else 0
+        ace = self.show_ace
+        pw = card["power"] + (ACE_POWER_BUFF if ace else 0)
+        hp = card["hp"] + (ACE_HP_BUFF if ace else 0)
+        embed = discord.Embed(
+            title="🌟 [Ace 2 ⭐⭐] #t10 YUTA OKKOTSU (THỨC TỈNH)" if ace else "💍 [THẺ ĐẶC BIỆT NHÓM T] #t10 YUTA OKKOTSU",
+            description=("🔥 **Đang xem: ACE 2 ⭐⭐** *(+300 ATK / +300 HP)*" if ace else
+                         f"✨ Mở khóa bằng **{T10_SHARDS_UNLOCK} Yuta Shards** (`/t translate loai_shard:yuta`).\n✨ **Có thể tiến hóa Ace 2 ⭐⭐!**"),
+            color=0x3B82F6
+        )
+        embed.set_image(url=T10_EVOL_GIF if ace else T10_UNLOCK_GIF)
+        embed.add_field(
+            name="⚔️ SỨC MẠNH & CHỈ SỐ:",
+            value=f"• ⚔️ **ATK:** `{pw:,}` | ❤️ **HP:** `{hp:,}`\n• 🛡️ **Trong đội hình (Lv.{lvl}):** `{pw + (lvl - 1) * 15:,}` ATK | `{hp + (lvl - 1) * 45:,}` HP",
+            inline=False
+        )
+        if ace:
+            skills = (
+                "👻 **Come here, Rika! (Passive 50%):** Triệu hồi Rika 75% chỉ số Yuta, chiến đấu cùng & **tank trọn sát thương**.\n"
+                "💘 **True love beam (Rika 12%):** ×3 DMG, chỉ mở khi Rika đã chiến đấu cùng Yuta ≥ 2 turn (1 lần/trận).\n"
+                "🪞 **Sao chép skill (Rika 25%):** Nếu có đồng đội đã ngã, copy 1 skill của họ & dùng với tỉ lệ của skill đó, rồi reset để copy tiếp (tối đa 2 lần).\n"
+                "⚔️ **Resolute Slash (25%):** ×1.5 sát thương (tối đa 2 lần), 20% **hắc hiểm** ×3.\n"
+                "🗣️ **Cursed Speech (15%):** Choáng địch 1 turn (1 lần/trận)."
+            )
+        else:
+            skills = (
+                "🚫 **Passive:** Không có.\n"
+                "⚔️ **Resolute Slash (25%):** Cú chém chú lực ×1.2 sát thương (tối đa 2 lần).\n"
+                "💚 **Phản chuyển (30%):** Hồi 20% máu tối đa cho đồng đội hoặc bản thân (50/50; không có đồng đội thì hồi bản thân), 1 lần/trận."
+            )
+        embed.add_field(name="🔮 KỸ NĂNG:", value=skills, inline=False)
+        if player:
+            pr = player.get("prestige", 0)
+            if is_card_ace2(player, "t10"):
+                badge = "🌟 ĐÃ THỨC TỈNH ACE 2"
+            elif owned > 0 and shards >= T10_SHARDS_ACE2 and pr >= T10_ACE2_PRESTIGE:
+                badge = "🟢 Đủ điều kiện! Dùng `/evol id_hoac_ten:t10`"
+            else:
+                badge = f"🔴 Chưa đủ (Mảnh {shards}/{T10_SHARDS_ACE2} | Prestige P{pr}/{T10_ACE2_PRESTIGE})"
+            embed.add_field(name="🎒 TÚI ĐỒ CỦA BẠN:", value=f"• Sở hữu: **{owned}** lá\n• 💍 Yuta Shards: **{shards}**\n• Cảnh giới: **{badge}**", inline=False)
+        embed.set_footer(text="Thẻ nhóm T đặc biệt • Hoạt động trong Raid, Event, Battle, PvP, Story")
+        return embed
+
+    async def on_toggle(self, interaction: discord.Interaction):
+        self.show_ace = not self.show_ace
+        self._build()
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    async def on_back(self, interaction: discord.Interaction):
+        v = CharacterCheckView(current_index=self.back_index, user_id=self.user_id)
+        await interaction.response.edit_message(embed=v.get_current_embed(), view=v)
+
+_T10_PREV_CHECK = handle_check_character
+async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
+    s = str(nhan_vat or "").strip().lower().replace("#", "").replace(" ", "")
+    if s in ("t10", "yuta", "okkotsu", "yutaokkotsu"):
+        user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+        yv = YutaCardView(user.id, 0)
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=yv.get_embed(), view=yv)
+        else:
+            await ctx_or_interaction.send(embed=yv.get_embed(), view=yv)
+        return
+    return await _T10_PREV_CHECK(ctx_or_interaction, nhan_vat)
+
+# ===================== HẾT KHỐI YUTA (#t10) =====================
 import sys
 
 def start_bot_safely():
