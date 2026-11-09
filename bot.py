@@ -7211,27 +7211,6 @@ def execute_single_pull(player):
 # ==============================================================================
 # 9. LỆNH ADMIN (OWNER EXCLUSIVE: 1502579398560317441)
 # ==============================================================================
-@bot.tree.command(name="admin_set_level", description="[CHỦ BOT DUY NHẤT] Đặt cấp độ cho người chơi (đồng bộ XP chuẩn xác không bug)")
-@app_commands.describe(nguoi_dung="Chọn người chơi", cap_do="Cấp độ từ 1 đến 100")
-async def slash_admin_set_level(interaction: discord.Interaction, nguoi_dung: Union[discord.Member, discord.User], cap_do: int):
-    if not is_authorized_admin(interaction.user.id):
-        await interaction.response.send_message(f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}>) mới có quyền.", ephemeral=True)
-        return
-    target = get_player(nguoi_dung.id, nguoi_dung.display_name)
-    max_lvl = get_max_level(target.get("prestige", 0))
-    cap_do = max(1, min(max_lvl, cap_do))
-    old_lvl, old_xp = target["level"], target["xp"]
-    new_xp = get_total_xp_for_level(cap_do, max_lvl)
-    target["xp"] = new_xp
-    target["level"] = cap_do
-    save_player(target)
-    embed = discord.Embed(
-        title="⚙️ [ADMIN] ĐÃ THAY ĐỔI CẤP ĐỘ NGƯỜI CHƠI THÀNH CÔNG",
-        description=f"👑 **Admin:** {interaction.user.mention}\n👤 **Mục tiêu:** {nguoi_dung.mention}\n📊 **Cấp độ:** `Lv.{old_lvl}` ➔ **`Lv.{cap_do}`**\n📈 **Đồng bộ XP:** `{old_xp:,} XP` ➔ **`{new_xp:,} XP`**",
-        color=0x10B981
-    )
-    await interaction.response.send_message(embed=embed)
-
 @bot.command(name="setlevel", aliases=["setlvl"])
 async def prefix_admin_set_level(ctx, member: discord.Member, level: int):
     if not is_authorized_admin(ctx.author.id):
@@ -29804,14 +29783,6 @@ _XPD_PREV_HANDLE_PRESTIGE = handle_prestige
 async def handle_prestige(ctx_or_interaction):
     await _XPD_PREV_HANDLE_PRESTIGE(ctx_or_interaction)
 
-_XPD_PREV_PCV_INIT = PrestigeConfirmView.confirm_prestige
-# (giữ nguyên logic prestige gốc; phần trừ cấp khi P5+ sẽ dùng get_total_xp_for_level bên dưới)
-
-# ---- Prestige từ P5 trở lên bị trừ 200 cấp: tính XP mới theo prestige MỚI (đã có giảm 50% nếu >= P6) ----
-_XPD_PREV_PCV_CONFIRM = PrestigeConfirmView.confirm_prestige
-async def _xpd_confirm_prestige(self, interaction: discord.Interaction, button: discord.ui.Button):
-    # gọi hàm gốc nhưng ép get_total_xp_for_level tự biết prestige mới
-    return await _XPD_PREV_PCV_CONFIRM.callback(self, interaction, button)  # giữ hành vi gốc
 import sys
 
 def start_bot_safely():
