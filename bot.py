@@ -16489,7 +16489,7 @@ PRIME_BOSS_CONFIG = {
     "skills": {
         "phan_chuyen": {"name": "Phản chuyển Niệm Bóng", "chance": 0.25, "multiplier": 2.2, "gif": PRIME_GIF_REVERSE},
         "gan_ghep": {"name": "Gán ghép", "chance": 0.15, "heal_pct": 0.20, "gif": PRIME_GIF_HEAL},
-        "nhi_phan": {"name": "Nhị Phân Vô Cực khái niệm", "chance": 0.10, "gif": PRIME_GIF_BINARY},
+        "nhi_phan": {"name": "Nhị Phân Vô Cực khái niệm", "chance": 0.15, "gif": PRIME_GIF_BINARY},
     }
 }
 
@@ -16654,7 +16654,7 @@ async def spawn_prime_raid(channel, author, is_admin=False):
             "• 🛡️ **Linh hồn của công lý (Passive):** Giảm **20% sát thương nhận vào**. Mỗi lần hạ được **1 thẻ bài**, hồi **1,5% máu tối đa**!\n"
             "• 🔄 **Phản chuyển Niệm Bóng (25%):** Đảo ngược khái niệm, giáng đòn hủy diệt **2.2x sát thương gốc (48,400 DMG)** chia đều tiền tuyến!\n"
             "• 🧩 **Gán ghép (15%):** Tập hợp các khái niệm gán lại, **hồi 20% máu tối đa**!\n"
-            "• ♾️ **Nhị Phân Vô Cực khái niệm (10%):** Đòn kết liễu — **hạ gục ngay 1 mục tiêu ngẫu nhiên (1 hit)**, "
+            "• ♾️ **Nhị Phân Vô Cực khái niệm (15%):** Đòn kết liễu — **hạ gục ngay 1 mục tiêu ngẫu nhiên (1 hit)**, "
             "**BỎ QUA mọi kỹ năng phòng thủ** (Yukari, Kizuna, Hong Meiling, Reimu, Seiki, Kasen...)!"
         ),
         inline=False
@@ -17092,7 +17092,7 @@ async def execute_prime_raid(channel, raid_data):
                     tac["current_hp"] = 0
                     forced_kills.append(tac)
                     action_log += (
-                        f"♾️ **[KỸ NĂNG TỐI THƯỢNG] Han Seiki** tung **Nhị Phân Vô Cực khái niệm (10%)**! "
+                        f"♾️ **[KỸ NĂNG TỐI THƯỢNG] Han Seiki** tung **Nhị Phân Vô Cực khái niệm (15%)**! "
                         f"Hệ số mũ vô hạn vượt mọi rào cản — **{tac['name']}** ({tc['username']}) bị **HẠ GỤC TỨC THÌ**, "
                         f"bỏ qua mọi kỹ năng phòng thủ!"
                     )
@@ -22356,6 +22356,22 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
 
 # ===================== HẾT KHỐI FATERIA ACE 2 =====================
 # ==============================================================================
+# [FIX] FATERIA ACE 2: SANG PHASE MỚI = TÍNH LƯỢT RA SÂN MỚI (RESET SNAPSHOT / LƯỢT DÙNG)
+# ==============================================================================
+_FA_PREV_PHASE_RESET = reset_sakuya3_phase
+def reset_sakuya3_phase(c: dict):
+    _FA_PREV_PHASE_RESET(c)
+    try:
+        for card in c.get("team_cards", []):
+            uid = card.get("fa_uid")
+            reg = _FA_REG.get(uid) if uid else None
+            if reg:
+                reg.update(used=False, buff_left=0, snap=None, snap_tried=False,
+                           dodge=0.0, hp_mark=None, ts=time.time())
+    except Exception as e:
+        print(f"[FATERIA] lỗi reset phase: {e}", flush=True)
+# ===================== HẾT FIX FATERIA PHASE =====================
+# ==============================================================================
 # [UPDATE GAMBLE] /coinflip + /slot machine + LƯU THỐNG KÊ GAMBLE RATE
 # ==============================================================================
 import random as _gb_rand   # dùng random chuẩn, tránh proxy _LiemRandom
@@ -25352,7 +25368,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None, admin=True):
         value=(
             "• 🔄 **Return to Zero (Passive - 50%):** Có **50% tỉ lệ miễn nhiễm toàn bộ hiệu ứng** (choáng, đóng băng, time stop, bỏng, ảo giác, xóa kỹ năng...); 50% còn lại Boss vẫn dính hiệu ứng bình thường!\n"
             "• 👊 **Muda Muda! (30%):** Loạt đấm **×1.5 sát thương** chia đều tiền tuyến.\n"
-            "• 🐸 **Life creater (25%):** Tạo sinh vật **25% máu Boss**, **tank trọn sát thương** trong **2 turn** rồi biến mất.\n"
+            "• 🐸 **Life creater (25%):** Tạo sinh vật **25% máu Boss**, **tank trọn sát thương** trong **1 turn** rồi biến mất.\n"
             "• ♾️ **Death loop (10%):** **Vòng lặp giết ngay** toàn bộ thẻ tiền tuyến, **không thể chặn**!\n"
             "• 💥 **Life punch (20%):** **×1.5 sát thương** lên **1 mục tiêu** và **choáng 1-2 turn**.\n"
             "• 💚 **Heal (15%):** Hồi **10% máu tối đa**."
@@ -25466,6 +25482,7 @@ async def _gio_run_phase(channel, battle_msg, combatants, phase, all_turns):
     life_hp = 0
     life_max = 0
     life_turns = 0
+    life_cd = 0          # số turn nghỉ bắt buộc sau khi sinh vật biến mất
     rounds = 0
 
     while B["hp"] > 0 and rounds < GIORNO_MAX_ROUNDS:
@@ -25534,24 +25551,21 @@ async def _gio_run_phase(channel, battle_msg, combatants, phase, all_turns):
             uniq_h = ", ".join(sorted(set(fx_hit)))
             boss_fx.append(f"⚠️ **[Return to Zero (50%)]** Không kích hoạt! Giorno đã bị dính hiệu ứng: **{uniq_h}**!")
 
-        # ---------- SINH VẬT LIFE CREATER TANK SÁT THƯƠNG ----------
-        if life_turns > 0 and life_hp > 0:
-            if lost > 0:
+        # ---------- SINH VẬT LIFE CREATER TANK SÁT THƯƠNG (CHỈ 1 TURN) ----------
+        if life_turns > 0:
+            if life_hp > 0 and lost > 0:
                 absorbed = min(lost, life_hp)
                 life_hp -= absorbed
                 spill = lost - absorbed
                 B["hp"] = hp_before - (spill if GIORNO_LIFE_OVERFLOW else 0)
                 player_atk_str += f"\n🐸 **[Sinh vật Life creater]** tank **{absorbed:,} DMG** thay Giorno (còn {max(0, life_hp):,}/{life_max:,} HP)!"
-            life_turns -= 1
-            if life_hp <= 0:
-                life_turns = 0
-                boss_fx.append("🐸 **[Life creater]** Sinh vật đã bị đánh tan!")
-            elif life_turns <= 0:
-                life_hp = 0
-                boss_fx.append("🐸 **[Life creater]** Hết 2 turn, sinh vật biến mất!")
-        elif life_turns > 0:
             life_turns = 0
-
+            life_hp = 0
+            life_cd = 3      # nghỉ: turn này (vừa dùng xong) + 1 turn nữa mới được tạo lại
+            boss_fx.append("🐸 **[Life creater]** Sinh vật đã biến mất sau 1 turn!")
+            
+        if life_cd > 0 and life_turns == 0:
+            life_cd -= 1
         # ---------- HÀNH ĐỘNG CỦA BOSS ----------
         action_log = ""
         hit_logs = []
@@ -25560,7 +25574,7 @@ async def _gio_run_phase(channel, battle_msg, combatants, phase, all_turns):
             action_log = "💥 **Giorno Giovanna đã bị đánh bại!**"
         else:
             opts = [("muda", 0.30), ("life", 0.20), ("death", 0.05), ("punch", 0.35), ("heal", 0.10)]
-            if life_turns > 0:                       # đang có sinh vật thì không tạo thêm
+            if life_turns > 0 or life_cd > 0:        # đang có sinh vật hoặc đang nghỉ -> không tạo
                 opts = [o for o in opts if o[0] != "life"]
             roll = _gio_rand.random()
             acc_p = 0.0
@@ -25582,8 +25596,8 @@ async def _gio_run_phase(channel, battle_msg, combatants, phase, all_turns):
                 B["gif"] = GIORNO_GIF_LIFE
                 life_max = int(max_hp * 0.25)
                 life_hp = life_max
-                life_turns = 2
-                action_log = f"🐸 **[KỸ NĂNG] Giorno** tung **Life creater (25%)**! Tạo sinh vật **{life_max:,} HP** (25% máu Boss), **tank trọn sát thương trong 2 turn**!"
+                life_turns = 1
+                action_log = f"🐸 **[KỸ NĂNG] Giorno** tung **Life creater (25%)**! Tạo sinh vật **{life_max:,} HP** (25% máu Boss), **tank trọn sát thương trong 1 turn** (lượt tấn công kế tiếp của đội bạn)!"
             elif chosen == "death":
                 B["gif"] = GIORNO_GIF_DEATH
                 for c in active:
