@@ -16645,8 +16645,8 @@ async def spawn_prime_raid(channel, author, is_admin=False):
         color=0xFACC15
     )
     embed.set_image(url=PRIME_GIF_SPAWN)
-    embed.add_field(name="❤️ Máu Boss (HP):", value=f"**{cfg['hp']:,} HP** *(Single Phase)*", inline=True)
-    embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"**{cfg['power']:,} DMG** *(chia đều tiền tuyến)*", inline=True)
+    embed.add_field(name="❤️ Máu Boss (HP):", value=f"• Phase 1: **{cfg['hp']:,} HP**\n• Phase 2: **{PRIME_BOSS_PHASE2_CONFIG['hp']:,} HP**", inline=True)
+    embed.add_field(name="⚔️ Sát Thương Đánh Thường:", value=f"• Phase 1: **{cfg['power']:,} DMG** *(chia đều)*\n• Phase 2: **{PRIME_BOSS_PHASE2_CONFIG['power']:,} DMG** *(chia đều)*", inline=True)
     embed.add_field(name=f"👥 Người Tham Gia (1/{PRIME_MAX_PLAYERS}):", value=author.display_name, inline=False)
     embed.add_field(
         name="⚖️ Nội Tại & Kỹ Năng:",
@@ -16662,10 +16662,14 @@ async def spawn_prime_raid(channel, author, is_admin=False):
     embed.add_field(
         name="🎁 Phần Thưởng Hạ Gục Boss:",
         value=(
-            "• 🎟️ **100%** nhận **10 Vé Pull**\n"
-            "• 🎟️ **30%** nhận thêm **15 Vé Pull**\n"
+            "📦 **Phase 1:**\n"
+            "• 🎟️ **100%** nhận **10 Vé Pull** | **30%** nhận thêm **15 Vé Pull**\n"
             f"• ✨ **50%** nhận XP = **×{PRIME_XP_DROP_MULT:g} XP hiện tại** trong cấp\n"
-            "• 🌸 **10%** rơi **Kanae Shard**| 🌪️ **6%** rơi **Kisami Shard** | 🔮 **5%** Mảnh **Seiki** | ⏳ **5%** **Fateria Shard** | 🩸 **5%** Mảnh **Kizuna**"
+            "• 🌸 **10%** Kanae Shard | 🌪️ **6%** Kisami Shard | 🔮 **5%** Mảnh Seiki | ⏳ **5%** Fateria Shard | 🩸 **5%** Mảnh Kizuna\n\n"
+            "💎 **Phase 2:**\n"
+            "• 🎟️ **100%** nhận **30 Vé Pull** | **30%** nhận thêm **25 Vé Pull**\n"
+            "• ✨ **50%** nhận XP = **×6 XP hiện tại** trong cấp\n"
+            "• 🌸 **15%** Kanae Shard | 🌪️ **10%** Kisami Shard | 🔮 **15%** Mảnh Seiki | ⏳ **15%** Fateria Shard | 🩸 **15%** Mảnh Kizuna"
         ),
         inline=False
     )
@@ -26781,7 +26785,7 @@ class PrestigeConfirmView(discord.ui.View):
         late = old_p >= 5
         if late:
             new_lvl = max(1, cur_lvl - PRESTIGE_LATE_COST)
-            new_xp = get_total_xp_for_level(new_lvl)
+            new_xp = get_total_xp_for_level(new_lvl, None, new_p)
         else:
             new_xp = 0
 
@@ -28582,7 +28586,7 @@ T10_CURSE_GIF = "https://static2.klipy.com/ii/a8ada81afc59159ea5c8927feffa2e31/5
 T10_BASE_POWER = 500
 T10_BASE_HP = 6000
 T10_SHARDS_UNLOCK = 5            # đổi thẻ Ace 1
-T10_SHARDS_ACE2 = 10             # tiến hóa Ace 2
+T10_SHARDS_ACE2 = 18             # tiến hóa Ace 2
 T10_ACE2_PRESTIGE = 3
 T10_RAID_TRUE_CAP_PCT = 0.25     # trần sát thương % máu (skill copy) cộng dồn lên Boss
 # Ace 1
@@ -29179,6 +29183,635 @@ async def handle_check_character(ctx_or_interaction, nhan_vat: str = None):
     return await _T10_PREV_CHECK(ctx_or_interaction, nhan_vat)
 
 # ===================== HẾT KHỐI YUTA (#t10) =====================
+# ==============================================================================
+# [UPDATE] YUTA ACE 2 = 18 SHARD (+ MIGRATE NGƯỜI ĐÃ EVOL) • HAN SEIKI PHASE 2
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# PHẦN A: YUTA ACE 2 - 18 SHARD, NGƯỜI ĐÃ EVOL TRƯỚC UPDATE PHẢI BÙ THÊM RỒI TỰ EVOL
+# ------------------------------------------------------------------------------
+T10_LEGACY_PAID = 10   # số mảnh người cũ đã trả trước update (nên khớp với giá cũ)
+
+def t10_need_shards(player) -> int:
+    """Số mảnh cần để evol: người cũ (pending) chỉ cần bù phần còn thiếu."""
+    if player.get("t10_pending"):
+        return max(1, T10_SHARDS_ACE2 - T10_LEGACY_PAID)
+    return T10_SHARDS_ACE2
+
+def t10_pending_notice(player):
+    if not player.get("t10_pending"):
+        return None
+    need = t10_need_shards(player)
+    cur = (player.get("shards") or {}).get("yuta", 0)
+    return (f"⚠️ **Yuta Ace 2 đã bị khóa do cập nhật** (yêu cầu mới: {T10_SHARDS_ACE2} mảnh, bạn đã trả {T10_LEGACY_PAID} mảnh trước đó).\n"
+            f"👉 **Cố thu thập thêm shard cho đủ** (`{cur}/{need}` mảnh) — đủ mảnh sẽ **TỰ ĐỘNG TIẾN HÓA** lại Ace 2!")
+
+def t10_auto_check(player):
+    """Đủ mảnh thì tự evol. Trả về chuỗi thông báo hoặc None."""
+    if not player.get("t10_pending"):
+        return None
+    if player.get("prestige", 0) < T10_ACE2_PRESTIGE:
+        return None
+    sh = player.setdefault("shards", {})
+    need = t10_need_shards(player)
+    cur = sh.get("yuta", 0)
+    if cur < need:
+        return None
+    sh["yuta"] = cur - need
+    player.setdefault("evolutions", {})["t10"] = 2
+    player["t10_pending"] = False
+    player["t10_v18"] = True
+    return (f"🌟 **[TỰ ĐỘNG TIẾN HÓA] [#t10] Yuta Okkotsu đã đạt lại Ace 2 ⭐⭐!** "
+            f"(Đã trừ {need} Yuta Shards, còn `{sh['yuta']}`)")
+
+# --- Migrate: người đã evol Yuta Ace 2 trước update -> khóa Ace 2, chờ bù mảnh ---
+_T10V_PREV_GET_PLAYER = get_player
+def get_player(user_id, username="Visitor"):
+    data = _T10V_PREV_GET_PLAYER(user_id, username)
+    try:
+        evo = data.get("evolutions")
+        if isinstance(evo, dict) and evo.get("t10", 0) >= 2 and not data.get("t10_v18"):
+            evo.pop("t10", None)
+            data["t10_v18"] = True
+            data["t10_pending"] = True
+    except Exception as e:
+        print(f"[T10V] lỗi migrate: {e}", flush=True)
+    return data
+
+# --- Mọi lần lưu: nếu đủ mảnh thì tự evol ---
+_T10V_PREV_SAVE_PLAYER = save_player
+def save_player(player_data):
+    try:
+        t10_auto_check(player_data)
+    except Exception as e:
+        print(f"[T10V] lỗi auto check: {e}", flush=True)
+    return _T10V_PREV_SAVE_PLAYER(player_data)
+
+# --- Raid Kenjaku: nhận mảnh xong là báo ngay + evol ngay ---
+_T10V_PREV_KJ_REWARD = _kj_reward
+def _kj_reward(p, phase):
+    got = _T10V_PREV_KJ_REWARD(p, phase)
+    try:
+        msg = t10_auto_check(p)
+        if msg:
+            got.append(msg)
+        else:
+            n = t10_pending_notice(p)
+            if n:
+                got.append(n)
+    except Exception as e:
+        print(f"[T10V] lỗi kj_reward: {e}", flush=True)
+    return got
+
+# --- Tiến hóa thủ công (ghi đè hàm cũ) ---
+def execute_yuta_ace2(player):
+    _blk = ace2_prestige_block(player, "t10")
+    if _blk:
+        return False, _blk, None
+    if is_card_ace2(player, "t10"):
+        return False, "⚠️ **[#t10] Yuta Okkotsu** đã đạt **Ace 2 ⭐⭐** từ trước rồi!", None
+    if not is_card_unlocked(player, "t10") and player.get("inventory", {}).get("t10", 0) <= 0:
+        return False, (f"❌ **Bạn chưa mở khóa thẻ [#t10] Yuta Okkotsu (Ace 1)!**\n"
+                       f"• Thu thập **{T10_SHARDS_UNLOCK} Yuta Shards** rồi dùng `/t translate loai_shard:yuta` để đổi thẻ gốc trước."), None
+    shards = player.setdefault("shards", {})
+    cur = shards.get("yuta", 0)
+    need = t10_need_shards(player)
+    if cur < need:
+        extra = ("\n" + t10_pending_notice(player)) if player.get("t10_pending") else ""
+        return False, f"❌ **Chưa đủ Yuta Shards để tiến hóa Ace 2!** ({cur}/{need}){extra}", None
+    shards["yuta"] = cur - need
+    player.setdefault("evolutions", {})["t10"] = 2
+    player["t10_v18"] = True
+    player["t10_pending"] = False
+    save_player(player)
+    embed = discord.Embed(
+        title="🌟 TIẾN HÓA THÀNH CÔNG: [#t10] YUTA OKKOTSU - ACE 2 ⭐⭐!",
+        description=(
+            "💍 **RIKA ĐÃ THỨC TỈNH - BỘ KỸ NĂNG ACE 2:**\n\n"
+            "👻 **Come here, Rika! (Passive 50%):** Triệu hồi Rika với 75% chỉ số Yuta, chiến đấu cùng & **tank trọn sát thương**\n"
+            "💘 **True love beam (Rika - 12%):** ×3 DMG, mở sau khi Rika chiến đấu đủ 2 turn (1 lần/trận)\n"
+            "🪞 **Sao chép skill (Rika - 25%):** Copy 1 skill của đồng đội đã ngã rồi dùng với tỉ lệ của skill đó (tối đa 2 lần copy)\n"
+            "⚔️ **Resolute Slash (25%):** ×1.5 sát thương, 20% **hắc hiểm** ×3 (tối đa 2 lần)\n"
+            "🗣️ **Cursed Speech (15%):** Choáng địch 1 turn (1 lần/trận)\n\n"
+            f"📉 **Chi phí:** {need} Yuta Shards (còn `{shards['yuta']}`)\n"
+            "💪 **Buff Ace 2:** +300 ATK & +300 HP vĩnh viễn!"
+        ),
+        color=0x3B82F6
+    )
+    embed.set_image(url=T10_EVOL_GIF)
+    embed.set_footer(text="Touhou Evolution System • Yuta Ace 2 Activated • Card ID #t10")
+    return True, "", embed
+
+# --- /evol required: hiển thị đúng số mảnh cần ---
+_T10V_PREV_EVOL_REQ = evol_req_data
+def evol_req_data(player, key, stage):
+    rows, state = _T10V_PREV_EVOL_REQ(player, key, stage)
+    if key == "t10" and stage == 2:
+        need = t10_need_shards(player)
+        have = (player.get("shards") or {}).get("yuta", 0)
+        rows = [r for r in rows if "Yuta Shards" not in r[1]]
+        note = f" *(đã trả {T10_LEGACY_PAID} trước update, bù thêm)*" if player.get("t10_pending") else ""
+        rows.insert(1, _rq(have >= need, f"Yuta Shards: {have}/{need}{note}"))
+        if _raw_ace2(player, "t10"):
+            state = "done" if is_card_ace2(player, "t10") else "locked"
+        else:
+            state = "ready" if all(x[0] for x in rows) else "no"
+    return rows, state
+
+# --- /check Yuta: hiện dòng thông báo cho người cũ ---
+_T10V_PREV_GET_EMBED = YutaCardView.get_embed
+def _t10v_get_embed(self):
+    emb = _T10V_PREV_GET_EMBED(self)
+    try:
+        p = get_player(self.user_id) if self.user_id else None
+        n = t10_pending_notice(p) if p else None
+        if n:
+            emb.add_field(name="⚠️ THÔNG BÁO CẬP NHẬT:", value=n, inline=False)
+    except Exception as e:
+        print(f"[T10V] lỗi embed notice: {e}", flush=True)
+    return emb
+YutaCardView.get_embed = _t10v_get_embed
+
+
+# ------------------------------------------------------------------------------
+# PHẦN B: HAN SEIKI THE PRIME ONE - PHASE 2 (420K HP / 55K DMG)
+# ------------------------------------------------------------------------------
+PRIME_BOSS_PHASE2_CONFIG = _ScaledBossCfg({
+    "id": "han_seiki_phase2",
+    "name": "Han Seiki the Prime One (Phase 2)",
+    "image": PRIME_GIF_SPAWN,
+    "hp": 420000,
+    "power": 55000,
+})
+PRIME_P2_XP_MULT = 6.0
+
+try:
+    _RG_LOOP_FUNCS.add("_pr_run_phase")      # ưu tiên GIF raider
+except Exception:
+    pass
+try:
+    _FA_MODE_FUNCS.add("_pr_run_phase")      # Fateria Ace 2 tua ngược hoạt động
+except Exception:
+    pass
+
+
+def _pr_reward(p, phase, raid_data=None):
+    """Phát thưởng 1 phase cho người chơi p (chưa save). Trả về list dòng hiển thị."""
+    got = []
+    sh = p.setdefault("shards", {})
+    if phase == 1:
+        p["pull_tickets"] += 10.0
+        got.append("🎟️ **+10 Vé Pull** (100%)")
+        if random.random() < 0.30:
+            p["pull_tickets"] += 15.0
+            got.append("🎟️ **+15 Vé Pull** (30% Bonus!)")
+        rates = [("kanae", 0.10, "🌸", "Kanae Shard", 10), ("seiki", 0.05, "🔮", "Mảnh Seiki", 10),
+                 ("fateria", 0.05, "⏳", "Fateria Shard", 20), ("kizuna", 0.05, "🩸", "Mảnh Kizuna", 15),
+                 ("kisami", 0.06, "🌪️", "Kisami Shard", KISAMI_SHARDS_UNLOCK)]
+        xp_mult = PRIME_XP_DROP_MULT
+    else:
+        p["pull_tickets"] += 30.0
+        got.append("🎟️ **+30 Vé Pull** (100%)")
+        if random.random() < 0.30:
+            p["pull_tickets"] += 25.0
+            got.append("🎟️ **+25 Vé Pull** (30% Bonus!)")
+        rates = [("kanae", 0.15, "🌸", "Kanae Shard", 10), ("kisami", 0.10, "🌪️", "Kisami Shard", KISAMI_SHARDS_UNLOCK),
+                 ("seiki", 0.15, "🔮", "Mảnh Seiki", 10), ("fateria", 0.15, "⏳", "Fateria Shard", 20),
+                 ("kizuna", 0.15, "🩸", "Mảnh Kizuna", 15)]
+        xp_mult = PRIME_P2_XP_MULT
+    for key, rate, emo, label, goal in rates:
+        if random.random() < rate:
+            sh[key] = sh.get(key, 0) + 1
+            got.append(f"{emo} **+1 {label}** ({rate * 100:g}%! Kho: {sh[key]}/{goal})")
+    if random.random() < 0.50:
+        _l, xp_in, needed, _r = get_level_progress(p.get("xp", 0), p.get("prestige", 0))
+        gain = int(xp_in * xp_mult)
+        if gain > 0:
+            p["xp"] += gain
+            got.append(f"✨ **+{gain:,} XP** (50% - ×{xp_mult:g} XP cấp hiện tại [{xp_in:,}/{needed:,}])")
+    if phase == 1:
+        grant_boss_xp_drop(p, "han_seiki", 1, raid_data)
+        got.extend(eq_roll_drops(p, "han_seiki", raid_data))
+        for n_ in update_daily_quest_progress(p, "raid", 1) + update_event_quest_progress(p, "raid", 1):
+            got.append(n_)
+    return got
+
+
+async def _pr_run_phase(channel, battle_msg, combatants, phase, all_turns):
+    base = PRIME_BOSS_CONFIG
+    cfg = base if phase == 1 else PRIME_BOSS_PHASE2_CONFIG
+    sk = base["skills"]                          # kỹ năng giữ nguyên ở cả 2 phase
+    max_hp = cfg["hp"] + boss_eq_hp("han_seiki")
+    power = cfg["power"] + boss_eq_atk("han_seiki")
+    color = 0xFACC15 if phase == 1 else 0xB45309
+    B = {
+        "hp": max_hp, "max_hp": max_hp, "stunned": False, "mind": 0, "freeze": 0, "molten": 0,
+        "erased": None, "fate": 0, "locked_now": False, "ice": 0, "gif": None,
+        "true_cap": int(max_hp * 0.50), "true_accum": 0,
+        "boss_type": "han_seiki", "boss_name": cfg["name"], "active": [], "eq_gaia": True
+    }
+    rounds = 0
+
+    while B["hp"] > 0 and rounds < PRIME_MAX_ROUNDS:
+        active = [c for c in combatants if c["is_alive"] and c["current_card_index"] < len(c["team_cards"])]
+        if not active:
+            break
+        rounds += 1
+        front = [c["team_cards"][c["current_card_index"]] for c in active]
+        B["stunned"] = False
+        B["gif"] = None
+        B["active"] = active
+        B["locked_now"] = B["fate"] > 0
+        if B["fate"] > 0:
+            B["fate"] -= 1
+        notes, boss_fx = [], []
+
+        if B["mind"] > 0:
+            B["mind"] -= 1
+            if random.random() < 0.20:
+                B["hp"] = max(0, B["hp"] - power)
+                boss_fx.append(f"🌀 **[Red Eye Mind]** Boss mất kiểm soát, tự gây **{power:,} DMG** lên bản thân! (Còn {B['mind']} lượt)")
+        if B["molten"] > 0:
+            B["molten"] -= 1
+            applied, B["true_accum"], _cap = apply_raid_true_damage(int(max_hp * 0.02), B["true_accum"], B["true_cap"], "Bỏng Mặt Đất (Utsuho)")
+            if applied > 0:
+                B["hp"] = max(0, B["hp"] - applied)
+                boss_fx.append(f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Boss **{applied:,} DMG**! (Còn {B['molten']} lượt)")
+        if B["freeze"] > 0:
+            B["freeze"] -= 1
+            if random.random() < 0.45:
+                B["stunned"] = True
+                boss_fx.append(f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%)! (Còn {B['freeze']} lượt duy trì)")
+
+        # ---- Lượt đánh người chơi (Passive: giảm 20% sát thương nhận vào) ----
+        round_dmg = 0
+        for c in active:
+            ac = c["team_cards"][c["current_card_index"]]
+            d = _jt_player_attack(c, ac, rounds, B, notes)
+            d = int(d * (1.0 - base["dmg_reduction"]))
+            round_dmg += d
+            c["total_dmg"] += d
+
+        B["hp"] = max(0, B["hp"] - round_dmg)
+        player_atk_str = f"Toàn quân gây **{round_dmg:,} DMG** lên Han Seiki! *(Đã bị **Linh hồn của công lý** giảm 20%)*"
+        if B["hp"] > 0 and round_dmg > 0:
+            _bgh = int(max_hp * GAIA_HEAL_PCT)
+            _bold = B["hp"]
+            B["hp"] = min(max_hp, B["hp"] + _bgh)
+            boss_fx.append(f"🛡️ **[Giáp Gaia - Boss]** Han Seiki chịu sát thương và hồi **+{B['hp'] - _bold:,} HP** (1,5% máu tối đa)!")
+
+        # ---- Hành động của Boss ----
+        action_log = ""
+        hit_logs = []
+        forced_kills = []
+        if B["hp"] <= 0:
+            action_log = "💥 **Han Seiki the Prime One đã bị đánh bại! Các khái niệm trở lại trật tự!**"
+        elif B["stunned"]:
+            action_log = "❄️ Han Seiki bị ngưng động/bối rối, không thể ra đòn trong hiệp này!"
+        else:
+            ice_block = False
+            if B["ice"] > 0:
+                B["ice"] -= 1
+                if random.random() < 0.40:
+                    ice_block = True
+            if ice_block:
+                action_log = "❄️ **[Ice spear]** Giáo băng cầm chân Han Seiki, Boss không thể tấn công lượt này!"
+            else:
+                n = len(front)
+                chosen = None
+                if not B["locked_now"]:
+                    roll = random.random()
+                    acc = 0.0
+                    for key in ("phan_chuyen", "gan_ghep", "nhi_phan"):
+                        if B["erased"] == key:
+                            continue
+                        acc += sk[key]["chance"]
+                        if roll < acc:
+                            chosen = key
+                            break
+                else:
+                    action_log = "⛓️ **[Fate loop]** Kỹ năng của Han Seiki đang bị khóa, chỉ có thể đánh thường!\n"
+
+                if chosen == "phan_chuyen":
+                    B["gif"] = sk["phan_chuyen"]["gif"]
+                    total = int(power * sk["phan_chuyen"]["multiplier"])
+                    each = max(100, total // n)
+                    action_log += f"🔄 **[KỸ NĂNG] Han Seiki** tung **Phản chuyển Niệm Bóng (25%)**! Đảo ngược khái niệm, giáng **{total:,} DMG** (2.2x), chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!"
+                    for c in active:
+                        _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds)
+                elif chosen == "gan_ghep":
+                    B["gif"] = sk["gan_ghep"]["gif"]
+                    heal = int(max_hp * sk["gan_ghep"]["heal_pct"])
+                    old = B["hp"]
+                    B["hp"] = min(max_hp, B["hp"] + heal)
+                    action_log += f"🧩 **[KỸ NĂNG] Han Seiki** thi triển **Gán ghép (15%)**! Tập hợp các khái niệm tự chữa trị **+{B['hp'] - old:,} HP** (20% máu tối đa)!"
+                elif chosen == "nhi_phan":
+                    B["gif"] = sk["nhi_phan"]["gif"]
+                    tc = random.choice(active)
+                    tac = tc["team_cards"][tc["current_card_index"]]
+                    tac["current_hp"] = 0
+                    forced_kills.append(tac)
+                    action_log += (f"♾️ **[KỸ NĂNG TỐI THƯỢNG] Han Seiki** tung **Nhị Phân Vô Cực khái niệm (15%)**! "
+                                   f"**{tac['name']}** ({tc['username']}) bị **HẠ GỤC TỨC THÌ**, bỏ qua mọi kỹ năng phòng thủ!")
+                else:
+                    each = max(100, power // n)
+                    action_log += f"⚔️ Han Seiki đánh thường tổng **{power:,} DMG**, chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!"
+                    for c in active:
+                        _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds, normal=True)
+        if hit_logs:
+            action_log += "\n" + "\n".join(hit_logs)
+
+        action_log += t7_raid_after_boss(active, action_log)
+        kasen_restore_guard(active)
+        tick_wonder_guard(active)
+        restore_t4_save_loop(active, rounds)
+        for tac in forced_kills:
+            tac["current_hp"] = 0
+
+        push_logs = []
+        kills = 0
+        for c in active:
+            ac = c["team_cards"][c["current_card_index"]]
+            if ac["current_hp"] <= 0:
+                ac["current_hp"] = 0
+                kills += 1
+                _g = sakuya3_raid_revive(c, push_logs)
+                if _g:
+                    B["gif"] = _g
+                    continue
+                c["current_card_index"] += 1
+                if c["current_card_index"] < len(c["team_cards"]):
+                    push_logs.append(f"💀 **{ac['name']}** gục! ➡️ Đẩy **{c['team_cards'][c['current_card_index']]['name']}** lên!")
+                else:
+                    c["is_alive"] = False
+                    push_logs.append(f"☠️ **{c['username']}** đã hết thẻ bài và tử trận!")
+
+        if kills > 0 and B["hp"] > 0:
+            heal = int(max_hp * base["kill_heal_pct"] * kills)
+            old = B["hp"]
+            B["hp"] = min(max_hp, B["hp"] + heal)
+            boss_fx.append(f"⚖️ **[Linh hồn của công lý]** Han Seiki hạ **{kills} thẻ bài** và hồi **+{B['hp'] - old:,} HP**!")
+
+        fields = [("💥 Tiền Tuyến Tấn Công:", _jt_cut(player_atk_str, 300), False)]
+        if notes:
+            fields.append(("✨ Kỹ Năng Thẻ Bài:", _jt_cut("\n".join(notes), 900), False))
+        if boss_fx:
+            fields.append(("🌀 Hiệu Ứng / Passive Boss:", _jt_cut("\n".join(boss_fx), 500), False))
+        fields.append(("👺 Phản Kích Của Boss:", _jt_cut(action_log, 1000), False))
+        if push_logs:
+            fields.append(("🔄 Thay Đổi Tiền Tuyến:", _jt_cut("\n".join(push_logs), 600), False))
+        fields.append(("🛡️ Tình Trạng Tiền Tuyến:", _jt_cut(_pr_status_lines(combatants), 800), False))
+
+        desc = f"❤️ **Máu Boss:** `{get_hp_bar(B['hp'], max_hp)}` **{B['hp']:,}/{max_hp:,} HP**"
+        round_embed = discord.Embed(title=f"⚖️ HIỆP {rounds} - HAN SEIKI THE PRIME ONE (PHASE {phase})", description=desc, color=color)
+        for fname, fval, finl in fields:
+            round_embed.add_field(name=fname, value=fval, inline=finl)
+        if B["gif"]:
+            round_embed.set_image(url=B["gif"])
+        else:
+            round_embed.set_thumbnail(url=base["image"])
+
+        all_turns.append({
+            "round": rounds, "phase": phase,
+            "title": f"Phase {phase} - Hiệp {rounds}: Han Seiki",
+            "short_label": f"P{phase} - H{rounds}",
+            "short_desc": f"Boss còn {B['hp']:,} HP",
+            "desc": f"⚖️ **{cfg['name']}**\n{desc}",
+            "color": color, "image": B["gif"], "fields": fields
+        })
+        try:
+            await battle_msg.edit(embed=round_embed)
+        except Exception:
+            pass
+        if B["hp"] <= 0:
+            break
+        await asyncio.sleep(3.0)
+
+    return B["hp"], rounds, max_hp
+
+
+async def _pr2_execute_prime_raid(channel, raid_data):
+    cfg = PRIME_BOSS_CONFIG
+    p2 = PRIME_BOSS_PHASE2_CONFIG
+    participants = raid_data["participants"]
+    if not participants:
+        await channel.send("⚖️ Han Seiki đã biến mất vì không có ai nghênh chiến...")
+        return
+
+    combatants = _sk_make_combatants(participants)
+    p1_hp_max = cfg["hp"] + boss_eq_hp("han_seiki")
+    init_embed = discord.Embed(
+        title="⚔️ ĐẠI CHIẾN BẮT ĐẦU: HAN SEIKI THE PRIME ONE (PHASE 1)",
+        description=(f"🌸 **Reimu:** *\"{cfg['reimu_quote']}\"*\n\n"
+                     f"🔥 **{len(combatants)} Dũng Giả** đã dàn trận nghênh chiến! Theo dõi từng hiệp trực tiếp bên dưới!"),
+        color=0xFACC15
+    )
+    init_embed.set_thumbnail(url=cfg["image"])
+    init_embed.add_field(name=f"❤️ Máu {cfg['name']}:", value=f"`{get_hp_bar(p1_hp_max, p1_hp_max)}` **{p1_hp_max:,}/{p1_hp_max:,} HP**", inline=False)
+    battle_msg = await channel.send(embed=init_embed)
+    await asyncio.sleep(2.0)
+
+    all_turns = []
+    hp1, r1, mx1 = await _pr_run_phase(channel, battle_msg, combatants, 1, all_turns)
+    if hp1 > 0:
+        fail = discord.Embed(
+            title="❌ QUÂN ĐOÀN THẤT THỦ TRƯỚC HAN SEIKI THE PRIME ONE (PHASE 1)!",
+            description=f"Các khái niệm đã bị Han Seiki đảo ngược sau {r1} hiệp!\nBoss còn **{hp1:,}/{mx1:,} HP**.",
+            color=0xEF4444
+        )
+        fail.set_thumbnail(url=cfg["image"])
+        await channel.send(embed=fail, view=OpenDetailsView(all_turns))
+        return
+
+    # ---------- THƯỞNG PHASE 1 ----------
+    p1_lines = []
+    for uid in participants:
+        p = get_player(uid)
+        got = _pr_reward(p, 1, raid_data)
+        save_player(p)
+        p1_lines.append(f"🏆 **{p['username']}**:\n   └ " + "\n   └ ".join(got))
+    if p1_lines:
+        e1 = discord.Embed(title="🎁 PHẦN THƯỞNG PHASE 1: HAN SEIKI (ĐÃ TRAO)",
+                           description=_jt_cut("\n".join(p1_lines), 3800), color=0xFACC15)
+        await channel.send(embed=e1)
+
+    # ---------- PHASE 2 ----------
+    p2_hp_max = p2["hp"] + boss_eq_hp("han_seiki")
+    p2_atk = p2["power"] + boss_eq_atk("han_seiki")
+    alert = discord.Embed(
+        title="🚨 HAN SEIKI THE PRIME ONE THỨC TỈNH! (PHASE 2)",
+        description=(
+            "⚖️ *\"Công lý thật sự... giờ mới bắt đầu.\"*\n\n"
+            f"❤️ **Máu:** **`{p2_hp_max:,} HP`** | ⚔️ **Sát thương:** **`{p2_atk:,} DMG`** (chia đều)\n"
+            "🔄 Kỹ năng giữ nguyên, nhưng sát thương tăng theo chỉ số mới!\n\n"
+            "✨ **PHÉP MÀU THANH TẨY:** Toàn bộ thẻ bài của dũng giả được **hồi sinh và hồi 100% sinh lực**!"
+        ),
+        color=0xB45309
+    )
+    alert.set_image(url=p2["image"])
+    battle_msg = await channel.send(embed=alert)
+    await asyncio.sleep(2.5)
+    _sk_reset_phase(combatants)
+
+    hp2, r2, mx2 = await _pr_run_phase(channel, battle_msg, combatants, 2, all_turns)
+    if hp2 > 0:
+        fail = discord.Embed(
+            title="❌ QUÂN ĐOÀN THẤT THỦ TRƯỚC HAN SEIKI THE PRIME ONE (PHASE 2)!",
+            description=(f"**Phase 1:** 🎉 Hạ gục sau **{r1} hiệp** (quà Phase 1 đã được bảo lưu!)\n"
+                         f"**Phase 2:** ❌ Thất thủ sau **{r2} hiệp** — Boss còn **{hp2:,}/{mx2:,} HP**."),
+            color=0xEF4444
+        )
+        fail.set_thumbnail(url=p2["image"])
+        if p1_lines:
+            fail.add_field(name="📦 Phần Thưởng Phase 1 Đã Nhận:", value=_jt_cut("\n".join(p1_lines), 1000), inline=False)
+        await channel.send(embed=fail, view=OpenDetailsView(all_turns))
+        return
+
+    # ---------- CHIẾN THẮNG: THƯỞNG PHASE 2 ----------
+    total_dmg = sum(c["total_dmg"] for c in combatants)
+    lines = []
+    for uid in participants:
+        p = get_player(uid)
+        old_lvl = p.get("level", 1)
+        got = _pr_reward(p, 2, raid_data)
+        save_player(p)
+        new_lvl = p.get("level", 1)
+        lvl_txt = f" 🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+        lines.append(f"🏆 **{p['username']}**:{lvl_txt}\n   └ " + "\n   └ ".join(got))
+
+    final = discord.Embed(
+        title="⚔️ KẾT QUẢ ĐẠI CHIẾN: HAN SEIKI THE PRIME ONE - TOÀN THẮNG!",
+        description=(
+            "🌸 **Reimu thở phào:** *\"Phù... cuối cùng các khái niệm cũng trở lại đúng chỗ của chúng. Mọi người làm tốt lắm!\"*\n\n"
+            f"**Phase 1:** 🎉 Hạ gục sau **{r1} hiệp**\n**Phase 2:** 🎉 Hạ gục sau **{r2} hiệp**\n"
+            f"💥 **Tổng Sát Thương:** **{total_dmg:,} DMG**\n"
+            "⏳ **Hồi chiêu `/raid` tiếp theo:** **15 phút** kể từ lúc mở"
+        ),
+        color=0x10B981
+    )
+    final.set_thumbnail(url=p2["image"])
+    if p1_lines:
+        final.add_field(name="📦 Phần Thưởng Phase 1 (đã trao):", value=_jt_cut("\n".join(p1_lines), 1000), inline=False)
+    chunk, clen, idx = [], 0, 1
+    for ln in lines:
+        if chunk and clen + len(ln) > 950:
+            final.add_field(name=f"💎 Phần Thưởng Phase 2 (nhóm {idx}):", value="\n".join(chunk), inline=False)
+            chunk, clen, idx = [], 0, idx + 1
+        chunk.append(_jt_cut(ln, 900))
+        clen += len(ln) + 1
+    if chunk:
+        final.add_field(name=f"💎 Phần Thưởng Phase 2 (nhóm {idx}):", value="\n".join(chunk), inline=False)
+    await channel.send(embed=final, view=OpenDetailsView(all_turns))
+
+# Gắn vào chuỗi wrapper có sẵn: rg_wrap -> Boss Scaling -> hàm mới này
+# (Boss Scaling theo số dũng giả, GIF raider và /train đều tự hoạt động)
+_BS_PREV_EXECUTE_PRIME = _pr2_execute_prime_raid
+
+# ===================== HẾT KHỐI UPDATE =====================
+# ==============================================================================
+# [UPDATE] PRESTIGE 6+: GIẢM 50% XP YÊU CẦU ĐỂ LÊN CẤP
+# ==============================================================================
+PRESTIGE_XP_DISCOUNT_FROM = 6      # từ Prestige này trở đi
+PRESTIGE_XP_DISCOUNT = 0.50        # giảm 50% XP yêu cầu mỗi cấp
+
+def _xp_discount_active(prestige) -> bool:
+    try:
+        return int(prestige or 0) >= PRESTIGE_XP_DISCOUNT_FROM
+    except (ValueError, TypeError):
+        return False
+
+def _xp_eff_factor(prestige) -> float:
+    """Hệ số nhân XP khi quy đổi sang cấp (giảm 50% yêu cầu = nhân 1/0.5 = 2)."""
+    return (1.0 / (1.0 - PRESTIGE_XP_DISCOUNT)) if _xp_discount_active(prestige) else 1.0
+
+def _xp_pres_of(prestige_or_player) -> int:
+    if isinstance(prestige_or_player, dict):
+        return int(prestige_or_player.get("prestige", 0) or 0)
+    return int(prestige_or_player or 0)
+
+# ---- Tính cấp từ XP (đã nhân hệ số) ----
+_XPD_PREV_CALC_LEVEL = calculate_level_from_xp
+def calculate_level_from_xp(total_xp: int, prestige_or_player=0) -> int:
+    p = _xp_pres_of(prestige_or_player)
+    eff = int((total_xp or 0) * _xp_eff_factor(p))
+    return _XPD_PREV_CALC_LEVEL(eff, p)
+
+# ---- Tiến trình thanh XP: (cấp, xp trong cấp, xp cần, tỉ lệ) ----
+_XPD_PREV_PROGRESS = get_level_progress
+def get_level_progress(total_xp: int, prestige_or_player=0):
+    p = _xp_pres_of(prestige_or_player)
+    f = _xp_eff_factor(p)
+    if f == 1.0:
+        return _XPD_PREV_PROGRESS(total_xp, prestige_or_player)
+    lvl, xp_in, needed, ratio = _XPD_PREV_PROGRESS(int((total_xp or 0) * f), p)
+    if needed <= 0:                       # đã max cấp
+        return lvl, 0, 0, 1.0
+    # quy đổi lại về "XP thật": cần ít hơn, tiến độ cũng ít hơn tương ứng
+    return lvl, int(xp_in / f), max(1, int(needed / f)), ratio
+
+# ---- Tổng XP cần để đạt 1 cấp (dùng cho /admin_set_level, trừ cấp khi Prestige) ----
+_XPD_PREV_TOTAL_XP = get_total_xp_for_level
+def get_total_xp_for_level(level: int, max_lvl: int = None, prestige: int = None) -> int:
+    base = _XPD_PREV_TOTAL_XP(level, max_lvl)
+    f = _xp_eff_factor(prestige) if prestige is not None else 1.0
+    return int(base / f)
+
+# ---- XP cần cho 1 cấp (nếu nơi nào gọi kèm prestige) ----
+_XPD_PREV_NEEDED = get_xp_needed_for_level
+def get_xp_needed_for_level(level: int, prestige: int = None) -> int:
+    base = _XPD_PREV_NEEDED(level)
+    f = _xp_eff_factor(prestige) if prestige is not None else 1.0
+    return max(1, int(base / f))
+
+# ==============================================================================
+# VÁ CÁC CHỖ GỌI get_total_xp_for_level MÀ KHÔNG TRUYỀN PRESTIGE
+# (admin_set_level, setlevel, prestige trừ cấp) -> truyền thêm prestige đúng
+# ==============================================================================
+_XPD_PREV_GET_PLAYER = get_player
+def get_player(user_id, username="Visitor"):
+    return _XPD_PREV_GET_PLAYER(user_id, username)
+
+# /admin_set_level: đặt cấp phải ra đúng cấp đó dù có giảm XP
+@bot.tree.command(name="admin_set_level", description="[CHỦ BOT DUY NHẤT] Đặt cấp độ cho người chơi (đồng bộ XP, hỗ trợ giảm XP P6+)")
+@app_commands.describe(nguoi_dung="Chọn người chơi", cap_do="Cấp độ muốn đặt")
+async def slash_admin_set_level_v2(interaction: discord.Interaction, nguoi_dung: Union[discord.Member, discord.User], cap_do: int):
+    if not is_authorized_admin(interaction.user.id):
+        await interaction.response.send_message(f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}>) mới có quyền.", ephemeral=True)
+        return
+    target = get_player(nguoi_dung.id, nguoi_dung.display_name)
+    pres = target.get("prestige", 0)
+    max_lvl = get_max_level(pres)
+    cap_do = max(1, min(max_lvl, cap_do))
+    old_lvl, old_xp = target["level"], target["xp"]
+    new_xp = get_total_xp_for_level(cap_do, max_lvl, pres)
+    target["xp"] = new_xp
+    save_player(target)
+    target["level"] = calculate_level_from_xp(new_xp, pres)
+    embed = discord.Embed(
+        title="⚙️ [ADMIN] ĐÃ THAY ĐỔI CẤP ĐỘ NGƯỜI CHƠI THÀNH CÔNG",
+        description=(f"👑 **Admin:** {interaction.user.mention}\n👤 **Mục tiêu:** {nguoi_dung.mention}\n"
+                     f"📊 **Cấp độ:** `Lv.{old_lvl}` ➔ **`Lv.{target['level']}`**\n"
+                     f"📈 **XP:** `{old_xp:,}` ➔ **`{new_xp:,}`**"
+                     + (f"\n💎 *(Prestige {pres}: đang được giảm {int(PRESTIGE_XP_DISCOUNT * 100)}% XP yêu cầu)*" if _xp_discount_active(pres) else "")),
+        color=0x10B981
+    )
+    await interaction.response.send_message(embed=embed)
+
+# ==============================================================================
+# THÔNG BÁO TRONG /prestige & /view cho người P6+
+# ==============================================================================
+_XPD_PREV_HANDLE_PRESTIGE = handle_prestige
+async def handle_prestige(ctx_or_interaction):
+    await _XPD_PREV_HANDLE_PRESTIGE(ctx_or_interaction)
+
+_XPD_PREV_PCV_INIT = PrestigeConfirmView.confirm_prestige
+# (giữ nguyên logic prestige gốc; phần trừ cấp khi P5+ sẽ dùng get_total_xp_for_level bên dưới)
+
+# ---- Prestige từ P5 trở lên bị trừ 200 cấp: tính XP mới theo prestige MỚI (đã có giảm 50% nếu >= P6) ----
+_XPD_PREV_PCV_CONFIRM = PrestigeConfirmView.confirm_prestige
+async def _xpd_confirm_prestige(self, interaction: discord.Interaction, button: discord.ui.Button):
+    # gọi hàm gốc nhưng ép get_total_xp_for_level tự biết prestige mới
+    return await _XPD_PREV_PCV_CONFIRM.callback(self, interaction, button)  # giữ hành vi gốc
 import sys
 
 def start_bot_safely():
