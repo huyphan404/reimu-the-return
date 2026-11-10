@@ -9106,7 +9106,7 @@ async def handle_daily(ctx_or_interaction):
     streak = player["daily_streak"]
     step = (streak - 1) % 7                 # 0..6
     xp_pct = 5 + 2 * step                   # 5%,7%,9%...17%
-    xu_gain = 15 * (step + 1)               # 15,30,45...105
+    xu_gain = daily_xu_for_step(step)       # ngày 1 = 5000, mỗi ngày +10%
 
     player["last_daily_date"] = today
     player["pull_tickets"] += 1.0
@@ -9115,7 +9115,7 @@ async def handle_daily(ctx_or_interaction):
     dq_notifs = update_daily_quest_progress(player, "daily", 1)
     save_player(player)
     _lvl_up = f"\n🌟 **LÊN CẤP {_new_l}!**" if _new_l > _old_l else ""
-    _next_note = "🔁 Ngày mai phần quà sẽ **reset** về mức đầu!" if step == 6 else f"➡️ Ngày mai: **+{5 + 2 * (step + 1)}% XP** & **+{15 * (step + 2)} Xu**"
+    _next_note = "🔁 Ngày mai phần quà sẽ **reset** về mức đầu!" if step == 6 else f"➡️ Ngày mai: **+{5 + 2 * (step + 1)}% XP** & **+{daily_xu_for_step(step + 1):,} Xu**"
     embed = discord.Embed(
         title="🎁 ĐIỂM DANH HÀNG NGÀY / DAILY REWARD",
         description=(
@@ -9995,7 +9995,7 @@ class CharacterCheckView(discord.ui.View):
     def rebuild_items(self):
         self.clear_items()
         cid = CARD_ORDER[self.current_index]
-        has_ace = cid in (4, 9, 12, 13, 15, 17, 18, 19, 21, 23, 24)
+        has_ace = cid in (4, 9, 12, 13, 15, 17, 18, 19, 21, 22, 23, 24)
 
         first_btn = discord.ui.Button(label="⏮️", style=discord.ButtonStyle.secondary, row=0)
         first_btn.callback = self.first_page
@@ -10056,7 +10056,7 @@ class CharacterCheckView(discord.ui.View):
             s3_btn.callback = self.show_s3_card
             self.add_item(s3_btn)
 
-        has_ace_ids = (4, 9, 12, 13, 15, 17, 18, 19, 21, 23, 24)
+        has_ace_ids = (4, 9, 12, 13, 15, 17, 18, 19, 21, 22, 23, 24)
         in_t_mode = (self.show_t1 or self.show_t2 or self.show_t3 or self.show_t4)
         half = (len(CARD_ORDER) + 1) // 2
         for gi, group in enumerate([CARD_ORDER[:half], CARD_ORDER[half:]]):
@@ -10090,7 +10090,7 @@ class CharacterCheckView(discord.ui.View):
         cid = CARD_ORDER[self.current_index]
         card = CARDS_DATA[cid]
         details = CHARACTER_DETAILS.get(cid, {})
-        has_ace = cid in (4, 9, 12, 13, 15, 17, 18, 19, 21, 23, 24)
+        has_ace = cid in (4, 9, 12, 13, 15, 17, 18, 19, 21, 22, 23, 24)
         is_ace_mode = self.show_ace and has_ace
 
         player = get_player(self.user_id) if self.user_id else None
@@ -11335,6 +11335,8 @@ async def handle_battle(ctx_or_interaction):
         st["stage2_battles_done"] = st.get("stage2_battles_done", 0) + 1
     elif st.get("current_stage", 0) == 3 and st.get("stage3_quiz_passed", False) and not st.get("stage3_quest_claimed", False):
         st["stage3_battles_done"] = st.get("stage3_battles_done", 0) + 1
+    elif st.get("current_stage", 0) >= 4 and st.get("S4_intro_seen", False) and not st.get("S4_quest_claimed", False):
+        st["S4_battles_done"] = st.get("S4_battles_done", 0) + 1
 
     dq_notifs = update_daily_quest_progress(player, "battle", 1)
     ev_notifs = update_event_quest_progress(player, "battle", 1)
@@ -24363,6 +24365,9 @@ async def handle_loot(ctx_or_interaction):
 
     player["last_loot_time"] = now
     _lq = update_daily_quest_progress(player, "loot", 1)
+    _s4 = player.setdefault("story", {})
+    if _s4.get("current_stage", 0) >= 4 and _s4.get("S4_intro_seen", False) and not _s4.get("S4_quest_claimed", False):
+        _s4["S4_loot_done"] = _s4.get("S4_loot_done", 0) + 1
     save_player(player)
     embed = discord.Embed(
         title="🎒 NHẶT ĐỒ (LOOT)",
@@ -25841,6 +25846,418 @@ async def execute_giorno_raid(channel, raid_data):
     await channel.send(embed=final, view=OpenDetailsView(all_turns))
 
 # ===================== HẾT KHỐI GIORNO =====================
+
+# ==============================================================================
+# [UPDATE] PHÍ XU KHI /EVOL + PATCHOULI KNOWLEDGE ACE 2 (PHÉP NGUYÊN TỐ)
+# ==============================================================================
+import sys as _pat_sys
+import random as _pat_rand   # random chuẩn (tránh proxy Liềm Hỗn Mang)
+
+# ---------------------------- 1. CẤU HÌNH ----------------------------
+EVOL_XU_COST = {"C": 1000, "B": 2500, "A": 9000, "S": 20000, "SS": 50000}
+EVOL_XU_COST_ACE3 = False          # True: Sakuya Ace 3 cũng tốn xu (tính như hạng A)
+
+PATCHOULI_EVOL_GIF = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/12/d2/fbzzYcLFKN309X.gif"
+PATCHOULI_SKILL_GIF = "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/6d/44/eXwefwj5.gif"
+
+PAT_SKILL_CHANCE = 0.25            # tỉ lệ kích hoạt Phép nguyên tố
+PAT_SKILL_MULT = 1.75              # hệ số sát thương
+PAT_SKILL_MAX = 1                  # tối đa 1 lần / trận
+PAT_EFFECT_CHANCE = 0.10           # MỖI hiệu ứng (Bỏng / Đóng băng / Thổ) có 10% riêng
+PAT_BURN_PCT = 0.03                # Bỏng: 3% máu tối đa / turn
+PAT_BURN_TURNS = 2                 # Bỏng: tối đa 2 turn
+PAT_NORETALIATE = 0.40             # Đóng băng: 40% không thể phản đòn
+PAT_EARTH_RATE_CUT = 0.15          # Thổ: trừ 15% rate skill (turn sau)
+PAT_RAID_TRUE_CAP_PCT = 0.25       # trần tổng sát thương % máu (Bỏng) lên Boss trong Raid
+
+# ---------------------------- 2. ĐĂNG KÝ ACE 2 ----------------------------
+_PAT_SKILL_TEXT = (
+    "🌿 **Phép nguyên tố (25% - tối đa 1 lần/trận):** Gây **×1.75 sát thương**. Sau đòn đánh có thể kích hoạt 1 trong 3 hiệu ứng (mỗi hiệu ứng 10%):\n"
+    "🔥 **Bỏng:** mục tiêu mất **3% Máu Tối Đa mỗi turn** (tối đa 2 turn).\n"
+    "❄️ **Đóng băng:** **40%** mục tiêu **không thể phản đòn**.\n"
+    "🌍 **Thổ:** turn sau mục tiêu bị **trừ 15% tỉ lệ kích hoạt skill**."
+)
+EVOL_CONFIG[22] = {
+    "id": 22, "key": "patchouli", "name": "Patchouli Knowledge",
+    "title": "[#25] Patchouli Knowledge - Ace 2 ⭐⭐", "ace_level": "Ace 2 ⭐⭐",
+    "required_cards": 40, "required_pulls": 40,
+    "evol_gif": PATCHOULI_EVOL_GIF,
+    "skill_name": "Phép nguyên tố (Bỏng • Đóng băng • Thổ)",
+    "skill_desc": _PAT_SKILL_TEXT,
+    "skill_gif": PATCHOULI_SKILL_GIF,
+    "bonus_power": 300, "bonus_hp": 300
+}
+EVOL_CONFIG["22"] = EVOL_CONFIG[22]
+if 22 not in EVOL_ORDER:
+    EVOL_ORDER.insert(EVOL_ORDER.index(23) if 23 in EVOL_ORDER else len(EVOL_ORDER), 22)
+try:
+    CHARACTER_DETAILS[22]["skill_desc"] += (
+        " [Ace 2 ⭐⭐]: Phép nguyên tố (25%, 1 lần/trận) ×1.75 sát thương, kèm hiệu ứng Bỏng / Đóng băng / Thổ (mỗi loại 10%)!"
+    )
+except Exception as _e:
+    print(f"[PAT] lỗi cập nhật CHARACTER_DETAILS: {_e}", flush=True)
+
+
+# ---------------------------- 3. PHÍ XU KHI /EVOL ----------------------------
+def evol_xu_cost(cid) -> int:
+    """Phí xu theo hạng thẻ gốc. Thẻ nhóm T = miễn phí."""
+    try:
+        key = cid
+        if isinstance(cid, str):
+            s = cid.strip().lower()
+            if s in ("18a3", "sakuya3", "ace3", "sakuya_ace3"):
+                return EVOL_XU_COST["A"] if EVOL_XU_COST_ACE3 else 0
+            if s.isdigit():
+                key = int(s)
+        card = CARDS_DATA.get(key)
+        return int(EVOL_XU_COST.get(card["rank"], 0)) if card else 0
+    except Exception:
+        return 0
+
+_PAT_PREV_EXEC_EVOL = execute_card_evolution
+def execute_card_evolution(player, cid):
+    cost = evol_xu_cost(cid)
+    try:
+        if cost > 0 and not is_card_ace2(player, cid):
+            have = int(player.get("xu", 0))
+            if have < cost:
+                rank = CARDS_DATA.get(cid, {}).get("rank", "?")
+                return False, (
+                    f"❌ Tiến hóa thẻ hạng **[{rank}]** cần thêm **{cost:,} {XU_EMOJI} Xu công đức**!\n"
+                    f"• Xu hiện có: **{have:,}** (thiếu **{cost - have:,}**)\n"
+                    f"💡 *Kiếm xu bằng `/daily`, `/loot`, `/sac`...*"
+                ), None
+    except Exception as e:
+        print(f"[PAT] lỗi kiểm tra phí xu: {e}", flush=True)
+    ok, msg, embed = _PAT_PREV_EXEC_EVOL(player, cid)
+    try:
+        if ok and cost > 0:
+            player["xu"] = max(0, int(player.get("xu", 0)) - cost)
+            save_player(player)
+            if embed is not None:
+                embed.add_field(name="💸 Phí tiến hóa:", value=f"**-{cost:,}** {XU_EMOJI} Xu công đức (còn **{player['xu']:,}**)", inline=False)
+    except Exception as e:
+        print(f"[PAT] lỗi trừ xu evol: {e}", flush=True)
+    return ok, msg, embed
+
+_PAT_PREV_EVOL_REQ = evol_req_data
+def evol_req_data(player, key, stage):
+    rows, state = _PAT_PREV_EVOL_REQ(player, key, stage)
+    try:
+        if stage == 2 and state not in ("done", "locked"):
+            cost = evol_xu_cost(key)
+            if cost > 0:
+                have = int(player.get("xu", 0))
+                rows = list(rows) + [_rq(have >= cost, f"Xu công đức: {have:,}/{cost:,} {XU_EMOJI} (trừ khi tiến hóa)")]
+                state = "ready" if all(r[0] for r in rows) else "no"
+    except Exception as e:
+        print(f"[PAT] lỗi evol_req_data: {e}", flush=True)
+    return rows, state
+
+
+# ---------------------------- 4. THỔ: GIẢM RATE SKILL (SỬA PROXY RANDOM) ----------------------------
+# Thêm 'oc' (thẻ đối thủ trong /battle) vào bộ nhận diện thẻ của proxy random
+_LIEM_SRC_RE = re.compile(r'\b(ac|pc|cc|tc|oc)\[')
+
+def _pat_liem_random(self):
+    r = _std_random.random()
+    try:
+        f = _sys._getframe(1)
+        var = _LIEM_FUNC_VARS.get(f.f_code.co_name)
+        card = None
+        if var:
+            card = f.f_locals.get(var)
+        else:
+            fn, ln = f.f_code.co_filename, f.f_lineno
+            for off in (0, 1):
+                m = _LIEM_SRC_RE.search(_linecache.getline(fn, ln - off))
+                if m:
+                    card = f.f_locals.get(m.group(1))
+                    break
+        if isinstance(card, dict):
+            if card.get("eq_liem"):
+                r = max(0.0, r - LIEM_SKILL_BONUS)                 # Liềm Hỗn Mang: +2% rate
+            if card.get("pat_earth", 0) > 0:
+                r = min(0.999999, r + PAT_EARTH_RATE_CUT)          # Thổ (Patchouli): -15% rate
+    except Exception:
+        pass
+    return r
+_LiemRandom.random = _pat_liem_random
+
+
+# ---------------------------- 5. HÀM HỖ TRỢ ----------------------------
+def _pat_is(card) -> bool:
+    try:
+        return (card.get("cid") == 22 and bool(card.get("is_ace2"))
+                and card.get("erased_skill") != "patchouli_element")
+    except Exception:
+        return False
+
+def _pat_set_gif(gif):
+    """Ghi GIF skill vào biến turn_image của trận Battle/PvP đang chạy (nếu hiệp chưa có GIF)."""
+    try:
+        if not gif or not globals().get("_FA_FRAME_OK"):
+            return
+        f = _pat_sys._getframe(1)
+        hops = 0
+        while f is not None and f.f_code.co_name in ("_pat_set_gif", "_pat_duel_skill", "eq_fenrir_post") and hops < 12:
+            f = f.f_back
+            hops += 1
+        try:
+            if f is not None:
+                loc = f.f_locals
+                if "turn_image" in loc and not loc["turn_image"]:
+                    _fa_frame_write(f, {"turn_image": gif})
+        finally:
+            del f
+    except Exception as e:
+        print(f"[PAT] lỗi set gif: {e}", flush=True)
+
+
+# ---------------------------- 6. LÕI SKILL CHO BOSS (RAID / EVENT / STORY) ----------------------------
+def pat_boss_turn(card, boss_max_hp, cap_fn=None, earth_setter=None, skills_locked=False):
+    res = {"mult": 1.0, "bonus": 0, "stun": False, "gif": None, "logs": []}
+    st = card.setdefault("pat_state", {})
+    tag = "[Ace 2] [#25] Patchouli"
+    boss_max_hp = max(1, int(boss_max_hp or 1))
+
+    # Bỏng đang chạy
+    if st.get("burn_left", 0) > 0:
+        st["burn_left"] -= 1
+        raw = int(boss_max_hp * PAT_BURN_PCT)
+        d = int(cap_fn(raw, "Bỏng (Patchouli)")) if cap_fn else raw
+        if d > 0:
+            res["bonus"] += d
+            res["logs"].append(f"🔥 **{tag}** - **Bỏng**: Boss mất **{d:,} HP** (3% Máu Tối Đa)! (Còn {st['burn_left']} turn)")
+
+    # Đóng băng đang chạy (1 turn)
+    if st.get("freeze_left", 0) > 0:
+        st["freeze_left"] -= 1
+        if _pat_rand.random() < PAT_NORETALIATE:
+            res["stun"] = True
+            res["logs"].append(f"❄️ **{tag}** - **Đóng băng** (40%): Boss bị đóng băng, **không thể phản đòn** trong hiệp này!")
+
+    # Skill chính
+    if (not skills_locked and st.get("used", 0) < PAT_SKILL_MAX
+            and card.get("erased_skill") != "patchouli_element"
+            and _pat_rand.random() < PAT_SKILL_CHANCE):
+        st["used"] = st.get("used", 0) + 1
+        res["mult"] = PAT_SKILL_MULT
+        res["gif"] = PATCHOULI_SKILL_GIF
+        res["logs"].append(f"🌿 **{tag}** thi triển **Phép nguyên tố** (25%)! Đòn đánh gây **×{PAT_SKILL_MULT:g} sát thương**! *(1 lần/trận)*")
+        r = _pat_rand.random()
+        if r < PAT_EFFECT_CHANCE:
+            st["burn_left"] = PAT_BURN_TURNS
+            res["logs"].append("🔥 **Hiệu ứng Bỏng** (10%)! Boss sẽ cháy **3% Máu Tối Đa mỗi turn** trong **2 turn** tới!")
+        elif r < 2 * PAT_EFFECT_CHANCE:
+            st["freeze_left"] = 1
+            res["logs"].append("❄️ **Hiệu ứng Đóng băng** (10%)! Turn sau Boss có **40% không thể phản đòn**!")
+        elif r < 3 * PAT_EFFECT_CHANCE and earth_setter is not None:
+            earth_setter()
+            res["logs"].append("🌍 **Hiệu ứng Thổ** (10%)! Turn sau skill của Boss bị **yếu đi 15%**!")
+    return res
+
+def _pat_earth_on(active) -> bool:
+    return any(x.get("pat_earth_boss", 0) > 0 for x in (active or []))
+
+
+# ---------------------------- 7. HOOK RAID THƯỜNG / EVENT (Reimu, Seiki, Mahoraga, Fateria P1, Kizuna) ----------------------------
+_PAT_PREV_RAID_ATTACK = t7_raid_attack
+def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
+    card_dmg, boss_stunned, turn_image, notif = _PAT_PREV_RAID_ATTACK(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L)
+    try:
+        if _pat_is(ac):
+            max_hp = L.get("p2_max_hp") or L.get("p1_max_hp") or 100000
+            cap_total = int(max_hp * PAT_RAID_TRUE_CAP_PCT)
+
+            def cap_fn(amt, label):
+                used = sum(x.get("pat_true_used", 0) for x in (active or []))
+                ok = max(0, min(int(amt), cap_total - used))
+                c["pat_true_used"] = c.get("pat_true_used", 0) + ok
+                return ok
+
+            def earth():
+                c["pat_earth_boss"] = 2
+
+            r = pat_boss_turn(ac, max_hp, cap_fn, earth, bool(L.get("player_skills_locked")))
+            card_dmg = int(card_dmg * r["mult"]) + r["bonus"]
+            if r["stun"]:
+                boss_stunned = True
+            if r["gif"] and not turn_image:
+                turn_image = r["gif"]
+            if r["logs"]:
+                notif = (notif + "\n" if notif else "") + "\n".join(f"({c['username']}) {l}" for l in r["logs"])
+        if _pat_earth_on(active):
+            ac["pat_hpmark"] = ac.get("current_hp", 0)
+    except Exception as e:
+        print(f"[PAT] lỗi raid_attack: {e}", flush=True)
+    return card_dmg, boss_stunned, turn_image, notif
+
+
+# ---------------------------- 8. HOOK BOSS DẠNG B (Jotaro, Han Seiki, Sukuna, Giorno, Kenjaku, Fateria P2) ----------------------------
+_PAT_PREV_JT_ATTACK = t7_jt_attack
+def t7_jt_attack(c, ac, dmg, B, notes):
+    dmg = _PAT_PREV_JT_ATTACK(c, ac, dmg, B, notes)
+    try:
+        if _pat_is(ac):
+            def cap_fn(amt, label):
+                applied, B["true_accum"], _cm = apply_raid_true_damage(int(amt), B["true_accum"], B["true_cap"], label)
+                return applied
+
+            def earth():
+                c["pat_earth_boss"] = 2
+
+            r = pat_boss_turn(ac, B["max_hp"], cap_fn, earth, False)
+            dmg = int(dmg * r["mult"]) + r["bonus"]
+            if r["stun"]:
+                B["stunned"] = True
+            if r["gif"] and not B.get("gif"):
+                B["gif"] = r["gif"]
+            notes.extend(f"({c['username']}) {l}" for l in r["logs"])
+        if _pat_earth_on(B.get("active")):
+            ac["pat_hpmark"] = ac.get("current_hp", 0)
+    except Exception as e:
+        print(f"[PAT] lỗi jt_attack: {e}", flush=True)
+    return dmg
+
+
+# ---------------------------- 9. THỔ TRONG RAID: SKILL BOSS YẾU 15% Ở TURN SAU ----------------------------
+_PAT_PREV_AFTER_BOSS = t7_raid_after_boss
+def t7_raid_after_boss(active, boss_log) -> str:
+    res = _PAT_PREV_AFTER_BOSS(active, boss_log)
+    extra = ""
+    try:
+        flagged = [c for c in (active or []) if c.get("pat_earth_boss", 0) > 0]
+        if flagged:
+            live = any(c["pat_earth_boss"] == 1 for c in flagged)
+            is_skill = any(k in str(boss_log or "") for k in KISAMI_BOSS_SKILL_KEYS)
+            tot, n = 0, 0
+            for c in active:
+                cards = c.get("team_cards", [])
+                idx = c.get("current_card_index", 0)
+                if idx >= len(cards):
+                    continue
+                k = cards[idx]
+                m = k.pop("pat_hpmark", None)
+                if live and is_skill and m is not None:
+                    lost = m - k.get("current_hp", m)
+                    back = int(lost * PAT_EARTH_RATE_CUT) if lost > 0 else 0
+                    if back > 0:
+                        k["current_hp"] = min(k.get("max_hp", m), k["current_hp"] + back)
+                        tot += back
+                        n += 1
+            for c in flagged:
+                c["pat_earth_boss"] -= 1
+            if tot > 0:
+                extra = f"\n🌍 **[Phép nguyên tố - Thổ]** Skill của Boss bị yếu đi 15%: **{n} thẻ** được hoàn tổng **+{tot:,} HP**!"
+    except Exception as e:
+        print(f"[PAT] lỗi earth after_boss: {e}", flush=True)
+    return res + extra
+
+
+# ---------------------------- 10. HOOK STORY (Rumia / Cirno / Meiling) ----------------------------
+_PAT_PREV_STORY_APPLY = t7_story_apply
+def t7_story_apply(pc, card_dmg, guard, boss_max_hp, boss_power, logs, team=None, boss_hp=None):
+    card_dmg, guard, stun, gif = _PAT_PREV_STORY_APPLY(pc, card_dmg, guard, boss_max_hp, boss_power, logs, team, boss_hp)
+    try:
+        if _pat_is(pc):
+            r = pat_boss_turn(pc, boss_max_hp, None, None, False)   # Story: không có Thổ
+            card_dmg = int(card_dmg * r["mult"]) + r["bonus"]
+            stun = stun or r["stun"]
+            gif = gif or r["gif"]
+            logs.extend(r["logs"])
+    except Exception as e:
+        print(f"[PAT] lỗi story_apply: {e}", flush=True)
+    return card_dmg, guard, stun, gif
+
+
+# ---------------------------- 11. HOOK BATTLE / PVP ----------------------------
+def _pat_duel_skill(att, tgt, tgt_mark, logs):
+    if not _pat_is(att) or tgt_mark is None:
+        return
+    st = att.setdefault("pat_state", {})
+    if st.get("used", 0) >= PAT_SKILL_MAX:
+        return
+    if tgt.get("current_hp", 0) <= 0 or tgt_mark - tgt["current_hp"] <= 0:   # đòn phải trúng & mục tiêu còn sống
+        return
+    if _pat_rand.random() >= PAT_SKILL_CHANCE:
+        return
+    st["used"] = st.get("used", 0) + 1
+    extra = int(att.get("power", 0) * (PAT_SKILL_MULT - 1.0))
+    tgt["current_hp"] = max(0, tgt["current_hp"] - extra)
+    tname = tgt.get("name", "mục tiêu")
+    logs.append(f"🌿 **[Ace 2] [#25] Patchouli** thi triển **Phép nguyên tố** (25%)! **×{PAT_SKILL_MULT:g} sát thương**: thêm **{extra:,} DMG** lên **{tname}**! *(1 lần/trận)*")
+    _pat_set_gif(PATCHOULI_SKILL_GIF)
+    r = _pat_rand.random()
+    if r < PAT_EFFECT_CHANCE:
+        tgt["pat_burn"] = PAT_BURN_TURNS
+        logs.append(f"🔥 **Hiệu ứng Bỏng** (10%)! **{tname}** bị thiêu đốt **3% Máu Tối Đa mỗi turn** trong 2 turn!")
+    elif r < 2 * PAT_EFFECT_CHANCE:
+        tgt["pat_frozen"] = 2
+        logs.append(f"❄️ **Hiệu ứng Đóng băng** (10%)! Turn sau **{tname}** có **40% không thể phản đòn**!")
+    elif r < 3 * PAT_EFFECT_CHANCE:
+        tgt["pat_earth"] = 2
+        logs.append(f"🌍 **Hiệu ứng Thổ** (10%)! Turn sau **{tname}** bị **trừ 15% tỉ lệ kích hoạt skill**!")
+
+_PAT_PREV_FENRIR_POST = eq_fenrir_post
+def eq_fenrir_post(att, tgt, tgt_mark, logs):
+    # (a) Đối thủ đang bị Đóng băng: 40% đòn đánh trả bị vô hiệu
+    try:
+        if att.get("pat_frozen", 0) == 1 and tgt_mark is not None and tgt.get("current_hp", 0) < tgt_mark:
+            if _pat_rand.random() < PAT_NORETALIATE:
+                tgt["current_hp"] = tgt_mark
+                logs.append(f"❄️ **[Phép nguyên tố - Đóng băng]** **{att.get('name', 'Đối thủ')}** bị đóng băng nên **không thể phản đòn** (40%)!")
+    except Exception as e:
+        print(f"[PAT] lỗi freeze duel: {e}", flush=True)
+    _PAT_PREV_FENRIR_POST(att, tgt, tgt_mark, logs)
+    # (b) Patchouli tung skill
+    try:
+        _pat_duel_skill(att, tgt, tgt_mark, logs)
+    except Exception as e:
+        print(f"[PAT] lỗi duel skill: {e}", flush=True)
+
+_PAT_PREV_GAIA_POST = eq_gaia_post
+def eq_gaia_post(card, mark, incoming, base_power, logs):
+    ret = _PAT_PREV_GAIA_POST(card, mark, incoming, base_power, logs)
+    try:
+        # Bỏng: mỗi turn mất 3% máu tối đa
+        if card.get("pat_burn", 0) > 0:
+            card["pat_burn"] -= 1
+            if card.get("current_hp", 0) > 0:
+                mx = card.get("max_hp") or card.get("hp") or 1
+                d = int(mx * PAT_BURN_PCT)
+                card["current_hp"] = max(0, card["current_hp"] - d)
+                logs.append(f"🔥 **[Phép nguyên tố - Bỏng]** **{card.get('name', 'Mục tiêu')}** bị thiêu đốt mất **{d:,} HP** (3% Máu Tối Đa)! (Còn {card['pat_burn']} turn)")
+        # Đóng băng / Thổ: già đi 1 turn
+        for k in ("pat_frozen", "pat_earth"):
+            if card.get(k, 0) > 0:
+                card[k] -= 1
+    except Exception as e:
+        print(f"[PAT] lỗi gaia_post: {e}", flush=True)
+    return ret
+
+
+# ---------------------------- 12. BÓNG KHÁI NIỆM CÓ THỂ XÓA SKILL PATCHOULI ----------------------------
+_PAT_PREV_ERASE = apply_bong_khai_niem_card
+def apply_bong_khai_niem_card(target_card: dict):
+    if target_card.get("cid") == 22 and target_card.get("is_ace2") and not target_card.get("erased_skill"):
+        target_card["erased_skill"] = "patchouli_element"
+        target_card["erased_skill_name"] = "Phép nguyên tố"
+        return f"🌑 **[Bóng Khái Niệm]** Đã xóa kỹ năng duy nhất **[Phép nguyên tố]** của **{target_card['name']}**! *(Tối đa mất 1 chiêu)*"
+    return _PAT_PREV_ERASE(target_card)
+
+
+# ---------------------------- 13. RESET KHI SANG PHASE 2 / TUA NGƯỢC ----------------------------
+_PAT_PREV_RESET = reset_sakuya3_phase
+def reset_sakuya3_phase(c: dict):
+    _PAT_PREV_RESET(c)
+    c["pat_true_used"] = 0
+    c["pat_earth_boss"] = 0
+    for card in c.get("team_cards", []):
+        for k in ("pat_state", "pat_hpmark"):
+            card.pop(k, None)
+
+# ===================== HẾT KHỐI PATCHOULI ACE 2 + PHÍ XU EVOL =====================
 
 # ==============================================================================
 # [UPDATE SILVER CHARIOT] THẺ T9 
@@ -29782,6 +30199,668 @@ async def slash_admin_set_level_v2(interaction: discord.Interaction, nguoi_dung:
 _XPD_PREV_HANDLE_PRESTIGE = handle_prestige
 async def handle_prestige(ctx_or_interaction):
     await _XPD_PREV_HANDLE_PRESTIGE(ctx_or_interaction)
+
+# ==============================================================================
+# [UPDATE] STORY STAGE 4 (PATCHOULI) • DAILY XU • PHÍ EVOL T • NPC ACE 2 MỚI
+# ==============================================================================
+import random as _S4_rand   # random chuẩn (tránh proxy Liềm Hỗn Mang)
+
+# ---------------------------- CẤU HÌNH (chỉnh số ở đây) ----------------------------
+S4_STAGE_LABEL = "STAGE 4"
+S4_REQ_BATTLES = 20
+S4_REQ_LOOT = 5
+S4_REQ_LEVEL = 50
+S4_BOSS_BASE_HP = 32000
+S4_BOSS_BASE_ATK = 1000
+S4_SKILL_CHANCE = 0.25        # Phép nguyên tố của Boss (không giới hạn số lần)
+S4_XP_MULT = 1.5              # x1,5 XP hiện có trong cấp
+S4_QUEST_TICKETS = 10.0
+S4_WIN_TICKETS = 15.0
+S4_WIN_CARDS = 20             # thẻ Patchouli
+S4_MARISA_GIF = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/31/bb/91usJyK3SSJCIbUuK.gif"
+
+DAILY_XU_BASE = 5000
+DAILY_XU_STREAK_BONUS = 0.10  # mỗi ngày giữ streak +10% (tối đa 7 ngày)
+
+EVOL_XU_COST["T"] = 30000     # thẻ nhóm T
+EVOL_XU_COST_ACE3 = True      # Sakuya Ace 3 tính cùng giá với Ace 2 (hạng A = 9,000)
+
+S4_NPC_NEW_ACE_CHANCE = 0.20  # tỉ lệ NPC /battle có thêm 1 lá Ace 2 (Patchouli / Yuta / Silver Chariot)
+
+try:
+    _FA_MODE_FUNCS.add("run_story_patchouli_battle")   # Fateria Ace 2 tua ngược hoạt động
+except Exception:
+    pass
+
+
+def daily_xu_for_step(step: int) -> int:
+    step = max(0, min(6, int(step)))
+    return int(DAILY_XU_BASE * (1 + DAILY_XU_STREAK_BONUS * step))
+
+
+def _S4_grant_xp(player, mult):
+    _l, xp_in, needed, _r = get_level_progress(player.get("xp", 0), player.get("prestige", 0))
+    gain = int(xp_in * mult)
+    if gain > 0:
+        player["xp"] = player.get("xp", 0) + gain
+    return gain, xp_in, needed
+
+
+# ==============================================================================
+# STORY STAGE 4
+# ==============================================================================
+class Stage4QuizView(discord.ui.View):
+    def __init__(self, user, player):
+        super().__init__(timeout=180)
+        self.user = user
+        self.player = player
+        self.options = [
+            {"id": "1", "label": "Gió?", "correct": False, "reply": "Gió á? Tôi đâu phải đi tìm sách để quạt mát chứ!"},
+            {"id": "2", "label": "Heh? Chả nên đâu", "correct": False, "reply": "Hả? Cậu đang đùa tôi đấy à? Chọn lại đi!"},
+            {"id": "3", "label": "Sách cấm", "correct": False, "reply": "Sách cấm hả? Nghe hấp dẫn đấy, nhưng chưa phải lúc đâu~"},
+            {"id": "4", "label": "Tôi nghĩ nên vào thư viện kia xem thử", "correct": True, "reply": "Được rồi, đẩy cửa vào thôi!"},
+        ]
+        self.build_buttons()
+
+    def build_buttons(self):
+        self.clear_items()
+        _S4_rand.shuffle(self.options)
+        for opt in self.options:
+            btn = discord.ui.Button(label=opt["label"][:80], style=discord.ButtonStyle.secondary)
+            btn.callback = self.make_callback(opt)
+            self.add_item(btn)
+
+    def make_callback(self, opt):
+        async def button_callback(interaction: discord.Interaction):
+            if interaction.user.id != self.user.id:
+                await interaction.response.send_message("❌ Đây không phải lượt trả lời của bạn!", ephemeral=True)
+                return
+            if opt["correct"]:
+                st = self.player.setdefault("story", {})
+                st["S4_quiz_passed"] = True
+                save_player(self.player)
+                embed_ok = discord.Embed(
+                    title="✨ TRẢ LỜI CHÍNH XÁC!",
+                    description=f"🧹 **Marisa:** *\"{opt['reply']}\"*\n\n📚 *Cánh cửa thư viện khổng lồ từ từ mở ra...*",
+                    color=0x10B981
+                )
+                await interaction.response.edit_message(embed=embed_ok, view=None)
+                await handle_story_stage4(interaction)
+            else:
+                self.build_buttons()
+                embed_wrong = discord.Embed(
+                    title="📚 TRƯỚC CỬA THƯ VIỆN",
+                    description=(
+                        "Marisa chống chổi, nháy mắt hỏi:\n"
+                        "**\"Theo cậu, sách nào phù hợp cho phép của tôi nhất?\"**\n\n"
+                        f"💢 **Marisa:** *\"{opt['reply']}\"*\n"
+                        "*(Đáp án chưa đúng! Các phương án đã được xáo trộn, hãy chọn lại!)*"
+                    ),
+                    color=0xEF4444
+                )
+                await interaction.response.edit_message(embed=embed_wrong, view=self)
+        return button_callback
+
+
+class StoryPatchouliBattleView(discord.ui.View):
+    def __init__(self, user, player):
+        super().__init__(timeout=180)
+        self.user = user
+        self.player = player
+
+    @discord.ui.button(label="⚔️ Nghênh Chiến Patchouli Knowledge (Live Battle)", style=discord.ButtonStyle.danger, emoji="💥")
+    async def fight_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+            return
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(content="🔥 **Trận chiến bắt đầu nghênh chiến Patchouli Knowledge!**", view=self)
+        self.stop()
+        await run_story_patchouli_battle(interaction, self.user, self.player)
+
+
+async def run_story_patchouli_battle(channel_or_interaction, user, player):
+    st = player.setdefault("story", {})
+    boss_lvl = st.get("S4_boss_level") or player.get("level", S4_REQ_LEVEL)
+    B = {
+        "max_hp": S4_BOSS_BASE_HP + get_level_hp_buff(boss_lvl),
+        "power": S4_BOSS_BASE_ATK + get_level_atk_buff(boss_lvl),
+        "mind": 0, "molten": 0, "freeze": 0, "fate": 0, "ice": 0,
+        "erased": False, "stun": False
+    }
+    B["hp"] = B["max_hp"]
+    boss_img = CARDS_DATA[22]["image"]
+
+    team_cids = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
+    if len(team_cids) < 3:
+        owned = get_owned_card_ids(player)
+        owned.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
+        for cid in owned:
+            if cid not in team_cids:
+                team_cids.append(cid)
+            if len(team_cids) >= 3:
+                break
+        player["team"] = team_cids
+        save_player(player)
+
+    p_buff_pwr = get_level_atk_buff(player["level"])
+    p_buff_hp = get_level_hp_buff(player["level"])
+    player_cards = []
+    for cid in team_cids[:3]:
+        c = CARDS_DATA[cid]
+        is_ace = is_card_ace2(player, cid)
+        card_pwr = c["power"] + p_buff_pwr + (ACE_POWER_BUFF if is_ace else 0)
+        card_hp = c["hp"] + p_buff_hp + (ACE_HP_BUFF if is_ace else 0)
+        player_cards.append({
+            "cid": cid,
+            "name": f"[Ace 2 ⭐⭐] #{disp_id(c['id'])} {c['name']}" if is_ace else f"{format_card_id(c['id'])} {c['name']}",
+            "power": card_pwr, "max_hp": card_hp, "current_hp": card_hp, "is_ace2": is_ace
+        })
+    apply_sakuya_ace3_to_cards(player, player_cards)
+    B["team"] = player_cards
+    if not player_cards:
+        await _s3_send(channel_or_interaction, content="⚠️ Bạn chưa có thẻ bài nào để chiến đấu! Hãy dùng `/pull` trước.")
+        return
+
+    embed_init = discord.Embed(
+        title=f"⚔️ [LIVE BATTLE] {S4_STAGE_LABEL}: THƯ VIỆN VOILE - PATCHOULI KNOWLEDGE!",
+        description=(
+            f"👤 **Trợ thủ xuất trận:** {user.mention} (Lv.{player['level']}) cùng 🧹 **Marisa**\n"
+            f"📚 **Boss:** **[#25] Patchouli Knowledge (Ace 2 ⭐⭐)** (Lv.{boss_lvl})\n"
+            f"❤️ Máu Boss: `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**\n"
+            f"⚔️ Sức mạnh: **{B['power']:,} DMG**\n"
+            f"🌿 Tuyệt kỹ: **Phép nguyên tố** ({int(S4_SKILL_CHANCE * 100)}%/lượt, ×1.75 sát thương, **không giới hạn số lần**)"
+        ),
+        color=0x7C3AED
+    )
+    embed_init.set_thumbnail(url=boss_img)
+    msg = await _s3_send(channel_or_interaction, embed=embed_init)
+    await asyncio.sleep(2.0)
+
+    p_idx, rounds = 0, 0
+    while B["hp"] > 0 and p_idx < len(player_cards) and rounds < 30:
+        rounds += 1
+        pc = player_cards[p_idx]
+        fl = pc.setdefault("fl", {})
+        logs, turn_gif = [], None
+        B["stun"] = False
+        boss_frozen = False
+        o = {"gif": None, "invul": False, "pguard": False}
+
+        # --- hiệu ứng đang đè lên Boss ---
+        boss_locked = B["fate"] > 0
+        if boss_locked:
+            B["fate"] -= 1
+            logs.append("⛓️ **[Fate loop]** Patchouli bị khóa kỹ năng, không thể dùng Phép nguyên tố trong hiệp này!")
+        if B["mind"] > 0:
+            B["mind"] -= 1
+            if _S4_rand.random() < 0.20:
+                B["hp"] = max(0, B["hp"] - B["power"])
+                logs.append(f"🌀 **[Red Eye Mind]** Patchouli mất kiểm soát, tự gây **{B['power']:,} DMG**! (Còn {B['mind']} lượt)")
+        if B["molten"] > 0:
+            B["molten"] -= 1
+            burn = int(B["max_hp"] * 0.02)
+            B["hp"] = max(0, B["hp"] - burn)
+            logs.append(f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Patchouli **{burn:,} DMG**! (Còn {B['molten']} lượt)")
+        if B["freeze"] > 0:
+            B["freeze"] -= 1
+            if _S4_rand.random() < 0.45:
+                boss_frozen = True
+                logs.append(f"❄️ **[Perfect Freeze]** Patchouli bị đóng băng (45%), không thể phản công! (Còn {B['freeze']} lượt)")
+        if B["ice"] > 0:
+            B["ice"] -= 1
+            if not boss_frozen and _S4_rand.random() < 0.40:
+                boss_frozen = True
+                logs.append("❄️ **[Ice spear]** Giáo băng cầm chân Patchouli (40%), không thể phản công!")
+
+        # --- hiệu ứng Bỏng của Boss đè lên thẻ của bạn ---
+        if pc.get("S4_burn", 0) > 0:
+            pc["S4_burn"] -= 1
+            bd = int(pc["max_hp"] * 0.03)
+            pc["current_hp"] -= bd
+            logs.append(f"🔥 **[Phép nguyên tố - Bỏng]** **{pc['name']}** bị thiêu đốt **{bd:,} HP** (3% Máu Tối Đa)! (Còn {pc['S4_burn']} turn)")
+
+        # --- Đóng băng: 40% thẻ của bạn không thể ra đòn ---
+        player_frozen = False
+        if pc.get("S4_freeze", 0) > 0:
+            pc["S4_freeze"] -= 1
+            if _S4_rand.random() < 0.40:
+                player_frozen = True
+                logs.append(f"❄️ **[Phép nguyên tố - Đóng băng]** **{pc['name']}** bị đóng băng (40%), không thể phản đòn hiệp này!")
+
+        # --- lượt đánh của người chơi (Thổ: -15% rate skill do proxy random xử lý) ---
+        earth_on = pc.get("pat_earth", 0) > 0
+        if B["hp"] > 0 and pc["current_hp"] > 0 and not player_frozen:
+            dmg, o = story_s3_player_turn(pc, rounds, B, logs)
+            B["hp"] = max(0, B["hp"] - dmg)
+            turn_gif = o["gif"]
+            logs.append(f"🗡️ **{pc['name']}** tấn công gây **{dmg:,} DMG** lên Patchouli!")
+        if earth_on:
+            pc["pat_earth"] -= 1
+
+        # --- Boss phản công ---
+        if B["hp"] <= 0:
+            logs.append("💥 **Patchouli Knowledge đã bị đánh gục!**")
+        elif pc["current_hp"] <= 0:
+            pass
+        elif B["stun"]:
+            logs.append("❄️ Patchouli bị STUN/bối rối, không thể phản công!")
+        elif boss_frozen:
+            logs.append("❄️ Patchouli không thể phản công trong hiệp này!")
+        else:
+            use_skill = (not boss_locked) and (not B["erased"]) and _S4_rand.random() < S4_SKILL_CHANCE
+            boss_dmg = int(B["power"] * (1.75 if use_skill else 1.0))
+            if use_skill:
+                turn_gif = turn_gif or PATCHOULI_SKILL_GIF
+                logs.append(f"🌿 **[Patchouli Ace 2]** thi triển **Phép nguyên tố** ({int(S4_SKILL_CHANCE * 100)}%)! Đòn đánh **×1.75 sát thương ({boss_dmg:,} DMG)**!")
+            cs = str(pc["cid"]).lower()
+            ace2 = bool(pc.get("is_ace2"))
+            landed = False
+            if o["invul"]:
+                logs.append(f"🛡️ **{pc['name']}** miễn nhiễm hoàn toàn đòn đánh của Patchouli!")
+            elif pc["cid"] == 15 and ace2 and not fl.get("reimu") and _S4_rand.random() < 0.40:
+                fl["reimu"] = True
+                turn_gif = turn_gif or EVOL_CONFIG[15]["skill_gif"]
+                logs.append("🛡️ **[Ace 2] [#17] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+            elif cs == "t1" and not ace2 and not fl.get("seal") and fl.get("used_turn") != rounds and _S4_rand.random() < 0.40:
+                fl["seal"] = True
+                fl["used_turn"] = rounds
+                turn_gif = turn_gif or T1_SEAL_GIF
+                logs.append("🛡️ **[Nhóm T] [#t1] Seiki** kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+            elif cs == "t3" and pc.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
+                ref = int(boss_dmg * 0.60)
+                B["hp"] = max(0, B["hp"] - ref)
+                logs.append(f"🛡️ **[Ace 2] [#t3] Kizuna** duy trì **Wonder Guard**! Miễn thương và phản lại **{ref:,} DMG (60%)**!")
+            elif pc["cid"] == 4 and ace2 and _S4_rand.random() < 0.10:
+                B["hp"] = max(0, B["hp"] - boss_dmg)
+                logs.append(f"🌀 **[Ace 2] [#04] Yukari** kích hoạt **Invisible Gap** (10%)! Phản lại **{boss_dmg:,} DMG** vào Patchouli!")
+            else:
+                taken = boss_dmg
+                if cs == "t2":
+                    taken = int(taken * (1.0 - min(0.90, fl.get("maho", 1) * 0.05)))
+                if o["pguard"]:
+                    taken = int(taken * 0.85)
+                eq_take_damage(pc, taken, logs, skill=use_skill)
+                landed = True
+                logs.append(f"📚 **Patchouli** tung ma pháp gây **{taken:,} DMG** lên **{pc['name']}**!")
+
+            # --- hiệu ứng đi kèm Phép nguyên tố (mỗi loại 10%) ---
+            if use_skill and landed and pc["current_hp"] > 0:
+                r = _S4_rand.random()
+                if r < 0.10:
+                    pc["S4_burn"] = 2
+                    logs.append(f"🔥 **Hiệu ứng Bỏng** (10%)! **{pc['name']}** sẽ cháy **3% Máu Tối Đa mỗi turn** trong 2 turn!")
+                elif r < 0.20:
+                    pc["S4_freeze"] = 1
+                    logs.append(f"❄️ **Hiệu ứng Đóng băng** (10%)! Turn sau **{pc['name']}** có **40% không thể phản đòn**!")
+                elif r < 0.30:
+                    pc["pat_earth"] = 1
+                    logs.append(f"🌍 **Hiệu ứng Thổ** (10%)! Turn sau **{pc['name']}** bị **trừ 15% tỉ lệ kích hoạt skill**!")
+
+        # --- Wonder Guard của Kizuna đếm lùi ---
+        t3s = pc.get("t3_state")
+        if t3s and t3s.get("wonder_guard_turns", 0) > 0:
+            t3s["wonder_guard_turns"] -= 1
+
+        # --- thẻ gục ---
+        if pc["current_hp"] <= 0:
+            pc["current_hp"] = 0
+            _rv, _rv_log = sakuya3_try_revive(player_cards, p_idx)
+            if _rv_log:
+                logs.append(_rv_log)
+            if _rv:
+                turn_gif = SAKUYA3_PASSIVE_GIF
+            else:
+                p_idx += 1
+                if p_idx < len(player_cards):
+                    logs.append(f"💀 Đẩy **{player_cards[p_idx]['name']}** lên tiền tuyến!")
+
+        r_embed = discord.Embed(
+            title=f"⚔️ HIỆP {rounds} - QUYẾT ĐẤU PATCHOULI ({S4_STAGE_LABEL})",
+            description=(f"❤️ Máu Patchouli: `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**\n\n" + "\n".join(logs))[:4000],
+            color=0x7C3AED if B["hp"] > 0 else 0x10B981
+        )
+        if turn_gif:
+            r_embed.set_image(url=turn_gif)
+        else:
+            r_embed.set_thumbnail(url=boss_img)
+        try:
+            await msg.edit(embed=r_embed)
+        except Exception:
+            pass
+        if B["hp"] <= 0:
+            break
+        await asyncio.sleep(2.5)
+
+    # ---------------- KẾT QUẢ ----------------
+    if B["hp"] <= 0:
+        inv = player.setdefault("inventory", {})
+        inv["22"] = inv.get("22", 0) + S4_WIN_CARDS
+        if 22 not in player.get("unlocked_cards", []):
+            player.setdefault("unlocked_cards", []).append(22)
+        player["pull_tickets"] += S4_WIN_TICKETS
+        old_lvl = player.get("level", 1)
+        gain, xp_in, needed = _S4_grant_xp(player, S4_XP_MULT)
+        st["S4_completed"] = True
+        st["current_stage"] = 5
+        save_player(player)
+        new_lvl = calculate_level_from_xp(player["xp"], player.get("prestige", 0))
+        lvl_txt = f"\n🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+        embed_win = discord.Embed(
+            title=f"🎉 CHIẾN THẮNG {S4_STAGE_LABEL}: THƯ VIỆN VOILE!",
+            description=(
+                "🧹 **\"Marisa mượn vĩnh viễn đống sách của Patchouli Knowledge, trong khi trợ thủ tự mình bỏ ra ngoài\"**\n\n"
+                "🎁 **PHẦN THƯỞNG CHIẾN TÍCH:**\n"
+                f"• 🎴 **+{S4_WIN_CARDS} Thẻ bài [#25] Patchouli Knowledge** cộng thẳng vào túi đồ! (Hiện có: `{inv['22']}` lá)\n"
+                f"• 🎟️ **+{S4_WIN_TICKETS:.0f} Lượt Pull** (Tổng: `{player['pull_tickets']:.2f}` vé)\n"
+                f"• ✨ **+{gain:,} XP** (×{S4_XP_MULT:g} XP cấp hiện tại [{xp_in:,}/{needed:,}]){lvl_txt}"
+            ),
+            color=0x10B981
+        )
+        embed_win.set_image(url=S4_MARISA_GIF)
+        embed_win.set_footer(text=f"{S4_STAGE_LABEL} Completed • Dùng /evol để nâng Patchouli lên Ace 2")
+        try:
+            await msg.edit(embed=embed_win)
+        except Exception:
+            pass
+    else:
+        embed_loss = discord.Embed(
+            title=f"💀 THẤT BẠI TẠI {S4_STAGE_LABEL}!",
+            description=(
+                f"Đội hình của {user.mention} đã gục ngã trước ma pháp nguyên tố của Patchouli!\n"
+                f"Patchouli còn lại: **{B['hp']:,}/{B['max_hp']:,} HP**\n\n"
+                "💡 *Hãy nâng cấp thẻ bài, xếp lại đội hình qua `/team` và gõ lại `/story` để phục thù!*"
+            ),
+            color=0xEF4444
+        )
+        embed_loss.set_thumbnail(url=boss_img)
+        try:
+            await msg.edit(embed=embed_loss)
+        except Exception:
+            pass
+
+
+async def handle_story_stage4(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    st = player.setdefault("story", {})
+    for k, v in (("S4_intro_seen", False), ("S4_battles_done", 0), ("S4_loot_done", 0),
+                 ("S4_quest_claimed", False), ("S4_quiz_passed", False),
+                 ("S4_boss_level", None), ("S4_completed", False)):
+        st.setdefault(k, v)
+
+    # ----- Đã hoàn thành -----
+    if st.get("S4_completed"):
+        embed_done = discord.Embed(
+            title=f"🏆 BẠN ĐÃ VƯỢT QUA {S4_STAGE_LABEL}: THƯ VIỆN VOILE!",
+            description=(
+                "🧹 **\"Marisa mượn vĩnh viễn đống sách của Patchouli Knowledge, trong khi trợ thủ tự mình bỏ ra ngoài\"**\n\n"
+                f"👤 Trợ thủ: {user.mention}\n"
+                f"✅ Bạn đã hạ gục Patchouli, nhận **{S4_WIN_CARDS} thẻ Patchouli**, **{S4_WIN_TICKETS:.0f} Vé Pull** và XP!\n\n"
+                "🌟 **Chặng tiếp theo sẽ sớm cập bến trong bản cập nhật kế tiếp!**"
+            ),
+            color=0x10B981
+        )
+        embed_done.set_thumbnail(url=CARDS_DATA[22]["image"])
+        await _s3_send(ctx_or_interaction, embed=embed_done)
+        return
+
+    # ----- Marisa xuất hiện -----
+    if not st["S4_intro_seen"]:
+        st["S4_intro_seen"] = True
+        save_player(player)
+        embed_intro = discord.Embed(
+            title=f"🧹 {S4_STAGE_LABEL}: MARISA GIA NHẬP!",
+            description=(
+                "Reimu và trợ thủ tạm thời tách nhau trên đường vào dinh thự. Reimu đi cùng Meiling, "
+                "trong khi trợ thủ cô đợi một người đến...\n\n"
+                "Sau một lúc, một bóng người giáng đáp từ trên trời với cây chổi.\n\n"
+                "• 🧹 **Marisa:** *\"Hey hey, cậu là trợ thủ mà Reimu bảo tôi?\"*\n"
+                "• 🧑 **Trợ thủ:** *(gật đầu)*\n"
+                "• 🧹 **Marisa:** *(giơ ngón hai)* *\"Được rồi, tôi sẽ đồng hành cùng cậu từ lúc này!\"*\n\n"
+                "👉 **Gõ lại `/story` để tiếp tục!**"
+            ),
+            color=0xF59E0B
+        )
+        embed_intro.set_image(url=S4_MARISA_GIF)
+        await _s3_send(ctx_or_interaction, embed=embed_intro)
+        return
+
+    # ----- Nhiệm vụ dọn đường -----
+    if not st["S4_quest_claimed"]:
+        b_done, l_done = st.get("S4_battles_done", 0), st.get("S4_loot_done", 0)
+        u_lvl = player.get("level", 1)
+        ok_b, ok_l, ok_v = b_done >= S4_REQ_BATTLES, l_done >= S4_REQ_LOOT, u_lvl >= S4_REQ_LEVEL
+
+        if ok_b and ok_l and ok_v:
+            st["S4_quest_claimed"] = True
+            st["S4_boss_level"] = u_lvl          # cấp Boss cố định theo level lúc nhận thưởng
+            player["pull_tickets"] += S4_QUEST_TICKETS
+            old_lvl = u_lvl
+            gain, xp_in, needed = _S4_grant_xp(player, S4_XP_MULT)
+            save_player(player)
+            new_lvl = calculate_level_from_xp(player["xp"], player.get("prestige", 0))
+            lvl_txt = f"\n🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+            embed_win = discord.Embed(
+                title=f"🎉 HOÀN THÀNH NHIỆM VỤ DỌN ĐƯỜNG {S4_STAGE_LABEL}!",
+                description=(
+                    "🧹 **Marisa:** *\"Chà, đám tiên này đúng là phiền phức, nhưng tôi thích cái vụ nhặt đồ đấy!\"*\n\n"
+                    "🎁 **PHẦN THƯỞNG:**\n"
+                    f"• 🎟️ **+{S4_QUEST_TICKETS:.0f} Lượt Pull** (Tổng: `{player['pull_tickets']:.2f}` vé)\n"
+                    f"• ✨ **+{gain:,} XP** (×{S4_XP_MULT:g} XP cấp hiện tại [{xp_in:,}/{needed:,}]){lvl_txt}\n\n"
+                    "👉 **Gõ lại `/story` để tiếp tục!**"
+                ),
+                color=0x10B981
+            )
+            embed_win.set_thumbnail(url=CARDS_DATA[22]["image"])
+            await _s3_send(ctx_or_interaction, embed=embed_win)
+            return
+
+        embed_q = discord.Embed(
+            title=f"🎯 NHIỆM VỤ YÊU CẦU {S4_STAGE_LABEL}: DỌN ĐƯỜNG VÀO DINH THỰ",
+            description=(
+                "Trên đường đi, nhóm khá vướng bởi đám tiên trong dinh thự nên đành phải chiến đấu chút!\n\n"
+                f"• ⚔️ **Đánh `/battle` {S4_REQ_BATTLES} lần:** **{'✅ ĐÃ HOÀN THÀNH' if ok_b else f'🔴 Chưa đủ ({b_done}/{S4_REQ_BATTLES} trận)'}**\n"
+                f"• 🎒 **Nhặt đồ `/loot` {S4_REQ_LOOT} lần** *(Marisa like it)*: **{'✅ ĐÃ HOÀN THÀNH' if ok_l else f'🔴 Chưa đủ ({l_done}/{S4_REQ_LOOT} lần)'}**\n"
+                f"• ⭐ **Level tối thiểu {S4_REQ_LEVEL}:** **{'✅ ĐÃ ĐẠT' if ok_v else f'🔴 Chưa đủ (Cấp hiện tại: Lv.{u_lvl}/{S4_REQ_LEVEL})'}**\n\n"
+                f"🎁 **Phần thưởng:** **+{S4_QUEST_TICKETS:.0f} Lượt Pull** 🎟️ & **×{S4_XP_MULT:g} XP**\n"
+                "💡 *Hoàn thành đủ rồi gõ lại `/story` để nhận thưởng và tiếp tục!*"
+            ),
+            color=0xB91C1C
+        )
+        embed_q.set_thumbnail(url=S4_MARISA_GIF)
+        await _s3_send(ctx_or_interaction, embed=embed_q)
+        return
+
+    # ----- Câu đố của Marisa -----
+    if not st["S4_quiz_passed"]:
+        embed_quiz = discord.Embed(
+            title="📚 TRƯỚC CỬA THƯ VIỆN VOILE",
+            description=(
+                "Cả nhóm đứng trước cánh cửa của một thư viện khổng lồ.\n\n"
+                "🧹 **Marisa:** *\"Theo cậu, sách nào phù hợp cho phép của tôi nhất?\"*\n\n"
+                "👉 **Hãy chọn câu trả lời đúng bên dưới để tiếp tục:**"
+            ),
+            color=0x7C3AED
+        )
+        embed_quiz.set_thumbnail(url=S4_MARISA_GIF)
+        embed_quiz.set_footer(text="Chọn phương án bên dưới • Nếu sai sẽ xáo trộn vị trí câu trả lời")
+        await _s3_send(ctx_or_interaction, embed=embed_quiz, view=Stage4QuizView(user, player))
+        return
+
+    # ----- Hội thoại + nút đánh Boss -----
+    boss_lvl = st.get("S4_boss_level") or player.get("level", S4_REQ_LEVEL)
+    dialogue = (
+        "Trong thư viện rộng lớn, bỗng có giọng cất lên...\n\n"
+        "• 📚 **Patchouli:** *\"Là ai đó?\"*\n"
+        "• 🧹 **Marisa:** *\"Chào buổi sáng. Thư viện của cô trông tuyệt thật đấy.\"*\n"
+        "• 📚 **Patchouli:** *\"Một con chuột nhỏ lẻn vào à? Cấm trộm cắp ở đây nhé.\"*\n"
+        "• 🧹 **Marisa:** *\"Tôi chỉ định 'mượn' tạm cho đến khi tôi chết thôi mà.\"*\n"
+        "• 🧑 **Trợ thủ:** *\"Tôi nghĩ chúng ta nên nghênh chiến.\"*\n\n"
+        "⚠️ **CẢNH BÁO:** Patchouli đã bắt đầu niệm chú! Bấm nút bên dưới để khai màn trận Live Battle!"
+    )
+    embed_dlg = discord.Embed(title=f"🗺️ {S4_STAGE_LABEL}: THƯ VIỆN VOILE", description=dialogue, color=0x7C3AED)
+    embed_dlg.set_thumbnail(url=CARDS_DATA[22]["image"])
+    embed_dlg.add_field(
+        name="👺 Thông Số Boss Patchouli Knowledge:",
+        value=(
+            f"• Sức mạnh gốc: **{S4_BOSS_BASE_ATK:,} DMG** | Máu gốc: **{S4_BOSS_BASE_HP:,} HP**\n"
+            f"• Cấp độ Boss: **Lv.{boss_lvl}** (cố định lúc nhận thưởng nhiệm vụ)\n"
+            "• Tuyệt kỹ: **Phép nguyên tố** (25%/lượt, ×1.75 sát thương, kèm Bỏng / Đóng băng / Thổ, **không giới hạn lần**)"
+        ),
+        inline=True
+    )
+    embed_dlg.add_field(
+        name="🎁 Phần Thưởng Chiến Thắng:",
+        value=(f"• 🎴 **{S4_WIN_CARDS} Thẻ bài [#25] Patchouli Knowledge**\n"
+               f"• 🎟️ **+{S4_WIN_TICKETS:.0f} Lượt Pull**\n• ✨ **×{S4_XP_MULT:g} XP**"),
+        inline=True
+    )
+    embed_dlg.set_footer(text="Bấm nút màu đỏ bên dưới để chiến đấu trực tiếp!")
+    await _s3_send(ctx_or_interaction, embed=embed_dlg, view=StoryPatchouliBattleView(user, player))
+
+
+# Bọc handle_story_stage3: người đã xong Stage 3 sẽ được chuyển sang STAGE 4
+_S4_PREV_STAGE3 = handle_story_stage3
+async def handle_story_stage3(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    st = player.get("story", {}) or {}
+    if st.get("stage3_completed") or st.get("current_stage", 0) >= 4:
+        await handle_story_stage4(ctx_or_interaction)
+        return
+    await _S4_PREV_STAGE3(ctx_or_interaction)
+
+
+# ==============================================================================
+# PHÍ XU /EVOL CHO THẺ T9 (Silver Chariot) & T10 (Yuta)
+# (các thẻ T khác đã được tính phí sẵn trong khối Patchouli/Phí xu cũ)
+# ==============================================================================
+_S4_PREV_EXEC_EVOL = execute_card_evolution
+def execute_card_evolution(player, cid):
+    s = str(cid).strip().lower()
+    key = None
+    if s in ("t9", "chariot", "silverchariot", "scr"):
+        key = "t9"
+    elif s in ("t10", "yuta", "okkotsu"):
+        key = "t10"
+    if key is None:
+        return _S4_PREV_EXEC_EVOL(player, cid)
+    cost = int(EVOL_XU_COST.get("T", 0))
+    try:
+        if cost > 0 and not is_card_ace2(player, key):
+            have = int(player.get("xu", 0))
+            if have < cost:
+                return False, (
+                    f"❌ Tiến hóa thẻ nhóm **[T]** cần thêm **{cost:,} {XU_EMOJI} Xu công đức**!\n"
+                    f"• Xu hiện có: **{have:,}** (thiếu **{cost - have:,}**)"
+                ), None
+    except Exception as e:
+        print(f"[S5] lỗi kiểm tra phí xu T9/T10: {e}", flush=True)
+    ok, msg, embed = _S4_PREV_EXEC_EVOL(player, cid)
+    try:
+        if ok and cost > 0:
+            player["xu"] = max(0, int(player.get("xu", 0)) - cost)
+            save_player(player)
+            if embed is not None:
+                embed.add_field(name="💸 Phí tiến hóa:", value=f"**-{cost:,}** {XU_EMOJI} Xu công đức (còn **{player['xu']:,}**)", inline=False)
+    except Exception as e:
+        print(f"[S5] lỗi trừ xu T9/T10: {e}", flush=True)
+    return ok, msg, embed
+
+_S4_PREV_EVOL_REQ = evol_req_data
+def evol_req_data(player, key, stage):
+    rows, state = _S4_PREV_EVOL_REQ(player, key, stage)
+    try:
+        if key in ("t9", "t10") and stage == 2 and state not in ("done", "locked"):
+            cost = int(EVOL_XU_COST.get("T", 0))
+            if cost > 0:
+                have = int(player.get("xu", 0))
+                rows = list(rows) + [_rq(have >= cost, f"Xu công đức: {have:,}/{cost:,} {XU_EMOJI} (trừ khi tiến hóa)")]
+                state = "ready" if all(r[0] for r in rows) else "no"
+    except Exception as e:
+        print(f"[S5] lỗi evol_req_data: {e}", flush=True)
+    return rows, state
+
+
+# ==============================================================================
+# NPC /BATTLE: THÊM ACE 2 PATCHOULI / YUTA / SILVER CHARIOT
+# ==============================================================================
+if "t10" not in NPC_T_POOL:
+    NPC_T_POOL.append("t10")
+
+_S4_PREV_NPC_INJECT = npc_inject_t_and_gear
+def npc_inject_t_and_gear(opp_cards, o_buff_pwr, o_buff_hp):
+    opp_cards = _S4_PREV_NPC_INJECT(opp_cards, o_buff_pwr, o_buff_hp)
+    try:
+        if opp_cards and _S4_rand.random() < S4_NPC_NEW_ACE_CHANCE:
+            cid = _S4_rand.choice([22, "t9", "t10"])
+            c = CARDS_DATA.get(cid)
+            if c:
+                slot = _S4_rand.randrange(len(opp_cards))
+                pw = c["power"] + o_buff_pwr + ACE_POWER_BUFF
+                hp = c["hp"] + o_buff_hp + ACE_HP_BUFF
+                if cid == 22:
+                    nm = f"[Ace 2 ⭐⭐] #{disp_id(22)} {c['name']}"
+                    skill = "Phép nguyên tố (Bỏng • Đóng băng • Thổ)"
+                else:
+                    nm = f"[Ace 2 ⭐⭐] #{cid} {c['name']}"
+                    skill = CHARACTER_DETAILS.get(cid, {}).get("skill_name", "Kỹ năng nhóm T")
+                opp_cards[slot] = {
+                    "cid": cid, "name": nm, "raw_name": c["name"], "rank": c.get("rank", "A"),
+                    "power": pw, "hp": hp, "current_hp": hp, "is_ace2": True,
+                    "base_power": c["power"], "base_hp": c["hp"],
+                    "skill": skill, "image": c.get("image", "")
+                }
+    except Exception as e:
+        print(f"[S5] lỗi inject NPC ace 2: {e}", flush=True)
+    return opp_cards
+
+
+def _S4_npc_t9_ace2(oc, pc, power):
+    logs, gif = [], None
+    st = oc.setdefault("npc_st", {})
+    er = oc.get("erased_skill") or ""
+    tag = "NPC [Ace 2] #t9 Silver Chariot"
+    if er != "t9_drain" and _S4_rand.random() < 0.50:
+        cut = int((pc.get("hp") or pc.get("max_hp") or 1) * 0.15)
+        pc["current_hp"] = max(0, pc["current_hp"] - cut)
+        logs.append(f"🪞 **{tag}** - **Hào quang Requiem** (50%): bào mòn **-{cut:,} HP** của {pc.get('name', 'bạn')} (15% máu tối đa)!")
+    r = _S4_rand.random()
+    if er != "t9_lullaby" and r < 0.30:
+        pc["t9_asleep"] = _S4_rand.choice([2, 3])
+        before = oc["current_hp"]
+        oc["current_hp"] = min(oc.get("hp") or 1, before + int((oc.get("hp") or 1) * 0.10))
+        gif = T9_LULLABY_GIF
+        logs.append(f"🌙 **{tag}** hát **RU NGỦ** (30%)! {pc.get('name', 'Bạn')} ngủ **{pc['t9_asleep']} turn**, Silver Chariot hồi **+{oc['current_hp'] - before:,} HP**!")
+    elif er != "t9_requiem" and r < 0.55 and _S4_rand.random() < 0.60:
+        oc["t9_req"] = "counter"
+        gif = T9_REQUIEM_GIF
+        logs.append(f"🎯 **{tag}** kích hoạt **THE REQUIEM** (25%)! Nếu bạn đánh trúng sẽ bị **phản 120% sát thương**!")
+    return power, logs, gif
+
+
+def _S4_npc_yuta(oc, pc, power):
+    logs, gif = [], None
+    st = oc.setdefault("npc_st", {})
+    er = oc.get("erased_skill") or ""
+    ace = bool(oc.get("is_ace2"))
+    mx = oc.get("hp") or 1
+    base = power
+    tag = f"NPC {'[Ace 2]' if ace else '[T]'} #t10 Yuta Okkotsu"
+    if ace and er != "t10_rika":
+        rk = (oc.get("t8_sum") or {}).get("rika")
+        if rk and rk.get("hp", 0) > 0:
+            power += rk["atk"]
+            gif = T10_RIKA_GIF
+            logs.append(f"👻 **[Rika]** chiến đấu cùng Yuta: +**{rk['atk']:,} DMG** *(còn {rk['hp']:,}/{rk['max_hp']:,} HP)*")
+        elif not st.get("rika") and _S4_rand.random() < 0.50:
+            st["rika"] = 1
+            r_atk, r_hp = max(1, int(base * 0.75)), max(1, int(mx * 0.75))
+            oc.setdefault("t8_sum", {})["rika"] = {"name": T10_RIKA_NAME, "atk": r_atk, "hp": r_hp, "max_hp": r_hp}
+            gif = T10_RIKA_GIF
+            logs.append(f"💍 **{tag}** - **Come
 
 import sys
 
