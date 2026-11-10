@@ -11313,9 +11313,9 @@ async def handle_battle(ctx_or_interaction):
         gained_xp = random.randint(100, 200)
     else:
         gained_xp = random.randint(30, 50)
-    # Prestige 6+: mỗi cấp +10 XP vào XP cơ bản của /battle
+    # Prestige 6+: mỗi cấp +2 XP vào XP cơ bản của /battle
     if player.get("prestige", 0) >= 6:
-        gained_xp += 10 * player.get("level", 1)
+        gained_xp += 2 * player.get("level", 1)
 
     p_mult = get_prestige_xp_multiplier(player.get("prestige", 0))
     potion_note = ""
