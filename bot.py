@@ -27185,7 +27185,7 @@ class PrestigeConfirmView(discord.ui.View):
         late = old_p >= 5
         if late:
             new_lvl = max(1, cur_lvl - PRESTIGE_LATE_COST)
-            new_xp = get_total_xp_for_level(new_lvl, None, new_p)
+            new_xp = get_total_xp_for_level(new_lvl)
         else:
             new_xp = 0
 
@@ -30108,73 +30108,10 @@ async def _pr2_execute_prime_raid(channel, raid_data):
 _BS_PREV_EXECUTE_PRIME = _pr2_execute_prime_raid
 
 # ===================== HẾT KHỐI UPDATE =====================
-# ==============================================================================
-# [UPDATE] PRESTIGE 6+: GIẢM 50% XP YÊU CẦU ĐỂ LÊN CẤP
-# ==============================================================================
-PRESTIGE_XP_DISCOUNT_FROM = 6      # từ Prestige này trở đi
-PRESTIGE_XP_DISCOUNT = 0.50        # giảm 50% XP yêu cầu mỗi cấp
-
-def _xp_discount_active(prestige) -> bool:
-    try:
-        return int(prestige or 0) >= PRESTIGE_XP_DISCOUNT_FROM
-    except (ValueError, TypeError):
-        return False
-
-def _xp_eff_factor(prestige) -> float:
-    """Hệ số nhân XP khi quy đổi sang cấp (giảm 50% yêu cầu = nhân 1/0.5 = 2)."""
-    return (1.0 / (1.0 - PRESTIGE_XP_DISCOUNT)) if _xp_discount_active(prestige) else 1.0
-
-def _xp_pres_of(prestige_or_player) -> int:
-    if isinstance(prestige_or_player, dict):
-        return int(prestige_or_player.get("prestige", 0) or 0)
-    return int(prestige_or_player or 0)
-
-# ---- Tính cấp từ XP (đã nhân hệ số) ----
-_XPD_PREV_CALC_LEVEL = calculate_level_from_xp
-def calculate_level_from_xp(total_xp: int, prestige_or_player=0) -> int:
-    p = _xp_pres_of(prestige_or_player)
-    eff = int((total_xp or 0) * _xp_eff_factor(p))
-    return _XPD_PREV_CALC_LEVEL(eff, p)
-
-# ---- Tiến trình thanh XP: (cấp, xp trong cấp, xp cần, tỉ lệ) ----
-_XPD_PREV_PROGRESS = get_level_progress
-def get_level_progress(total_xp: int, prestige_or_player=0):
-    p = _xp_pres_of(prestige_or_player)
-    f = _xp_eff_factor(p)
-    if f == 1.0:
-        return _XPD_PREV_PROGRESS(total_xp, prestige_or_player)
-    lvl, xp_in, needed, ratio = _XPD_PREV_PROGRESS(int((total_xp or 0) * f), p)
-    if needed <= 0:                       # đã max cấp
-        return lvl, 0, 0, 1.0
-    # quy đổi lại về "XP thật": cần ít hơn, tiến độ cũng ít hơn tương ứng
-    return lvl, int(xp_in / f), max(1, int(needed / f)), ratio
-
-# ---- Tổng XP cần để đạt 1 cấp (dùng cho /admin_set_level, trừ cấp khi Prestige) ----
-_XPD_PREV_TOTAL_XP = get_total_xp_for_level
-def get_total_xp_for_level(level: int, max_lvl: int = None, prestige: int = None) -> int:
-    base = _XPD_PREV_TOTAL_XP(level, max_lvl)
-    f = _xp_eff_factor(prestige) if prestige is not None else 1.0
-    return int(base / f)
-
-# ---- XP cần cho 1 cấp (nếu nơi nào gọi kèm prestige) ----
-_XPD_PREV_NEEDED = get_xp_needed_for_level
-def get_xp_needed_for_level(level: int, prestige: int = None) -> int:
-    base = _XPD_PREV_NEEDED(level)
-    f = _xp_eff_factor(prestige) if prestige is not None else 1.0
-    return max(1, int(base / f))
-
-# ==============================================================================
-# VÁ CÁC CHỖ GỌI get_total_xp_for_level MÀ KHÔNG TRUYỀN PRESTIGE
-# (admin_set_level, setlevel, prestige trừ cấp) -> truyền thêm prestige đúng
-# ==============================================================================
-_XPD_PREV_GET_PLAYER = get_player
-def get_player(user_id, username="Visitor"):
-    return _XPD_PREV_GET_PLAYER(user_id, username)
-
-# /admin_set_level: đặt cấp phải ra đúng cấp đó dù có giảm XP
-@bot.tree.command(name="admin_set_level", description="[CHỦ BOT DUY NHẤT] Đặt cấp độ cho người chơi (đồng bộ XP, hỗ trợ giảm XP P6+)")
+# /admin_set_level: đặt cấp cho người chơi (bản gốc chuẩn, không giảm XP)
+@bot.tree.command(name="admin_set_level", description="[CHỦ BOT DUY NHẤT] Đặt cấp độ cho người chơi")
 @app_commands.describe(nguoi_dung="Chọn người chơi", cap_do="Cấp độ muốn đặt")
-async def slash_admin_set_level_v2(interaction: discord.Interaction, nguoi_dung: Union[discord.Member, discord.User], cap_do: int):
+async def slash_admin_set_level(interaction: discord.Interaction, nguoi_dung: Union[discord.Member, discord.User], cap_do: int):
     if not is_authorized_admin(interaction.user.id):
         await interaction.response.send_message(f"⛔ **TỪ CHỐI QUYỀN TRUY CẬP!** Chỉ duy nhất chủ sở hữu Bot (<@{AUTHORIZED_ADMIN_ID}>) mới có quyền.", ephemeral=True)
         return
@@ -30183,7 +30120,7 @@ async def slash_admin_set_level_v2(interaction: discord.Interaction, nguoi_dung:
     max_lvl = get_max_level(pres)
     cap_do = max(1, min(max_lvl, cap_do))
     old_lvl, old_xp = target["level"], target["xp"]
-    new_xp = get_total_xp_for_level(cap_do, max_lvl, pres)
+    new_xp = get_total_xp_for_level(cap_do, max_lvl)
     target["xp"] = new_xp
     save_player(target)
     target["level"] = calculate_level_from_xp(new_xp, pres)
@@ -30191,18 +30128,10 @@ async def slash_admin_set_level_v2(interaction: discord.Interaction, nguoi_dung:
         title="⚙️ [ADMIN] ĐÃ THAY ĐỔI CẤP ĐỘ NGƯỜI CHƠI THÀNH CÔNG",
         description=(f"👑 **Admin:** {interaction.user.mention}\n👤 **Mục tiêu:** {nguoi_dung.mention}\n"
                      f"📊 **Cấp độ:** `Lv.{old_lvl}` ➔ **`Lv.{target['level']}`**\n"
-                     f"📈 **XP:** `{old_xp:,}` ➔ **`{new_xp:,}`**"
-                     + (f"\n💎 *(Prestige {pres}: đang được giảm {int(PRESTIGE_XP_DISCOUNT * 100)}% XP yêu cầu)*" if _xp_discount_active(pres) else "")),
+                     f"📈 **XP:** `{old_xp:,}` ➔ **`{new_xp:,}`**"),
         color=0x10B981
     )
     await interaction.response.send_message(embed=embed)
-
-# ==============================================================================
-# THÔNG BÁO TRONG /prestige & /view cho người P6+
-# ==============================================================================
-_XPD_PREV_HANDLE_PRESTIGE = handle_prestige
-async def handle_prestige(ctx_or_interaction):
-    await _XPD_PREV_HANDLE_PRESTIGE(ctx_or_interaction)
 
 # ==============================================================================
 # [UPDATE] STORY STAGE 4 (PATCHOULI) • DAILY XU • PHÍ EVOL T • NPC ACE 2 MỚI
