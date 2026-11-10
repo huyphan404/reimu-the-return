@@ -30860,7 +30860,61 @@ def _S4_npc_yuta(oc, pc, power):
             r_atk, r_hp = max(1, int(base * 0.75)), max(1, int(mx * 0.75))
             oc.setdefault("t8_sum", {})["rika"] = {"name": T10_RIKA_NAME, "atk": r_atk, "hp": r_hp, "max_hp": r_hp}
             gif = T10_RIKA_GIF
-            logs.append(f"💍 **{tag}** - **Come
+            logs.append(f"💍 **{tag}** - **Come here, Rika!** (50%) Triệu hồi **Rika** 75% chỉ số: **{r_atk:,} ATK / {r_hp:,} HP**, chiến đấu cùng & tank sát thương!")
+    r = _S4_rand.random()
+    if er != "t10_slash" and st.get("slash", 0) < 2 and r < 0.25:
+        st["slash"] = st.get("slash", 0) + 1
+        m = 1.5 if ace else 1.2
+        if ace and _S4_rand.random() < 0.20:
+            m = 3.0
+            logs.append(f"🌑 **{tag}** tung **Resolute Slash** kèm **HẮC HIỂM**! ×{m:g} sát thương!")
+        else:
+            logs.append(f"⚔️ **{tag}** tung **Resolute Slash**! ×{m:g} sát thương! *(Lần {st['slash']}/2)*")
+        power = int(base * m) + (power - base)
+        gif = T10_SLASH2_GIF if ace else T10_SLASH_GIF
+    elif (not ace) and er != "t10_heal" and not st.get("heal") and oc["current_hp"] < mx and r < 0.55:
+        st["heal"] = 1
+        before = oc["current_hp"]
+        oc["current_hp"] = min(mx, before + int(mx * 0.20))
+        gif = T10_HEAL_GIF
+        logs.append(f"💚 **{tag}** thi triển **Phản chuyển**! Hồi **+{oc['current_hp'] - before:,} HP** (20%)!")
+    return power, logs, gif
+
+
+def _S4_npc_patchouli(oc, pc, power):
+    logs, gif = [], None
+    st = oc.setdefault("npc_st", {})
+    if oc.get("erased_skill") != "patchouli_element" and _S4_rand.random() < 0.25:
+        st["n"] = st.get("n", 0) + 1
+        power = int(power * 1.75)
+        gif = PATCHOULI_SKILL_GIF
+        logs.append(f"🌿 **NPC [Ace 2] #25 Patchouli** thi triển **Phép nguyên tố**! ×1.75 sát thương!")
+        r = _S4_rand.random()
+        if r < 0.10:
+            pc["pat_burn"] = 2
+            logs.append("🔥 **Hiệu ứng Bỏng**: bạn sẽ mất 3% máu tối đa mỗi turn trong 2 turn!")
+        elif r < 0.20:
+            pc["pat_frozen"] = 2
+            logs.append("❄️ **Hiệu ứng Đóng băng**: 40% bạn không thể phản đòn lượt sau!")
+        elif r < 0.30:
+            pc["pat_earth"] = 2
+            logs.append("🌍 **Hiệu ứng Thổ**: bạn bị trừ 15% tỉ lệ kích hoạt skill lượt sau!")
+    return power, logs, gif
+
+
+_S4_PREV_NPC_ATTACK = npc_tcard_attack
+def npc_tcard_attack(oc, pc, power, rnd):
+    try:
+        cid = str(oc.get("cid")).lower()
+        if cid == "t9" and oc.get("is_ace2"):
+            return _S4_npc_t9_ace2(oc, pc, power)
+        if cid == "t10":
+            return _S4_npc_yuta(oc, pc, power)
+        if oc.get("cid") == 22 and oc.get("is_ace2"):
+            return _S4_npc_patchouli(oc, pc, power)
+    except Exception as e:
+        print(f"[S5] lỗi npc ace 2 mới: {e}", flush=True)
+    return _S4_PREV_NPC_ATTACK(oc, pc, power, rnd)
 
 import sys
 
