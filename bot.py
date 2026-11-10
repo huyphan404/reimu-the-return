@@ -11313,6 +11313,9 @@ async def handle_battle(ctx_or_interaction):
         gained_xp = random.randint(100, 200)
     else:
         gained_xp = random.randint(30, 50)
+    # Prestige 6+: mỗi cấp +10 XP vào XP cơ bản của /battle
+    if player.get("prestige", 0) >= 6:
+        gained_xp += 10 * player.get("level", 1)
 
     p_mult = get_prestige_xp_multiplier(player.get("prestige", 0))
     potion_note = ""
@@ -20239,6 +20242,7 @@ def t8_absorb_incoming(card: dict, dmg, logs=None):
     sm = card.get("t8_sum")
     if dmg <= 0 or not sm:
         return dmg
+    owner = "Yuta" if str(card.get("cid")).lower() == "t10" else "Sukuna"
     for key in T8_TANK_ORDER:
         s = sm.get(key)
         if not s or s.get("hp", 0) <= 0:
@@ -20248,9 +20252,9 @@ def t8_absorb_incoming(card: dict, dmg, logs=None):
         dmg -= take
         if logs is not None:
             if s["hp"] <= 0:
-                logs.append(f"🛡️ **[{s['name']}]** tank **{take:,} DMG** thay Sukuna rồi **bị đánh bại**!")
+                logs.append(f"🛡️ **[{s['name']}]** tank **{take:,} DMG** thay {owner} rồi **bị đánh bại**!")
             else:
-                logs.append(f"🛡️ **[{s['name']}]** tank **{take:,} DMG** thay Sukuna (còn {s['hp']:,}/{s['max_hp']:,} HP)")
+                logs.append(f"🛡️ **[{s['name']}]** tank **{take:,} DMG** thay {owner} (còn {s['hp']:,}/{s['max_hp']:,} HP)")
         if dmg <= 0:
             break
     return dmg
