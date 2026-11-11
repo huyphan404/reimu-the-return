@@ -31496,10 +31496,10 @@ CharacterCheckView.rebuild_items = _tpg_rebuild
 # PHẦN 2: /race - ĐUA THẺ, CƯỢC 1 TRONG 5 NGƯỜI
 # ------------------------------------------------------------------------------
 RACE_MAX_BET = 5000
-RACE_FIELD = 5                 # mỗi cuộc đua random 5 trong 7 nhân vật
+RACE_FIELD = 7                # mỗi cuộc đua 
 RACE_BET_TIMEOUT = 45          # giây chờ chọn người
 RACE_TRACK = 100               # độ dài đường đua
-RACE_BAR_LEN = 14              # độ dài thanh hiển thị
+RACE_BAR_LEN = 13             # độ dài thanh hiển thị
 RACE_TICK_DELAY = 1.6          # giây giữa mỗi lần cập nhật
 RACE_MAX_TICKS = 60
 RACE_MULT = (3, 2, 1)          # hạng 1: x3 | hạng 2: x2 | hạng 3: huề vốn (x1) | còn lại: mất cược
@@ -31558,7 +31558,8 @@ class RaceBetView(discord.ui.View):
                 emo = discord.PartialEmoji.from_str(r["emoji"])
             except Exception:
                 emo = None
-            btn = discord.ui.Button(label=r["name"][:80], style=discord.ButtonStyle.primary, emoji=emo)
+            btn = discord.ui.Button(label=r["name"][:80], style=discord.ButtonStyle.primary, emoji=emo,
+                        row=(0 if len(self.children) < 4 else 1))
             btn.callback = self._make_cb(rid)
             self.add_item(btn)
 
