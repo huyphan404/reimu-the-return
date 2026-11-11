@@ -12555,6 +12555,17 @@ async def handle_pvp(ctx_or_interaction, target: discord.Member):
         if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else: await ctx_or_interaction.send(msg)
         return
+# === KIỂM TRA COOLDOWN 1 PHÚT CHO PVP ===
+    now_pvp = time.time()
+    last_pvp = c_player.get("last_pvp_time", 0)
+    if now_pvp - last_pvp < 60:
+        rem_pvp = int(60 - (now_pvp - last_pvp))
+        msg = f"⏳ Bạn vừa tham gia quyết đấu PvP gần đây, vui lòng chờ thêm **{rem_pvp}s** nữa để gửi chiến thư tiếp theo!"
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+        else:
+            await ctx_or_interaction.send(msg)
+        return
 
     c_player = get_player(user.id, user.display_name)
     t_player = get_player(target.id, target.display_name)
@@ -22367,7 +22378,7 @@ import random as _gb_rand   # dùng random chuẩn, tránh proxy _LiemRandom
 
 COINFLIP_MAX_BET = 2500
 SLOT_MAX_BET = 5000
-GAMBLE_COOLDOWN = 3.0
+GAMBLE_COOLDOWN = 30.0
 
 SLOT_FRUITS = {1: "🍎", 2: "🍊", 3: "🍋", 4: "🍇", 5: "🍓", 6: "🍒", 7: "🍑", 8: "🍍", 9: "🥝", 10: "🍉"}
 SLOT_MULT_TRIPLE = 30        # 3 ô giống nhau: nhận lại x30 tiền cược
