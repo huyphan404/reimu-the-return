@@ -19133,7 +19133,7 @@ async def handle_view(ctx_or_interaction, target=None):
     # ---- Gamble Rate ----
     gb = p.get("gamble") or {}
     gb_lines, t_games, t_wins, t_profit = [], 0, 0, 0
-    for gkey, glabel in (("coinflip", "🪙 Coinflip"), ("slot", "🎰 Slot")):
+    for gkey, glabel in (("coinflip", "🪙 Coinflip"), ("slot", "🎰 Slot"), ("race", "🏇 Race")):
         gs = gb.get(gkey) or {}
         g_, w_, pr_ = gs.get("games", 0), gs.get("wins", 0), gs.get("profit", 0)
         t_games += g_; t_wins += w_; t_profit += pr_
@@ -24827,7 +24827,7 @@ DAILY_QUEST_POOL = [
     {"type": "pvp", "name": "Thách đấu PvP đại chiến", "targets": [3, 4, 5], "reward_range": (2, 5)},
     {"type": "raid", "name": "Hạ gục Boss Raid bất kỳ (Reimu/Seiki/Mahoraga/Fateria/Jotaro/Han Seiki)",
      "targets": [1, 2, 3], "reward_range": (5, 7)},
-    {"type": "gamble", "name": "Cờ bạc (/coinflip, /slot) thắng tổng cộng",
+    {"type": "gamble", "name": "Cờ bạc (/coinflip, /slot, /race) thắng tổng cộng",
      "target_range": (6000, 20000), "target_step": 500, "reward_range": (3, 6)},
     {"type": "loot", "name": "Nhặt đồ (/loot)", "targets": [3, 4, 5, 6], "reward_range": (2, 4)},
 ]
@@ -31654,8 +31654,12 @@ class RaceBetView(discord.ui.View):
 
             p2 = get_player(self.user.id, self.user.display_name)
             p2["xu"] = p2.get("xu", 0) + ret
+            # Ghi nhận thống kê lãi/lỗ và cộng tiến trình quest cờ bạc nếu thắng (net > 0)
             gq = _gamble_record(p2, "race", net)
-            save_player(p2)
+            # Nếu muốn tính quest cả khi về hạng 3 (huề vốn) hoặc tính theo tổng tiền nhận về ret:
+            if net <= 0 and ret > 0:
+                gq = update_daily_quest_progress(p2, "gamble", ret)
+            save_player(p2)   
 
             rank_lines = []
             for i, r in enumerate(ranking):
