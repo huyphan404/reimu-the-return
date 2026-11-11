@@ -30848,6 +30848,559 @@ def npc_tcard_attack(oc, pc, power, rnd):
     except Exception as e:
         print(f"[S5] lỗi npc ace 2 mới: {e}", flush=True)
     return _S4_PREV_NPC_ATTACK(oc, pc, power, rnd)
+# ==============================================================================
+# [UPDATE] STORY STAGE 5: ĐỐI ĐẦU HẦU GÁI SAKUYA (NHIỆM VỤ + MINI GAME NÉ DAO + LIVE BATTLE)
+# DÁN NGAY SAU DÒNG:  return _S4_PREV_NPC_ATTACK(oc, pc, power, rnd)
+# ==============================================================================
+import re as _s5_re
+
+# ---------------------------- CẤU HÌNH (chỉnh số ở đây) ----------------------------
+S5_STAGE_LABEL = "STAGE 5"
+S5_REQ_BATTLES = 16            # số lần /battle
+S5_REQ_LEVEL = 61              # "lv > 60" => tối thiểu Lv.61 (đổi thành 60 nếu muốn Lv.60 vẫn được)
+S5_QUEST_TICKETS = 10.0        # thưởng nhiệm vụ
+S5_XP_MULT = 1.5               # x1,5 XP hiện có trong cấp (cả thưởng nhiệm vụ và thưởng thắng boss)
+S5_WIN_TICKETS = 15.0
+S5_WIN_CARDS = 25              # thẻ Sakuya
+S5_BOSS_BASE_HP = 55000
+S5_BOSS_BASE_ATK = 3000
+S5_KNIVES_CHANCE = 0.25        # Knives Throw: x1.5 sát thương, KHÔNG giới hạn số lần
+S5_TIMESTOP_CHANCE = 0.40      # Time Stop: stun người chơi, KHÔNG giới hạn số lần
+S5_TIMESTOP_TURNS = 2          # số hiệp người chơi bị đứng hình
+S5_TIMESTOP_COOLDOWN = True    # True: ngay hiệp Time Stop vừa hết, Boss chưa được tung lại (tránh khóa chết)
+S5_DODGE_ROUNDS = 3            # số lần né liên tiếp cần thành công
+
+try:
+    _FA_MODE_FUNCS.add("run_story_sakuya_battle")   # Fateria Ace 2 "tua ngược" hoạt động
+except Exception:
+    pass
+
+
+def _s5_fix(line: str) -> str:
+    """story_s3_player_turn có sẵn chữ 'Meiling' -> đổi thành 'Sakuya' (giữ nguyên thẻ Hong Meiling của người chơi)."""
+    s = str(line)
+    s = s.replace("kỹ năng **Rainbow Taijiquan** của", "toàn bộ kỹ năng của")
+    s = s.replace("#27] Hong Meiling", "§§A§§").replace("#27 Hong Meiling", "§§B§§")
+    s = s.replace("Hong Meiling", "Sakuya").replace("Meiling", "Sakuya")
+    return s.replace("§§A§§", "#27] Hong Meiling").replace("§§B§§", "#27 Hong Meiling")
+
+
+# ==============================================================================
+# MINI GAME NÉ DAO
+# ==============================================================================
+_S5_DIR_TXT = {"left": "⬅️ TRÁI", "stay": "⏺️ GIỮA (đứng yên)", "right": "➡️ PHẢI"}
+
+
+class Stage5DodgeView(discord.ui.View):
+    def __init__(self, user, player):
+        super().__init__(timeout=300)
+        self.user = user
+        self.player = player
+        self.step = 1
+        self.last = ""
+
+    def build_embed(self, color=0x3B82F6):
+        e = discord.Embed(
+            title=f"🔪 {S5_STAGE_LABEL}: NÉ DAO CỦA SAKUYA!",
+            description=(
+                "⏱️ **Sakuya nhảy lên cao, dùng thời gian và ném dao!**\n"
+                "Dao sẽ rơi xuống **1 trong 3 vị trí** (trái - giữa - phải). Hãy chọn vị trí của bạn để né!\n\n"
+                f"🎯 **Tiến độ né:** `{self.step - 1}/{S5_DODGE_ROUNDS}` — Đang ở **lần {self.step}/{S5_DODGE_ROUNDS}**\n"
+                "⚠️ *Bị trúng dao sẽ bị đẩy lui và phải né lại từ lần 1!*"
+                + (f"\n\n{self.last}" if self.last else "")
+            ),
+            color=color
+        )
+        e.set_image(url=SAKUYA3_KNIVES_GIF)
+        e.set_footer(text="Bấm nút bên dưới để chọn vị trí • Né đủ liên tiếp để tiếp cận Sakuya")
+        return e
+
+    async def _resolve(self, interaction: discord.Interaction, choice: str):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+            return
+        throw = _S4_rand.choice(["left", "stay", "right"])
+        hit = (throw == choice)
+        info = f"🔪 Dao rơi xuống **{_S5_DIR_TXT[throw]}** • Bạn chọn **{_S5_DIR_TXT[choice]}**"
+
+        if hit:
+            self.step = 1
+            self.last = info + "\n💥 **Bạn bị trúng dao! Bạn bị Sakuya đẩy lui, không thể tiếp cận — thử lại!**"
+            await interaction.response.edit_message(embed=self.build_embed(0xEF4444), view=self)
+            return
+
+        if self.step >= S5_DODGE_ROUNDS:
+            p = get_player(self.user.id, self.user.display_name)
+            p.setdefault("story", {})["S5_minigame_passed"] = True
+            save_player(p)
+            for child in self.children:
+                child.disabled = True
+            e = discord.Embed(
+                title=f"✨ {S5_STAGE_LABEL}: NÉ THÀNH CÔNG {S5_DODGE_ROUNDS}/{S5_DODGE_ROUNDS}!",
+                description=(
+                    f"{info}\n✅ **Né được!**\n\n"
+                    "💨 Bạn lách qua cơn mưa dao bạc và áp sát được Sakuya!\n"
+                    "👉 **Gõ `/story` để tiếp tục!**"
+                ),
+                color=0x10B981
+            )
+            e.set_thumbnail(url=CARDS_DATA[18]["image"])
+            await interaction.response.edit_message(embed=e, view=None)
+            self.stop()
+            return
+
+        self.last = info + "\n✅ **Né được!** Sakuya lại tung tiếp loạt dao mới..."
+        self.step += 1
+        await interaction.response.edit_message(embed=self.build_embed(0x3B82F6), view=self)
+
+    @discord.ui.button(label="Né trái", style=discord.ButtonStyle.primary, emoji="⬅️", row=0)
+    async def btn_left(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self._resolve(interaction, "left")
+
+    @discord.ui.button(label="Đứng yên", style=discord.ButtonStyle.secondary, emoji="⏺️", row=0)
+    async def btn_stay(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self._resolve(interaction, "stay")
+
+    @discord.ui.button(label="Né phải", style=discord.ButtonStyle.primary, emoji="➡️", row=0)
+    async def btn_right(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self._resolve(interaction, "right")
+
+
+# ==============================================================================
+# NÚT KHAI MÀN TRẬN BOSS
+# ==============================================================================
+class StorySakuyaBattleView(discord.ui.View):
+    def __init__(self, user, player):
+        super().__init__(timeout=180)
+        self.user = user
+        self.player = player
+
+    @discord.ui.button(label="⚔️ Nghênh Chiến Sakuya Izayoi (Live Battle)", style=discord.ButtonStyle.danger, emoji="💥")
+    async def fight_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+            return
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(content="🔥 **Trận chiến bắt đầu nghênh chiến Sakuya Izayoi!**", view=self)
+        self.stop()
+        await run_story_sakuya_battle(interaction, self.user, self.player)
+
+
+# ==============================================================================
+# LIVE BATTLE: SAKUYA IZAYOI (BỘ KỸ NĂNG ACE 3, KHÔNG GIỚI HẠN SỐ LẦN, KHÔNG PASSIVE)
+# ==============================================================================
+async def run_story_sakuya_battle(channel_or_interaction, user, player):
+    st = player.setdefault("story", {})
+    boss_lvl = st.get("S5_boss_level") or player.get("level", S5_REQ_LEVEL)
+    B = {
+        "max_hp": S5_BOSS_BASE_HP + get_level_hp_buff(boss_lvl),
+        "power": S5_BOSS_BASE_ATK + get_level_atk_buff(boss_lvl),
+        "mind": 0, "molten": 0, "freeze": 0, "fate": 0, "ice": 0,
+        "erased": False, "stun": False
+    }
+    B["hp"] = B["max_hp"]
+    boss_img = CARDS_DATA[18]["image"]
+
+    team_cids = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
+    if len(team_cids) < 3:
+        owned = get_owned_card_ids(player)
+        owned.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
+        for cid in owned:
+            if cid not in team_cids:
+                team_cids.append(cid)
+            if len(team_cids) >= 3:
+                break
+        player["team"] = team_cids
+        save_player(player)
+
+    p_buff_pwr = get_level_atk_buff(player["level"])
+    p_buff_hp = get_level_hp_buff(player["level"])
+    player_cards = []
+    for cid in team_cids[:3]:
+        c = CARDS_DATA[cid]
+        is_ace = is_card_ace2(player, cid)
+        card_pwr = c["power"] + p_buff_pwr + (ACE_POWER_BUFF if is_ace else 0)
+        card_hp = c["hp"] + p_buff_hp + (ACE_HP_BUFF if is_ace else 0)
+        player_cards.append({
+            "cid": cid,
+            "name": f"[Ace 2 ⭐⭐] #{disp_id(c['id'])} {c['name']}" if is_ace else f"{format_card_id(c['id'])} {c['name']}",
+            "power": card_pwr, "max_hp": card_hp, "current_hp": card_hp, "is_ace2": is_ace
+        })
+    apply_sakuya_ace3_to_cards(player, player_cards)
+    B["team"] = player_cards
+    if not player_cards:
+        await _s3_send(channel_or_interaction, content="⚠️ Bạn chưa có thẻ bài nào để chiến đấu! Hãy dùng `/pull` trước.")
+        return
+
+    embed_init = discord.Embed(
+        title=f"⚔️ [LIVE BATTLE] {S5_STAGE_LABEL}: HẦU GÁI TRƯỞNG SAKUYA IZAYOI!",
+        description=(
+            f"👤 **Trợ thủ xuất trận:** {user.mention} (Lv.{player['level']})\n"
+            f"🕰️ **Boss:** **[#20] Sakuya Izayoi (Hầu Gái Trưởng Hoàn Hảo)** (Lv.{boss_lvl})\n"
+            f"❤️ Máu Boss: `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**\n"
+            f"⚔️ Sức mạnh: **{B['power']:,} DMG**\n"
+            f"🔪 **Knives Throw** ({int(S5_KNIVES_CHANCE * 100)}%): ×1.5 sát thương • "
+            f"⏱️ **Time Stop** ({int(S5_TIMESTOP_CHANCE * 100)}%): đóng băng bạn {S5_TIMESTOP_TURNS} hiệp • **Không giới hạn số lần**"
+        ),
+        color=0x60A5FA
+    )
+    embed_init.set_thumbnail(url=boss_img)
+    msg = await _s3_send(channel_or_interaction, embed=embed_init)
+    await asyncio.sleep(2.0)
+
+    p_idx, rounds, stop_left = 0, 0, 0
+    while B["hp"] > 0 and p_idx < len(player_cards) and rounds < 40:
+        rounds += 1
+        pc = player_cards[p_idx]
+        fl = pc.setdefault("fl", {})
+        logs, turn_gif = [], None
+        B["stun"] = False
+        boss_frozen = False
+        no_cast = False
+        o = {"gif": None, "invul": False, "pguard": False}
+
+        # --- hiệu ứng người chơi đặt lên Boss ---
+        boss_locked = B["fate"] > 0
+        if boss_locked:
+            B["fate"] -= 1
+            logs.append("⛓️ **[Fate loop]** Sakuya bị khóa kỹ năng, chỉ có thể đánh thường trong hiệp này!")
+        if B["mind"] > 0:
+            B["mind"] -= 1
+            if _S4_rand.random() < 0.20:
+                B["hp"] = max(0, B["hp"] - B["power"])
+                logs.append(f"🌀 **[Red Eye Mind]** Sakuya mất kiểm soát, tự gây **{B['power']:,} DMG**! (Còn {B['mind']} lượt)")
+        if B["molten"] > 0:
+            B["molten"] -= 1
+            burn = int(B["max_hp"] * 0.02)
+            B["hp"] = max(0, B["hp"] - burn)
+            logs.append(f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Sakuya **{burn:,} DMG**! (Còn {B['molten']} lượt)")
+        if B["freeze"] > 0:
+            B["freeze"] -= 1
+            if _S4_rand.random() < 0.45:
+                boss_frozen = True
+                logs.append(f"❄️ **[Perfect Freeze]** Sakuya bị đóng băng (45%), không thể phản công! (Còn {B['freeze']} lượt)")
+        if B["ice"] > 0:
+            B["ice"] -= 1
+            if not boss_frozen and _S4_rand.random() < 0.40:
+                boss_frozen = True
+                logs.append("❄️ **[Ice spear]** Giáo băng cầm chân Sakuya (40%), không thể phản công!")
+
+        # --- người chơi đang bị Time Stop ---
+        player_stopped = False
+        if stop_left > 0:
+            stop_left -= 1
+            if pc.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
+                logs.append(f"🛡️ **[Wonder Guard]** **{pc['name']}** miễn nhiễm Time Stop!")
+            else:
+                player_stopped = True
+                logs.append(f"⏱️ **[Time Stop]** **{pc['name']}** bị **ĐỨNG HÌNH**, không thể ra đòn! (Còn {stop_left} hiệp)")
+            if stop_left == 0 and S5_TIMESTOP_COOLDOWN:
+                no_cast = True
+
+        # --- lượt đánh của người chơi ---
+        if B["hp"] > 0 and pc["current_hp"] > 0 and not player_stopped:
+            n0 = len(logs)
+            dmg, o = story_s3_player_turn(pc, rounds, B, logs)
+            logs[n0:] = [_s5_fix(l) for l in logs[n0:]]
+            B["hp"] = max(0, B["hp"] - dmg)
+            turn_gif = o["gif"]
+            logs.append(f"🗡️ **{pc['name']}** tấn công gây **{dmg:,} DMG** lên Sakuya!")
+
+        # --- Boss phản công ---
+        if B["hp"] <= 0:
+            logs.append("💥 **Sakuya Izayoi đã bị đánh gục!**")
+        elif pc["current_hp"] <= 0:
+            pass
+        elif B["stun"]:
+            logs.append("❄️ Sakuya bị STUN/bối rối, không thể phản công!")
+        elif boss_frozen:
+            logs.append("❄️ Sakuya không thể phản công trong hiệp này!")
+        else:
+            knives, stop_cast = False, False
+            if not boss_locked and not B["erased"]:
+                roll = _S4_rand.random()
+                if roll < S5_KNIVES_CHANCE:
+                    knives = True
+                elif stop_left == 0 and not no_cast and roll < S5_KNIVES_CHANCE + S5_TIMESTOP_CHANCE:
+                    stop_cast = True
+            boss_dmg = int(B["power"] * (1.5 if knives else 1.0))
+            if knives:
+                turn_gif = turn_gif or SAKUYA3_KNIVES_GIF
+                logs.append(f"🔪 **[Sakuya]** tung **Knives Throw** ({int(S5_KNIVES_CHANCE * 100)}%)! Mưa dao bạc **×1.5 sát thương ({boss_dmg:,} DMG)**!")
+            if stop_cast:
+                stop_left = S5_TIMESTOP_TURNS
+                turn_gif = turn_gif or SAKUYA3_TIMESTOP_GIF
+                logs.append(f"⏱️ **[Sakuya]** kích hoạt **Time Stop** ({int(S5_TIMESTOP_CHANCE * 100)}%)! Thời gian ngừng trôi, bạn sẽ **đứng hình {S5_TIMESTOP_TURNS} hiệp tới**!")
+
+            cs = str(pc["cid"]).lower()
+            ace2 = bool(pc.get("is_ace2"))
+            if o["invul"]:
+                logs.append(f"🛡️ **{pc['name']}** miễn nhiễm hoàn toàn đòn đánh của Sakuya!")
+            elif pc["cid"] == 15 and ace2 and not fl.get("reimu") and _S4_rand.random() < 0.40:
+                fl["reimu"] = True
+                turn_gif = turn_gif or EVOL_CONFIG[15]["skill_gif"]
+                logs.append("🛡️ **[Ace 2] [#17] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+            elif cs == "t1" and not ace2 and not fl.get("seal") and fl.get("used_turn") != rounds and _S4_rand.random() < 0.40:
+                fl["seal"] = True
+                fl["used_turn"] = rounds
+                turn_gif = turn_gif or T1_SEAL_GIF
+                logs.append("🛡️ **[Nhóm T] [#t1] Seiki** kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+            elif cs == "t3" and pc.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
+                ref = int(boss_dmg * 0.60)
+                B["hp"] = max(0, B["hp"] - ref)
+                logs.append(f"🛡️ **[Ace 2] [#t3] Kizuna** duy trì **Wonder Guard**! Miễn thương và phản lại **{ref:,} DMG (60%)**!")
+            elif pc["cid"] == 4 and ace2 and not knives and _S4_rand.random() < 0.10:
+                B["hp"] = max(0, B["hp"] - boss_dmg)
+                logs.append(f"🌀 **[Ace 2] [#04] Yukari** kích hoạt **Invisible Gap** (10%)! Phản lại **{boss_dmg:,} DMG** vào Sakuya!")
+            else:
+                taken = boss_dmg
+                if cs == "t2":
+                    taken = int(taken * (1.0 - min(0.90, fl.get("maho", 1) * 0.05)))
+                if o["pguard"]:
+                    taken = int(taken * 0.85)
+                eq_take_damage(pc, taken, logs, skill=knives)
+                logs.append(f"🕰️ **Sakuya** tấn công gây **{taken:,} DMG** lên **{pc['name']}**!")
+
+        # --- Wonder Guard của Kizuna đếm lùi ---
+        t3s = pc.get("t3_state")
+        if t3s and t3s.get("wonder_guard_turns", 0) > 0:
+            t3s["wonder_guard_turns"] -= 1
+
+        # --- thẻ gục ---
+        if pc["current_hp"] <= 0:
+            pc["current_hp"] = 0
+            _rv, _rv_log = sakuya3_try_revive(player_cards, p_idx)
+            if _rv_log:
+                logs.append(_rv_log)
+            if _rv:
+                turn_gif = SAKUYA3_PASSIVE_GIF
+            else:
+                p_idx += 1
+                if p_idx < len(player_cards):
+                    logs.append(f"💀 Đẩy **{player_cards[p_idx]['name']}** lên tiền tuyến!")
+
+        r_embed = discord.Embed(
+            title=f"⚔️ HIỆP {rounds} - QUYẾT ĐẤU SAKUYA ({S5_STAGE_LABEL})",
+            description=(f"❤️ Máu Sakuya: `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**\n\n" + "\n".join(logs))[:4000],
+            color=0x60A5FA if B["hp"] > 0 else 0x10B981
+        )
+        if turn_gif:
+            r_embed.set_image(url=turn_gif)
+        else:
+            r_embed.set_thumbnail(url=boss_img)
+        try:
+            await msg.edit(embed=r_embed)
+        except Exception:
+            pass
+        if B["hp"] <= 0:
+            break
+        await asyncio.sleep(2.5)
+
+    # ---------------- KẾT QUẢ ----------------
+    if B["hp"] <= 0:
+        inv = player.setdefault("inventory", {})
+        inv["18"] = inv.get("18", 0) + S5_WIN_CARDS
+        if 18 not in player.get("unlocked_cards", []):
+            player.setdefault("unlocked_cards", []).append(18)
+        player["pull_tickets"] += S5_WIN_TICKETS
+        old_lvl = player.get("level", 1)
+        gain, xp_in, needed = _S4_grant_xp(player, S5_XP_MULT)
+        st["S5_completed"] = True
+        st["current_stage"] = 6
+        save_player(player)
+        new_lvl = calculate_level_from_xp(player["xp"], player.get("prestige", 0))
+        lvl_txt = f"\n🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+        embed_win = discord.Embed(
+            title=f"🎉 CHIẾN THẮNG {S5_STAGE_LABEL}: HẦU GÁI TRƯỞNG SAKUYA!",
+            description=(
+                f"🏃 **\"Hầu gái một lần nữa bị đánh bại, {user.display_name} chạy một mạch đến căn phòng cuối cùng của dinh thự...\"**\n\n"
+                "🎁 **PHẦN THƯỞNG CHIẾN TÍCH:**\n"
+                f"• 🎴 **+{S5_WIN_CARDS} Thẻ bài [#20] Sakuya Izayoi** cộng thẳng vào túi đồ! (Hiện có: `{inv['18']}` lá)\n"
+                f"• 🎟️ **+{S5_WIN_TICKETS:.0f} Lượt Pull** (Tổng: `{player['pull_tickets']:.2f}` vé)\n"
+                f"• ✨ **+{gain:,} XP** (×{S5_XP_MULT:g} XP cấp hiện tại [{xp_in:,}/{needed:,}]){lvl_txt}"
+            ),
+            color=0x10B981
+        )
+        embed_win.set_image(url=SAKUYA3_EVOL_GIF)
+        embed_win.set_footer(text=f"{S5_STAGE_LABEL} Completed • Dùng /evol để nâng Sakuya lên Ace 2 / Ace 3")
+        try:
+            await msg.edit(embed=embed_win)
+        except Exception:
+            pass
+    else:
+        embed_loss = discord.Embed(
+            title=f"💀 THẤT BẠI TẠI {S5_STAGE_LABEL}!",
+            description=(
+                f"Đội hình của {user.mention} đã gục ngã trước thời gian của Sakuya!\n"
+                f"Sakuya còn lại: **{B['hp']:,}/{B['max_hp']:,} HP**\n\n"
+                "💡 *Hãy nâng cấp thẻ bài, xếp lại đội hình qua `/team` và gõ lại `/story` để phục thù!*"
+            ),
+            color=0xEF4444
+        )
+        embed_loss.set_thumbnail(url=boss_img)
+        try:
+            await msg.edit(embed=embed_loss)
+        except Exception:
+            pass
+
+
+# ==============================================================================
+# BỘ ĐIỀU HƯỚNG STAGE 5
+# ==============================================================================
+async def handle_story_stage5(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    st = player.setdefault("story", {})
+    for k, v in (("S5_battles_done", 0), ("S5_quest_claimed", False), ("S5_dialog_seen", False),
+                 ("S5_minigame_passed", False), ("S5_boss_level", None), ("S5_completed", False)):
+        st.setdefault(k, v)
+    name = user.display_name
+
+    # ----- Đã hoàn thành -----
+    if st["S5_completed"]:
+        e = discord.Embed(
+            title=f"🏆 BẠN ĐÃ VƯỢT QUA {S5_STAGE_LABEL}: HẦU GÁI TRƯỞNG SAKUYA!",
+            description=(
+                f"🏃 **\"Hầu gái một lần nữa bị đánh bại, {name} chạy một mạch đến căn phòng cuối cùng của dinh thự...\"**\n\n"
+                f"✅ Bạn đã hạ gục Sakuya, nhận **{S5_WIN_CARDS} thẻ Sakuya**, **{S5_WIN_TICKETS:.0f} Vé Pull** và XP!\n\n"
+                "🌟 **Chặng tiếp theo sẽ sớm cập bến trong bản cập nhật kế tiếp!**"
+            ),
+            color=0x10B981
+        )
+        e.set_thumbnail(url=CARDS_DATA[18]["image"])
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    # ----- BƯỚC 1: nhiệm vụ /battle -----
+    if not st["S5_quest_claimed"]:
+        b_done = st.get("S5_battles_done", 0)
+        u_lvl = player.get("level", 1)
+        ok_b, ok_l = b_done >= S5_REQ_BATTLES, u_lvl >= S5_REQ_LEVEL
+
+        if ok_b and ok_l:
+            st["S5_quest_claimed"] = True
+            st["S5_boss_level"] = u_lvl          # cấp Boss cố định theo cấp lúc nhận thưởng
+            player["pull_tickets"] += S5_QUEST_TICKETS
+            gain, xp_in, needed = _S4_grant_xp(player, S5_XP_MULT)
+            save_player(player)
+            new_lvl = calculate_level_from_xp(player["xp"], player.get("prestige", 0))
+            lvl_txt = f"\n🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > u_lvl else ""
+            e = discord.Embed(
+                title=f"🎉 HOÀN THÀNH NHIỆM VỤ {S5_STAGE_LABEL}: VƯỢT QUA ĐÁM NGƯỜI HẦU!",
+                description=(
+                    "🧹 Đám người hầu lần lượt ngã xuống, con đường phía trước đã thông thoáng.\n\n"
+                    "🎁 **PHẦN THƯỞNG:**\n"
+                    f"• 🎟️ **+{S5_QUEST_TICKETS:.0f} Lượt Pull** (Tổng: `{player['pull_tickets']:.2f}` vé)\n"
+                    f"• ✨ **+{gain:,} XP** (×{S5_XP_MULT:g} XP cấp hiện tại [{xp_in:,}/{needed:,}]){lvl_txt}\n\n"
+                    "👉 **Gõ `/story` để tiếp tục!**"
+                ),
+                color=0x10B981
+            )
+            e.set_thumbnail(url=CARDS_DATA[18]["image"])
+            await _s3_send(ctx_or_interaction, embed=e)
+            return
+
+        e = discord.Embed(
+            title=f"🎯 {S5_STAGE_LABEL}: ĐƯỜNG VÀO CĂN PHÒNG CUỐI",
+            description=(
+                f"Trong lúc **Marisa** bận vét sạch những gì còn sót lại trong thư viện tan hoang, **{name}** quyết định bỏ đi trước.\n"
+                "Trên đường đi, cậu bị một số đám người hầu cản đường!\n\n"
+                f"• ⚔️ **Đánh `/battle` {S5_REQ_BATTLES} lần:** **{'✅ ĐÃ HOÀN THÀNH' if ok_b else f'🔴 Chưa đủ ({b_done}/{S5_REQ_BATTLES} trận)'}**\n"
+                f"• ⭐ **Level trên 60 (tối thiểu Lv.{S5_REQ_LEVEL}):** **{'✅ ĐÃ ĐẠT' if ok_l else f'🔴 Chưa đủ (Cấp hiện tại: Lv.{u_lvl}/{S5_REQ_LEVEL})'}**\n\n"
+                f"🎁 **Phần thưởng:** **+{S5_QUEST_TICKETS:.0f} Lượt Pull** 🎟️ & **×{S5_XP_MULT:g} XP**\n"
+                "💡 *Hoàn thành đủ rồi gõ lại `/story` để nhận thưởng và tiếp tục!*"
+            ),
+            color=0xB91C1C
+        )
+        e.set_thumbnail(url=CARDS_DATA[18]["image"])
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    # ----- BƯỚC 2: hội thoại Sakuya -----
+    if not st["S5_dialog_seen"]:
+        st["S5_dialog_seen"] = True
+        save_player(player)
+        e = discord.Embed(
+            title=f"🕰️ {S5_STAGE_LABEL}: BÓNG DÁNG HẦU GÁI",
+            description=(
+                "Trước mặt cậu, một bóng dáng mặc đồ hầu gái đứng ra chặn đường.\n\n"
+                "• 🕰️ **Sakuya:** *\"Chết tiệt, sao con nhỏ kia mạnh vậy chứ... Nhưng ít ra nó sẽ sớm bị phu nhân đánh bại thôi.\"*\n"
+                f"*(ngẩng đầu lên, phát hiện **{name}**)*\n"
+                "• 🕰️ **Sakuya:** *\"Lại thêm một con chuột cản đường.\"*\n\n"
+                "👉 **Gõ `/story` để tiếp tục!**"
+            ),
+            color=0x60A5FA
+        )
+        e.set_thumbnail(url=CARDS_DATA[18]["image"])
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    # ----- BƯỚC 3: mini game né dao -----
+    if not st["S5_minigame_passed"]:
+        view = Stage5DodgeView(user, player)
+        await _s3_send(ctx_or_interaction, embed=view.build_embed(), view=view)
+        return
+
+    # ----- BƯỚC 4: tiếp cận & đánh Boss -----
+    boss_lvl = st.get("S5_boss_level") or player.get("level", S5_REQ_LEVEL)
+    e = discord.Embed(
+        title=f"🗺️ {S5_STAGE_LABEL}: TIẾP CẬN SAKUYA!",
+        description=(
+            "💨 **Bạn đã tiếp cận được Sakuya, khoảng cách chỉ còn 3 m! Nghênh chiến!**\n\n"
+            "⚠️ **CẢNH BÁO:** Sakuya đã rút dao, thời gian xung quanh bắt đầu méo mó! Bấm nút bên dưới để khai màn trận Live Battle!"
+        ),
+        color=0x60A5FA
+    )
+    e.set_thumbnail(url=CARDS_DATA[18]["image"])
+    e.add_field(
+        name="👺 Thông Số Boss Sakuya Izayoi:",
+        value=(
+            f"• Sức mạnh gốc: **{S5_BOSS_ATK_TXT if False else S5_BOSS_BASE_ATK:,} DMG** | Máu gốc: **{S5_BOSS_BASE_HP:,} HP**\n"
+            f"• Cấp độ Boss: **Lv.{boss_lvl}** (cố định lúc nhận thưởng nhiệm vụ)\n"
+            f"• 🔪 **Knives Throw** ({int(S5_KNIVES_CHANCE * 100)}%): ×1.5 sát thương\n"
+            f"• ⏱️ **Time Stop** ({int(S5_TIMESTOP_CHANCE * 100)}%): bạn đứng hình {S5_TIMESTOP_TURNS} hiệp\n"
+            "• *Không giới hạn số lần dùng*"
+        ),
+        inline=True
+    )
+    e.add_field(
+        name="🎁 Phần Thưởng Chiến Thắng:",
+        value=(f"• 🎴 **{S5_WIN_CARDS} Thẻ bài [#20] Sakuya Izayoi**\n"
+               f"• 🎟️ **+{S5_WIN_TICKETS:.0f} Lượt Pull**\n• ✨ **×{S5_XP_MULT:g} XP**"),
+        inline=True
+    )
+    e.set_footer(text="Bấm nút màu đỏ bên dưới để chiến đấu trực tiếp!")
+    await _s3_send(ctx_or_interaction, embed=e, view=StorySakuyaBattleView(user, player))
+
+
+# ==============================================================================
+# NỐI VÀO HỆ THỐNG CÓ SẴN (KHÔNG CẦN SỬA HÀM CŨ)
+# ==============================================================================
+# 1) Stage 4 xong -> tự chuyển sang Stage 5
+_S5_PREV_STAGE4 = handle_story_stage4
+async def handle_story_stage4(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    st = player.get("story", {}) or {}
+    if st.get("S4_completed") or st.get("current_stage", 0) >= 5:
+        await handle_story_stage5(ctx_or_interaction)
+        return
+    await _S5_PREV_STAGE4(ctx_or_interaction)
+
+# 2) Đếm số trận /battle cho nhiệm vụ Stage 5 (handle_battle gọi hàm này mỗi trận)
+_S5_PREV_DQ = update_daily_quest_progress
+def update_daily_quest_progress(player: dict, quest_type: str, amount: int = 1) -> list:
+    try:
+        if quest_type == "battle":
+            st = player.get("story") or {}
+            if st.get("S4_completed") and st.get("current_stage", 0) >= 5 and not st.get("S5_quest_claimed"):
+                st["S5_battles_done"] = st.get("S5_battles_done", 0) + amount
+    except Exception as e:
+        print(f"[S5] lỗi đếm battle: {e}", flush=True)
+    return _S5_PREV_DQ(player, quest_type, amount)
+
+# ===================== HẾT KHỐI STORY STAGE 5 =====================
 
 import sys
 
