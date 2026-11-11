@@ -31401,6 +31401,338 @@ def update_daily_quest_progress(player: dict, quest_type: str, amount: int = 1) 
     return _S5_PREV_DQ(player, quest_type, amount)
 
 # ===================== HẾT KHỐI STORY STAGE 5 =====================
+# ==============================================================================
+# [UPDATE] /check: PHÂN TRANG THẺ NHÓM T (NÚT "(..tiếp..)")  +  /race: ĐUA THẺ CƯỢC XU
+# DÁN NGAY SAU DÒNG:  # ===================== HẾT KHỐI STORY STAGE 5 =====================
+# (và phía trên đoạn "import sys / def start_bot_safely():")
+# ==============================================================================
+import random as _race_rand      # random chuẩn (tránh proxy Liềm Hỗn Mang)
+import math as _tpg_math
+
+# ------------------------------------------------------------------------------
+# PHẦN 1: /check - PHÂN TRANG NÚT THẺ NHÓM T
+# ------------------------------------------------------------------------------
+# (key, nhãn nút, emoji, tên view hiển thị thẻ đó). Sau này thêm thẻ T mới: chỉ cần thêm 1 dòng vào đây.
+T_CARD_BUTTONS = [
+    ("t1",  "#t1 Seiki",     "🔮", None),
+    ("t2",  "#t2 Mahoraga",  "🔱", None),
+    ("t3",  "#t3 Kizuna",    "🩸", None),
+    ("t4",  "#t4 Fateria",   "⏳", None),
+    ("t5",  "#t5 Jotaro",    "⏱️", "JotaroCardView"),
+    ("t6",  "#t6 Kanae",     "🌸", "KanaeCardView"),
+    ("t7",  "#t7 Kisami",    "☠️", "KisamiCardView"),
+    ("t8",  "#t8 Sukuna",    "👹", "SukunaCardView"),
+    ("t9",  "#t9 Chariot",   "🗡️", "ChariotCardView"),
+    ("t10", "#t10 Yuta",     "💍", "YutaCardView"),
+]
+T_CARD_PER_PAGE = 5      # 5 thẻ T / trang (tối đa 6, đừng đặt lớn hơn vì Discord chỉ cho 5 nút / hàng)
+
+
+def _tpg_make_cb(view, key, cls_name):
+    async def cb(interaction: discord.Interaction):
+        if key in ("t1", "t2", "t3", "t4"):
+            view.show_t1 = (key == "t1")
+            view.show_t2 = (key == "t2")
+            view.show_t3 = (key == "t3")
+            view.show_t4 = (key == "t4")
+            view.show_ace = False
+            view.rebuild_items()
+            await interaction.response.edit_message(embed=view.get_current_embed(), view=view)
+        else:
+            kv = globals()[cls_name](view.user_id, view.current_index)
+            await interaction.response.edit_message(embed=kv.get_embed(), view=kv)
+    return cb
+
+
+def _tpg_make_next(view, pages):
+    async def cb(interaction: discord.Interaction):
+        view.t_page = (getattr(view, "t_page", 0) + 1) % pages
+        view.rebuild_items()
+        # chỉ đổi nút, GIỮ NGUYÊN embed đang xem (không ảnh hưởng thẻ thường)
+        await interaction.response.edit_message(view=view)
+    return cb
+
+
+_TPG_PREV_REBUILD = CharacterCheckView.rebuild_items
+def _tpg_rebuild(self):
+    _TPG_PREV_REBUILD(self)
+    try:
+        # 1) gỡ toàn bộ nút thẻ T cũ (label bắt đầu bằng "#t")
+        for item in list(self.children):
+            if isinstance(item, discord.ui.Button) and str(item.label or "").startswith("#t"):
+                self.remove_item(item)
+
+        # 2) lọc thẻ T có sẵn view hiển thị
+        avail = [e for e in T_CARD_BUTTONS if e[3] is None or e[3] in globals()]
+        pages = max(1, _tpg_math.ceil(len(avail) / T_CARD_PER_PAGE))
+        self.t_page = max(0, min(getattr(self, "t_page", 0), pages - 1))
+        chunk = avail[self.t_page * T_CARD_PER_PAGE:(self.t_page + 1) * T_CARD_PER_PAGE]
+
+        # 3) thêm lại nút của trang hiện tại (4 nút đầu hàng 1, còn lại hàng 4)
+        for i, (key, label, emoji, cls_name) in enumerate(chunk):
+            active = getattr(self, "show_" + key, False) if key in ("t1", "t2", "t3", "t4") else False
+            btn = discord.ui.Button(
+                label=label,
+                style=discord.ButtonStyle.success if active else discord.ButtonStyle.secondary,
+                emoji=emoji, row=(1 if i < 4 else 4)
+            )
+            btn.callback = _tpg_make_cb(self, key, cls_name)
+            self.add_item(btn)
+
+        # 4) nút chuyển trang
+        if pages > 1:
+            nxt = discord.ui.Button(
+                label=f"(..tiếp..) {self.t_page + 1}/{pages}",
+                style=discord.ButtonStyle.primary, row=4
+            )
+            nxt.callback = _tpg_make_next(self, pages)
+            self.add_item(nxt)
+    except Exception as e:
+        print(f"[TPG] lỗi phân trang thẻ T: {e}", flush=True)
+CharacterCheckView.rebuild_items = _tpg_rebuild
+
+
+# ------------------------------------------------------------------------------
+# PHẦN 2: /race - ĐUA THẺ, CƯỢC 1 TRONG 5 NGƯỜI
+# ------------------------------------------------------------------------------
+RACE_MAX_BET = 5000
+RACE_FIELD = 5                 # mỗi cuộc đua random 5 trong 7 nhân vật
+RACE_BET_TIMEOUT = 45          # giây chờ chọn người
+RACE_TRACK = 100               # độ dài đường đua
+RACE_BAR_LEN = 14              # độ dài thanh hiển thị
+RACE_TICK_DELAY = 1.6          # giây giữa mỗi lần cập nhật
+RACE_MAX_TICKS = 60
+RACE_MULT = (3, 2, 1)          # hạng 1: x3 | hạng 2: x2 | hạng 3: huề vốn (x1) | còn lại: mất cược
+RACE_WAIT_GIF = "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/2a/44/0aJrgsLO.gif"
+
+# >>> Thay emoji ở đây bằng emoji custom của server (xem hướng dẫn). Mặc định là emoji thường nên chạy được ngay. <<<
+RACE_RACERS = {
+    "reimu":   {"name": "Reimu Hakurei",     "emoji": "<:Reimu:1570021357754912768>"},
+    "marisa":  {"name": "Marisa Kirisame",   "emoji": "<:Marisa:1570021332148682802>"},
+    "cirno":   {"name": "Cirno",             "emoji": "<:Cirno:1570024276336320555>"},
+    "sakuya":  {"name": "Sakuya Izayoi",     "emoji": "<:Sakuya:1570021413006352475>"},
+    "remilia": {"name": "Remilia Scarlet",   "emoji": "<:Remilia:1570021394635423847>"},
+    "flandre": {"name": "Flandre Scarlet",   "emoji": "<:Flandre:1570021373114454067>"},
+    "alice":   {"name": "Alice Margatroid",  "emoji": "<:alice:1570020468428120145>"},
+}
+_RACE_MEDALS = ["🥇", "🥈", "🥉"]
+
+
+def _race_lines(field, pos, speed, pick):
+    out = []
+    for rid in field:
+        r = RACE_RACERS[rid]
+        p = min(float(RACE_TRACK), pos[rid])
+        filled = int(p / RACE_TRACK * RACE_BAR_LEN)
+        bar = "█" * filled + "░" * (RACE_BAR_LEN - filled)
+        if pos[rid] >= RACE_TRACK:
+            st = "🏁"
+        else:
+            st = "💨" if speed.get(rid, 0) >= 8 else "😮"
+        mark = " ⭐" if rid == pick else ""
+        out.append(f"{r['emoji']} `{bar}` ({int(p)}%) {st}{mark}")
+    return "\n".join(out)
+
+
+def _race_header(user, bet, pick):
+    r = RACE_RACERS[pick]
+    return (
+        f"Bạn chọn: {r['emoji']} **{r['name']}**\n"
+        f"Cược: **{bet:,}** {XU_EMOJI} → Hạng 1: **{bet * RACE_MULT[0]:,}** | Hạng 2: **{bet * RACE_MULT[1]:,}** | "
+        f"Hạng 3: **{bet * RACE_MULT[2]:,}** (huề vốn)\n"
+        f"{'─' * RACE_BAR_LEN}🏁\n"
+    )
+
+
+class RaceBetView(discord.ui.View):
+    def __init__(self, user, bet, field):
+        super().__init__(timeout=RACE_BET_TIMEOUT)
+        self.user = user
+        self.bet = bet
+        self.field = field
+        self.done = False
+        self.message = None
+        for rid in field:
+            r = RACE_RACERS[rid]
+            try:
+                emo = discord.PartialEmoji.from_str(r["emoji"])
+            except Exception:
+                emo = None
+            btn = discord.ui.Button(label=r["name"][:80], style=discord.ButtonStyle.primary, emoji=emo)
+            btn.callback = self._make_cb(rid)
+            self.add_item(btn)
+
+    def wait_embed(self):
+        names = "\n".join(f"{RACE_RACERS[r]['emoji']} **{RACE_RACERS[r]['name']}**" for r in self.field)
+        e = discord.Embed(
+            title="🏇 ĐUA THẺ GENSOKYO - HÃY CHỌN NGƯỜI VỀ ĐÍCH ĐẦU TIÊN!",
+            description=(
+                f"👤 **{self.user.display_name}** cược **{self.bet:,}** {XU_EMOJI}\n\n"
+                f"🏁 **Các tay đua hôm nay:**\n{names}\n\n"
+                f"💰 **Giải thưởng:** Hạng 1 nhận **x{RACE_MULT[0]}** • Hạng 2 nhận **x{RACE_MULT[1]}** • "
+                f"Hạng 3 **huề vốn** • Còn lại **mất cược**\n"
+                f"⏳ Bấm vào 1 tay đua bên dưới trong **{RACE_BET_TIMEOUT} giây** (chỉ trừ xu khi bạn bấm chọn)!"
+            ),
+            color=0xF59E0B
+        )
+        e.set_image(url=RACE_WAIT_GIF)
+        e.set_footer(text=f"Cược tối đa {RACE_MAX_BET:,} xu")
+        return e
+
+    def _make_cb(self, rid):
+        async def cb(interaction: discord.Interaction):
+            await self.start(interaction, rid)
+        return cb
+
+    async def start(self, interaction: discord.Interaction, pick: str):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải ván đua của bạn! Hãy tự gõ `/race`.", ephemeral=True)
+            return
+        if self.done:
+            await interaction.response.send_message("⚠️ Ván này đã bắt đầu rồi!", ephemeral=True)
+            return
+        player = get_player(self.user.id, self.user.display_name)
+        err = _gamble_validate(player, self.bet, RACE_MAX_BET)
+        if err:
+            await interaction.response.send_message(err, ephemeral=True)
+            return
+
+        self.done = True
+        self.stop()
+        player["xu"] = player.get("xu", 0) - self.bet          # trừ cược ngay khi chọn
+        save_player(player)
+        _gamble_last[self.user.id] = time.time()
+
+        field = self.field
+        header = _race_header(self.user, self.bet, pick)
+        pos = {r: 0.0 for r in field}
+        speed = {}
+        order = []
+        try:
+            first = discord.Embed(title="🏇 CUỘC ĐUA BẮT ĐẦU!", description=header + _race_lines(field, pos, speed, pick), color=0x3B82F6)
+            await interaction.response.edit_message(embed=first, view=None)
+            await asyncio.sleep(RACE_TICK_DELAY)
+
+            tick = 0
+            while len(order) < 3 and tick < RACE_MAX_TICKS:
+                tick += 1
+                crossed = []
+                for r in field:
+                    if r in order:
+                        continue
+                    mv = _race_rand.uniform(3.0, 12.0)
+                    speed[r] = mv
+                    pos[r] += mv
+                    if pos[r] >= RACE_TRACK:
+                        crossed.append(r)
+                crossed.sort(key=lambda x: pos[x], reverse=True)
+                order.extend(crossed)
+                emb = discord.Embed(title=f"🏇 ĐANG ĐUA... (lượt {tick})", description=header + _race_lines(field, pos, speed, pick), color=0x3B82F6)
+                try:
+                    await interaction.edit_original_response(embed=emb)
+                except Exception:
+                    pass
+                await asyncio.sleep(RACE_TICK_DELAY)
+
+            rest = sorted([r for r in field if r not in order], key=lambda x: pos[x], reverse=True)
+            ranking = order + rest
+            idx = ranking.index(pick)
+            ret = self.bet * RACE_MULT[idx] if idx < len(RACE_MULT) else 0
+            net = ret - self.bet
+
+            p2 = get_player(self.user.id, self.user.display_name)
+            p2["xu"] = p2.get("xu", 0) + ret
+            gq = _gamble_record(p2, "race", net)
+            save_player(p2)
+
+            rank_lines = []
+            for i, r in enumerate(ranking):
+                medal = _RACE_MEDALS[i] if i < 3 else f"`#{i + 1}`"
+                you = " ⭐ **(BẠN)**" if r == pick else ""
+                rank_lines.append(f"{medal} {RACE_RACERS[r]['emoji']} **{RACE_RACERS[r]['name']}**{you}")
+            if idx == 0:
+                res, col = f"🎉 **VỀ NHẤT!** Nhận **{ret:,}** {XU_EMOJI} (lãi **+{net:,}**)", 0x10B981
+            elif idx == 1:
+                res, col = f"🎉 **VỀ NHÌ!** Nhận **{ret:,}** {XU_EMOJI} (lãi **+{net:,}**)", 0x10B981
+            elif idx == 2:
+                res, col = f"😅 **VỀ BA!** Huề vốn, nhận lại **{ret:,}** {XU_EMOJI}", 0xF59E0B
+            else:
+                res, col = f"💸 **VỀ HẠNG {idx + 1}!** Mất **{self.bet:,}** {XU_EMOJI}", 0xEF4444
+            fin = discord.Embed(
+                title="🏁 KẾT QUẢ CUỘC ĐUA!",
+                description=(
+                    header + _race_lines(field, pos, speed, pick) + "\n\n"
+                    + "\n".join(rank_lines) + "\n\n" + res + f"\n{XU_EMOJI} Số dư: **{p2['xu']:,}** xu"
+                ),
+                color=col
+            )
+            if gq:
+                fin.add_field(name="📜 Nhiệm Vụ Ngày:", value="\n".join(gq), inline=False)
+            sr = _gamble_stat(p2, "race")
+            fin.set_footer(text=f"Race: {sr['wins']}/{sr['games']} thắng • Lãi/lỗ tổng {sr['profit']:+,} xu")
+            try:
+                await interaction.edit_original_response(embed=fin)
+            except Exception:
+                await interaction.channel.send(embed=fin)
+        except Exception as e:
+            print(f"[RACE] lỗi trận đua, hoàn cược: {e}", flush=True)
+            try:
+                pr = get_player(self.user.id, self.user.display_name)
+                pr["xu"] = pr.get("xu", 0) + self.bet
+                save_player(pr)
+                await interaction.channel.send(f"⚠️ Cuộc đua gặp lỗi kỹ thuật, đã **hoàn lại {self.bet:,} {XU_EMOJI}** cho {self.user.mention}.")
+            except Exception:
+                pass
+
+    async def on_timeout(self):
+        if self.done:
+            return
+        for child in self.children:
+            child.disabled = True
+        if self.message:
+            try:
+                await self.message.edit(content="⌛ Hết giờ chọn tay đua, ván đua đã hủy (chưa trừ xu).", embed=None, view=self)
+            except Exception:
+                pass
+
+
+async def handle_race(ctx_or_interaction, bet):
+    is_inter = isinstance(ctx_or_interaction, discord.Interaction)
+    user = ctx_or_interaction.user if is_inter else ctx_or_interaction.author
+    lock = await _gamble_guard(ctx_or_interaction, user)     # chỉ dùng để chặn spam 3 giây
+    if lock is None:
+        return
+    player = get_player(user.id, user.display_name)
+    err = _gamble_validate(player, bet, RACE_MAX_BET)
+    if err:
+        await _eq_send(ctx_or_interaction, content=err, ephemeral=True)
+        return
+    field = _race_rand.sample(list(RACE_RACERS.keys()), RACE_FIELD)
+    view = RaceBetView(user, bet, field)
+    emb = view.wait_embed()
+    if is_inter:
+        await ctx_or_interaction.response.send_message(embed=emb, view=view)
+        try:
+            view.message = await ctx_or_interaction.original_response()
+        except Exception:
+            pass
+    else:
+        view.message = await ctx_or_interaction.send(embed=emb, view=view)
+
+
+@bot.tree.command(name="race", description=f"Đua thẻ Gensokyo: cược 1 người về nhất (cược tối đa {RACE_MAX_BET:,} xu)")
+@app_commands.describe(bet="Số xu muốn cược")
+async def slash_race(interaction: discord.Interaction, bet: int):
+    await handle_race(interaction, bet)
+
+@bot.command(name="race")
+async def prefix_race(ctx, bet: int = None):
+    if bet is None:
+        await ctx.send("💡 Cú pháp: `!race <số_xu>` (VD: `!race 1000`)")
+        return
+    await handle_race(ctx, bet)
+
+# ===================== HẾT KHỐI /check PHÂN TRANG T + /race =====================
 
 import sys
 
