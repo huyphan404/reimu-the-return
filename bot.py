@@ -2006,11 +2006,8 @@ async def on_ready():
     print(f"⛩️ Sẵn sàng phục vụ tại Đền Hakurei!", flush=True)
     asyncio.create_task(prewarm_pull_art())
     print(f"==================================================", flush=True)
-    try:
-        synced = await bot.tree.sync()
-        print(f"⚡ Đã tự động đồng bộ {len(synced)} Slash Commands!", flush=True)
-    except Exception as e:
-        print(f"⚠️ Lỗi đồng bộ Slash Commands: {e}", flush=True)
+    # Không sync tự động nữa (tránh rate limit). Dùng lệnh /sync khi thật sự cần.
+    print("⚡ Bỏ qua sync tự động. Dùng /sync nếu vừa thêm lệnh mới.", flush=True)
 
 @bot.event
 async def on_message(message: discord.Message):
@@ -21641,10 +21638,6 @@ class AutoSacView(discord.ui.View):
         save_player(player)
         await interaction.response.edit_message(embed=build_auto_sac_embed(player), view=self)
 
-    @discord.ui.button(label="Auto Sac Card", style=discord.ButtonStyle.danger, emoji="♻️", row=0)
-    async def btn_sac(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(AutoSacModal("sac"))
-
     @discord.ui.button(label="Auto Keep Card", style=discord.ButtonStyle.success, emoji="🛡️", row=0)
     async def btn_keep(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(AutoSacModal("keep"))
@@ -32371,28 +32364,23 @@ async def handle_story_stage5(ctx_or_interaction):
 import sys
 
 def start_bot_safely():
-    retry_delay = 60
+    retry_delay = 600  # nghỉ tối thiểu 10 phút khi bị chặn
     while True:
         try:
             print("🔄 [SYSTEM] Đang kết nối tới Discord Gateway...", flush=True)
             bot.run(DISCORD_TOKEN, reconnect=True)
+            break
         except discord.errors.HTTPException as e:
-            if e.status == 429:
-                print(
-                    f"🚨 [RATE LIMIT 429] IP của Render đang bị Discord chặn tạm thời!\n"
-                    f"⏳ Đang tạm nghỉ {retry_delay} giây trước khi thử lại...",
-                    flush=True
-                )
+            if e.status == 429 or "1015" in str(e) or "Cloudflare" in str(e):
+                print(f"🚨 [RATE LIMIT] IP bị chặn. Nghỉ {retry_delay}s rồi thử lại...", flush=True)
                 time.sleep(retry_delay)
-                retry_delay = min(900, int(retry_delay * 1.5))
+                retry_delay = min(3600, int(retry_delay * 1.5))
             else:
-                print(f"⚠️ [HTTP ERROR] Mã lỗi {e.status}: {e}. Khởi động lại sau 30s...", flush=True)
-                time.sleep(30)
-                os.execv(sys.executable, [sys.executable] + sys.argv)
+                print(f"⚠️ [HTTP ERROR] {e.status}: {e}. Nghỉ 120s...", flush=True)
+                time.sleep(120)
         except Exception as e:
-            print(f"❌ [CRASH] Bot bị ngắt kết nối ({e}). Đang khởi động lại sạch sẽ sau 15s...", flush=True)
-            time.sleep(15)
-            os.execv(sys.executable, [sys.executable] + sys.argv)
+            print(f"❌ [CRASH] {e}. Nghỉ 120s rồi thử lại (KHÔNG execv)...", flush=True)
+            time.sleep(120)
 
 if __name__ == "__main__":
     if not DISCORD_TOKEN:
