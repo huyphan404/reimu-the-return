@@ -13516,7 +13516,7 @@ class Stage2QuizView(discord.ui.View):
                 )
                 for child in self.children: child.disabled = True
                 await interaction.response.edit_message(embed=embed_correct, view=None)
-                await handle_story(interaction)
+                await handle_story(_FollowupAdapter(interaction))
             else:
                 self.build_buttons()
                 embed_wrong = discord.Embed(
@@ -31749,6 +31749,624 @@ async def prefix_race(ctx, bet: int = None):
     await handle_race(ctx, bet)
 
 # ===================== HẾT KHỐI /check PHÂN TRANG T + /race =====================
+# ==============================================================================
+# [UPDATE] STORY STAGE 6: REMILIA (INTRO + MINI GAME NÉ ĐẠN + LIVE BATTLE) + FIX LỖI STAGE 2
+# ==============================================================================
+
+# ---------------------------- FIX LỖI InteractionResponded ----------------------------
+class _FollowupAdapter:
+    """Bọc interaction đã phản hồi: mọi lệnh .send() sẽ đi qua followup."""
+    def __init__(self, interaction):
+        self._i = interaction
+        self.author = interaction.user
+        self.channel = interaction.channel
+        self.guild = interaction.guild
+
+    async def send(self, *args, **kwargs):
+        kwargs = {k: v for k, v in kwargs.items() if v is not None}
+        return await self._i.followup.send(*args, **kwargs)
+
+# ---------------------------- CẤU HÌNH (chỉnh số ở đây) ----------------------------
+S6_STAGE_LABEL = "STAGE 6"
+S6_PLAYER_EMOJI = "<:seiki:1559248628898467840>"
+S6_REIMU_EMOJI = "<:Reimu:1570021357754912768>"
+S6_REMILIA_EMOJI = "<:Remilia:1570021394635423847>"
+S6_REQ_LEVEL = 76              # "lv > 75" => tối thiểu Lv.76
+S6_BOSS_BASE_HP = 75000
+S6_BOSS_BASE_ATK = 5000
+S6_GUNGNIR_CHANCE = 0.30       # phóng thương Gungnir
+S6_GUNGNIR_MULT = 1.5          # x1.5 sát thương, bỏ qua phòng thủ
+S6_PASSIVE_PCT = 0.03          # skill Ace 2 của Remilia: mọi đòn +3% máu tối đa mục tiêu
+S6_XP_MULT = 3.0               # thưởng: x3 XP hiện có trong cấp
+S6_WIN_CARDS = 15              # thưởng: 15 thẻ Remilia (#12)
+S6_WIN_TICKETS = 0.0           # đổi thành 15.0 nếu "vé" nghĩa là vé pull
+S6_GUNGNIR_GIF = "https://static2.klipy.com/ii/e1b92bb53e0c9e442408bc677a56c789/eb/44/KhsaTdFfNLjUl7PBa.gif"
+# Mini game
+S6_TOTAL_BULLETS = 16
+S6_MAX_ON_SCREEN = 4           # tối đa 3-4 viên cùng lúc
+S6_TICK = 1.2                  # giây / nhịp rơi (nhỏ hơn = nhanh hơn, nhưng dễ bị Discord rate limit)
+S6_COLS = 5
+S6_BULLET = "🔴"
+S6_EMPTY = "⬛"
+
+try:
+    _FA_MODE_FUNCS.add("run_story_remilia_battle")
+except Exception:
+    pass
+
+
+# ==============================================================================
+# MINI GAME NÉ ĐẠN (5 HÀNG, 2 NÚT TRÁI/PHẢI, 16 VIÊN, KHÔNG CÓ GÓC CHẾT)
+# ==============================================================================
+def _s6_ok(prev_blocked, new_blocked):
+    """Đảm bảo không có góc chết: từ MỌI ô an toàn ở nhịp trước, luôn có ô thoát (dịch tối đa 1 ô) ở nhịp sau."""
+    for c in range(S6_COLS):
+        if c in prev_blocked:
+            continue
+        near = [n for n in (c - 1, c, c + 1) if 0 <= n < S6_COLS]
+        if all(n in new_blocked for n in near):
+            return False
+    return True
+
+
+class Stage6DodgeView(discord.ui.View):
+    def __init__(self, user):
+        super().__init__(timeout=300)
+        self.user = user
+        self.col = S6_COLS // 2
+        self.bullets = []          # [row, col], row 1..3 đang rơi; chạm hàng 4 = kiểm tra va chạm
+        self.dodged = 0
+        self.over = False
+        self.msg = None
+
+    def render(self, note=""):
+        grid = [[S6_EMPTY] * S6_COLS for _ in range(5)]
+        grid[0][S6_COLS // 2] = S6_REMILIA_EMOJI
+        for r, c in self.bullets:
+            grid[r][c] = S6_BULLET
+        grid[4][self.col] = S6_PLAYER_EMOJI
+        board = "\n".join("".join(row) for row in grid)
+        e = discord.Embed(
+            title=f"💥 {S6_STAGE_LABEL}: NÉ LOẠT ĐẠN PHÉP CỦA REMILIA!",
+            description=(f"{board}\n\n🎯 **Đã né:** `{self.dodged}/{S6_TOTAL_BULLETS}` viên\n"
+                         f"⚠️ *Bị trúng 1 viên là bị đẩy lui và phải làm lại từ đầu!*" + (f"\n{note}" if note else "")),
+            color=0xDC2626
+        )
+        e.set_footer(text="Dùng nút ◀ ▶ để di chuyển • Đạn rơi liên tục, đừng đứng yên quá lâu!")
+        return e
+
+    async def _edit(self):
+        try:
+            await self.msg.edit(embed=self.render(), view=self)
+        except Exception:
+            pass
+
+    async def _move(self, interaction: discord.Interaction, d: int):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+            return
+        if self.over:
+            await interaction.response.send_message("⚠️ Màn né đạn đã kết thúc!", ephemeral=True)
+            return
+        self.col = max(0, min(S6_COLS - 1, self.col + d))
+        await interaction.response.edit_message(embed=self.render(), view=self)
+
+    @discord.ui.button(label="◀ Trái", style=discord.ButtonStyle.primary, row=0)
+    async def btn_left(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self._move(interaction, -1)
+
+    @discord.ui.button(label="Phải ▶", style=discord.ButtonStyle.primary, row=0)
+    async def btn_right(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self._move(interaction, +1)
+
+    async def loop(self):
+        spawned, prev = 0, set()
+        try:
+            while not self.over:
+                await asyncio.sleep(S6_TICK)
+                if self.over:
+                    return
+                keep, arrived = [], []
+                for b in self.bullets:
+                    b[0] += 1
+                    if b[0] >= 4:
+                        arrived.append(b[1])
+                    else:
+                        keep.append(b)
+                self.bullets = keep
+                if self.col in arrived:
+                    await self.fail()
+                    return
+                self.dodged += len(arrived)
+
+                if spawned < S6_TOTAL_BULLETS:
+                    room = min(S6_MAX_ON_SCREEN - len(self.bullets), S6_TOTAL_BULLETS - spawned)
+                    k = min(_S4_rand.choices([0, 1, 2], [15, 45, 40])[0], max(0, room))
+                    cols = set()
+                    for _ in range(25):
+                        cand = set(_S4_rand.sample(range(S6_COLS), k)) if k else set()
+                        if _s6_ok(prev, cand):
+                            cols = cand
+                            break
+                    prev = cols
+                    for c in cols:
+                        self.bullets.append([1, c])
+                    spawned += len(cols)
+
+                if spawned >= S6_TOTAL_BULLETS and not self.bullets:
+                    await self.win()
+                    return
+                await self._edit()
+        except Exception as e:
+            print(f"[S6] lỗi vòng lặp né đạn: {e}", flush=True)
+            self.over = True
+
+    async def fail(self):
+        self.over = True
+        self.stop()
+        e = discord.Embed(
+            title="💥 BẠN BỊ ĐẨY LUI!",
+            description=(f"{self.user.mention} bị trúng đạn phép của Remilia và bị hất văng ra xa!\n"
+                         f"🎯 Đã né được: **{self.dodged}/{S6_TOTAL_BULLETS}** viên\n\n"
+                         "👉 **Gõ `/story` để thử lại từ đầu!**"),
+            color=0xEF4444
+        )
+        try:
+            await self.msg.edit(embed=e, view=None)
+        except Exception:
+            pass
+
+    async def win(self):
+        self.over = True
+        self.stop()
+        p = get_player(self.user.id, self.user.display_name)
+        p.setdefault("story", {})["S6_minigame_passed"] = True
+        save_player(p)
+        e = discord.Embed(
+            title=f"✨ {S6_STAGE_LABEL}: NÉ HẾT {S6_TOTAL_BULLETS}/{S6_TOTAL_BULLETS} VIÊN ĐẠN!",
+            description=f"{S6_PLAYER_EMOJI} **{self.user.display_name}** lách qua toàn bộ loạt đạn và áp sát được Reimu!\n\n👉 **Gõ `/story` để tiếp tục!**",
+            color=0x10B981
+        )
+        try:
+            await self.msg.edit(embed=e, view=None)
+        except Exception:
+            pass
+
+
+class Stage6StartView(discord.ui.View):
+    def __init__(self, user):
+        super().__init__(timeout=180)
+        self.user = user
+
+    @discord.ui.button(label="▶ Lao vào giữa làn đạn!", style=discord.ButtonStyle.danger, emoji="💥")
+    async def go(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+            return
+        game = Stage6DodgeView(self.user)
+        await interaction.response.edit_message(embed=game.render(), view=game)
+        game.msg = interaction.message
+        asyncio.create_task(game.loop())
+        self.stop()
+
+
+# ==============================================================================
+# LIVE BATTLE: REMILIA (SKILL ACE 2 + GUNGNIR)
+# ==============================================================================
+def _s6_fix(line: str) -> str:
+    s = str(line)
+    s = s.replace("kỹ năng **Rainbow Taijiquan** của", "toàn bộ kỹ năng của")
+    s = s.replace("#27] Hong Meiling", "§§A§§").replace("#27 Hong Meiling", "§§B§§")
+    s = s.replace("Hong Meiling", "Remilia").replace("Meiling", "Remilia")
+    return s.replace("§§A§§", "#27] Hong Meiling").replace("§§B§§", "#27 Hong Meiling")
+
+
+class StoryRemiliaBattleView(discord.ui.View):
+    def __init__(self, user, player):
+        super().__init__(timeout=180)
+        self.user = user
+        self.player = player
+
+    @discord.ui.button(label="⚔️ Cùng Reimu Nghênh Chiến Remilia (Live Battle)", style=discord.ButtonStyle.danger, emoji="💥")
+    async def fight_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+            return
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(content="🔥 **Trận chiến bắt đầu nghênh chiến Remilia Scarlet!**", view=self)
+        self.stop()
+        await run_story_remilia_battle(interaction, self.user, self.player)
+
+
+async def run_story_remilia_battle(channel_or_interaction, user, player):
+    st = player.setdefault("story", {})
+    boss_lvl = st.get("S6_boss_level") or player.get("level", S6_REQ_LEVEL)
+    B = {
+        "max_hp": S6_BOSS_BASE_HP + get_level_hp_buff(boss_lvl),
+        "power": S6_BOSS_BASE_ATK + get_level_atk_buff(boss_lvl),
+        "mind": 0, "molten": 0, "freeze": 0, "fate": 0, "ice": 0,
+        "erased": False, "stun": False
+    }
+    B["hp"] = B["max_hp"]
+    boss_img = CARDS_DATA[12]["image"]
+
+    team_cids = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
+    if len(team_cids) < 3:
+        owned = get_owned_card_ids(player)
+        owned.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
+        for cid in owned:
+            if cid not in team_cids:
+                team_cids.append(cid)
+            if len(team_cids) >= 3:
+                break
+        player["team"] = team_cids
+        save_player(player)
+
+    p_buff_pwr = get_level_atk_buff(player["level"])
+    p_buff_hp = get_level_hp_buff(player["level"])
+    player_cards = []
+    for cid in team_cids[:3]:
+        c = CARDS_DATA[cid]
+        is_ace = is_card_ace2(player, cid)
+        card_pwr = c["power"] + p_buff_pwr + (ACE_POWER_BUFF if is_ace else 0)
+        card_hp = c["hp"] + p_buff_hp + (ACE_HP_BUFF if is_ace else 0)
+        player_cards.append({
+            "cid": cid,
+            "name": f"[Ace 2 ⭐⭐] #{disp_id(c['id'])} {c['name']}" if is_ace else f"{format_card_id(c['id'])} {c['name']}",
+            "power": card_pwr, "max_hp": card_hp, "current_hp": card_hp, "is_ace2": is_ace
+        })
+    apply_sakuya_ace3_to_cards(player, player_cards)
+    B["team"] = player_cards
+    if not player_cards:
+        await _s3_send(channel_or_interaction, content="⚠️ Bạn chưa có thẻ bài nào để chiến đấu! Hãy dùng `/pull` trước.")
+        return
+
+    embed_init = discord.Embed(
+        title=f"⚔️ [LIVE BATTLE] {S6_STAGE_LABEL}: CĂN PHÒNG CUỐI - REMILIA SCARLET!",
+        description=(
+            f"👤 **Trợ thủ xuất trận:** {user.mention} (Lv.{player['level']}) cùng {S6_REIMU_EMOJI} **Reimu**\n"
+            f"{S6_REMILIA_EMOJI} **Boss:** **[#12] Remilia Scarlet (Chúa Tể Hồng Ma Quán)** (Lv.{boss_lvl})\n"
+            f"❤️ Máu Boss: `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**\n"
+            f"⚔️ Sức mạnh: **{B['power']:,} DMG**\n"
+            f"🩸 **Thương Đỏ Gungnir (Passive):** mọi đòn gây thêm **3% Máu Tối Đa** mục tiêu\n"
+            f"🔱 **Phóng thương Gungnir ({int(S6_GUNGNIR_CHANCE * 100)}%):** ×{S6_GUNGNIR_MULT:g} sát thương, **bỏ qua phòng thủ**"
+        ),
+        color=0x9333EA
+    )
+    embed_init.set_thumbnail(url=boss_img)
+    msg = await _s3_send(channel_or_interaction, embed=embed_init)
+    await asyncio.sleep(2.0)
+
+    p_idx, rounds = 0, 0
+    while B["hp"] > 0 and p_idx < len(player_cards) and rounds < 40:
+        rounds += 1
+        pc = player_cards[p_idx]
+        fl = pc.setdefault("fl", {})
+        logs, turn_gif = [], None
+        B["stun"] = False
+        boss_frozen = False
+        o = {"gif": None, "invul": False, "pguard": False}
+
+        boss_locked = B["fate"] > 0
+        if boss_locked:
+            B["fate"] -= 1
+            logs.append("⛓️ **[Fate loop]** Remilia bị khóa kỹ năng, không thể phóng Gungnir trong hiệp này!")
+        if B["mind"] > 0:
+            B["mind"] -= 1
+            if _S4_rand.random() < 0.20:
+                B["hp"] = max(0, B["hp"] - B["power"])
+                logs.append(f"🌀 **[Red Eye Mind]** Remilia mất kiểm soát, tự gây **{B['power']:,} DMG**! (Còn {B['mind']} lượt)")
+        if B["molten"] > 0:
+            B["molten"] -= 1
+            burn = int(B["max_hp"] * 0.02)
+            B["hp"] = max(0, B["hp"] - burn)
+            logs.append(f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Remilia **{burn:,} DMG**! (Còn {B['molten']} lượt)")
+        if B["freeze"] > 0:
+            B["freeze"] -= 1
+            if _S4_rand.random() < 0.45:
+                boss_frozen = True
+                logs.append(f"❄️ **[Perfect Freeze]** Remilia bị đóng băng (45%), không thể phản công! (Còn {B['freeze']} lượt)")
+        if B["ice"] > 0:
+            B["ice"] -= 1
+            if not boss_frozen and _S4_rand.random() < 0.40:
+                boss_frozen = True
+                logs.append("❄️ **[Ice spear]** Giáo băng cầm chân Remilia (40%), không thể phản công!")
+
+        # --- lượt đánh của người chơi ---
+        if B["hp"] > 0 and pc["current_hp"] > 0:
+            n0 = len(logs)
+            dmg, o = story_s3_player_turn(pc, rounds, B, logs)
+            logs[n0:] = [_s6_fix(l) for l in logs[n0:]]
+            B["hp"] = max(0, B["hp"] - dmg)
+            turn_gif = o["gif"]
+            logs.append(f"🗡️ **{pc['name']}** tấn công gây **{dmg:,} DMG** lên Remilia!")
+
+        # --- Boss phản công ---
+        if B["hp"] <= 0:
+            logs.append("💥 **Remilia Scarlet đã bị đánh gục!**")
+        elif pc["current_hp"] <= 0:
+            pass
+        elif B["stun"]:
+            logs.append("❄️ Remilia bị STUN/bối rối, không thể phản công!")
+        elif boss_frozen:
+            logs.append("❄️ Remilia không thể phản công trong hiệp này!")
+        else:
+            passive = int(pc["max_hp"] * S6_PASSIVE_PCT)
+            gung = (not boss_locked) and (not B["erased"]) and _S4_rand.random() < S6_GUNGNIR_CHANCE
+            if gung:
+                gdmg = int(B["power"] * S6_GUNGNIR_MULT) + passive
+                pc["current_hp"] -= gdmg                       # BỎ QUA MỌI PHÒNG THỦ (miễn thương, phản đòn, giáp, đồng minh...)
+                turn_gif = turn_gif or S6_GUNGNIR_GIF
+                logs.append(
+                    f"🔱 **[Remilia]** phóng **Thương Gungnir** ({int(S6_GUNGNIR_CHANCE * 100)}%)! "
+                    f"Ngọn thương đỏ xuyên thủng mọi phòng thủ, gây **{gdmg:,} DMG** (×{S6_GUNGNIR_MULT:g} + {passive:,} từ 3% Máu Tối Đa) lên **{pc['name']}**!"
+                )
+            else:
+                boss_dmg = B["power"] + passive
+                cs = str(pc["cid"]).lower()
+                ace2 = bool(pc.get("is_ace2"))
+                if o["invul"]:
+                    logs.append(f"🛡️ **{pc['name']}** miễn nhiễm hoàn toàn đòn đánh của Remilia!")
+                elif pc["cid"] == 15 and ace2 and not fl.get("reimu") and _S4_rand.random() < 0.40:
+                    fl["reimu"] = True
+                    turn_gif = turn_gif or EVOL_CONFIG[15]["skill_gif"]
+                    logs.append("🛡️ **[Ace 2] [#17] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+                elif cs == "t1" and not ace2 and not fl.get("seal") and fl.get("used_turn") != rounds and _S4_rand.random() < 0.40:
+                    fl["seal"] = True
+                    fl["used_turn"] = rounds
+                    turn_gif = turn_gif or T1_SEAL_GIF
+                    logs.append("🛡️ **[Nhóm T] [#t1] Seiki** kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+                elif cs == "t3" and pc.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
+                    ref = int(boss_dmg * 0.60)
+                    B["hp"] = max(0, B["hp"] - ref)
+                    logs.append(f"🛡️ **[Ace 2] [#t3] Kizuna** duy trì **Wonder Guard**! Miễn thương và phản lại **{ref:,} DMG (60%)**!")
+                elif pc["cid"] == 4 and ace2 and _S4_rand.random() < 0.10:
+                    B["hp"] = max(0, B["hp"] - boss_dmg)
+                    logs.append(f"🌀 **[Ace 2] [#04] Yukari** kích hoạt **Invisible Gap** (10%)! Phản lại **{boss_dmg:,} DMG** vào Remilia!")
+                else:
+                    taken = boss_dmg
+                    if cs == "t2":
+                        taken = int(taken * (1.0 - min(0.90, fl.get("maho", 1) * 0.05)))
+                    if o["pguard"]:
+                        taken = int(taken * 0.85)
+                    eq_take_damage(pc, taken, logs)
+                    logs.append(f"🩸 **Remilia** tấn công gây **{taken:,} DMG** lên **{pc['name']}** *(gồm +{passive:,} từ Thương Đỏ Gungnir)*!")
+                    turn_gif = turn_gif or EVOL_CONFIG[12]["skill_gif"]
+
+        t3s = pc.get("t3_state")
+        if t3s and t3s.get("wonder_guard_turns", 0) > 0:
+            t3s["wonder_guard_turns"] -= 1
+
+        if pc["current_hp"] <= 0:
+            pc["current_hp"] = 0
+            _rv, _rv_log = sakuya3_try_revive(player_cards, p_idx)
+            if _rv_log:
+                logs.append(_rv_log)
+            if _rv:
+                turn_gif = SAKUYA3_PASSIVE_GIF
+            else:
+                p_idx += 1
+                if p_idx < len(player_cards):
+                    logs.append(f"💀 Đẩy **{player_cards[p_idx]['name']}** lên tiền tuyến!")
+
+        r_embed = discord.Embed(
+            title=f"⚔️ HIỆP {rounds} - QUYẾT ĐẤU REMILIA ({S6_STAGE_LABEL})",
+            description=(f"❤️ Máu Remilia: `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**\n\n" + "\n".join(logs))[:4000],
+            color=0x9333EA if B["hp"] > 0 else 0x10B981
+        )
+        if turn_gif:
+            r_embed.set_image(url=turn_gif)
+        else:
+            r_embed.set_thumbnail(url=boss_img)
+        try:
+            await msg.edit(embed=r_embed)
+        except Exception:
+            pass
+        if B["hp"] <= 0:
+            break
+        await asyncio.sleep(2.5)
+
+    # ---------------- KẾT QUẢ ----------------
+    if B["hp"] <= 0:
+        inv = player.setdefault("inventory", {})
+        inv["12"] = inv.get("12", 0) + S6_WIN_CARDS
+        if 12 not in player.get("unlocked_cards", []):
+            player.setdefault("unlocked_cards", []).append(12)
+        if S6_WIN_TICKETS > 0:
+            player["pull_tickets"] += S6_WIN_TICKETS
+        old_lvl = player.get("level", 1)
+        gain, xp_in, needed = _S4_grant_xp(player, S6_XP_MULT)
+        st["S6_completed"] = True
+        st["hidden_chapter_unlocked"] = True
+        st["current_stage"] = 7
+        save_player(player)
+        new_lvl = calculate_level_from_xp(player["xp"], player.get("prestige", 0))
+        lvl_txt = f"\n🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+        name = user.display_name
+        embed_win = discord.Embed(
+            title=f"🎉 CHIẾN THẮNG {S6_STAGE_LABEL}: CĂN PHÒNG CUỐI - REMILIA!",
+            description=(
+                "💨 *Cả nhóm thở phào mệt mỏi, còn Remilia chấp nhận trả lại bình yên cho bầu trời Gensokyo.*\n"
+                "🧹 *Trong khi Marisa hớn hở đem đống sách mới trộm được, thì Remilia đã bắt đầu kết bạn với trợ thủ của Reimu...*\n\n"
+                f"{S6_REIMU_EMOJI} **Reimu:** *\"Làm gì vậy?\"*\n"
+                f"{S6_REMILIA_EMOJI} **Remilia:** *\"Tôi thấy người này đặc biệt nên muốn kết thân chút mà.\"*\n"
+                f"{S6_REIMU_EMOJI} **Reimu:** *\"Khỏi cần, cậu ta không muốn đâu.\"*\n"
+                f"{S6_PLAYER_EMOJI} **{name}:** *…0^0*\n\n"
+                "🎁 **PHẦN THƯỞNG STORY:**\n"
+                f"• ✨ **+{gain:,} XP** (×{S6_XP_MULT:g} XP cấp hiện tại [{xp_in:,}/{needed:,}]){lvl_txt}\n"
+                f"• 🎴 **+{S6_WIN_CARDS} Thẻ bài [#12] Remilia Scarlet** (Hiện có: `{inv['12']}` lá)\n"
+                + (f"• 🎟️ **+{S6_WIN_TICKETS:.0f} Vé Pull**\n" if S6_WIN_TICKETS > 0 else "")
+                + "• 🔓 **Mở khóa chương ẩn sắp tới!**"
+            ),
+            color=0x10B981
+        )
+        embed_win.set_image(url=EVOL_CONFIG[12]["evol_gif"])
+        embed_win.set_footer(text=f"{S6_STAGE_LABEL} Completed • Chương ẩn đã được mở khóa")
+        try:
+            await msg.edit(embed=embed_win)
+        except Exception:
+            pass
+    else:
+        embed_loss = discord.Embed(
+            title=f"💀 THẤT BẠI TẠI {S6_STAGE_LABEL}!",
+            description=(
+                f"Đội hình của {user.mention} đã gục ngã trước Chúa Tể Hồng Ma Quán!\n"
+                f"Remilia còn lại: **{B['hp']:,}/{B['max_hp']:,} HP**\n\n"
+                "💡 *Hãy nâng cấp thẻ bài, xếp lại đội hình qua `/team` và gõ lại `/story` để phục thù!*"
+            ),
+            color=0xEF4444
+        )
+        embed_loss.set_thumbnail(url=boss_img)
+        try:
+            await msg.edit(embed=embed_loss)
+        except Exception:
+            pass
+
+
+# ==============================================================================
+# BỘ ĐIỀU HƯỚNG STAGE 6
+# ==============================================================================
+async def handle_story_stage6(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    st = player.setdefault("story", {})
+    for k, v in (("S6_intro_seen", False), ("S6_minigame_passed", False), ("S6_dialog2_seen", False),
+                 ("S6_boss_level", None), ("S6_completed", False)):
+        st.setdefault(k, v)
+    name = user.display_name
+
+    # ----- Đã hoàn thành -----
+    if st["S6_completed"]:
+        e = discord.Embed(
+            title=f"🏆 BẠN ĐÃ VƯỢT QUA {S6_STAGE_LABEL}: CĂN PHÒNG CUỐI!",
+            description=(
+                f"{S6_REMILIA_EMOJI} Remilia đã trả lại bình yên cho bầu trời Gensokyo.\n\n"
+                f"✅ Bạn đã nhận **{S6_WIN_CARDS} thẻ Remilia** và XP!\n"
+                "🔓 **Chương ẩn đã được mở khóa — hãy chờ bản cập nhật kế tiếp!**"
+            ),
+            color=0x10B981
+        )
+        e.set_thumbnail(url=CARDS_DATA[12]["image"])
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    # ----- BƯỚC 1: mở đầu -----
+    if not st["S6_intro_seen"]:
+        st["S6_intro_seen"] = True
+        save_player(player)
+        e = discord.Embed(
+            title=f"🏰 {S6_STAGE_LABEL}: CĂN PHÒNG CUỐI CÙNG",
+            description=(
+                f"{S6_PLAYER_EMOJI} **{name}** đến căn phòng cuối cùng, nơi này khói bụi khắp nơi. Ở giữa, "
+                f"{S6_REIMU_EMOJI} **Reimu** đang đối đầu cực nhọc với {S6_REMILIA_EMOJI} **Remilia**.\n\n"
+                f"{S6_REIMU_EMOJI} **Reimu:** *\"Trợ thủ, giúp 1 tay đi!\"*\n\n"
+                f"{S6_PLAYER_EMOJI} **{name}** không chần chừ mà lao đến, ngay tức khắc một **loạt đạn phép từ Remilia** bắn ra tứ phía!\n\n"
+                "👉 **Gõ `/story` để tiếp tục!**"
+            ),
+            color=0xDC2626
+        )
+        e.set_thumbnail(url=CARDS_DATA[12]["image"])
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    # ----- BƯỚC 2: mini game né đạn -----
+    if not st["S6_minigame_passed"]:
+        e = discord.Embed(
+            title=f"💥 {S6_STAGE_LABEL}: NÉ LOẠT ĐẠN PHÉP!",
+            description=(
+                f"{S6_REMILIA_EMOJI} ở phía trên, {S6_PLAYER_EMOJI} ở phía dưới. Đạn rơi liên tục xuống **5 hàng**!\n\n"
+                f"• Dùng nút **◀ Trái / Phải ▶** để né\n"
+                f"• Tổng cộng **{S6_TOTAL_BULLETS} viên**, tối đa {S6_MAX_ON_SCREEN} viên cùng lúc\n"
+                f"• Né hết **{S6_TOTAL_BULLETS} viên** là thắng, **trúng 1 viên là bị đẩy lui** và phải gõ `/story` làm lại\n\n"
+                "👉 Bấm nút bên dưới khi đã sẵn sàng!"
+            ),
+            color=0xDC2626
+        )
+        await _s3_send(ctx_or_interaction, embed=e, view=Stage6StartView(user))
+        return
+
+    # ----- BƯỚC 3: hội thoại song hành -----
+    if not st["S6_dialog2_seen"]:
+        st["S6_dialog2_seen"] = True
+        save_player(player)
+        e = discord.Embed(
+            title=f"🤝 {S6_STAGE_LABEL}: SONG HÀNH CÙNG REIMU",
+            description=(
+                f"{S6_PLAYER_EMOJI} **{name}** đã theo sát được {S6_REIMU_EMOJI} **Reimu**, hai người song hành chuẩn bị đánh {S6_REMILIA_EMOJI} **Remilia**.\n\n"
+                f"{S6_REMILIA_EMOJI} **Remilia:** *\"Ồ, hợp sức sao?\"*\n"
+                f"{S6_REIMU_EMOJI} **Reimu:** *\"Im đi đồ quỷ cái.\"*\n"
+                f"{S6_REMILIA_EMOJI} **Remilia:** *\"Fuff fuff, cọc tính thế, chẳng như trợ thủ ít nói của cô.\"*\n"
+                f"{S6_PLAYER_EMOJI} **{name}:** *…*\n\n"
+                "👉 **Gõ `/story` để tiếp tục!**"
+            ),
+            color=0x9333EA
+        )
+        e.set_thumbnail(url=CARDS_DATA[12]["image"])
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    # ----- BƯỚC 4: kiểm tra cấp độ -----
+    lvl = player.get("level", 1)
+    if lvl < S6_REQ_LEVEL:
+        e = discord.Embed(
+            title=f"🔒 {S6_STAGE_LABEL}: CHƯA ĐỦ CẤP ĐỘ ĐỂ ĐẤU REMILIA",
+            description=(
+                f"{S6_REMILIA_EMOJI} Remilia quá mạnh, bạn cần đạt **Lv.{S6_REQ_LEVEL}** (trên Lv.75) mới được tham gia trận đấu!\n"
+                f"• ⭐ Cấp hiện tại: **Lv.{lvl}/{S6_REQ_LEVEL}**\n\n"
+                "💡 *Cày thêm bằng `/battle`, `/raid`... rồi gõ lại `/story`!*"
+            ),
+            color=0xB91C1C
+        )
+        e.set_thumbnail(url=CARDS_DATA[12]["image"])
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    if not st.get("S6_boss_level"):
+        st["S6_boss_level"] = lvl          # cấp Boss cố định theo cấp lúc mở quest, không tăng thêm
+        save_player(player)
+
+    boss_lvl = st["S6_boss_level"]
+    e = discord.Embed(
+        title=f"🗺️ {S6_STAGE_LABEL}: ĐẠI CHIẾN VỚI REMILIA SCARLET",
+        description=(
+            f"{S6_REIMU_EMOJI} và {S6_PLAYER_EMOJI} đứng sóng vai trước {S6_REMILIA_EMOJI} **Remilia Scarlet**, Chúa Tể Hồng Ma Quán!\n\n"
+            "⚠️ **CẢNH BÁO:** Bấm nút bên dưới để khai màn trận Live Battle!"
+        ),
+        color=0x9333EA
+    )
+    e.set_thumbnail(url=CARDS_DATA[12]["image"])
+    e.add_field(
+        name="👺 Thông Số Boss Remilia:",
+        value=(f"• Sức mạnh gốc: **{S6_BOSS_BASE_ATK:,} DMG** | Máu gốc: **{S6_BOSS_BASE_HP:,} HP**\n"
+               f"• Cấp độ Boss: **Lv.{boss_lvl}** (cố định, không tăng khi bạn lên cấp)\n"
+               f"• 🩸 **Thương Đỏ Gungnir (Passive):** mọi đòn +3% Máu Tối Đa mục tiêu\n"
+               f"• 🔱 **Phóng thương Gungnir ({int(S6_GUNGNIR_CHANCE * 100)}%):** ×{S6_GUNGNIR_MULT:g} sát thương, bỏ qua phòng thủ"),
+        inline=True
+    )
+    e.add_field(
+        name="🎁 Phần Thưởng Chiến Thắng:",
+        value=(f"• ✨ **×{S6_XP_MULT:g} XP** hiện tại\n• 🎴 **{S6_WIN_CARDS} Thẻ bài [#12] Remilia**\n• 🔓 **Mở khóa chương ẩn**"),
+        inline=True
+    )
+    e.set_footer(text="Bấm nút màu đỏ bên dưới để chiến đấu trực tiếp!")
+    await _s3_send(ctx_or_interaction, embed=e, view=StoryRemiliaBattleView(user, player))
+
+
+# ==============================================================================
+# NỐI VÀO HỆ THỐNG CÓ SẴN: Stage 5 xong -> tự chuyển sang Stage 6
+# ==============================================================================
+_S6_PREV_STAGE5 = handle_story_stage5
+async def handle_story_stage5(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    st = player.get("story", {}) or {}
+    if st.get("S5_completed") or st.get("current_stage", 0) >= 6:
+        await handle_story_stage6(ctx_or_interaction)
+        return
+    await _S6_PREV_STAGE5(ctx_or_interaction)
+
+# ===================== HẾT KHỐI STORY STAGE 6 =====================
 
 import sys
 
