@@ -27438,6 +27438,9 @@ active_train = None
 
 # --- 4.1 Cộng chỉ số theo cấp train vào MỌI config Boss (kể cả Phase 2 & Boss event) ---
 _BOSS_LVL = contextvars.ContextVar("boss_lvl", default=0)
+# [UPDATE] Hệ số nhân buff HP của Boss khi raid có từ 2 người trở lên
+BOSS_LV_HP_MULT_MULTI = 2.75
+_BOSS_MULTI = contextvars.ContextVar("boss_multi", default=False)
 
 def _train_cfg_getitem(self, key):
     v = dict.__getitem__(self, key)
@@ -27445,7 +27448,13 @@ def _train_cfg_getitem(self, key):
         v = int(v)
         lv = _BOSS_LVL.get()
         if lv > 0:
-            v += get_level_hp_buff(lv) if key == "hp" else get_level_atk_buff(lv)
+            if key == "hp":
+                _hp_buff = get_level_hp_buff(lv)
+                if _BOSS_MULTI.get():
+                    _hp_buff = int(_hp_buff * BOSS_LV_HP_MULT_MULTI)   # từ 2 người trở lên: x2.75 buff HP
+                v += _hp_buff
+            else:
+                v += get_level_atk_buff(lv)                            # ATK giữ nguyên
         t = _TRAIN_LVL.get()
         if t > 0:
             v += t * (TRAIN_HP_PER_LV if key == "hp" else TRAIN_ATK_PER_LV)
@@ -33188,29 +33197,41 @@ def _lv_notice_embed(raid_data, lv):
 _LV_PREV_EXECUTE_RAID = execute_raid
 async def execute_raid(channel, raid_data):
     lv = _bs_top_level(raid_data)
+    multi = len(raid_data.get("participants") or []) >= 2
     tok = _BOSS_LVL.set(lv)
+    tok_m = _BOSS_MULTI.set(multi)
     try:
         if lv > 1:
             try:
-                await channel.send(embed=_lv_notice_embed(raid_data, lv))
+                emb = _lv_notice_embed(raid_data, lv)
+                if multi:
+                    emb.description += f"\n👥 Raid có **từ 2 người**: buff máu Boss **×{BOSS_LV_HP_MULT_MULTI:g}** (+{int(get_level_hp_buff(lv) * BOSS_LV_HP_MULT_MULTI):,} HP)!"
+                await channel.send(embed=emb)
             except Exception:
                 pass
         return await _LV_PREV_EXECUTE_RAID(channel, raid_data)
     finally:
+        _BOSS_MULTI.reset(tok_m)
         _BOSS_LVL.reset(tok)
 
 _LV_PREV_EXECUTE_PRIME = execute_prime_raid
 async def execute_prime_raid(channel, raid_data):
     lv = _bs_top_level(raid_data)
+    multi = len(raid_data.get("participants") or []) >= 2
     tok = _BOSS_LVL.set(lv)
+    tok_m = _BOSS_MULTI.set(multi)
     try:
         if lv > 1:
             try:
-                await channel.send(embed=_lv_notice_embed(raid_data, lv))
+                emb = _lv_notice_embed(raid_data, lv)
+                if multi:
+                    emb.description += f"\n👥 Raid có **từ 2 người**: buff máu Boss **×{BOSS_LV_HP_MULT_MULTI:g}** (+{int(get_level_hp_buff(lv) * BOSS_LV_HP_MULT_MULTI):,} HP)!"
+                await channel.send(embed=emb)
             except Exception:
                 pass
         return await _LV_PREV_EXECUTE_PRIME(channel, raid_data)
     finally:
+        _BOSS_MULTI.reset(tok_m)
         _BOSS_LVL.reset(tok)
 
 # ---------------- 2. SALE CUỐI TUẦN (CHỦ NHẬT, GIỜ VN) ----------------
