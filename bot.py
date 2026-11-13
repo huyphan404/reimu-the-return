@@ -32369,6 +32369,781 @@ async def handle_story_stage5(ctx_or_interaction):
 
 # ===================== HẾT KHỐI STORY STAGE 6 =====================
 # ==============================================================================
+# [UPDATE] EXTRA STAGE (TÙY CHỌN): HỒNG MA QUÁN - CÁNH CỬA BÍ ẨN & FLANDRE
+#   Mở sau khi hoàn thành STAGE 6 (Remilia). Gõ /story để chơi.
+#   Luồng: Tiệc trà -> /loot 5 lần -> Cánh cửa có ổ khóa
+#          -> [Lưỡng lự] kết thúc Touhou 6 (đóng mục này vĩnh viễn)
+#          -> [Giật mạnh] Flandre: trốn tìm (roll 50/50) -> Boss Flandre (Live Battle)
+# DÁN NGAY SAU DÒNG:  # ===================== HẾT KHỐI STORY STAGE 6 =====================
+# ==============================================================================
+
+# ---------------------------- CẤU HÌNH (chỉnh số ở đây) ----------------------------
+EX_STAGE_LABEL = "EXTRA STAGE"
+EX_PLAYER = "<:seiki:1559248628898467840>"        # emoji trợ thủ / player
+EX_REIMU = "<:Reimu:1570021357754912768>"
+EX_REMILIA = "<:Remilia:1570021394635423847>"
+EX_SAKUYA = "<:Sakuya:1570021413006352475>"
+EX_FLANDRE = "<:Flandre:1570021373114454067>"
+EX_MARISA = "<:Marisa:1570021332148682802>"
+EX_DUA = "<:dua_a:1544385140782923906>"
+
+EX_REQ_LOOT = 5                # số lần /loot cần làm
+EX_GRID = 25                   # 5x5 ô
+EX_HIDER_SEARCH = 15           # khi bạn TRỐN: Flandre lục 15/25 ô ngẫu nhiên
+EX_SEEK_ROUNDS = 3             # khi bạn TÌM: phải tìm thấy Flandre 3 lần
+EX_SEEK_CLICKS = 5             # mỗi lần tìm tối đa 5 lượt bấm
+EX_SEEK_HINT = True            # True: bấm trượt sẽ có gợi ý nóng/lạnh (nếu không có thì cơ hội thắng chỉ ~0.8%)
+EX_BOSS_BASE_HP = 78000
+EX_BOSS_BASE_ATK = 6000
+EX_RIPPLE_CHANCE = 0.25        # Ripples of 495 Years (không giới hạn số lần)
+EX_RIPPLE_PCT = 0.50           # xóa 50% máu HIỆN TẠI của thẻ tiền tuyến
+EX_RIPPLE_REPLACE_ATTACK = True   # True: lượt dùng Ripples thì Boss không đánh thường thêm
+EX_XP_MULT = 3.0               # thưởng x3 XP hiện có trong cấp
+EX_WIN_CARDS = 15              # 15 thẻ Flandre (#09)
+EX_WIN_TICKETS = 0.0           # đổi thành 15.0 nếu bạn muốn thưởng thêm Vé Pull
+
+EX_SQUEEZE_TEXT = "💔 *\"Một lực bóp chặt vào trái tim khiến bạn đau đớn, ý thức dần ngất lịm...\"*"
+EX_RETURN_TEXT = "✨ *Thứ gì đó mang bạn trở lại...*"
+
+try:
+    _FA_MODE_FUNCS.add("run_story_flandre_battle")   # Fateria Ace 2 "tua ngược" hoạt động trong trận này
+except Exception:
+    pass
+
+
+def _ex_state(player):
+    st = player.setdefault("story", {})
+    for k, v in (("EX_intro_seen", False), ("EX_loot_done", 0), ("EX_choice", None),
+                 ("EX_game_passed", False), ("EX_boss_level", None), ("EX_completed", False)):
+        st.setdefault(k, v)
+    return st
+
+
+def _ex_fix(line: str) -> str:
+    """story_s3_player_turn có sẵn chữ 'Meiling' -> đổi thành 'Flandre' (giữ nguyên thẻ Hong Meiling của người chơi)."""
+    s = str(line)
+    s = s.replace("kỹ năng **Rainbow Taijiquan** của", "toàn bộ kỹ năng của")
+    s = s.replace("#27] Hong Meiling", "§§A§§").replace("#27 Hong Meiling", "§§B§§")
+    s = s.replace("Hong Meiling", "Flandre").replace("Meiling", "Flandre")
+    return s.replace("§§A§§", "#27] Hong Meiling").replace("§§B§§", "#27 Hong Meiling")
+
+
+# ==============================================================================
+# ĐẾM SỐ LẦN /loot CHO EXTRA STAGE (handle_loot gọi hàm này mỗi lần nhặt đồ)
+# ==============================================================================
+_EX_PREV_DQ = update_daily_quest_progress
+def update_daily_quest_progress(player: dict, quest_type: str, amount: int = 1) -> list:
+    try:
+        if quest_type == "loot":
+            st = player.get("story") or {}
+            if (st.get("S6_completed") and st.get("EX_intro_seen") and not st.get("EX_choice")
+                    and st.get("EX_loot_done", 0) < EX_REQ_LOOT):
+                st["EX_loot_done"] = min(EX_REQ_LOOT, st.get("EX_loot_done", 0) + amount)
+    except Exception as e:
+        print(f"[EX] lỗi đếm loot: {e}", flush=True)
+    return _EX_PREV_DQ(player, quest_type, amount)
+
+
+# ==============================================================================
+# MINI GAME: TRỐN TÌM VỚI FLANDRE
+# ==============================================================================
+def _ex_retry_embed():
+    return discord.Embed(
+        title="💀 BẠN ĐÃ BỊ FLANDRE TÓM ĐƯỢC!",
+        description=f"{EX_SQUEEZE_TEXT}\n\n…\n\n{EX_RETURN_TEXT}",
+        color=0x991B1B
+    )
+
+
+class ExRetryView(discord.ui.View):
+    def __init__(self, user):
+        super().__init__(timeout=300)
+        self.user = user
+
+    @discord.ui.button(label="🔁 Tỉnh dậy (chơi lại)", style=discord.ButtonStyle.danger)
+    async def retry(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+            return
+        self.stop()
+        await _ex_new_round(interaction, self.user)
+
+
+async def _ex_new_round(interaction: discord.Interaction, user):
+    """Roll 50/50: bạn là người TRỐN hay người TÌM."""
+    if _S4_rand.random() < 0.5:
+        view = ExHideView(user)
+        await interaction.response.edit_message(embed=view.intro_embed(), view=view)
+    else:
+        view = ExSeekView(user)
+        await interaction.response.edit_message(embed=view.build_embed(
+            "🎲 **Roll 50/50: bạn là NGƯỜI TÌM!**"), view=view)
+
+
+async def _ex_finish_game(interaction: discord.Interaction):
+    p = get_player(interaction.user.id, interaction.user.display_name)
+    st = _ex_state(p)
+    st["EX_game_passed"] = True
+    save_player(p)
+    emb, view = _ex_boss_prompt(interaction.user)
+    await interaction.message.edit(embed=emb, view=view)
+
+
+class ExHideView(discord.ui.View):
+    """Bạn là người TRỐN: chọn 1 ô, Flandre sẽ lục ngẫu nhiên 15/25 ô."""
+    def __init__(self, user):
+        super().__init__(timeout=300)
+        self.user = user
+        self.over = False
+        for i in range(EX_GRID):
+            b = discord.ui.Button(label=str(i + 1), style=discord.ButtonStyle.secondary, row=i // 5)
+            b.callback = self._cb(i)
+            self.add_item(b)
+
+    def intro_embed(self):
+        return discord.Embed(
+            title=f"🙈 {EX_STAGE_LABEL}: TRỐN TÌM - BẠN LÀ NGƯỜI TRỐN!",
+            description=(
+                "🎲 **Roll 50/50: bạn là NGƯỜI TRỐN!**\n\n"
+                f"{EX_FLANDRE} **Flandre:** *\"Một... hai... ba... ta đến tìm đây~\"*\n\n"
+                f"👉 Hãy bấm **1 ô bất kỳ** trong {EX_GRID} ô để trốn. Flandre sẽ lục tung **{EX_HIDER_SEARCH}/{EX_GRID}** ô ngẫu nhiên — "
+                "nếu không lục trúng ô của bạn, bạn sống sót!"
+            ),
+            color=0x7C3AED
+        )
+
+    def _cb(self, i):
+        async def cb(interaction: discord.Interaction):
+            if interaction.user.id != self.user.id:
+                await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+                return
+            if self.over:
+                await interaction.response.send_message("⚠️ Ván này đã kết thúc!", ephemeral=True)
+                return
+            self.over = True
+            searched = set(_S4_rand.sample(range(EX_GRID), EX_HIDER_SEARCH))
+            caught = i in searched
+            for j, b in enumerate(self.children):
+                b.disabled = True
+                if j == i:
+                    b.label = "💀" if caught else "🙈"
+                    b.style = discord.ButtonStyle.danger if caught else discord.ButtonStyle.success
+                elif j in searched:
+                    b.label = "🔍"
+                    b.style = discord.ButtonStyle.primary
+            res = discord.Embed(
+                title="🔍 FLANDRE ĐANG LỤC TUNG MỌI NƠI...",
+                description=(f"Bạn trốn ở ô **{i + 1}**. Flandre đã lục **{EX_HIDER_SEARCH}** ô (🔍).\n\n"
+                             + ("😱 **Flandre đã tìm thấy bạn!**" if caught else "😮‍💨 **Flandre không tìm thấy bạn! Bạn sống sót!**")),
+                color=0xEF4444 if caught else 0x10B981
+            )
+            await interaction.response.edit_message(embed=res, view=self)
+            self.stop()
+            await asyncio.sleep(3.5)
+            if caught:
+                await interaction.message.edit(embed=_ex_retry_embed(), view=ExRetryView(self.user))
+            else:
+                await _ex_finish_game(interaction)
+        return cb
+
+
+class ExSeekView(discord.ui.View):
+    """Bạn là người TÌM: tìm Flandre 3 lần, mỗi lần tối đa 5 lượt bấm."""
+    def __init__(self, user):
+        super().__init__(timeout=300)
+        self.user = user
+        self.found = 0
+        self.clicks = EX_SEEK_CLICKS
+        self.target = _S4_rand.randrange(EX_GRID)
+        self.over = False
+        for i in range(EX_GRID):
+            b = discord.ui.Button(label=str(i + 1), style=discord.ButtonStyle.secondary, row=i // 5)
+            b.callback = self._cb(i)
+            self.add_item(b)
+
+    def build_embed(self, note=""):
+        return discord.Embed(
+            title=f"🔎 {EX_STAGE_LABEL}: TRỐN TÌM - BẠN LÀ NGƯỜI TÌM!",
+            description=(
+                f"{EX_FLANDRE} **Flandre:** *\"Tìm được ta không nào~?\"*\n\n"
+                f"🎯 **Đã tìm thấy:** `{self.found}/{EX_SEEK_ROUNDS}` lần\n"
+                f"👆 **Lượt bấm còn lại (lần này):** `{self.clicks}/{EX_SEEK_CLICKS}`\n"
+                + (f"\n{note}" if note else "")
+            ),
+            color=0x7C3AED
+        )
+
+    def _reset(self):
+        for i, b in enumerate(self.children):
+            b.label = str(i + 1)
+            b.disabled = False
+            b.style = discord.ButtonStyle.secondary
+
+    def _cb(self, i):
+        async def cb(interaction: discord.Interaction):
+            if interaction.user.id != self.user.id:
+                await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+                return
+            if self.over:
+                await interaction.response.send_message("⚠️ Ván này đã kết thúc!", ephemeral=True)
+                return
+            btn = self.children[i]
+
+            # ----- tìm thấy -----
+            if i == self.target:
+                self.found += 1
+                if self.found >= EX_SEEK_ROUNDS:
+                    self.over = True
+                    for b in self.children:
+                        b.disabled = True
+                    btn.label = "🧛"
+                    btn.style = discord.ButtonStyle.success
+                    emb = discord.Embed(
+                        title="🎉 BẠN ĐÃ TÌM THẤY FLANDRE 3 LẦN!",
+                        description=f"{EX_FLANDRE} **Flandre:** *\"Hức... cậu giỏi quá đi!\"*",
+                        color=0x10B981
+                    )
+                    await interaction.response.edit_message(embed=emb, view=self)
+                    self.stop()
+                    await asyncio.sleep(3)
+                    await _ex_finish_game(interaction)
+                    return
+                self.target = _S4_rand.randrange(EX_GRID)
+                self.clicks = EX_SEEK_CLICKS
+                self._reset()
+                await interaction.response.edit_message(
+                    embed=self.build_embed(f"🧛 **Tìm thấy Flandre! ({self.found}/{EX_SEEK_ROUNDS})** Cô bé lại biến mất và trốn ở chỗ mới..."),
+                    view=self)
+                return
+
+            # ----- bấm trượt -----
+            btn.disabled = True
+            btn.label = "❌"
+            self.clicks -= 1
+            if self.clicks <= 0:
+                self.over = True
+                for j, b in enumerate(self.children):
+                    b.disabled = True
+                    if j == self.target:
+                        b.label = "🧛"
+                        b.style = discord.ButtonStyle.danger
+                emb = discord.Embed(
+                    title="⌛ HẾT LƯỢT BẤM!",
+                    description=f"Flandre đã trốn ở ô **{self.target + 1}** (🧛). Bạn không tìm thấy cô bé...",
+                    color=0xEF4444
+                )
+                await interaction.response.edit_message(embed=emb, view=self)
+                self.stop()
+                await asyncio.sleep(3.5)
+                await interaction.message.edit(embed=_ex_retry_embed(), view=ExRetryView(self.user))
+                return
+
+            note = f"❌ Ô **{i + 1}** không có ai."
+            if EX_SEEK_HINT:
+                dr = abs(i // 5 - self.target // 5)
+                dc = abs(i % 5 - self.target % 5)
+                d = dr + dc
+                note += "  " + ("🔥 **Rất gần rồi!**" if d <= 1 else ("🌡️ **Khá gần.**" if d <= 2 else "❄️ **Còn xa lắm.**"))
+            await interaction.response.edit_message(embed=self.build_embed(note), view=self)
+        return cb
+
+
+# ==============================================================================
+# CÁNH CỬA: LƯỠNG LỰ / GIẬT MẠNH Ổ KHÓA
+# ==============================================================================
+def _ex_flan_intro_embed(name):
+    return discord.Embed(
+        title=f"🚪 {EX_STAGE_LABEL}: CĂN PHÒNG TỐI",
+        description=(
+            "Cánh cửa bất ngờ bật vào trong... một căn phòng tối om.\n\n"
+            "❓ **???:** *\"Ôi chú mèo lạc, thật ngây thơ.\"*\n"
+            f"{EX_PLAYER} **{name}:** *..?*\n\n"
+            f"{EX_FLANDRE} **Flandre** bước ra từ bóng tối.\n"
+            f"{EX_FLANDRE} **Flandre:** *\"Xin lỗi đã phải chờ.\"*\n"
+            f"{EX_PLAYER} **{name}:** *…0-0*\n"
+            f"{EX_FLANDRE} **Flandre:** *\"Cậu thật nhàm chán quá, chơi gì đó đi.\"*\n"
+            f"{EX_PLAYER} **{name}:** *…?*\n"
+            f"{EX_FLANDRE} **Flandre:** *\"Vậy chúng ta trốn tìm nhé.\"*\n"
+            f"{EX_PLAYER} **{name}:** *…*\n\n"
+            "🎲 *Mini game sẽ roll 50/50 xem bạn là người TRỐN hay người TÌM!*"
+        ),
+        color=0x991B1B
+    )
+
+
+class ExFlanStartView(discord.ui.View):
+    def __init__(self, user):
+        super().__init__(timeout=300)
+        self.user = user
+
+    @discord.ui.button(label="🎮 Chơi trốn tìm!", style=discord.ButtonStyle.danger)
+    async def go(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+            return
+        self.stop()
+        await _ex_new_round(interaction, self.user)
+
+
+class ExDoorView(discord.ui.View):
+    def __init__(self, user):
+        super().__init__(timeout=300)
+        self.user = user
+
+    async def _guard(self, interaction):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+            return False
+        return True
+
+    @discord.ui.button(label="🤔 Lưỡng lự (có thể không bao giờ mở ra)", style=discord.ButtonStyle.secondary)
+    async def hesitate(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not await self._guard(interaction):
+            return
+        p = get_player(self.user.id, self.user.display_name)
+        st = _ex_state(p)
+        st["EX_choice"] = "hesitate"        # đóng mục này vĩnh viễn
+        save_player(p)
+        name = self.user.display_name
+        e = discord.Embed(
+            title=f"🕰️ {EX_STAGE_LABEL}: BÓNG DÁNG HẦU GÁI",
+            description=(
+                f"Bạn còn đang lưỡng lự trước cánh cửa thì bỗng một bóng dáng hiện ra sau lưng...\n\n"
+                f"{EX_SAKUYA} **Sakuya:** *\"Tôi vẫn nhớ cái vụ cậu hạ tôi đấy.\"*\n"
+                f"{EX_PLAYER} **{name}:** {EX_DUA}\n"
+                f"{EX_SAKUYA} *thở dài:* *\"Được rồi, đây không phải chỗ chơi, quay lại tiệc trà nào.\"*\n\n"
+                "🌸 **KẾT THÚC TOUHOU 6** — hãy đợi bản cập nhật tới!\n"
+                "*(Mục Extra Stage này đã được đóng lại.)*"
+            ),
+            color=0x60A5FA
+        )
+        e.set_thumbnail(url=CARDS_DATA[18]["image"])
+        await interaction.response.edit_message(embed=e, view=None)
+        self.stop()
+
+    @discord.ui.button(label="🔨 Giật mạnh ổ khóa", style=discord.ButtonStyle.danger)
+    async def yank(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not await self._guard(interaction):
+            return
+        p = get_player(self.user.id, self.user.display_name)
+        st = _ex_state(p)
+        st["EX_choice"] = "open"
+        if not st.get("EX_boss_level"):
+            st["EX_boss_level"] = p.get("level", 1)     # cấp Boss cố định lúc mở quest, không tăng thêm
+        save_player(p)
+        await interaction.response.edit_message(embed=_ex_flan_intro_embed(self.user.display_name),
+                                                view=ExFlanStartView(self.user))
+        self.stop()
+
+
+# ==============================================================================
+# NÚT KHAI MÀN BOSS + LIVE BATTLE FLANDRE
+# ==============================================================================
+def _ex_boss_prompt(user):
+    name = user.display_name
+    p = get_player(user.id, user.display_name)
+    st = _ex_state(p)
+    boss_lvl = st.get("EX_boss_level") or p.get("level", 1)
+    e = discord.Embed(
+        title=f"💥 {EX_STAGE_LABEL}: DANMAKU!!!",
+        description=(
+            f"{EX_FLANDRE} **Flandre:** *\"Vui quá, ta chơi trò tiếp đi!\"*\n"
+            f"{EX_PLAYER} **{name}:** *…*\n"
+            f"{EX_FLANDRE} **Flandre:** *\"DANMAKU!!!\"*\n\n"
+            "⚠️ **CẢNH BÁO:** Bấm nút bên dưới để khai màn trận Live Battle!"
+        ),
+        color=0xDC2626
+    )
+    e.set_thumbnail(url=CARDS_DATA[9]["image"])
+    e.add_field(
+        name="👺 Thông Số Boss Flandre Scarlet:",
+        value=(f"• Sức mạnh gốc: **{EX_BOSS_BASE_ATK:,} DMG** | Máu gốc: **{EX_BOSS_BASE_HP:,} HP**\n"
+               f"• Cấp độ Boss: **Lv.{boss_lvl}** (cố định, không tăng khi bạn lên cấp)\n"
+               f"• 🦇 **Ripples of 495 Years ({int(EX_RIPPLE_CHANCE * 100)}%):** xóa **{int(EX_RIPPLE_PCT * 100)}% máu hiện tại** thẻ tiền tuyến, **không giới hạn số lần**"),
+        inline=True
+    )
+    e.add_field(
+        name="🎁 Phần Thưởng Chiến Thắng:",
+        value=(f"• ✨ **×{EX_XP_MULT:g} XP** hiện tại\n• 🎴 **{EX_WIN_CARDS} Thẻ bài [#09] Flandre Scarlet**\n• 🔓 **Mở khóa Touhou 7**"),
+        inline=True
+    )
+    return e, ExBossStartView(user)
+
+
+class ExBossStartView(discord.ui.View):
+    def __init__(self, user):
+        super().__init__(timeout=300)
+        self.user = user
+
+    @discord.ui.button(label="💥 Nghênh Chiến Flandre Scarlet (Live Battle)", style=discord.ButtonStyle.danger)
+    async def fight(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+            return
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(content="🔥 **Trận chiến bắt đầu nghênh chiến Flandre Scarlet!**", view=self)
+        self.stop()
+        player = get_player(self.user.id, self.user.display_name)
+        await run_story_flandre_battle(interaction, self.user, player)
+
+
+async def run_story_flandre_battle(channel_or_interaction, user, player):
+    st = _ex_state(player)
+    boss_lvl = st.get("EX_boss_level") or player.get("level", 1)
+    B = {
+        "max_hp": EX_BOSS_BASE_HP + get_level_hp_buff(boss_lvl),
+        "power": EX_BOSS_BASE_ATK + get_level_atk_buff(boss_lvl),
+        "mind": 0, "molten": 0, "freeze": 0, "fate": 0, "ice": 0,
+        "erased": False, "stun": False
+    }
+    B["hp"] = B["max_hp"]
+    boss_img = CARDS_DATA[9]["image"]
+
+    team_cids = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
+    if len(team_cids) < 3:
+        owned = get_owned_card_ids(player)
+        owned.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
+        for cid in owned:
+            if cid not in team_cids:
+                team_cids.append(cid)
+            if len(team_cids) >= 3:
+                break
+        player["team"] = team_cids
+        save_player(player)
+
+    p_buff_pwr = get_level_atk_buff(player["level"])
+    p_buff_hp = get_level_hp_buff(player["level"])
+    player_cards = []
+    for cid in team_cids[:3]:
+        c = CARDS_DATA[cid]
+        is_ace = is_card_ace2(player, cid)
+        card_pwr = c["power"] + p_buff_pwr + (ACE_POWER_BUFF if is_ace else 0)
+        card_hp = c["hp"] + p_buff_hp + (ACE_HP_BUFF if is_ace else 0)
+        player_cards.append({
+            "cid": cid,
+            "name": f"[Ace 2 ⭐⭐] #{disp_id(c['id'])} {c['name']}" if is_ace else f"{format_card_id(c['id'])} {c['name']}",
+            "power": card_pwr, "max_hp": card_hp, "current_hp": card_hp, "is_ace2": is_ace
+        })
+    apply_sakuya_ace3_to_cards(player, player_cards)
+    B["team"] = player_cards
+    if not player_cards:
+        await _s3_send(channel_or_interaction, content="⚠️ Bạn chưa có thẻ bài nào để chiến đấu! Hãy dùng `/pull` trước.")
+        return
+
+    embed_init = discord.Embed(
+        title=f"⚔️ [LIVE BATTLE] {EX_STAGE_LABEL}: DANMAKU CÙNG FLANDRE SCARLET!",
+        description=(
+            f"👤 **Trợ thủ xuất trận:** {user.mention} (Lv.{player['level']})\n"
+            f"{EX_FLANDRE} **Boss:** **[#09] Flandre Scarlet (Ác Ma Cuồng Loạn)** (Lv.{boss_lvl})\n"
+            f"❤️ Máu Boss: `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**\n"
+            f"⚔️ Sức mạnh: **{B['power']:,} DMG**\n"
+            f"🦇 **Ripples of 495 Years ({int(EX_RIPPLE_CHANCE * 100)}%):** xóa {int(EX_RIPPLE_PCT * 100)}% máu hiện tại, không giới hạn số lần"
+        ),
+        color=0xDC2626
+    )
+    embed_init.set_thumbnail(url=boss_img)
+    msg = await _s3_send(channel_or_interaction, embed=embed_init)
+    await asyncio.sleep(2.0)
+
+    p_idx, rounds = 0, 0
+    while B["hp"] > 0 and p_idx < len(player_cards) and rounds < 40:
+        rounds += 1
+        pc = player_cards[p_idx]
+        fl = pc.setdefault("fl", {})
+        logs, turn_gif = [], None
+        B["stun"] = False
+        boss_frozen = False
+        o = {"gif": None, "invul": False, "pguard": False}
+
+        # --- hiệu ứng người chơi đặt lên Boss ---
+        boss_locked = B["fate"] > 0
+        if boss_locked:
+            B["fate"] -= 1
+            logs.append("⛓️ **[Fate loop]** Flandre bị khóa kỹ năng, không thể dùng Ripples trong hiệp này!")
+        if B["mind"] > 0:
+            B["mind"] -= 1
+            if _S4_rand.random() < 0.20:
+                B["hp"] = max(0, B["hp"] - B["power"])
+                logs.append(f"🌀 **[Red Eye Mind]** Flandre mất kiểm soát, tự gây **{B['power']:,} DMG**! (Còn {B['mind']} lượt)")
+        if B["molten"] > 0:
+            B["molten"] -= 1
+            burn = int(B["max_hp"] * 0.02)
+            B["hp"] = max(0, B["hp"] - burn)
+            logs.append(f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Flandre **{burn:,} DMG**! (Còn {B['molten']} lượt)")
+        if B["freeze"] > 0:
+            B["freeze"] -= 1
+            if _S4_rand.random() < 0.45:
+                boss_frozen = True
+                logs.append(f"❄️ **[Perfect Freeze]** Flandre bị đóng băng (45%), không thể phản công! (Còn {B['freeze']} lượt)")
+        if B["ice"] > 0:
+            B["ice"] -= 1
+            if not boss_frozen and _S4_rand.random() < 0.40:
+                boss_frozen = True
+                logs.append("❄️ **[Ice spear]** Giáo băng cầm chân Flandre (40%), không thể phản công!")
+
+        # --- lượt đánh của người chơi ---
+        if B["hp"] > 0 and pc["current_hp"] > 0:
+            n0 = len(logs)
+            dmg, o = story_s3_player_turn(pc, rounds, B, logs)
+            logs[n0:] = [_ex_fix(l) for l in logs[n0:]]
+            B["hp"] = max(0, B["hp"] - dmg)
+            turn_gif = o["gif"]
+            logs.append(f"🗡️ **{pc['name']}** tấn công gây **{dmg:,} DMG** lên Flandre!")
+
+        # --- Boss phản công ---
+        if B["hp"] <= 0:
+            logs.append("💥 **Flandre Scarlet đã bị đánh gục!**")
+        elif pc["current_hp"] <= 0:
+            pass
+        elif B["stun"]:
+            logs.append("❄️ Flandre bị STUN/bối rối, không thể phản công!")
+        elif boss_frozen:
+            logs.append("❄️ Flandre không thể phản công trong hiệp này!")
+        else:
+            cs = str(pc["cid"]).lower()
+            ace2 = bool(pc.get("is_ace2"))
+            ripple = (not boss_locked) and (not B["erased"]) and _S4_rand.random() < EX_RIPPLE_CHANCE
+            if ripple:
+                turn_gif = turn_gif or EVOL_CONFIG[9]["skill_gif"]
+                rip = int(pc["current_hp"] * EX_RIPPLE_PCT)
+                if cs == "t3" and pc.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
+                    ref = int(rip * 0.60)
+                    B["hp"] = max(0, B["hp"] - ref)
+                    logs.append(f"🛡️ **[Wonder Guard]** **{pc['name']}** chặn đứng **Ripples of 495 Years** và **PHẢN LẠI {ref:,} DMG (60%)** vào Flandre!")
+                else:
+                    pc["current_hp"] = max(0, pc["current_hp"] - rip)
+                    logs.append(f"🦇 **[Flandre Ace 2]** kích hoạt **Ripples of 495 Years** ({int(EX_RIPPLE_CHANCE * 100)}%)! Xóa sổ **{rip:,} HP ({int(EX_RIPPLE_PCT * 100)}% máu hiện tại)** của **{pc['name']}**!")
+
+            if (not ripple) or (not EX_RIPPLE_REPLACE_ATTACK):
+                boss_dmg = B["power"]
+                if pc["current_hp"] <= 0:
+                    pass
+                elif o["invul"]:
+                    logs.append(f"🛡️ **{pc['name']}** miễn nhiễm hoàn toàn đòn đánh của Flandre!")
+                elif pc["cid"] == 15 and ace2 and not fl.get("reimu") and _S4_rand.random() < 0.40:
+                    fl["reimu"] = True
+                    turn_gif = turn_gif or EVOL_CONFIG[15]["skill_gif"]
+                    logs.append("🛡️ **[Ace 2] [#17] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+                elif cs == "t1" and not ace2 and not fl.get("seal") and fl.get("used_turn") != rounds and _S4_rand.random() < 0.40:
+                    fl["seal"] = True
+                    fl["used_turn"] = rounds
+                    turn_gif = turn_gif or T1_SEAL_GIF
+                    logs.append("🛡️ **[Nhóm T] [#t1] Seiki** kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+                elif cs == "t3" and pc.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
+                    ref = int(boss_dmg * 0.60)
+                    B["hp"] = max(0, B["hp"] - ref)
+                    logs.append(f"🛡️ **[Ace 2] [#t3] Kizuna** duy trì **Wonder Guard**! Miễn thương và phản lại **{ref:,} DMG (60%)**!")
+                elif pc["cid"] == 4 and ace2 and _S4_rand.random() < 0.10:
+                    B["hp"] = max(0, B["hp"] - boss_dmg)
+                    logs.append(f"🌀 **[Ace 2] [#04] Yukari** kích hoạt **Invisible Gap** (10%)! Phản lại **{boss_dmg:,} DMG** vào Flandre!")
+                else:
+                    taken = boss_dmg
+                    if cs == "t2":
+                        taken = int(taken * (1.0 - min(0.90, fl.get("maho", 1) * 0.05)))
+                    if o["pguard"]:
+                        taken = int(taken * 0.85)
+                    eq_take_damage(pc, taken, logs)
+                    logs.append(f"🦇 **Flandre** tấn công gây **{taken:,} DMG** lên **{pc['name']}**!")
+
+        # --- Wonder Guard của Kizuna đếm lùi ---
+        t3s = pc.get("t3_state")
+        if t3s and t3s.get("wonder_guard_turns", 0) > 0:
+            t3s["wonder_guard_turns"] -= 1
+
+        # --- thẻ gục ---
+        if pc["current_hp"] <= 0:
+            pc["current_hp"] = 0
+            _rv, _rv_log = sakuya3_try_revive(player_cards, p_idx)
+            if _rv_log:
+                logs.append(_rv_log)
+            if _rv:
+                turn_gif = SAKUYA3_PASSIVE_GIF
+            else:
+                p_idx += 1
+                if p_idx < len(player_cards):
+                    logs.append(f"💀 Đẩy **{player_cards[p_idx]['name']}** lên tiền tuyến!")
+
+        r_embed = discord.Embed(
+            title=f"⚔️ HIỆP {rounds} - QUYẾT ĐẤU FLANDRE ({EX_STAGE_LABEL})",
+            description=(f"❤️ Máu Flandre: `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**\n\n" + "\n".join(logs))[:4000],
+            color=0xDC2626 if B["hp"] > 0 else 0x10B981
+        )
+        if turn_gif:
+            r_embed.set_image(url=turn_gif)
+        else:
+            r_embed.set_thumbnail(url=boss_img)
+        try:
+            await msg.edit(embed=r_embed)
+        except Exception:
+            pass
+        if B["hp"] <= 0:
+            break
+        await asyncio.sleep(2.5)
+
+    # ---------------- KẾT QUẢ ----------------
+    if B["hp"] <= 0:
+        inv = player.setdefault("inventory", {})
+        inv["9"] = inv.get("9", 0) + EX_WIN_CARDS
+        if 9 not in player.get("unlocked_cards", []):
+            player.setdefault("unlocked_cards", []).append(9)
+        if EX_WIN_TICKETS > 0:
+            player["pull_tickets"] += EX_WIN_TICKETS
+        old_lvl = player.get("level", 1)
+        gain, xp_in, needed = _S4_grant_xp(player, EX_XP_MULT)
+        st["EX_completed"] = True
+        st["touhou7_unlocked"] = True
+        save_player(player)
+        new_lvl = calculate_level_from_xp(player["xp"], player.get("prestige", 0))
+        lvl_txt = f"\n🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+        name = user.display_name
+        embed_win = discord.Embed(
+            title=f"🎉 CHIẾN THẮNG {EX_STAGE_LABEL}: FLANDRE SCARLET!",
+            description=(
+                f"{EX_FLANDRE} *thở dốc:* *\"He... he... cậu... cậu thú vị ghê.\"*\n"
+                f"{EX_FLANDRE} *(hít thật sâu)* *\"Tớ có thể cùng chơi với cậu lần sau được không?\"*\n"
+                f"{EX_PLAYER} **{name}** *lắc đầu:* *..*\n"
+                f"{EX_FLANDRE} *gần khóc:* *\"Nhưng mà...\"*\n"
+                f"{EX_PLAYER} **{name}:** *…* *(xoa đầu)* *\"....Được rồi, tôi đồng ý..\"*\n"
+                f"{EX_FLANDRE} **Flandre:** *\"Ơ, cậu vừa nói chuyện đấy à?\"*\n\n"
+                "🎁 **PHẦN THƯỞNG STORY:**\n"
+                f"• ✨ **+{gain:,} XP** (×{EX_XP_MULT:g} XP cấp hiện tại [{xp_in:,}/{needed:,}]){lvl_txt}\n"
+                f"• 🎴 **+{EX_WIN_CARDS} Thẻ bài [#09] Flandre Scarlet** (Hiện có: `{inv['9']}` lá)\n"
+                + (f"• 🎟️ **+{EX_WIN_TICKETS:.0f} Vé Pull**\n" if EX_WIN_TICKETS > 0 else "")
+                + "• 🔓 **Mở khóa TOUHOU 7 (sắp tới)!**"
+            ),
+            color=0x10B981
+        )
+        embed_win.set_image(url=EVOL_CONFIG[9]["evol_gif"])
+        embed_win.set_footer(text=f"{EX_STAGE_LABEL} Completed • Touhou 7 đã được mở khóa")
+        try:
+            await msg.edit(embed=embed_win)
+        except Exception:
+            pass
+    else:
+        embed_loss = discord.Embed(
+            title=f"💀 THẤT BẠI TẠI {EX_STAGE_LABEL}!",
+            description=(
+                f"Đội hình của {user.mention} đã bị Flandre phá hủy!\n"
+                f"Flandre còn lại: **{B['hp']:,}/{B['max_hp']:,} HP**\n\n"
+                "💡 *Hãy nâng cấp thẻ bài, xếp lại đội hình qua `/team` rồi gõ `/story` để đấu lại (không cần chơi lại trốn tìm)!*"
+            ),
+            color=0xEF4444
+        )
+        embed_loss.set_thumbnail(url=boss_img)
+        try:
+            await msg.edit(embed=embed_loss)
+        except Exception:
+            pass
+
+
+# ==============================================================================
+# BỘ ĐIỀU HƯỚNG EXTRA STAGE
+# ==============================================================================
+async def handle_story_extra(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    st = _ex_state(player)
+    name = user.display_name
+
+    # ----- Đã chọn "Lưỡng lự": mục này đã đóng -----
+    if st["EX_choice"] == "hesitate":
+        e = discord.Embed(
+            title="🌸 TOUHOU 6 ĐÃ KẾT THÚC",
+            description=("Bạn đã quay lại tiệc trà cùng mọi người.\n\n"
+                         "✅ Toàn bộ cốt truyện Touhou 6 đã hoàn tất — **hãy đợi bản cập nhật tới!**"),
+            color=0x60A5FA
+        )
+        e.set_thumbnail(url=CARDS_DATA[12]["image"])
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    # ----- Đã hoàn thành Extra Stage -----
+    if st["EX_completed"]:
+        e = discord.Embed(
+            title=f"🏆 BẠN ĐÃ HOÀN THÀNH {EX_STAGE_LABEL}!",
+            description=(f"{EX_FLANDRE} Flandre đã trở thành bạn chơi của bạn.\n\n"
+                         f"✅ Đã nhận **{EX_WIN_CARDS} thẻ Flandre** và XP.\n"
+                         "🔓 **Touhou 7 đã được mở khóa — hãy chờ bản cập nhật kế tiếp!**"),
+            color=0x10B981
+        )
+        e.set_thumbnail(url=CARDS_DATA[9]["image"])
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    # ----- BƯỚC 1: mở đầu - tiệc trà -----
+    if not st["EX_intro_seen"]:
+        st["EX_intro_seen"] = True
+        st["EX_loot_done"] = 0
+        save_player(player)
+        e = discord.Embed(
+            title=f"🍵 {EX_STAGE_LABEL} (TÙY CHỌN): TIỆC TRÀ Ở HỒNG MA QUÁN",
+            description=(
+                f"Sau một thời gian, {EX_PLAYER} **{name}** quyết định đến Hồng Ma Quán để thưởng trà cùng {EX_REIMU} **Reimu**.\n\n"
+                f"Trong lúc các quý cô đang tám chuyện rôm rả, **{name}** quyết định đi dạo một vòng quanh dinh thự...\n\n"
+                f"🎯 **Nhiệm vụ:** Nhặt đồ `/loot` **{EX_REQ_LOOT} lần** {EX_MARISA} *(Marisa đã dạy bạn điều đó)*\n"
+                "💡 *Làm xong gõ lại `/story` để tiếp tục. Đây là chương tùy chọn!*"
+            ),
+            color=0xF59E0B
+        )
+        e.set_thumbnail(url=CARDS_DATA[12]["image"])
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    # ----- BƯỚC 2: nhiệm vụ /loot -----
+    if st["EX_loot_done"] < EX_REQ_LOOT:
+        e = discord.Embed(
+            title=f"🎒 {EX_STAGE_LABEL}: ĐI DẠO QUANH DINH THỰ",
+            description=(
+                f"{EX_MARISA} *\"Cứ nhặt cái gì rơi dưới đất, kiểu gì chả có ích!\"*\n\n"
+                f"• 🎒 **Nhặt đồ `/loot`:** `{st['EX_loot_done']}/{EX_REQ_LOOT}` lần\n\n"
+                "💡 *Đủ rồi gõ lại `/story` để tiếp tục!*"
+            ),
+            color=0xB91C1C
+        )
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    # ----- BƯỚC 3: cánh cửa có ổ khóa -----
+    if not st["EX_choice"]:
+        e = discord.Embed(
+            title=f"🚪 {EX_STAGE_LABEL}: CÁNH CỬA CÓ Ổ KHÓA",
+            description=(
+                f"Không biết đã đi bao lâu, có vẻ **{name}** đã lạc đến trước một **cánh cửa có ổ khóa**...\n\n"
+                "❓ **Bạn sẽ làm gì?**\n"
+                "• 🤔 **Lưỡng lự** *(có thể không bao giờ mở ra — chọn cái này sẽ đóng mục Extra Stage vĩnh viễn)*\n"
+                "• 🔨 **Giật mạnh ổ khóa** *(không hiểu sao nhưng có vẻ bạn rất thích phá phách)*"
+            ),
+            color=0x991B1B
+        )
+        await _s3_send(ctx_or_interaction, embed=e, view=ExDoorView(user))
+        return
+
+    # ----- BƯỚC 4: đã mở cửa, chưa xong trốn tìm -----
+    if not st["EX_game_passed"]:
+        await _s3_send(ctx_or_interaction, embed=_ex_flan_intro_embed(name), view=ExFlanStartView(user))
+        return
+
+    # ----- BƯỚC 5: đã xong trốn tìm, đánh Boss -----
+    emb, view = _ex_boss_prompt(user)
+    await _s3_send(ctx_or_interaction, embed=emb, view=view)
+
+
+# ==============================================================================
+# NỐI VÀO HỆ THỐNG: Stage 6 xong -> /story chuyển sang Extra Stage
+# ==============================================================================
+_EX_PREV_STAGE6 = handle_story_stage6
+async def handle_story_stage6(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    st = player.get("story", {}) or {}
+    if st.get("S6_completed"):
+        await handle_story_extra(ctx_or_interaction)
+        return
+    await _EX_PREV_STAGE6(ctx_or_interaction)
+
+# ===================== HẾT KHỐI EXTRA STAGE =====================
+# ==============================================================================
 # [UPDATE] BOSS SCALING THEO LV CAO NHẤT • SALE CUỐI TUẦN • HẰNG SỐ MỚI
 # ==============================================================================
 import copy as _nb2_copy
