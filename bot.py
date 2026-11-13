@@ -9437,7 +9437,7 @@ async def handle_collection(ctx_or_interaction):
             cmds = "\n".join(f"• `/team add id_the:{disp_id(c)}` → **{CARDS_DATA[c]['name']}**" for c in suggest[:3])
             embed.add_field(
                 name="⛩️ BƯỚC TIẾP THEO - XẾP ĐỘI HÌNH:",
-                value=(f"🔔 {user.mention} **Reimu:** *\"Nhìn ID của họ rồi `/team add` đủ 3 lần nhé\"*\n"
+                value=(f"🔔 {user.mention} **Reimu:** *\"Nhìn ID của họ rồi `/team hanh_dong:add id_the:<ID>` đủ 3 lần nhé\"*\n"
                        f"📌 **Gõ lần lượt 3 lệnh sau:**\n{cmds}\n"
                        f"*(Số sau `id_the:` chính là ID `#..` hiển thị trong danh sách trên)*"),
                 inline=False
@@ -9901,7 +9901,7 @@ async def handle_tutorial(ctx_or_interaction):
         curr_step = tut.get("step", "collection")
         step_hints = {
             "collection": "Bạn đã nhận 3 lá tân thủ rồi! Hãy dùng `/collection` để xem bài.",
-            "team": f"Bạn đã mở khóa bộ sưu tập! Hãy dùng `/team add <id>` để xếp đủ 3 thẻ (Hiện có {len(player.get('team', []))}/3 thẻ).",
+            "team": f"Bạn đã mở khóa bộ sưu tập! Hãy dùng `/team hanh_dong:add id_the:<ID>` để xếp đủ 3 thẻ (Hiện có {len(player.get('team', []))}/3 thẻ).",
             "battle": "Đội hình đã sẵn sàng! Hãy dùng `/battle` tham gia trận chiến đầu tiên để hoàn tất nhiệm vụ và nhận 10 Vé Pull!"
         }
         hint = step_hints.get(curr_step, "Hãy tiếp tục hoàn tất nhiệm vụ tân thủ!")
@@ -10552,7 +10552,7 @@ async def handle_battle(ctx_or_interaction):
     player["team"] = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
 
     if not player.get("team"):
-        msg = "⚠️ Đội hình của bạn đang trống hoặc các thẻ đang bị khóa! Dùng `/team add id_the:<ID>` để xếp thẻ."
+        msg = "⚠️ Đội hình của bạn đang trống hoặc các thẻ đang bị khóa! Dùng `/team hanh_dong:add id_the:"
         if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else: await ctx_or_interaction.send(msg)
         return
@@ -10629,9 +10629,13 @@ async def handle_battle(ctx_or_interaction):
                 "image": c.get("image", "")
             })
 
+    _newbie = player.get("prestige", 0) <= NEWBIE_PRESTIGE_MAX
+    _orig_opp = _nb2_copy.deepcopy(opp_cards) if _newbie else None
     opp_cards = npc_inject_t_and_gear(opp_cards, o_buff_pwr, o_buff_hp)
-    # [UPDATE] 25% gặp đội hình của người chơi khác
-    if random.random() < 0.25:
+    if _newbie and random.random() >= NEWBIE_NPC_SPECIAL_KEEP:
+        opp_cards = _orig_opp          # newbie: bỏ phần lớn các lần NPC có thẻ T / trang bị / Ace 2 mới
+    # [UPDATE] 25% gặp đội hình của người chơi khác (newbie chỉ 5%)
+    if random.random() < (NEWBIE_PVP_TEAM_CHANCE if _newbie else 0.25):
         try:
             _cands = await asyncio.to_thread(get_all_opponents, user.id)
         except Exception:
@@ -19409,7 +19413,7 @@ async def handle_shop(ctx_or_interaction):
     embed = discord.Embed(
         title="🧙‍♀️ KIRISAME MAGIC SHOP",
         description=(
-            "🌟 **Marisa:** *\"My My, mua chút gì đi\"*\n\n"
+            "🌟 **Marisa:** *\"My My, mua chút gì đi\"*\n\n" + shop_sale_banner() +
             f"{XU_EMOJI} **Số dư:** **{player.get('xu', 0):,}** {XU_NAME}\n"
             f"📦 **Kho chứa:** {get_storage_used(player)}/{get_storage_cap(player)} slot\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n*Bấm nút ⋯ bên dưới để mua (tối đa 25/lần)*"
@@ -24090,7 +24094,7 @@ import random as _nb_rand   # random chuẩn (tránh proxy Liềm)
 
 RANK_PER_PAGE = 10
 RANK_MAX_PLAYERS = 200
-LOOT_COOLDOWN = 10 * 60          # 10 phút
+LOOT_COOLDOWN = 5 * 60          # 5 phút
 NB_GEAR_PRICE = 25000            # giá Katana / Chain Armor trong /shop
 KATANA_ID, KATANA_ATK = "katana", 50
 CHAIN_ID, CHAIN_HP = "chain_armor", 100
@@ -24384,7 +24388,7 @@ async def handle_loot(ctx_or_interaction):
     )
     if _lq:
         embed.add_field(name="📜 Nhiệm Vụ Ngày:", value="\n".join(_lq), inline=False)
-    embed.set_footer(text="Hồi chiêu /loot: 10 phút • Dùng /cooldown để xem thời gian hồi")
+    embed.set_footer(text="Hồi chiêu /loot: 5 phút • Dùng /cooldown để xem thời gian hồi")
     await _eq_send(ctx_or_interaction, embed=embed)
 
 @bot.tree.command(name="loot", description="Đi nhặt đồ: crystal, vé pull, xu (hồi chiêu 10 phút)")
@@ -24423,7 +24427,7 @@ async def handle_cooldown(ctx_or_interaction):
             f"⚔️ **/raid** *(mở hoặc tham gia đều tính hồi 15 phút)*\n   └ {_nb_cd_text(raid_rem)}\n\n"
             f"🎁 **/daily** *(reset 00:00 giờ VN)*\n   └ " + ("✅ **Sẵn sàng!**" if daily_rem <= 0 else f"✔️ Đã nhận hôm nay • reset sau {_nb_cd_text(daily_rem)}") + "\n\n"
             f"🎃 **/event raid** *(hồi 1 tiếng)*\n   └ {_nb_cd_text(ev_rem)}{ev_note}\n\n"
-            f"🎒 **/loot** *(hồi 10 phút)*\n   └ {_nb_cd_text(loot_rem)}"
+            f"🎒 **/loot** *(hồi 5 phút)*\n   └ {_nb_cd_text(loot_rem)}"
         ),
         color=0x3B82F6
     )
@@ -24447,7 +24451,7 @@ async def send_help_paged(ctx_or_interaction, embed):
             value=(
                 "• `/rank` : Bảng xếp hạng cấp độ & prestige.\n"
                 "• `/coinrank` : Bảng xếp hạng Xu công đức.\n"
-                "• `/loot` : Nhặt đồ (crystal, vé, xu) • hồi 10 phút.\n"
+                "• `/loot` : Nhặt đồ (crystal, vé, xu) • hồi 5 phút.\n"
                 "• `/cooldown` : Xem hồi chiêu /raid, /daily, /event raid, /loot.\n"
                 "• `/defend` : Mặc giáp (Giáp Gaia / Chain Armor).\n"
                 "• `/shop` : Có thêm Katana (+50 ATK) & Chain Armor (+100 HP) giá 25k xu."
@@ -27197,6 +27201,7 @@ class PrestigeConfirmView(discord.ui.View):
         player["xp"] = new_xp
         player["pull_tickets"] = float(p_info["pulls"])
         player["tokens"] = player.get("tokens", 0) + p_info["tokens"]
+        player["xu"] = player.get("xu", 0) + PRESTIGE_XU_REWARD
         save_player(player)
         final_lvl = calculate_level_from_xp(new_xp, new_p)
 
@@ -27213,7 +27218,7 @@ class PrestigeConfirmView(discord.ui.View):
                 f"{lvl_line}\n"
                 f"🔓 **Cấp tối đa:** **Lv.{get_max_level(new_p)}**\n"
                 f"🎟️ **Làm mới kho Pull:** Thu hồi {old_tickets:.1f} vé cũ ➔ Cấp mới **+{int(p_info['pulls'])} Vé Pull**!\n"
-                f"💎 **Thưởng Tokens:** **+{p_info['tokens']} Tokens** (Tổng kho: `{player['tokens']:,}` tokens)\n"
+                f"🪙 **Thưởng Xu:** **+{PRESTIGE_XU_REWARD:,} Xu công đức** (Tổng: `{player['xu']:,}`)\n"
                 f"⚡ **Đặc quyền:** **x{p_info['xp_mult']:g} XP Bonus** vĩnh viễn!"
                 + (f"\n🏋️ **Mở khóa lệnh `/train`** (Prestige {TRAIN_REQ_PRESTIGE}+)!" if new_p >= TRAIN_REQ_PRESTIGE else "")
             ),
@@ -27260,7 +27265,7 @@ async def handle_prestige(ctx_or_interaction):
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
             f"🌟 **MỤC TIÊU TIẾP THEO: PRESTIGE {p_info['next_p']}**\n"
             f"• 🎯 **Yêu cầu:** Đạt tối thiểu **Cấp {p_info['req_lvl']}**\n"
-            f"• 🎁 **Phần thưởng:** **+{int(p_info['pulls'])} Vé Pull** 🎟️ & **+{p_info['tokens']} Tokens** 💎\n"
+            f"• 🎁 **Phần thưởng:** **+{int(p_info['pulls'])} Vé Pull** 🎟️ & **+{p_info['tokens']} Tokens** 💎& **+50,000 Xu** \n"
             f"• 🔓 **Cấp tối đa mới:** **Lv.{get_max_level(p_info['next_p'])}**\n"
             f"• ⚡ **Hệ số XP:** **x{p_info['xp_mult']:g} XP**\n"
             f"{warn}\n"
@@ -27432,15 +27437,18 @@ _TRAIN_NO_DROP = contextvars.ContextVar("train_no_drop", default=None)
 active_train = None
 
 # --- 4.1 Cộng chỉ số theo cấp train vào MỌI config Boss (kể cả Phase 2 & Boss event) ---
+_BOSS_LVL = contextvars.ContextVar("boss_lvl", default=0)
+
 def _train_cfg_getitem(self, key):
     v = dict.__getitem__(self, key)
     if key in ("hp", "power") and isinstance(v, (int, float)) and not isinstance(v, bool):
-        f = _BOSS_SCALE.get()
-        if f != 1.0:
-            v = int(v * f)
+        v = int(v)
+        lv = _BOSS_LVL.get()
+        if lv > 0:
+            v += get_level_hp_buff(lv) if key == "hp" else get_level_atk_buff(lv)
         t = _TRAIN_LVL.get()
         if t > 0:
-            v = int(v) + t * (TRAIN_HP_PER_LV if key == "hp" else TRAIN_ATK_PER_LV)
+            v += t * (TRAIN_HP_PER_LV if key == "hp" else TRAIN_ATK_PER_LV)
     return v
 _ScaledBossCfg.__getitem__ = _train_cfg_getitem
 
@@ -27847,7 +27855,7 @@ async def handle_cooldown(ctx_or_interaction):
             f"⚔️ **/raid** *(mở hoặc tham gia đều tính hồi 15 phút)*\n   └ {_nb_cd_text(raid_rem)}\n\n"
             f"🎁 **/daily** *(reset 00:00 giờ VN)*\n   └ " + ("✅ **Sẵn sàng!**" if daily_rem <= 0 else f"✔️ Đã nhận hôm nay • reset sau {_nb_cd_text(daily_rem)}") + "\n\n"
             f"🎃 **/event raid** *(hồi 1 tiếng)*\n   └ {_nb_cd_text(ev_rem)}{ev_note}\n\n"
-            f"🎒 **/loot** *(hồi 10 phút)*\n   └ {_nb_cd_text(loot_rem)}\n\n"
+            f"🎒 **/loot** *(hồi 5 phút)*\n   └ {_nb_cd_text(loot_rem)}\n\n"
             f"🏋️ **/train** *(hồi 5 phút • Prestige {TRAIN_REQ_PRESTIGE}+)*\n   └ {train_txt}"
         ),
         color=0x3B82F6
@@ -32360,6 +32368,110 @@ async def handle_story_stage5(ctx_or_interaction):
     await _S6_PREV_STAGE5(ctx_or_interaction)
 
 # ===================== HẾT KHỐI STORY STAGE 6 =====================
+# ==============================================================================
+# [UPDATE] BOSS SCALING THEO LV CAO NHẤT • SALE CUỐI TUẦN • HẰNG SỐ MỚI
+# ==============================================================================
+import copy as _nb2_copy
+
+# ---------------- HẰNG SỐ (chỉnh ở đây) ----------------
+NEWBIE_PRESTIGE_MAX = 1            # prestige <= số này được coi là newbie (đổi thành 0 nếu chỉ muốn P0)
+NEWBIE_NPC_SPECIAL_KEEP = 0.25     # newbie chỉ giữ lại 25% các lần NPC xuất hiện thẻ T / trang bị / Ace 2 mới
+NEWBIE_PVP_TEAM_CHANCE = 0.05      # newbie gặp đội hình người chơi khác: 5% (bản thường là 25%)
+PRESTIGE_XU_REWARD = 50000         # thưởng Xu mỗi lần Prestige (không cộng dồn)
+SALE_WEEKDAY = 6                   # 0=Thứ 2 ... 6=Chủ nhật
+SALE_PCT = 0.25                    # giảm 25%
+
+# ---------------- 1. BOSS SCALING MỚI: THEO LV CAO NHẤT ----------------
+def boss_scale_factor(n_players: int) -> float:
+    return 1.0      # tắt hoàn toàn cơ chế cũ (nhân % theo số người)
+
+def _bs_top_level(raid_data) -> int:
+    best = 0
+    for uid in (raid_data.get("participants") or []):
+        try:
+            best = max(best, int(get_player(uid).get("level", 1)))
+        except Exception as e:
+            print(f"[LV-SCALE] lỗi đọc level: {e}", flush=True)
+    return best
+
+def _lv_notice_embed(raid_data, lv):
+    cfg = raid_data.get("boss_config") or {}
+    try:
+        name = cfg.get("name", "Boss")
+    except Exception:
+        name = "Boss"
+    return discord.Embed(
+        title="📈 BOSS SCALING - BOSS MẠNH LÊN THEO NGƯỜI CHƠI CAO CẤP NHẤT!",
+        description=(
+            f"👑 Dũng giả cấp cao nhất: **Lv.{lv}**\n"
+            f"🔺 **{name}** nhận buff cấp như người chơi: **+{get_level_hp_buff(lv):,} HP** & **+{get_level_atk_buff(lv):,} ATK** "
+            f"*(+45 HP / +15 ATK mỗi cấp)*!"
+        ),
+        color=0xF97316
+    )
+
+_LV_PREV_EXECUTE_RAID = execute_raid
+async def execute_raid(channel, raid_data):
+    lv = _bs_top_level(raid_data)
+    tok = _BOSS_LVL.set(lv)
+    try:
+        if lv > 1:
+            try:
+                await channel.send(embed=_lv_notice_embed(raid_data, lv))
+            except Exception:
+                pass
+        return await _LV_PREV_EXECUTE_RAID(channel, raid_data)
+    finally:
+        _BOSS_LVL.reset(tok)
+
+_LV_PREV_EXECUTE_PRIME = execute_prime_raid
+async def execute_prime_raid(channel, raid_data):
+    lv = _bs_top_level(raid_data)
+    tok = _BOSS_LVL.set(lv)
+    try:
+        if lv > 1:
+            try:
+                await channel.send(embed=_lv_notice_embed(raid_data, lv))
+            except Exception:
+                pass
+        return await _LV_PREV_EXECUTE_PRIME(channel, raid_data)
+    finally:
+        _BOSS_LVL.reset(tok)
+
+# ---------------- 2. SALE CUỐI TUẦN (CHỦ NHẬT, GIỜ VN) ----------------
+_SALE_BASE = {
+    "POTION_PRICE": POTION_PRICE, "S_CARD_PRICE": S_CARD_PRICE, "QUA_LO_PRICE": QUA_LO_PRICE,
+    "ALLY_CRYSTAL_PRICE": ALLY_CRYSTAL_PRICE, "NB_GEAR_PRICE": NB_GEAR_PRICE,
+}
+_SALE_BASE_STORAGE = list(STORAGE_SHOP_PRICES)
+
+def is_weekend_sale() -> bool:
+    return datetime.now(VN_TZ).weekday() == SALE_WEEKDAY
+
+def apply_weekend_sale():
+    m = (1.0 - SALE_PCT) if is_weekend_sale() else 1.0
+    g = globals()
+    for k, v in _SALE_BASE.items():
+        g[k] = int(round(v * m))
+    STORAGE_SHOP_PRICES[:] = [int(round(p * m)) for p in _SALE_BASE_STORAGE]
+
+def shop_sale_banner() -> str:
+    if is_weekend_sale():
+        return f"🔥 **SALE CHỦ NHẬT: GIẢM {int(SALE_PCT * 100)}% TOÀN BỘ GIÁ TRONG SHOP!** 🔥\n\n"
+    return ""
+
+apply_weekend_sale()
+
+_SALE_PREV_SHOP = handle_shop
+async def handle_shop(ctx_or_interaction):
+    apply_weekend_sale()
+    return await _SALE_PREV_SHOP(ctx_or_interaction)
+
+_SALE_PREV_IC = ShopView.interaction_check
+async def _sale_interaction_check(self, interaction: discord.Interaction) -> bool:
+    apply_weekend_sale()          # mọi nút bấm trong shop đều cập nhật giá theo ngày hiện tại
+    return await _SALE_PREV_IC(self, interaction)
+ShopView.interaction_check = _sale_interaction_check
 
 import sys
 
