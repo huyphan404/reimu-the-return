@@ -574,16 +574,19 @@ CARDS_DATA[30] = {"id": 30, "name": "Ran Yakumo", "rank": "A", "power": 500, "hp
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1561206602969653359/bd76c07b0bb24fa08c57ea82d0fb3b8c.png?ex=6ad58273&is=6ad430f3&hm=adf5afaf6da00301556bc01f59252680cca6fd7df74b820780c9b055795e2d45&=&format=webp&quality=lossless"}
 CARDS_DATA[31] = {"id": 31, "name": "Nitori Kawashiro", "rank": "B", "power": 320, "hp": 2900,
     "image": "https://media.discordapp.net/attachments/1543072032034521228/1561207439678906448/5ddda85da944e1d1d4fc5cb144bef07a.png?ex=6ad5833b&is=6ad431bb&hm=17c90d75ce2f220f440e5b34129ca25d855da9b6d86b0d73cd60b09dbca8f629&=&format=webp&quality=lossless&width=363&height=512"}
-
+CARDS_DATA[32] = {"id": 32, "name": "Letty Whiterock", "rank": "B", "power": 350, "hp": 3150,
+    "image": "https://raw.githubusercontent.com/huyphan404/reimu-the-return/main/32.jpg"}
 # ===== BẢNG ID: nội bộ (key trong CARDS_DATA / kho đồ / đội hình)  ->  ID hiển thị =====
 CARD_DISPLAY_ID = {i: i for i in range(1, 15)}            # #1-#14 giữ nguyên
 CARD_DISPLAY_ID.update({
     15: 17, 16: 18, 17: 19, 18: 20, 19: 21, 20: 22, 21: 23,   # Reimu ... Reisen
     22: 25, 23: 26, 24: 27, 25: 28, 26: 29, 27: 30, 28: 31,   # Patchouli ... Tewi
-    29: 15, 30: 16, 31: 24                                    # Satori, Ran, Nitori
+    29: 15, 30: 16, 31: 24, 32: 32                            # Satori, Ran, Nitori, Letty
 })
 DISPLAY_TO_INTERNAL = {v: k for k, v in CARD_DISPLAY_ID.items()}
 CARD_ORDER = [DISPLAY_TO_INTERNAL[d] for d in sorted(DISPLAY_TO_INTERNAL)]   # thứ tự hiển thị
+CARD_ORDER.remove(32)                           # đưa Letty khỏi cuối danh sách
+CARD_ORDER.insert(CARD_ORDER.index(22) + 1, 32)  # xếp ngay sau #25 Patchouli (nội bộ 22)
 TOTAL_STD_CARDS = len(CARD_ORDER)
 # ===== Thay link ảnh Discord (hết hạn) bằng link raw GitHub (vĩnh viễn) =====
 IMG_VER = "2"   # đổi số này mỗi lần thay ảnh để Discord tải lại
@@ -1332,6 +1335,7 @@ CHARACTER_DETAILS["T1"] = CHARACTER_DETAILS["t1"]
 CHARACTER_DETAILS[29] = {"title": "Chủ Nhân Điện Địa Linh (Master of the Palace of the Earth Spirits)", "skill_name": "Hồi Ức Kinh Hoàng (Terrible Souvenir)", "skill_desc": "Sử dụng con mắt thứ ba để đọc thấu tâm can, khơi gợi và vật chất hóa những vết thương tâm lý sâu kín nhất của đối thủ, biến chính nỗi sợ hãi tột cùng thành đòn phản phệ chí mạng (520 ATK / 4,200 HP)."}
 CHARACTER_DETAILS[30] = {"title": "Thức Thần Của Ranh Giới (Shikigami of the Gap Youkai)", "skill_name": "Thức Thần Trận Pháp: Cửu Vĩ Thấu Toán", "skill_desc": "Cửu Vĩ Đại Yêu Hồ sở hữu trí tuệ tính toán vượt xa máy tính lượng tử, vận hành trận đồ ma pháp thức thần hoàn hảo, vừa tạo lá chắn bảo vệ vững chãi vừa phản công dồn dập (500 ATK / 5,200 HP)."}
 CHARACTER_DETAILS[31] = {"title": "Thiên Tài Kỹ Thuật Thủy Quái (Super Youkai Warhead)", "skill_name": "Thủy Lực Pháo & Ngụy Trang Quang Học", "skill_desc": "Kappa thiên tài mang ba lô tiện ích đa năng, sử dụng súng áp lực nước kết hợp thiết bị quang học khúc xạ ánh sáng để ẩn thân bắn tỉa và gây nhiễu loạn chiến trường (320 ATK / 2,900 HP)."}
+CHARACTER_DETAILS[32] = {"title": "Yêu Quái Băng Tuyết Mùa Đông", "skill_name": "Bão Tuyết Cuối Đông", "skill_desc": "Yêu quái mùa đông của Gensokyo, thao túng không khí lạnh giá và những cơn bão tuyết thấu xương, đóng băng mọi sinh vật trên đường đi (350 ATK / 3,150 HP)."}
 CHARACTER_DETAILS["T2"] = CHARACTER_DETAILS["t2"]
 CHARACTER_DETAILS["t4"] = {
     "title": "Khuôn Mẫu Của Số Phận (Nhóm T-Đặc Biệt)",
@@ -1675,7 +1679,7 @@ CARD_ALIASES = {
     "kizuna": "t3", "t3": "t3", "vampire": "t3", "emperor": "t3",
     "fateria": "t4", "t4": "t4", "khuonmau": "t4", "sophan": "t4",
     "jotaro": "t5", "t5": "t5", "kujo": "t5", "jotarokujo": "t5", "starplatinum": "t5",     
-    "kanae": "t6", "t6": "t6", "wasuko": "t6", "kanaewasuko": "t6", "anhdao": "t6", "satori": 29, "ran": 30, "nitori": 31, "kawashiro": 31, "kappa": 31
+    "kanae": "t6", "t6": "t6", "wasuko": "t6", "kanaewasuko": "t6", "anhdao": "t6", "satori": 29, "ran": 30, "nitori": 31, "kawashiro": 31, "kappa": 31, "letty": 32, "whiterock": 32
 }
 def normalize_card_id(raw_id):
     if raw_id is None:
