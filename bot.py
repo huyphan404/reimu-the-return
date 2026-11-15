@@ -589,7 +589,7 @@ CARD_ORDER.remove(32)                           # đưa Letty khỏi cuối danh
 CARD_ORDER.insert(CARD_ORDER.index(22) + 1, 32)  # xếp ngay sau #25 Patchouli (nội bộ 22)
 TOTAL_STD_CARDS = len(CARD_ORDER)
 # ===== Thay link ảnh Discord (hết hạn) bằng link raw GitHub (vĩnh viễn) =====
-IMG_VER = "2"   # đổi số này mỗi lần thay ảnh để Discord tải lại
+IMG_VER = "3"   # đổi số này mỗi lần thay ảnh để Discord tải lại
 GITHUB_RAW_BASE = "https://raw.githubusercontent.com/huyphan404/reimu-the-return/main"
 for _internal_id, _disp in CARD_DISPLAY_ID.items():
     if _internal_id in CARDS_DATA:
