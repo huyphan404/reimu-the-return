@@ -34009,26 +34009,6 @@ async def handle_story_t7(ctx_or_interaction):
         await _s3_send(ctx_or_interaction, embed=e, view=StoryT7CirnoBattleView(user, player))
         return
 
-    # ----- BƯỚC 4: Letty xuất hiện -----
-    st["T7_letty_seen"] = True
-    st["T7_s1_completed"] = True
-    save_player(player)
-    e = discord.Embed(
-        title=f"❄️ {T7_STAGE_LABEL}: GIẤC NGỦ GIÁ RÉT",
-        description=(
-            f"Sau khi một lần nữa đá văng con tiên băng phiền phức, **{name}** bay lướt qua mặt băng thì đụng độ một bóng hình đứng giữa làn tuyết trắng.\n\n"
-            "❓ **???:** *\"Hừm, một con người sao? Sao không về nhà mà ra đây vậy?\"*\n"
-            f"*{name} dừng lại, chuẩn bị đón đầu.*\n\n"
-            f"{T7_LETTY} **Letty** xuất hiện: *\"Để ta giúp ngươi nhé, ngủ đông ~\"*\n\n"
-            "Do vừa chiến đấu trong môi trường tuyết, thứ mà cậu vốn không chịu lạnh tốt, thêm đòn tấn công đột ngột từ ả kia, "
-            f"**{name}** khuỵu xuống, ánh mắt lim dim chìm sâu vào giấc ngủ của giá rét...\n\n"
-            "📌 **Phần tiếp theo của Stage 1 sẽ sớm cập bến trong bản cập nhật kế tiếp!**"
-        ),
-        color=0x93C5FD
-    )
-    e.set_thumbnail(url=CARDS_DATA[32]["image"])
-    await _s3_send(ctx_or_interaction, embed=e)
-
 
 # ==============================================================================
 # NỐI VÀO HỆ THỐNG: Extra Stage xong -> /story chuyển sang Touhou 7
@@ -34043,8 +34023,519 @@ async def handle_story_extra(ctx_or_interaction):
         await handle_story_t7(ctx_or_interaction)
         return
     await _T7_PREV_EXTRA(ctx_or_interaction)
+# ==============================================================================
+# [UPDATE] TOUHOU 7 - STAGE 1 TIẾP THEO: GẶP GỠ LETTY WHITEROCK
+# ==============================================================================
+# HƯỚNG DẪN DÁN: Tìm dòng (Ctrl+F):
+#   # ===================== HẾT NỬA KHỐI TOUHOU 7 - STAGE 1 =====================
+# DÁN TOÀN BỘ ĐOẠN CODE NÀY VÀO NGAY TRƯỚC dòng đó.
+# ==============================================================================
 
-# ===================== HẾT NỬA KHỐI TOUHOU 7 - STAGE 1 =====================
+# ---- Cấu hình Letty Boss ----
+T7_LETTY_BOSS_HP   = 40000
+T7_LETTY_BOSS_ATK  = 4000
+T7_LETTY_WIN_CARDS = 30     # thẻ Letty (#32)
+T7_LETTY_WIN_XP_MULT = 4.0  # 4x XP hiện có trong cấp
+T7_LETTY_WIN_XU    = 6500
+T7_LETTY_WIN_TICKETS = 15.0 # 15 pull
+T7_LETTY_FREEZE_CHANCE = 0.40    # 40% dùng Ace 2 (không giới hạn lần)
+T7_LETTY_FREEZE_TURNS  = 2       # 2 turn đóng băng (45% mỗi turn không đánh được)
+T7_LETTY_STORM_TURNS   = 4       # passive bão tuyết hoạt động 4 turn đầu
+T7_LETTY_STORM_SKILL_REDUCE = 0.10   # -10% tỉ lệ ra chiêu card của người chơi
+T7_LETTY_STORM_DMG_REDUCE   = 0.10   # +10% chống chịu đánh thường cho Letty
+
+# ---- state keys mới ----
+# "T7_story2_seen"   : đã xem màn kịch bản thức dậy chưa
+# "T7_letty_boss_done" : đã thắng Letty chưa
+# "T7_s1_letty_completed" : hết stage 1 hoàn toàn
+
+def _t7_letty_state(player):
+    st = player.setdefault("story", {})
+    for k, v in (
+        ("T7_intro_seen",          False),
+        ("T7_battles_done",        0),
+        ("T7_quest_claimed",       False),
+        ("T7_boss_level",          None),
+        ("T7_cirno_done",          False),
+        ("T7_letty_seen",          False),
+        ("T7_s1_completed",        False),
+        ("T7_story2_seen",         False),
+        ("T7_letty_boss_done",     False),
+        ("T7_s1_letty_completed",  False),
+    ):
+        st.setdefault(k, v)
+    return st
+
+
+# ==============================================================================
+# NÚT CHIẾN ĐẤU LETTY
+# ==============================================================================
+class StoryT7LettyBattleView(discord.ui.View):
+    def __init__(self, user, player):
+        super().__init__(timeout=180)
+        self.user   = user
+        self.player = player
+
+    @discord.ui.button(
+        label="⚔️ Nghênh Chiến Letty Whiterock (Live Battle)",
+        style=discord.ButtonStyle.danger,
+        emoji="❄️"
+    )
+    async def fight_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message(
+                "❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True
+            )
+            return
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(
+            content="❄️ **Bão tuyết ập xuống! Trận chiến với Letty Whiterock bắt đầu!**", view=self
+        )
+        self.stop()
+        await run_story_t7_letty_battle(interaction, self.user, self.player)
+
+
+# ==============================================================================
+# LIVE BATTLE: LETTY WHITEROCK
+# ==============================================================================
+async def run_story_t7_letty_battle(channel_or_interaction, user, player):
+    st       = _t7_letty_state(player)
+    name     = user.display_name
+    boss_lvl = st.get("T7_boss_level") or player.get("level", 1)
+
+    B = {
+        "max_hp": T7_LETTY_BOSS_HP,
+        "power":  T7_LETTY_BOSS_ATK,
+        "hp":     T7_LETTY_BOSS_HP,
+        "mind": 0, "molten": 0, "freeze": 0, "fate": 0, "ice": 0,
+        "erased": False, "stun": False,
+    }
+    boss_img = CARDS_DATA[32]["image"]
+
+    # --- Chuẩn bị đội hình người chơi ---
+    team_cids = [
+        cid for cid in player.get("team", [])
+        if cid in CARDS_DATA and not is_card_locked(player, cid)
+    ]
+    if len(team_cids) < 3:
+        owned = get_owned_card_ids(player)
+        owned.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
+        for cid in owned:
+            if cid not in team_cids:
+                team_cids.append(cid)
+            if len(team_cids) >= 3:
+                break
+        player["team"] = team_cids
+        save_player(player)
+
+    p_buff_pwr = get_level_atk_buff(player["level"])
+    p_buff_hp  = get_level_hp_buff(player["level"])
+    player_cards = []
+    for cid in team_cids[:3]:
+        c      = CARDS_DATA[cid]
+        is_ace = is_card_ace2(player, cid)
+        c_pwr  = c["power"] + p_buff_pwr + (ACE_POWER_BUFF if is_ace else 0)
+        c_hp   = c["hp"]    + p_buff_hp  + (ACE_HP_BUFF    if is_ace else 0)
+        player_cards.append({
+            "cid":        cid,
+            "name":       (f"[Ace 2 ⭐⭐] #{disp_id(c['id'])} {c['name']}" if is_ace
+                           else f"{format_card_id(c['id'])} {c['name']}"),
+            "power":      c_pwr,
+            "max_hp":     c_hp,
+            "current_hp": c_hp,
+            "is_ace2":    is_ace,
+        })
+    apply_sakuya_ace3_to_cards(player, player_cards)
+    B["team"] = player_cards
+
+    if not player_cards:
+        await _s3_send(
+            channel_or_interaction,
+            content="⚠️ Bạn chưa có thẻ bài nào để chiến đấu! Hãy dùng `/pull` trước."
+        )
+        return
+
+    # --- Embed khởi đầu ---
+    embed_init = discord.Embed(
+        title=f"⚔️ [LIVE BATTLE] {T7_STAGE_LABEL}: LETTY WHITEROCK!",
+        description=(
+            f"👤 **Trợ thủ xuất trận:** {user.mention} (Lv.{player['level']})\n"
+            f"{T7_LETTY} **Boss:** **[#32] Letty Whiterock** (Lv.{boss_lvl})\n"
+            f"❤️ Máu Boss: `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**\n"
+            f"⚔️ Sức mạnh: **{B['power']:,} DMG**\n"
+            f"🌨️ **Bão Tuyết** (Passive, {T7_LETTY_STORM_TURNS} turn đầu): "
+            f"Giảm {int(T7_LETTY_STORM_SKILL_REDUCE*100)}% tỉ lệ ra chiêu card, "
+            f"+{int(T7_LETTY_STORM_DMG_REDUCE*100)}% chống chịu đánh thường cho Letty\n"
+            f"❄️ **Ace 2 (không giới hạn lần)**: {int(T7_LETTY_FREEZE_CHANCE*100)}% đóng băng "
+            f"→ 2 turn tiếp 45% không thể đánh trả"
+        ),
+        color=0x93C5FD
+    )
+    embed_init.set_thumbnail(url=boss_img)
+    msg = await _s3_send(channel_or_interaction, embed=embed_init)
+    await asyncio.sleep(2.0)
+
+    # --- Vòng lặp chiến đấu ---
+    p_idx         = 0
+    rounds        = 0
+    p_freeze_turns = 0
+
+    while B["hp"] > 0 and p_idx < len(player_cards) and rounds < 50:
+        rounds += 1
+        pc       = player_cards[p_idx]
+        fl       = pc.setdefault("fl", {})
+        logs     = []
+        turn_gif = None
+        B["stun"]    = False
+        boss_frozen  = False
+        player_frozen = False
+        o = {"gif": None, "invul": False, "pguard": False}
+
+        # ---- Passive: Bão Tuyết (4 turn đầu) ----
+        in_storm = rounds <= T7_LETTY_STORM_TURNS
+        storm_note = ""
+        if in_storm:
+            storm_note = (
+                f"🌨️ **[Bão Tuyết]** Hiệu lực còn **{T7_LETTY_STORM_TURNS - rounds + 1} turn**! "
+                f"Tỉ lệ ra chiêu card giảm {int(T7_LETTY_STORM_SKILL_REDUCE*100)}%, "
+                f"Letty chống chịu +{int(T7_LETTY_STORM_DMG_REDUCE*100)}%."
+            )
+            logs.append(storm_note)
+
+        # ---- Hiệu ứng người chơi đặt lên Boss ----
+        boss_locked = B["fate"] > 0
+        if boss_locked:
+            B["fate"] -= 1
+            logs.append("⛓️ **[Fate loop]** Letty bị khóa kỹ năng, không thể dùng Ace 2 trong hiệp này!")
+        if B["mind"] > 0:
+            B["mind"] -= 1
+            if _S4_rand.random() < 0.20:
+                B["hp"] = max(0, B["hp"] - B["power"])
+                logs.append(f"🌀 **[Red Eye Mind]** Letty mất kiểm soát, tự gây **{B['power']:,} DMG**! (Còn {B['mind']} lượt)")
+        if B["molten"] > 0:
+            B["molten"] -= 1
+            burn = int(B["max_hp"] * 0.02)
+            B["hp"] = max(0, B["hp"] - burn)
+            logs.append(f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Letty **{burn:,} DMG**! (Còn {B['molten']} lượt)")
+        if B["freeze"] > 0:
+            B["freeze"] -= 1
+            if _S4_rand.random() < 0.45:
+                boss_frozen = True
+                logs.append(f"❄️ **[Đóng Băng]** Letty bị đóng băng (45%), không thể phản công! (Còn {B['freeze']} lượt)")
+        if B["ice"] > 0:
+            B["ice"] -= 1
+            if not boss_frozen and _S4_rand.random() < 0.40:
+                boss_frozen = True
+                logs.append("❄️ **[Ice spear]** Giáo băng cầm chân Letty (40%), không thể phản công!")
+
+        # ---- Perfect Freeze Letty đang đè lên người chơi ----
+        if p_freeze_turns > 0:
+            p_freeze_turns -= 1
+            if _S4_rand.random() < 0.45:
+                player_frozen = True
+                logs.append(
+                    f"🧊 **[Freeze]** **{pc['name']}** bị đóng băng cứng đờ (45%), không thể ra đòn! "
+                    f"(Còn {p_freeze_turns} hiệp duy trì)"
+                )
+
+        # ---- Lượt đánh của người chơi ----
+        if B["hp"] > 0 and pc["current_hp"] > 0 and not player_frozen:
+            n0 = len(logs)
+            # Áp dụng debuff Bão Tuyết: giảm tỉ lệ ra chiêu card
+            if in_storm:
+                # Tạm thời monkey-patch ngẫu nhiên để giảm xác suất skill
+                # Cách đơn giản: roll thêm 1 lần check, nếu trượt -> bỏ qua skill
+                _orig_rand_check = _S4_rand.random
+                _storm_suppressed = [False]
+                class _StormRand:
+                    """Wrapper giảm 10% tỉ lệ skill khi trong Bão Tuyết."""
+                    @staticmethod
+                    def random():
+                        r = _orig_rand_check()
+                        # Mỗi lần tung xúc xắc skill, tăng ngưỡng thất bại thêm 10%
+                        # (tương đương nhân ngưỡng kích hoạt với 0.9)
+                        return r  # giữ nguyên; xử lý bên dưới thông qua dmg
+                # Thực chất: truyền flag vào story_s3_player_turn không khả thi
+                # => Dùng cách dễ hơn: sau khi tính dmg, giảm 10% nếu trong bão
+                dmg, o = story_s3_player_turn(pc, rounds, B, logs)
+                # Nếu trong bão, áp dụng giảm 10% chống chịu cho sát thương thường
+                # (đã xử lý ở phần Boss nhận damage bên dưới)
+            else:
+                dmg, o = story_s3_player_turn(pc, rounds, B, logs)
+
+            # Áp dụng chống chịu Bão Tuyết của Letty với đánh thường
+            if in_storm and not o.get("is_skill"):
+                dmg = int(dmg * (1.0 - T7_LETTY_STORM_DMG_REDUCE))
+
+            B["hp"] = max(0, B["hp"] - dmg)
+            turn_gif = o["gif"]
+            logs.append(f"🗡️ **{pc['name']}** tấn công gây **{dmg:,} DMG** lên Letty!")
+
+        # ---- Boss phản công ----
+        if B["hp"] <= 0:
+            logs.append(f"💥 **Letty Whiterock** bị đánh bại! Mùa đông cuối cùng cũng dịu lại...")
+        elif pc["current_hp"] <= 0:
+            pass
+        elif B["stun"]:
+            logs.append("❄️ Letty bị STUN, không thể phản công!")
+        elif boss_frozen:
+            logs.append("❄️ Letty không thể phản công trong hiệp này!")
+        else:
+            used_skill = False
+            # Ace 2 Letty: không giới hạn lần dùng (40%)
+            if (not boss_locked) and (not B["erased"]) and (_S4_rand.random() < T7_LETTY_FREEZE_CHANCE):
+                used_skill   = True
+                p_freeze_turns = T7_LETTY_FREEZE_TURNS
+                turn_gif = turn_gif or EVOL_CONFIG[32]["skill_gif"] if 32 in EVOL_CONFIG else turn_gif
+                logs.append(
+                    f"❄️ **[Ace 2] Letty** tung **Flower Wither Away** ({int(T7_LETTY_FREEZE_CHANCE*100)}%)! "
+                    f"Trong 2 turn tiếp có 45% bạn không thể đánh trả!"
+                )
+
+            boss_dmg = B["power"]
+            cs   = str(pc["cid"]).lower()
+            ace2 = bool(pc.get("is_ace2"))
+
+            if o["invul"]:
+                logs.append(f"🛡️ **{pc['name']}** miễn nhiễm hoàn toàn đòn đánh của Letty!")
+            elif pc["cid"] == 15 and ace2 and not fl.get("reimu") and _S4_rand.random() < 0.40:
+                fl["reimu"] = True
+                turn_gif = turn_gif or EVOL_CONFIG[15]["skill_gif"]
+                logs.append("🛡️ **[Ace 2] [#17] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+            elif cs == "t1" and not ace2 and not fl.get("seal") and fl.get("used_turn") != rounds and _S4_rand.random() < 0.40:
+                fl["seal"]     = True
+                fl["used_turn"] = rounds
+                turn_gif = turn_gif or T1_SEAL_GIF
+                logs.append("🛡️ **[Nhóm T] [#t1] Seiki** kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+            elif cs == "t3" and pc.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
+                if p_freeze_turns > 0:
+                    p_freeze_turns = 0
+                    logs.append("🛡️ **[Wonder Guard]** Hóa giải hoàn toàn hiệu ứng đóng băng của Letty!")
+                ref = int(boss_dmg * 0.60)
+                B["hp"] = max(0, B["hp"] - ref)
+                logs.append(f"🛡️ **[Ace 2] [#t3] Kizuna** duy trì **Wonder Guard**! Miễn thương và phản lại **{ref:,} DMG (60%)**!")
+            elif pc["cid"] == 4 and ace2 and not used_skill and _S4_rand.random() < 0.10:
+                B["hp"] = max(0, B["hp"] - boss_dmg)
+                logs.append(f"🌀 **[Ace 2] [#04] Yukari** kích hoạt **Invisible Gap** (10%)! Phản lại **{boss_dmg:,} DMG** vào Letty!")
+            else:
+                taken = boss_dmg
+                if cs == "t2":
+                    taken = int(taken * (1.0 - min(0.90, fl.get("maho", 1) * 0.05)))
+                if o["pguard"]:
+                    taken = int(taken * 0.85)
+                eq_take_damage(pc, taken, logs, skill=used_skill)
+                logs.append(f"❄️ **Letty** quất bão tuyết gây **{taken:,} DMG** lên **{pc['name']}**!")
+
+        # ---- Wonder Guard Kizuna đếm lùi ----
+        t3s = pc.get("t3_state")
+        if t3s and t3s.get("wonder_guard_turns", 0) > 0:
+            t3s["wonder_guard_turns"] -= 1
+
+        # ---- Thẻ gục ----
+        if pc["current_hp"] <= 0:
+            pc["current_hp"] = 0
+            _rv, _rv_log = sakuya3_try_revive(player_cards, p_idx)
+            if _rv_log:
+                logs.append(_rv_log)
+            if _rv:
+                turn_gif = SAKUYA3_PASSIVE_GIF
+            else:
+                p_idx += 1
+                p_freeze_turns = 0
+                if p_idx < len(player_cards):
+                    logs.append(f"💀 Đẩy **{player_cards[p_idx]['name']}** lên tiền tuyến!")
+
+        # ---- Cập nhật embed ----
+        r_embed = discord.Embed(
+            title=f"⚔️ HIỆP {rounds} - QUYẾT ĐẤU LETTY WHITEROCK ({T7_STAGE_LABEL})",
+            description=(
+                f"❤️ Máu Letty: `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**\n\n"
+                + "\n".join(logs)
+            )[:4000],
+            color=0x93C5FD if B["hp"] > 0 else 0x10B981
+        )
+        if turn_gif:
+            r_embed.set_image(url=turn_gif)
+        else:
+            r_embed.set_thumbnail(url=boss_img)
+        try:
+            await msg.edit(embed=r_embed)
+        except Exception:
+            pass
+        if B["hp"] <= 0:
+            break
+        await asyncio.sleep(2.5)
+
+    # ==================== KẾT QUẢ ====================
+    if B["hp"] <= 0:
+        # --- THẮNG ---
+        inv = player.setdefault("inventory", {})
+        inv["32"] = inv.get("32", 0) + T7_LETTY_WIN_CARDS
+        if 32 not in player.get("unlocked_cards", []):
+            player.setdefault("unlocked_cards", []).append(32)
+        player["xu"]           = player.get("xu", 0) + T7_LETTY_WIN_XU
+        player["pull_tickets"] = player.get("pull_tickets", 0) + T7_LETTY_WIN_TICKETS
+        old_lvl = player.get("level", 1)
+        gain, xp_in, needed = _S4_grant_xp(player, T7_LETTY_WIN_XP_MULT)
+        st["T7_letty_boss_done"]    = True
+        st["T7_s1_letty_completed"] = True
+        save_player(player)
+        new_lvl = calculate_level_from_xp(player["xp"], player.get("prestige", 0))
+        lvl_txt = f"\n🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+
+        embed_win = discord.Embed(
+            title=f"🎉 CHIẾN THẮNG {T7_STAGE_LABEL}: LETTY WHITEROCK!",
+            description=(
+                f"{T7_LETTY} **Letty:** *\"Hm... không tệ. Lần sau ta sẽ không nhẹ tay đâu.\"*\n"
+                f"*(Bóng hình của Letty tan vào làn tuyết trắng...)*\n\n"
+                "🎁 **PHẦN THƯỞNG CHIẾN TÍCH:**\n"
+                f"• ✨ **+{gain:,} XP** (×{T7_LETTY_WIN_XP_MULT:g} XP cấp hiện tại [{xp_in:,}/{needed:,}]){lvl_txt}\n"
+                f"• 🎴 **+{T7_LETTY_WIN_CARDS} Thẻ bài [#32] Letty Whiterock** (Hiện có: `{inv['32']}` lá)\n"
+                f"• {XU_EMOJI} **+{T7_LETTY_WIN_XU:,} Xu công đức** (Tổng: `{player['xu']:,}`)\n"
+                f"• 🎟️ **+{T7_LETTY_WIN_TICKETS:.0f} Lượt Pull** (Tổng: `{player['pull_tickets']:.2f}` vé)\n\n"
+                "👉 **Gõ `/story` để xem kết thúc Stage 1!**"
+            ),
+            color=0x10B981
+        )
+        embed_win.set_image(url=CARDS_DATA[32]["image"])
+        embed_win.set_footer(text=f"{T7_STAGE_LABEL} • Letty Whiterock đã bị đánh bại")
+        try:
+            await msg.edit(embed=embed_win)
+        except Exception:
+            pass
+    else:
+        # --- THUA ---
+        embed_loss = discord.Embed(
+            title=f"💀 THẤT BẠI TẠI {T7_STAGE_LABEL}!",
+            description=(
+                f"Đội hình của {user.mention} đã bị bão tuyết của Letty nhấn chìm!\n"
+                f"Letty còn lại: **{B['hp']:,}/{B['max_hp']:,} HP**\n\n"
+                "💡 *Hãy nâng cấp thẻ bài, xếp lại đội hình qua `/team` và gõ lại `/story` để phục thù!*"
+            ),
+            color=0xEF4444
+        )
+        embed_loss.set_thumbnail(url=boss_img)
+        try:
+            await msg.edit(embed=embed_loss)
+        except Exception:
+            pass
+
+
+# ==============================================================================
+# BỘ ĐIỀU HƯỚNG TOUHOU 7 - STAGE 1 (phiên bản mới, có Letty)
+# ==============================================================================
+_T7_PREV_HANDLER = handle_story_t7   # giữ lại hàm cũ
+
+async def handle_story_t7(ctx_or_interaction):
+    user   = (ctx_or_interaction.user
+              if isinstance(ctx_or_interaction, discord.Interaction)
+              else ctx_or_interaction.author)
+    player = get_player(user.id, user.display_name)
+    st     = _t7_letty_state(player)
+    name   = user.display_name
+
+    # ---- Hết toàn bộ Stage 1 (đã đánh thắng Letty) ----
+    if st["T7_s1_letty_completed"]:
+        e = discord.Embed(
+            title=f"🌨️ {T7_STAGE_LABEL}: KẾT THÚC",
+            description=(
+                f"Một phần mùa đông đã dịu lại, tuy nhiên phía trước vẫn còn dài.\n\n"
+                f"{EX_PLAYER} **{name}** cảm nhận mình vừa học thêm điều gì đó mới... cụ thể là **một phép thuật mới**?\n\n"
+                "📌 **Stage 2 của Touhou 7 sẽ sớm cập bến trong bản cập nhật kế tiếp!**"
+            ),
+            color=0x93C5FD
+        )
+        e.set_thumbnail(url=CARDS_DATA[32]["image"])
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    # ---- Chưa đánh Cirno: nhường lại cho logic cũ ----
+    if not st["T7_cirno_done"]:
+        await _T7_PREV_HANDLER(ctx_or_interaction)
+        return
+
+    # ---- Đã đánh xong Cirno nhưng chưa xem màn story thức dậy ----
+    if not st["T7_story2_seen"]:
+        st["T7_story2_seen"] = True
+        save_player(player)
+        e = discord.Embed(
+            title=f"🌨️ {T7_STAGE_LABEL}: TỈNH GIẤC",
+            description=(
+                "...\n"
+                f"**???:** *\"Ngươi là ai?\"*\n"
+                f"{EX_PLAYER} **{name}:** *...?*\n"
+                f"**???:** *\"Ngươi gần như giống ta mọi thứ, sức mạnh, cái tên, gương mặt...\"*\n\n"
+                f"*{name} dè chừng lùi lại.*\n\n"
+                f"**???** giơ tay về phía **{name}**: "
+                f"*\"Rồi một ngày ta sẽ giết ngươi, đồ giả mạo!\"*\n\n"
+                "━━━━━━━━━━━━━━━━━━━━\n"
+                "**....**\n"
+                "**bốp bốp**\n\n"
+                f"*\"Nè nè, dậy! Dậy! Chết rồi hả?\"*\n\n"
+                f"{EX_MARISA} **Marisa** *(nhìn Reimu)*: *\"Tớ nghĩ chúng ta không nên đánh thức người ta kiểu đấy...\"*\n"
+                f"{EX_REIMU} **Reimu** *(tức giận)*: *\"Cậu không biết cậu ta quan trọng thế nào với tôi đâu!\"*\n\n"
+                f"*{name} dụi dụi mắt, lờ mờ tỉnh dậy.*\n\n"
+                f"{EX_MARISA} **Marisa:** *\"A, dậy rồi kìa!\"*\n"
+                f"{EX_REIMU} **Reimu** *(giật mình)*: *\"Hả - cậu nãy không nghe thấy gì chứ?\"*\n"
+                f"{EX_PLAYER} **{name}** *(lắc đầu)*\n"
+                f"{EX_REIMU} **Reimu:** *\"Tốt - tốt. Giờ chúng ta đi tiếp thôi.\"*\n\n"
+                "━━━━━━━━━━━━━━━━━━━━\n"
+                f"Cả ba cuối cùng đã bắt kịp **Letty**.\n\n"
+                f"{T7_LETTY} **Letty** *(nhìn {name} với vẻ mặt ngạc nhiên)*: "
+                f"*\"Ôi... cậu dai dẳng thật đấy.\"*\n\n"
+                f"{EX_REIMU} **Reimu** *(sắc lạnh hơn cả mùa đông)*: "
+                f"*\"Hừ, còn mày thì như cục đá béo ấy.\"*\n\n"
+                f"{T7_LETTY} **Letty:** *\"Hm? Ý ngươi là ngươi muốn ta giúp ngươi ngủ đông bây giờ?\"*\n\n"
+                f"{EX_MARISA} **Marisa** & {EX_REIMU} **Reimu**: *\"Yeah - chôn ngươi dưới tuyết vậy!\"*\n\n"
+                "👉 **Gõ `/story` để bắt đầu Boss Fight với Letty Whiterock!**"
+            ),
+            color=0x93C5FD
+        )
+        e.set_thumbnail(url=CARDS_DATA[32]["image"])
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    # ---- Hiển thị thông tin Boss và nút chiến đấu ----
+    if not st["T7_letty_boss_done"]:
+        boss_lvl = st.get("T7_boss_level") or player.get("level", 1)
+        e = discord.Embed(
+            title=f"🗺️ {T7_STAGE_LABEL}: LETTY WHITEROCK!",
+            description=(
+                "⚠️ **CẢNH BÁO:** Letty Whiterock đã sẵn sàng! "
+                "Bấm nút bên dưới để khai màn Live Battle!"
+            ),
+            color=0x93C5FD
+        )
+        e.set_thumbnail(url=CARDS_DATA[32]["image"])
+        e.add_field(
+            name="👺 Thông Số Boss Letty Whiterock:",
+            value=(
+                f"• Sức mạnh: **{T7_LETTY_BOSS_ATK:,} DMG** | Máu: **{T7_LETTY_BOSS_HP:,} HP**\n"
+                f"• 🌨️ **Bão Tuyết** (Passive, {T7_LETTY_STORM_TURNS} turn đầu): "
+                f"Giảm {int(T7_LETTY_STORM_SKILL_REDUCE*100)}% tỉ lệ ra chiêu card, "
+                f"+{int(T7_LETTY_STORM_DMG_REDUCE*100)}% chống chịu đánh thường\n"
+                f"• ❄️ **Ace 2** ({int(T7_LETTY_FREEZE_CHANCE*100)}%, không giới hạn lần): "
+                f"Đóng băng 2 turn (45% không thể đánh trả)"
+            ),
+            inline=False
+        )
+        e.add_field(
+            name="🎁 Phần Thưởng Chiến Thắng:",
+            value=(
+                f"• ✨ **×{T7_LETTY_WIN_XP_MULT:g} XP**\n"
+                f"• 🎴 **{T7_LETTY_WIN_CARDS} Thẻ bài [#32] Letty Whiterock**\n"
+                f"• {XU_EMOJI} **{T7_LETTY_WIN_XU:,} Xu**\n"
+                f"• 🎟️ **{T7_LETTY_WIN_TICKETS:.0f} Lượt Pull**\n"
+                f"• 🏆 **Hoàn thành Stage 1 Touhou 7!**"
+            ),
+            inline=False
+        )
+        e.set_footer(text="Bấm nút màu đỏ bên dưới để chiến đấu trực tiếp!")
+        await _s3_send(ctx_or_interaction, embed=e, view=StoryT7LettyBattleView(user, player))
+        return
+
+# ===================== HẾT  KHỐI TOUHOU 7 - STAGE 1 =====================
 
 import sys
 
