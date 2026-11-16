@@ -33554,6 +33554,497 @@ def reset_sakuya3_phase(c: dict):
     except Exception:
         pass
 # ===================== HẾT KHỐI LETTY / REMILIA / FIX STORY =====================
+# ==============================================================================
+# [UPDATE] TOUHOU 7 - STAGE 1: ĐÔNG DÀI (CIRNO ACE 2 + LETTY)
+# ==============================================================================
+T7_STAGE_LABEL = "TOUHOU 7 - STAGE 1"
+T7_LETTY = "<:fatrock:1571440912540901466>"
+T7_CIRNO = "❄️"
+
+T7_REQ_BATTLES = 10
+T7_QUEST_XU = 3000
+T7_QUEST_TICKETS = 5.0
+T7_QUEST_XP_MULT = 1.0          # 1x XP hiện có trong cấp
+T7_BOSS_BASE_HP = 22000
+T7_BOSS_BASE_ATK = 4000
+T7_FREEZE_CHANCE = 0.40         # Perfect Freeze (như Stage 2 Touhou 6, 1 lần/trận)
+T7_WIN_XP_MULT = 2.0            # 2x XP hiện có trong cấp
+T7_WIN_CARDS = 20               # thẻ Cirno
+T7_WIN_XU = 3000
+
+try:
+    _FA_MODE_FUNCS.add("run_story_t7_cirno_battle")
+except Exception:
+    pass
+
+
+def _t7_state(player):
+    st = player.setdefault("story", {})
+    for k, v in (("T7_intro_seen", False), ("T7_battles_done", 0), ("T7_quest_claimed", False),
+                 ("T7_boss_level", None), ("T7_cirno_done", False),
+                 ("T7_letty_seen", False), ("T7_s1_completed", False)):
+        st.setdefault(k, v)
+    return st
+
+
+def _t7_fix(line: str) -> str:
+    """story_s3_player_turn có sẵn chữ 'Meiling' -> đổi thành 'Cirno' (giữ nguyên thẻ Hong Meiling của người chơi)."""
+    s = str(line)
+    s = s.replace("kỹ năng **Rainbow Taijiquan** của", "toàn bộ kỹ năng của")
+    s = s.replace("#27] Hong Meiling", "§§A§§").replace("#27 Hong Meiling", "§§B§§")
+    s = s.replace("Hong Meiling", "Cirno").replace("Meiling", "Cirno")
+    return s.replace("§§A§§", "#27] Hong Meiling").replace("§§B§§", "#27 Hong Meiling")
+
+
+# ---------------- Đếm số trận /battle cho nhiệm vụ Touhou 7 ----------------
+_T7_PREV_DQ = update_daily_quest_progress
+def update_daily_quest_progress(player: dict, quest_type: str, amount: int = 1) -> list:
+    try:
+        if quest_type == "battle":
+            st = player.get("story") or {}
+            if (st.get("EX_completed") and st.get("T7_intro_seen")
+                    and not st.get("T7_quest_claimed")):
+                st["T7_battles_done"] = min(T7_REQ_BATTLES, st.get("T7_battles_done", 0) + amount)
+    except Exception as e:
+        print(f"[T7] lỗi đếm battle: {e}", flush=True)
+    return _T7_PREV_DQ(player, quest_type, amount)
+
+
+# ==============================================================================
+# NÚT + LIVE BATTLE: CIRNO ACE 2
+# ==============================================================================
+class StoryT7CirnoBattleView(discord.ui.View):
+    def __init__(self, user, player):
+        super().__init__(timeout=180)
+        self.user = user
+        self.player = player
+
+    @discord.ui.button(label="⚔️ Nghênh Chiến Cirno Ace 2 (Live Battle)", style=discord.ButtonStyle.danger, emoji="💥")
+    async def fight_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Đây không phải phiên cốt truyện của bạn!", ephemeral=True)
+            return
+        for child in self.children:
+            child.disabled = True
+        await interaction.response.edit_message(content="🔥 **Trận chiến bắt đầu nghênh chiến Cirno Ace 2!**", view=self)
+        self.stop()
+        await run_story_t7_cirno_battle(interaction, self.user, self.player)
+
+
+async def run_story_t7_cirno_battle(channel_or_interaction, user, player):
+    st = _t7_state(player)
+    boss_lvl = st.get("T7_boss_level") or player.get("level", 1)
+    B = {
+        "max_hp": T7_BOSS_BASE_HP + get_level_hp_buff(boss_lvl),
+        "power": T7_BOSS_BASE_ATK + get_level_atk_buff(boss_lvl),
+        "mind": 0, "molten": 0, "freeze": 0, "fate": 0, "ice": 0,
+        "erased": False, "stun": False
+    }
+    B["hp"] = B["max_hp"]
+    boss_img = CARDS_DATA[23]["image"]
+
+    team_cids = [cid for cid in player.get("team", []) if cid in CARDS_DATA and not is_card_locked(player, cid)]
+    if len(team_cids) < 3:
+        owned = get_owned_card_ids(player)
+        owned.sort(key=lambda cid: CARDS_DATA[cid]["power"], reverse=True)
+        for cid in owned:
+            if cid not in team_cids:
+                team_cids.append(cid)
+            if len(team_cids) >= 3:
+                break
+        player["team"] = team_cids
+        save_player(player)
+
+    p_buff_pwr = get_level_atk_buff(player["level"])
+    p_buff_hp = get_level_hp_buff(player["level"])
+    player_cards = []
+    for cid in team_cids[:3]:
+        c = CARDS_DATA[cid]
+        is_ace = is_card_ace2(player, cid)
+        card_pwr = c["power"] + p_buff_pwr + (ACE_POWER_BUFF if is_ace else 0)
+        card_hp = c["hp"] + p_buff_hp + (ACE_HP_BUFF if is_ace else 0)
+        player_cards.append({
+            "cid": cid,
+            "name": f"[Ace 2 ⭐⭐] #{disp_id(c['id'])} {c['name']}" if is_ace else f"{format_card_id(c['id'])} {c['name']}",
+            "power": card_pwr, "max_hp": card_hp, "current_hp": card_hp, "is_ace2": is_ace
+        })
+    apply_sakuya_ace3_to_cards(player, player_cards)
+    B["team"] = player_cards
+    if not player_cards:
+        await _s3_send(channel_or_interaction, content="⚠️ Bạn chưa có thẻ bài nào để chiến đấu! Hãy dùng `/pull` trước.")
+        return
+
+    embed_init = discord.Embed(
+        title=f"⚔️ [LIVE BATTLE] {T7_STAGE_LABEL}: CIRNO ACE 2 ⭐⭐!",
+        description=(
+            f"👤 **Trợ thủ xuất trận:** {user.mention} (Lv.{player['level']})\n"
+            f"{T7_CIRNO} **Boss:** **[#26] Cirno (Đệ Nhất Băng Tiên - Ace 2 ⭐⭐)** (Lv.{boss_lvl})\n"
+            f"❤️ Máu Boss: `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**\n"
+            f"⚔️ Sức mạnh: **{B['power']:,} DMG**\n"
+            f"🧊 Tuyệt kỹ: **Perfect Freeze** ({int(T7_FREEZE_CHANCE * 100)}% đóng băng, 2 turn tiếp có 45% không thể đánh trả)"
+        ),
+        color=0x06B6D4
+    )
+    embed_init.set_thumbnail(url=boss_img)
+    msg = await _s3_send(channel_or_interaction, embed=embed_init)
+    await asyncio.sleep(2.0)
+
+    p_idx, rounds = 0, 0
+    p_freeze_turns = 0
+    cirno_skill_used = False
+    while B["hp"] > 0 and p_idx < len(player_cards) and rounds < 30:
+        rounds += 1
+        pc = player_cards[p_idx]
+        fl = pc.setdefault("fl", {})
+        logs, turn_gif = [], None
+        B["stun"] = False
+        boss_frozen = False
+        player_frozen = False
+        o = {"gif": None, "invul": False, "pguard": False}
+
+        # --- hiệu ứng người chơi đặt lên Boss ---
+        boss_locked = B["fate"] > 0
+        if boss_locked:
+            B["fate"] -= 1
+            logs.append("⛓️ **[Fate loop]** Cirno bị khóa kỹ năng, không thể dùng Perfect Freeze trong hiệp này!")
+        if B["mind"] > 0:
+            B["mind"] -= 1
+            if _S4_rand.random() < 0.20:
+                B["hp"] = max(0, B["hp"] - B["power"])
+                logs.append(f"🌀 **[Red Eye Mind]** Cirno mất kiểm soát, tự gây **{B['power']:,} DMG**! (Còn {B['mind']} lượt)")
+        if B["molten"] > 0:
+            B["molten"] -= 1
+            burn = int(B["max_hp"] * 0.02)
+            B["hp"] = max(0, B["hp"] - burn)
+            logs.append(f"🌋 **[Mặt Đất Nung Chảy]** Thiêu đốt Cirno **{burn:,} DMG**! (Còn {B['molten']} lượt)")
+        if B["freeze"] > 0:
+            B["freeze"] -= 1
+            if _S4_rand.random() < 0.45:
+                boss_frozen = True
+                logs.append(f"❄️ **[Perfect Freeze]** Cirno bị đóng băng (45%), không thể phản công! (Còn {B['freeze']} lượt)")
+        if B["ice"] > 0:
+            B["ice"] -= 1
+            if not boss_frozen and _S4_rand.random() < 0.40:
+                boss_frozen = True
+                logs.append("❄️ **[Ice spear]** Giáo băng cầm chân Cirno (40%), không thể phản công!")
+
+        # --- Perfect Freeze của Cirno đang đè lên người chơi ---
+        if p_freeze_turns > 0:
+            p_freeze_turns -= 1
+            if _S4_rand.random() < 0.45:
+                player_frozen = True
+                logs.append(f"🧊 **[Perfect Freeze]** **{pc['name']}** bị đóng băng cứng đờ (45%), không thể ra đòn! (Còn {p_freeze_turns} hiệp duy trì)")
+
+        # --- lượt đánh của người chơi ---
+        if B["hp"] > 0 and pc["current_hp"] > 0 and not player_frozen:
+            n0 = len(logs)
+            dmg, o = story_s3_player_turn(pc, rounds, B, logs)
+            logs[n0:] = [_t7_fix(l) for l in logs[n0:]]
+            B["hp"] = max(0, B["hp"] - dmg)
+            turn_gif = o["gif"]
+            logs.append(f"🗡️ **{pc['name']}** tấn công gây **{dmg:,} DMG** lên Cirno!")
+
+        # --- Boss phản công ---
+        if B["hp"] <= 0:
+            logs.append("💥 **Cirno đã bị đá văng xuống mặt hồ băng!**")
+        elif pc["current_hp"] <= 0:
+            pass
+        elif B["stun"]:
+            logs.append("❄️ Cirno bị STUN/bối rối, không thể phản công!")
+        elif boss_frozen:
+            logs.append("❄️ Cirno không thể phản công trong hiệp này!")
+        else:
+            used_skill = False
+            if (not boss_locked) and (not B["erased"]) and (not cirno_skill_used) and _S4_rand.random() < T7_FREEZE_CHANCE:
+                cirno_skill_used = True
+                used_skill = True
+                p_freeze_turns = 2
+                turn_gif = turn_gif or EVOL_CONFIG[23]["skill_gif"]
+                logs.append(f"❄️ **[Ace 2] Cirno** tung tuyệt kỹ **PERFECT FREEZE** ({int(T7_FREEZE_CHANCE * 100)}%)! Trong 2 turn tiếp có 45% bạn không thể đánh trả!")
+
+            boss_dmg = B["power"]
+            cs = str(pc["cid"]).lower()
+            ace2 = bool(pc.get("is_ace2"))
+            if o["invul"]:
+                logs.append(f"🛡️ **{pc['name']}** miễn nhiễm hoàn toàn đòn đánh của Cirno!")
+            elif pc["cid"] == 15 and ace2 and not fl.get("reimu") and _S4_rand.random() < 0.40:
+                fl["reimu"] = True
+                turn_gif = turn_gif or EVOL_CONFIG[15]["skill_gif"]
+                logs.append("🛡️ **[Ace 2] [#17] reimu** kích hoạt **Vô Tưởng Chuyển Sinh** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+            elif cs == "t1" and not ace2 and not fl.get("seal") and fl.get("used_turn") != rounds and _S4_rand.random() < 0.40:
+                fl["seal"] = True
+                fl["used_turn"] = rounds
+                turn_gif = turn_gif or T1_SEAL_GIF
+                logs.append("🛡️ **[Nhóm T] [#t1] Seiki** kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+            elif cs == "t3" and pc.get("t3_state", {}).get("wonder_guard_turns", 0) > 0:
+                if p_freeze_turns > 0:
+                    p_freeze_turns = 0
+                    logs.append("🛡️ **[Wonder Guard]** Hóa giải hoàn toàn hiệu ứng đóng băng của Cirno!")
+                ref = int(boss_dmg * 0.60)
+                B["hp"] = max(0, B["hp"] - ref)
+                logs.append(f"🛡️ **[Ace 2] [#t3] Kizuna** duy trì **Wonder Guard**! Miễn thương và phản lại **{ref:,} DMG (60%)**!")
+            elif pc["cid"] == 4 and ace2 and not used_skill and _S4_rand.random() < 0.10:
+                B["hp"] = max(0, B["hp"] - boss_dmg)
+                logs.append(f"🌀 **[Ace 2] [#04] Yukari** kích hoạt **Invisible Gap** (10%)! Phản lại **{boss_dmg:,} DMG** vào Cirno!")
+            else:
+                taken = boss_dmg
+                if cs == "t2":
+                    taken = int(taken * (1.0 - min(0.90, fl.get("maho", 1) * 0.05)))
+                if o["pguard"]:
+                    taken = int(taken * 0.85)
+                eq_take_damage(pc, taken, logs, skill=used_skill)
+                logs.append(f"🧊 **Cirno Ace 2** phóng bão băng gây **{taken:,} DMG** lên **{pc['name']}**!")
+
+        # --- Wonder Guard của Kizuna đếm lùi ---
+        t3s = pc.get("t3_state")
+        if t3s and t3s.get("wonder_guard_turns", 0) > 0:
+            t3s["wonder_guard_turns"] -= 1
+
+        # --- thẻ gục ---
+        if pc["current_hp"] <= 0:
+            pc["current_hp"] = 0
+            _rv, _rv_log = sakuya3_try_revive(player_cards, p_idx)
+            if _rv_log:
+                logs.append(_rv_log)
+            if _rv:
+                turn_gif = SAKUYA3_PASSIVE_GIF
+            else:
+                p_idx += 1
+                p_freeze_turns = 0
+                if p_idx < len(player_cards):
+                    logs.append(f"💀 Đẩy **{player_cards[p_idx]['name']}** lên tiền tuyến!")
+
+        r_embed = discord.Embed(
+            title=f"⚔️ HIỆP {rounds} - QUYẾT ĐẤU CIRNO ACE 2 ({T7_STAGE_LABEL})",
+            description=(f"❤️ Máu Cirno: `{get_hp_bar(B['hp'], B['max_hp'])}` **{B['hp']:,}/{B['max_hp']:,} HP**\n\n" + "\n".join(logs))[:4000],
+            color=0x06B6D4 if B["hp"] > 0 else 0x10B981
+        )
+        if turn_gif:
+            r_embed.set_image(url=turn_gif)
+        else:
+            r_embed.set_thumbnail(url=boss_img)
+        try:
+            await msg.edit(embed=r_embed)
+        except Exception:
+            pass
+        if B["hp"] <= 0:
+            break
+        await asyncio.sleep(2.5)
+
+    # ---------------- KẾT QUẢ ----------------
+    if B["hp"] <= 0:
+        inv = player.setdefault("inventory", {})
+        inv["23"] = inv.get("23", 0) + T7_WIN_CARDS
+        if 23 not in player.get("unlocked_cards", []):
+            player.setdefault("unlocked_cards", []).append(23)
+        player["xu"] = player.get("xu", 0) + T7_WIN_XU
+        old_lvl = player.get("level", 1)
+        gain, xp_in, needed = _S4_grant_xp(player, T7_WIN_XP_MULT)
+        st["T7_cirno_done"] = True
+        save_player(player)
+        new_lvl = calculate_level_from_xp(player["xp"], player.get("prestige", 0))
+        lvl_txt = f"\n🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+        embed_win = discord.Embed(
+            title=f"🎉 CHIẾN THẮNG {T7_STAGE_LABEL}: CIRNO ACE 2!",
+            description=(
+                f"{T7_CIRNO} **Cirno:** *\"Ư... ta nhất định sẽ nhớ mặt ngươi, đồ hến câm!\"*\n"
+                f"*(Con tiên băng phiền phức lại bị đá văng ra xa...)*\n\n"
+                "🎁 **PHẦN THƯỞNG CHIẾN TÍCH:**\n"
+                f"• ✨ **+{gain:,} XP** (×{T7_WIN_XP_MULT:g} XP cấp hiện tại [{xp_in:,}/{needed:,}]){lvl_txt}\n"
+                f"• 🎴 **+{T7_WIN_CARDS} Thẻ bài [#26] Cirno** (Hiện có: `{inv['23']}` lá)\n"
+                f"• {XU_EMOJI} **+{T7_WIN_XU:,} Xu công đức** (Tổng: `{player['xu']:,}`)\n\n"
+                "👉 **Gõ `/story` để tiếp tục!**"
+            ),
+            color=0x10B981
+        )
+        embed_win.set_image(url=EVOL_CONFIG[23]["evol_gif"])
+        embed_win.set_footer(text=f"{T7_STAGE_LABEL} • Cirno đã bị đánh bại")
+        try:
+            await msg.edit(embed=embed_win)
+        except Exception:
+            pass
+    else:
+        embed_loss = discord.Embed(
+            title=f"💀 THẤT BẠI TẠI {T7_STAGE_LABEL}!",
+            description=(
+                f"Đội hình của {user.mention} đã bị đóng băng bởi Cirno Ace 2!\n"
+                f"Cirno còn lại: **{B['hp']:,}/{B['max_hp']:,} HP**\n\n"
+                "💡 *Hãy nâng cấp thẻ bài, xếp lại đội hình qua `/team` và gõ lại `/story` để phục thù!*"
+            ),
+            color=0xEF4444
+        )
+        embed_loss.set_thumbnail(url=boss_img)
+        try:
+            await msg.edit(embed=embed_loss)
+        except Exception:
+            pass
+
+
+# ==============================================================================
+# BỘ ĐIỀU HƯỚNG TOUHOU 7 - STAGE 1
+# ==============================================================================
+async def handle_story_t7(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    st = _t7_state(player)
+    name = user.display_name
+
+    # ----- Đã xong phần hiện có -----
+    if st["T7_s1_completed"]:
+        e = discord.Embed(
+            title=f"❄️ {T7_STAGE_LABEL}: TẠM DỪNG",
+            description=(
+                f"{T7_LETTY} Giấc ngủ giá rét đã nuốt chửng ý thức của **{name}**...\n\n"
+                "📌 **Phần tiếp theo của Stage 1 sẽ sớm cập bến trong bản cập nhật kế tiếp!**"
+            ),
+            color=0x93C5FD
+        )
+        e.set_thumbnail(url=CARDS_DATA[32]["image"])
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    # ----- BƯỚC 1: mở đầu -----
+    if not st["T7_intro_seen"]:
+        st["T7_intro_seen"] = True
+        st["T7_battles_done"] = 0
+        save_player(player)
+        e = discord.Embed(
+            title="🌨️ TOUHOU 7: ĐÔNG DÀI",
+            description=(
+                f"{EX_MARISA} **Marisa** *(rét run cầm cập)*: *\"Reimu nà, sao hôm nay đông dài thế...\"*\n"
+                f"{EX_REIMU} **Reimu** *(uống ngụm trà)*: *\"Không đúng, mùa đông này…\"*\n"
+                "*(cô đứng dậy, lôi cả Marisa dậy)*\n"
+                f"{EX_REIMU} **Reimu:** *\"Chúng ta phải đi kiểm tra dị thường rồi.\"*\n"
+                f"{EX_MARISA} **Marisa:** *\"Ể... giữa mùa đông này á...\"*\n\n"
+                "━━━━━━━━━━━━━━━━━━━━\n"
+                "🏰 *Ở một nơi khác...*\n\n"
+                f"{EX_PLAYER} **{name}** vừa chào {EX_REMILIA} **Remilia** và {EX_FLANDRE} **Flandre**, rồi được {EX_SAKUYA} **Sakuya** dẫn ra khỏi dinh thự.\n"
+                f"{EX_SAKUYA} **Sakuya:** *\"Không ngờ anh vẫn giữ lời hứa với Flandre nhỉ, không ngờ đấy.\"*\n"
+                f"{EX_PLAYER} **{name}:** *…*\n"
+                f"{EX_SAKUYA} **Sakuya:** *\"Đừng bận tâm.\"* *(đưa khăn quàng thêm)* *\"Có lẽ thêm khăn cũng tốt hơn.\"*\n"
+                f"*{name} đỏ mặt.*\n"
+                f"{EX_SAKUYA} **Sakuya** *(xoa trán)*: *\"Cậu ốm gì sao?\"*\n"
+                f"{EX_PLAYER} **{name}:** *…*\n"
+                f"{EX_SAKUYA} **Sakuya** *(thở dài)*: *\"Vẫn kiệm lời như vậy nhỉ.\"*\n\n"
+                "👉 **Gõ `/story` để tiếp tục!**"
+            ),
+            color=0x93C5FD
+        )
+        e.set_thumbnail(url=CARDS_DATA[32]["image"])
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    # ----- BƯỚC 2: nhiệm vụ /battle -----
+    if not st["T7_quest_claimed"]:
+        b_done = st.get("T7_battles_done", 0)
+        if b_done >= T7_REQ_BATTLES:
+            st["T7_quest_claimed"] = True
+            st["T7_boss_level"] = player.get("level", 1)     # cấp Boss cố định lúc nhận thưởng
+            player["xu"] = player.get("xu", 0) + T7_QUEST_XU
+            player["pull_tickets"] += T7_QUEST_TICKETS
+            old_lvl = player.get("level", 1)
+            gain, xp_in, needed = _S4_grant_xp(player, T7_QUEST_XP_MULT)
+            save_player(player)
+            new_lvl = calculate_level_from_xp(player["xp"], player.get("prestige", 0))
+            lvl_txt = f"\n🌟 **LÊN CẤP {new_lvl}!**" if new_lvl > old_lvl else ""
+            e = discord.Embed(
+                title=f"🎉 HOÀN THÀNH NHIỆM VỤ {T7_STAGE_LABEL}: GIẢI QUYẾT PHIỀN PHỨC!",
+                description=(
+                    "🧹 Đám tiên mùa đông lần lượt bị đánh văng, con đường phía trước đã thông thoáng.\n\n"
+                    "🎁 **PHẦN THƯỞNG:**\n"
+                    f"• {XU_EMOJI} **+{T7_QUEST_XU:,} Xu công đức** (Tổng: `{player['xu']:,}`)\n"
+                    f"• ✨ **+{gain:,} XP** (×{T7_QUEST_XP_MULT:g} XP cấp hiện tại [{xp_in:,}/{needed:,}]){lvl_txt}\n"
+                    f"• 🎟️ **+{T7_QUEST_TICKETS:.0f} Lượt Pull** (Tổng: `{player['pull_tickets']:.2f}` vé)\n\n"
+                    "👉 **Gõ `/story` để tiếp tục!**"
+                ),
+                color=0x10B981
+            )
+            await _s3_send(ctx_or_interaction, embed=e)
+            return
+
+        e = discord.Embed(
+            title=f"🎯 {T7_STAGE_LABEL}: ĐƯỜNG VỀ ĐỀN HAKUREI",
+            description=(
+                f"{EX_PLAYER} **{name}** ra khỏi dinh thự, đạp đất nhẹ, dùng bùa chú định bay một mạch về lại đền Hakurei.\n"
+                "Nhưng trên đường đi, cậu bị **một đám tiên mùa đông** vây quanh!\n\n"
+                f"• ⚔️ **Giải quyết phiền phức, đánh `/battle` {T7_REQ_BATTLES} lần:** "
+                f"`{b_done}/{T7_REQ_BATTLES}` {'✅' if b_done >= T7_REQ_BATTLES else '🔴'}\n\n"
+                f"🎁 **Phần thưởng:** **{T7_QUEST_XU:,} Xu** • **{T7_QUEST_XP_MULT:g}x XP** • **{T7_QUEST_TICKETS:.0f} Vé Pull**\n"
+                "💡 *Hoàn thành đủ rồi gõ lại `/story` để nhận thưởng và tiếp tục!*"
+            ),
+            color=0xB91C1C
+        )
+        await _s3_send(ctx_or_interaction, embed=e)
+        return
+
+    # ----- BƯỚC 3: boss Cirno -----
+    if not st["T7_cirno_done"]:
+        boss_lvl = st.get("T7_boss_level") or player.get("level", 1)
+        e = discord.Embed(
+            title=f"🗺️ {T7_STAGE_LABEL}: BÓNG DÁNG QUEN THUỘC",
+            description=(
+                "Bỗng trước mặt có một bóng dáng quen thuộc...\n\n"
+                f"{T7_CIRNO} **Cirno:** *\"Hì hì, là ta đây - Cirno! Kẻ mạnh nhất!\"*\n"
+                f"{EX_PLAYER} **{name}:** *…*\n"
+                f"{T7_CIRNO} **Cirno:** *\"Đừng có bơ ta đồ hến câm!\"*\n\n"
+                "⚠️ **CẢNH BÁO:** Cirno Ace 2 đã giải phóng toàn bộ ma pháp băng tuyết! Bấm nút bên dưới để khai màn Live Battle!"
+            ),
+            color=0x06B6D4
+        )
+        e.set_thumbnail(url=CARDS_DATA[23]["image"])
+        e.add_field(
+            name="👺 Thông Số Boss Cirno Ace 2:",
+            value=(f"• Sức mạnh gốc: **{T7_BOSS_BASE_ATK:,} DMG** | Máu gốc: **{T7_BOSS_BASE_HP:,} HP**\n"
+                   f"• Cấp độ Boss: **Lv.{boss_lvl}** (cố định, không tăng khi bạn lên cấp)\n"
+                   f"• 🧊 **Perfect Freeze** ({int(T7_FREEZE_CHANCE * 100)}% đóng băng)"),
+            inline=True
+        )
+        e.add_field(
+            name="🎁 Phần Thưởng Chiến Thắng:",
+            value=(f"• ✨ **×{T7_WIN_XP_MULT:g} XP**\n• 🎴 **{T7_WIN_CARDS} Thẻ bài [#26] Cirno**\n"
+                   f"• {XU_EMOJI} **{T7_WIN_XU:,} Xu**"),
+            inline=True
+        )
+        e.set_footer(text="Bấm nút màu đỏ bên dưới để chiến đấu trực tiếp!")
+        await _s3_send(ctx_or_interaction, embed=e, view=StoryT7CirnoBattleView(user, player))
+        return
+
+    # ----- BƯỚC 4: Letty xuất hiện -----
+    st["T7_letty_seen"] = True
+    st["T7_s1_completed"] = True
+    save_player(player)
+    e = discord.Embed(
+        title=f"❄️ {T7_STAGE_LABEL}: GIẤC NGỦ GIÁ RÉT",
+        description=(
+            f"Sau khi một lần nữa đá văng con tiên băng phiền phức, **{name}** bay lướt qua mặt băng thì đụng độ một bóng hình đứng giữa làn tuyết trắng.\n\n"
+            "❓ **???:** *\"Hừm, một con người sao? Sao không về nhà mà ra đây vậy?\"*\n"
+            f"*{name} dừng lại, chuẩn bị đón đầu.*\n\n"
+            f"{T7_LETTY} **Letty** xuất hiện: *\"Để ta giúp ngươi nhé, ngủ đông ~\"*\n\n"
+            "Do vừa chiến đấu trong môi trường tuyết, thứ mà cậu vốn không chịu lạnh tốt, thêm đòn tấn công đột ngột từ ả kia, "
+            f"**{name}** khuỵu xuống, ánh mắt lim dim chìm sâu vào giấc ngủ của giá rét...\n\n"
+            "📌 **Phần tiếp theo của Stage 1 sẽ sớm cập bến trong bản cập nhật kế tiếp!**"
+        ),
+        color=0x93C5FD
+    )
+    e.set_thumbnail(url=CARDS_DATA[32]["image"])
+    await _s3_send(ctx_or_interaction, embed=e)
+
+
+# ==============================================================================
+# NỐI VÀO HỆ THỐNG: Extra Stage xong -> /story chuyển sang Touhou 7
+# (người chọn "Lưỡng lự" ở Extra Stage đã đóng mục này nên KHÔNG được vào Touhou 7)
+# ==============================================================================
+_T7_PREV_EXTRA = handle_story_extra
+async def handle_story_extra(ctx_or_interaction):
+    user = ctx_or_interaction.user if isinstance(ctx_or_interaction, discord.Interaction) else ctx_or_interaction.author
+    player = get_player(user.id, user.display_name)
+    st = player.get("story", {}) or {}
+    if st.get("EX_completed") and st.get("EX_choice") != "hesitate":
+        await handle_story_t7(ctx_or_interaction)
+        return
+    await _T7_PREV_EXTRA(ctx_or_interaction)
+
+# ===================== HẾT NỬA KHỐI TOUHOU 7 - STAGE 1 =====================
 
 import sys
 
