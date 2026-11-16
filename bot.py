@@ -25,7 +25,7 @@
 # ==============================================================================
 
 # UPDATE 2026-09-22: THEM [#10] KOISHI KOMEIJI (Rank S - 600 ATK / 6,060 HP) - ID CU 10-26 DAY LEN 11-27, TU DONG DI TRU DU LIEU NGUOI CHOI
-# UPDATE 2026-09-24: THEM ACE 2 MOI - [#12] REMILIA (25 THE, THUONG DO GUNGNIR THU DONG +3% MAX HP MUC TIEU) & [#20] REISEN (40 THE, RED EYE MIND EXPLOSION 25% - MUC TIEU 20% TU SAT TRONG 4 TURN)
+# UPDATE 2026-09-24: THEM ACE 2 MOI - [#12] REMILIA (25 THE, THUONG DO GUNGNIR THU DONG +5% Max HP MUC TIEU) & [#20] REISEN (40 THE, RED EYE MIND EXPLOSION 25% - MUC TIEU 20% TU SAT TRONG 4 TURN)
 # UPDATE 2026-09-27: THEM BOSS MOI [BAT ACH KIEM THAN TUONG MAHORAGA] (90K HP / 6K DMG CHIA DEU) - THE TRUE ADAPT (HOI 3% HP + GIAM 3% ST MOI TURN) + THOAI MA KIEM (DON MUC TIEU), TI LE SPAWN 3 BOSS DEU 1/3, THEM MAHORAGA SHARD (5% DROP)
 # UPDATE 2026-09-27: CAP NHAT ACE 2 MOI - [#22] CIRNO (60 THE, PERFECT FREEZE 40% - 2 TURN TIEP 45% DONG BANG KHONG DANH TRA) & [#13] UTSUHO REIUJI (30 THE, NUCLEAR SPELL CARD 30% - 3.5x DMG & DUNG NHAM BONG 2% MAX HP TRONG 3 TURN)
 import os
@@ -2721,7 +2721,7 @@ class OpponentTeamView(discord.ui.View):
             elif c["cid"] == 9:
                 skill_text += "\n🦇 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Ripples of 495 Years* xóa sổ 50% HP đối thủ (30% HP Boss trong Raid, 1 lần/trận)."
             elif c["cid"] == 12:
-                skill_text += "\n🩸 **[Ace 2 Hiệu Ứng]** *Thương Đỏ Gungnir* (THỤ ĐỘNG): mọi đòn đánh gây thêm 3% Máu Tối Đa của mục tiêu."
+                skill_text += "\n🩸 **[Ace 2 Hiệu Ứng]** *Thương Đỏ Gungnir* (THỤ ĐỘNG): mọi đòn đánh gây thêm 5% Máu Tối Đa của mục tiêu."
             elif c["cid"] == 21:
                 skill_text += "\n🔴 **[Ace 2 Hiệu Ứng]** 25% kích hoạt *Red Eye Mind Explosion* (1 lần/trận): mục tiêu 20% tự gây sát thương lên bản thân trong 4 turn."
             elif c["cid"] == 23:
@@ -3676,7 +3676,7 @@ async def execute_raid(channel, raid_data):
                 if not turn_image:
                     turn_image = EVOL_CONFIG[12]["skill_gif"]
                 if actual_gungnir > 0:
-                    remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{actual_gungnir:,} DMG** (3% Máu tối đa Boss)!"
+                    remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{actual_gungnir:,} DMG** (5% Máu tối đa Boss)!"
                 else:
                     remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir**: Sát thương chuẩn đã chạm trần (0 DMG)!"
                 if cap_gungnir_msg:
@@ -4739,7 +4739,7 @@ async def execute_raid(channel, raid_data):
                     if not turn_image:
                         turn_image = EVOL_CONFIG[12]["skill_gif"]
                     if actual_gungnir > 0:
-                        remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{actual_gungnir:,} DMG** (3% Máu tối đa Boss Phase 2)!"
+                        remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{actual_gungnir:,} DMG** (5% Máu tối đa Boss Phase 2)!"
                     else:
                         remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir**: Sát thương chuẩn đã chạm trần (0 DMG)!"
                     if cap_gungnir_msg:
@@ -5349,7 +5349,7 @@ async def execute_raid(channel, raid_data):
                 if not turn_image:
                     turn_image = EVOL_CONFIG[12]["skill_gif"]
                 if actual_gungnir > 0:
-                    remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{actual_gungnir:,} DMG** (3% Máu tối đa Boss Phase 2)!"
+                    remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{actual_gungnir:,} DMG** (5% Máu tối đa Boss Phase 2)!"
                 else:
                     remilia_notif = f"🩸 **[Ace 2] [#12] Remilia Scarlet** ({c['username']}) - **Thương Đỏ Gungnir**: Sát thương chuẩn đã chạm trần (0 DMG)!"
                 if cap_gungnir_msg:
@@ -9996,7 +9996,7 @@ class CharacterCheckView(discord.ui.View):
     def rebuild_items(self):
         self.clear_items()
         cid = CARD_ORDER[self.current_index]
-        has_ace = cid in (4, 9, 12, 13, 15, 17, 18, 19, 21, 22, 23, 24)
+        has_ace = cid in (4, 9, 12, 13, 15, 17, 18, 19, 21, 22, 23, 24, 32)
 
         first_btn = discord.ui.Button(label="⏮️", style=discord.ButtonStyle.secondary, row=0)
         first_btn.callback = self.first_page
@@ -10057,7 +10057,7 @@ class CharacterCheckView(discord.ui.View):
             s3_btn.callback = self.show_s3_card
             self.add_item(s3_btn)
 
-        has_ace_ids = (4, 9, 12, 13, 15, 17, 18, 19, 21, 22, 23, 24)
+        has_ace_ids = (4, 9, 12, 13, 15, 17, 18, 19, 21, 22, 23, 24, 32)
         in_t_mode = (self.show_t1 or self.show_t2 or self.show_t3 or self.show_t4)
         half = (len(CARD_ORDER) + 1) // 2
         for gi, group in enumerate([CARD_ORDER[:half], CARD_ORDER[half:]]):
@@ -10091,7 +10091,7 @@ class CharacterCheckView(discord.ui.View):
         cid = CARD_ORDER[self.current_index]
         card = CARDS_DATA[cid]
         details = CHARACTER_DETAILS.get(cid, {})
-        has_ace = cid in (4, 9, 12, 13, 15, 17, 18, 19, 21, 22, 23, 24)
+        has_ace = cid in (4, 9, 12, 13, 15, 17, 18, 19, 21, 22, 23, 24, 32)
         is_ace_mode = self.show_ace and has_ace
 
         player = get_player(self.user_id) if self.user_id else None
@@ -10812,11 +10812,11 @@ async def handle_battle(ctx_or_interaction):
                 turn_actions.append(msg_y)
                 
         if pc["cid"] == 12 and pc["is_ace2"]:
-            gungnir_bonus = int(oc["hp"] * 0.03)
+            gungnir_bonus = int(oc["hp"] * 0.05)
             curr_pc_power += gungnir_bonus
             if not turn_image:
                 turn_image = EVOL_CONFIG[12]["skill_gif"]
-            turn_actions.append(f"🩸 **[Ace 2] [#12] Remilia** - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{gungnir_bonus:,} DMG** (3% Máu tối đa đối thủ)!")
+            turn_actions.append(f"🩸 **[Ace 2] [#12] Remilia** - **Thương Đỏ Gungnir** (Thụ động): Gây thêm **{gungnir_bonus:,} DMG** (5% Máu tối đa đối thủ)!")
 
         if pc["cid"] == 21 and pc["is_ace2"] and not reisen_used:
             if random.random() < 0.25:
@@ -11053,7 +11053,7 @@ async def handle_battle(ctx_or_interaction):
                     turn_actions.append(msg_f)
 
             if oc["cid"] == 12 and oc.get("is_ace2") and oc.get("erased_skill") != "remilia_gungnir":
-                o_gungnir_bonus = int(pc["hp"] * 0.03)
+                o_gungnir_bonus = int(pc["hp"] * 0.05)
                 curr_oc_power += o_gungnir_bonus
                 if not turn_image:
                     turn_image = EVOL_CONFIG[12]["skill_gif"]
@@ -11738,11 +11738,11 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_actions.append(msg_y)
 
         if cc["cid"] == 12 and cc["is_ace2"] and cc.get("erased_skill") != "remilia_gungnir":
-            _gungnir = int(tc["max_hp"] * 0.03)
+            _gungnir = int(tc["max_hp"] * 0.05)
             c_curr_power += _gungnir
             if not turn_image:
                 turn_image = EVOL_CONFIG[12]["skill_gif"]
-            turn_actions.append(f"🩸 **[Ace 2] [#12] Remilia** ({challenger.display_name}) - **Thương Đỏ Gungnir** (Thụ động): +**{_gungnir:,} DMG** (3% Máu tối đa đối thủ)!")
+            turn_actions.append(f"🩸 **[Ace 2] [#12] Remilia** ({challenger.display_name}) - **Thương Đỏ Gungnir** (Thụ động): +**{_gungnir:,} DMG** (5% Máu tối đa đối thủ)!")
 
         if cc["cid"] == 21 and cc["is_ace2"] and not c_reisen_used:
             if random.random() < 0.25:
@@ -11969,11 +11969,11 @@ async def run_pvp_match(channel, challenger, target, c_team_cids, t_team_cids, i
                 turn_actions.append(msg_y)
 
         if tc["cid"] == 12 and tc["is_ace2"] and tc.get("erased_skill") != "remilia_gungnir":
-            _gungnir = int(cc["max_hp"] * 0.03)
+            _gungnir = int(cc["max_hp"] * 0.05)
             t_curr_power += _gungnir
             if not turn_image:
                 turn_image = EVOL_CONFIG[12]["skill_gif"]
-            turn_actions.append(f"🩸 **[Ace 2] [#12] Remilia** ({target.display_name}) - **Thương Đỏ Gungnir** (Thụ động): +**{_gungnir:,} DMG** (3% Máu tối đa đối thủ)!")
+            turn_actions.append(f"🩸 **[Ace 2] [#12] Remilia** ({target.display_name}) - **Thương Đỏ Gungnir** (Thụ động): +**{_gungnir:,} DMG** (5% Máu tối đa đối thủ)!")
 
         if tc["cid"] == 21 and tc["is_ace2"] and not t_reisen_used:
             if random.random() < 0.25:
@@ -13286,11 +13286,11 @@ async def run_story_rumia_battle(channel_or_interaction, user, player):
                 turn_image = _t1["gif"]
             turn_logs.extend(_t1["logs"])
 
-        # Kỹ năng Remilia Ace 2 (Thụ động +3% Max HP)
+        # Kỹ năng Remilia Ace 2 (Thụ động +5% Max HP)
         if pc["cid"] == 12 and pc.get("is_ace2"):
-            gungnir_dmg = int(rumia_max_hp * 0.03)
+            gungnir_dmg = int(rumia_max_hp * 0.05)
             card_dmg += gungnir_dmg
-            turn_logs.append(f"🩸 **[Ace 2] Remilia** - **Thương Đỏ Gungnir**: +{gungnir_dmg:,} DMG (3% Max HP)!")
+            turn_logs.append(f"🩸 **[Ace 2] Remilia** - **Thương Đỏ Gungnir**: +{gungnir_dmg:,} DMG (5% Max HP)!")
 
         # Kỹ năng Flandre Ace 2 (Ripples of 495 Years - 50% HP)
         if pc["cid"] == 9 and pc.get("is_ace2") and not flandre_used:
@@ -13697,9 +13697,9 @@ async def run_story_cirno_battle(channel_or_interaction, user, player):
                     turn_image = _t1["gif"]
                 turn_logs.extend(_t1["logs"])
 
-            # Kỹ năng Remilia Ace 2 (Thụ động +3% Max HP)
+            # Kỹ năng Remilia Ace 2 (Thụ động +5% Max HP)
             if pc["cid"] == 12 and pc.get("is_ace2"):
-                gungnir_dmg = int(cirno_max_hp * 0.03)
+                gungnir_dmg = int(cirno_max_hp * 0.05)
                 card_dmg += gungnir_dmg
                 turn_logs.append(f"🩸 **[Ace 2] Remilia** - **Thương Đỏ Gungnir**: +{gungnir_dmg:,} DMG!")
 
@@ -17414,9 +17414,9 @@ def story_s3_player_turn(pc, rnd, B, logs):
         g(EVOL_CONFIG[9]["skill_gif"])
         logs.append(f"🦇 **[Ace 2] [#09] Flandre** tung **Ripples of 495 Years** (25%)! Xóa sổ **{rip:,} HP (50% HP Meiling)**!")
 
-    # ----- Remilia Ace 2: thụ động +3% Max HP -----
+    # ----- Remilia Ace 2: thụ động +5% Max HP -----
     if cid == 12 and ace2:
-        bonus = int(B["max_hp"] * 0.03)
+        bonus = int(B["max_hp"] * 0.05)
         dmg += bonus
         g(EVOL_CONFIG[12]["skill_gif"])
         logs.append(f"🩸 **[Ace 2] [#12] Remilia** - **Thương Đỏ Gungnir** (thụ động): +**{bonus:,} DMG** (3% Máu tối đa)!")
@@ -33273,6 +33273,287 @@ async def _sale_interaction_check(self, interaction: discord.Interaction) -> boo
     apply_weekend_sale()          # mọi nút bấm trong shop đều cập nhật giá theo ngày hiện tại
     return await _SALE_PREV_IC(self, interaction)
 ShopView.interaction_check = _sale_interaction_check
+
+# ==============================================================================
+# [UPDATE] LETTY WHITEROCK (#32) + REMILIA 5% + FIX SEIKI/MAHORAGA STORY
+# ==============================================================================
+import builtins as _lt_bi
+import contextvars as _lt_cv
+
+LETTY_CHANCE = 0.25
+LETTY_MULT = 1.5
+LETTY_NOHEAL_TURNS = 2        # chặn hồi máu: phần còn lại của hiệp hiện tại + hiệp kế tiếp
+LETTY_ACE2_CARDS = 60
+REMILIA_PASSIVE_PCT = 0.05    # raid: 5% máu tối đa Boss
+REMILIA_CAP_BONUS = 0.05      # chạm trần sát thương chuẩn -> +5% sát thương
+
+CARD_ALIASES.update({"letty": 32, "whiterock": 32, "lettywhiterock": 32})
+
+# ---------------------------- 1. ACE 2 / CHECK / EVOL ----------------------------
+_LT_IMG = CARDS_DATA[32]["image"]
+_LT_SKILL_TEXT = (
+    "❄️ **Flower Wither Away (25% - tối đa 1 lần/trận):** Gây **×1.5 sát thương** và khiến đối phương "
+    "**không thể hồi phục bằng bất cứ cách nào trong 2 turn** (kể cả passive, Giáp Gaia, hoàn máu...)."
+)
+EVOL_CONFIG[32] = {
+    "id": 32, "key": "letty", "name": "Letty Whiterock",
+    "title": "[#32] Letty Whiterock - Ace 2 ⭐⭐", "ace_level": "Ace 2 ⭐⭐",
+    "required_cards": LETTY_ACE2_CARDS, "required_pulls": LETTY_ACE2_CARDS,
+    "evol_gif": _LT_IMG, "skill_name": "Flower Wither Away (Hoa Tàn Tuyết Phủ)",
+    "skill_desc": _LT_SKILL_TEXT, "skill_gif": _LT_IMG,
+    "bonus_power": 300, "bonus_hp": 300
+}
+EVOL_CONFIG["32"] = EVOL_CONFIG[32]
+if 32 not in EVOL_ORDER:
+    EVOL_ORDER.insert((EVOL_ORDER.index(22) + 1) if 22 in EVOL_ORDER else len(EVOL_ORDER), 32)
+CHARACTER_DETAILS[32] = {
+    "title": "Yêu Quái Cuối Đông",
+    "skill_name": "Flower Wither Away",
+    "skill_desc": ("Yêu quái tuyết mang theo cái lạnh cuối mùa đông (350 ATK / 3,150 HP). Bản thường chưa có kỹ năng. "
+                   "[Ace 2 ⭐⭐]: Flower Wither Away (25%, 1 lần/trận) — ×1.5 sát thương, đối phương không thể hồi phục trong 2 turn!")
+}
+# Remilia: cập nhật chữ 3% -> 5%
+try:
+    EVOL_CONFIG[12]["skill_desc"] = EVOL_CONFIG[12]["skill_desc"].replace("3% Máu", "5% Máu") + \
+        "\n🔺 *Trong Raid Boss: nếu sát thương chuẩn chạm trần giới hạn, 5% này chuyển thành **+5% sát thương**.*"
+    CHARACTER_DETAILS[12]["skill_desc"] = CHARACTER_DETAILS[12]["skill_desc"].replace("3% Máu", "5% Máu")
+except Exception as _e:
+    print(f"[LT] lỗi sửa text Remilia: {_e}", flush=True)
+
+# ---------------------------- 2. HÀM HỖ TRỢ ----------------------------
+def _lt_is(card) -> bool:
+    try:
+        return card.get("cid") == 32 and bool(card.get("is_ace2")) and card.get("erased_skill") != "letty_flower"
+    except Exception:
+        return False
+
+def _lt_roll(card, chance):
+    return random.random() < chance          # random đã bọc Liềm: +2% rate nếu có Liềm Hỗn Mang
+try:
+    _LIEM_FUNC_VARS["_lt_roll"] = "card"
+except Exception:
+    pass
+
+_LT_NH = _lt_cv.ContextVar("lt_boss_noheal", default=None)   # trạng thái chặn hồi máu của Boss (mỗi trận raid 1 context)
+_RM_CAPPED = _lt_cv.ContextVar("rm_capped", default=False)
+
+# ---------------------------- 3. CHẶN HỒI MÁU BOSS (đè hàm min trong module) ----------------------------
+# Mọi lệnh hồi máu của Boss đều có dạng min(max_hp, hp + heal). Khi Boss bị Letty chặn, trả về hp hiện tại.
+def min(*args, **kw):
+    r = _lt_bi.min(*args, **kw)
+    try:
+        if len(args) == 2 and not kw:
+            st = _LT_NH.get()
+            if st is not None and st["turns"] > 0:
+                a, b = args
+                if type(a) is int and type(b) is int and a == st["max"]:
+                    loc = _sys._getframe(1).f_locals
+                    cur = None
+                    Bd = loc.get("B")
+                    if isinstance(Bd, dict) and Bd.get("max_hp") == a and isinstance(Bd.get("hp"), int):
+                        cur = Bd["hp"]
+                    else:
+                        for hv, mv in (("p2_hp", "p2_max_hp"), ("p1_hp", "p1_max_hp")):
+                            if loc.get(mv) == a and isinstance(loc.get(hv), int):
+                                cur = loc[hv]
+                                break
+                    if cur is not None and r > cur:
+                        return cur
+    except Exception:
+        pass
+    return r
+
+# ---------------------------- 4. REMILIA: 5% + CHẠM TRẦN = +5% SÁT THƯƠNG ----------------------------
+_LT_PREV_TRUE = apply_raid_true_damage
+def apply_raid_true_damage(requested_dmg: int, current_accumulated: int, max_cap: int, skill_label: str):
+    is_g = "Gungnir" in str(skill_label)
+    if is_g:
+        requested_dmg = int(requested_dmg * REMILIA_PASSIVE_PCT / 0.03)   # 3% -> 5%
+    res = _LT_PREV_TRUE(requested_dmg, current_accumulated, max_cap, skill_label)
+    if is_g:
+        _RM_CAPPED.set(bool(requested_dmg > 0 and res[0] < requested_dmg))
+    return res
+
+# ---------------------------- 5. RAID THƯỜNG / EVENT ----------------------------
+_LT_PREV_RAID_ATTACK = t7_raid_attack
+def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
+    card_dmg, boss_stunned, turn_image, notif = _LT_PREV_RAID_ATTACK(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L)
+    try:
+        if ac.get("cid") == 12 and ac.get("is_ace2") and _RM_CAPPED.get():
+            _RM_CAPPED.set(False)
+            card_dmg = int(card_dmg * (1.0 + REMILIA_CAP_BONUS))
+            notif = (notif + "\n" if notif else "") + f"🔺 **[Ace 2] [#12] Remilia** ({c['username']}): sát thương chuẩn đã chạm trần ➜ chuyển thành **+5% sát thương**!"
+        if _lt_is(ac) and not L.get("player_skills_locked"):
+            st = c.setdefault("t3_state", {}).setdefault("letty", {})
+            if not st.get("used") and _lt_roll(ac, LETTY_CHANCE):
+                st["used"] = 1
+                card_dmg = int(card_dmg * LETTY_MULT)
+                bmax = L.get("p2_max_hp") or L.get("p1_max_hp")
+                if bmax:
+                    _LT_NH.set({"turns": LETTY_NOHEAL_TURNS, "max": int(bmax)})
+                turn_image = turn_image or _LT_IMG
+                notif = (notif + "\n" if notif else "") + (
+                    f"❄️ **[Ace 2] [#32] Letty** ({c['username']}) tung **Flower Wither Away** (25%)! "
+                    f"×1.5 sát thương ({card_dmg:,} DMG) và Boss **không thể hồi phục trong {LETTY_NOHEAL_TURNS} turn**!")
+    except Exception as e:
+        print(f"[LT] lỗi raid_attack: {e}", flush=True)
+    return card_dmg, boss_stunned, turn_image, notif
+
+# ---------------------------- 6. RAID DẠNG B (Jotaro, Han Seiki, Sukuna, Giorno, Kenjaku, Fateria P2) ----------------------------
+_LT_PREV_JT_ATTACK = t7_jt_attack
+def t7_jt_attack(c, ac, dmg, B, notes):
+    dmg = _LT_PREV_JT_ATTACK(c, ac, dmg, B, notes)
+    try:
+        if ac.get("cid") == 12 and ac.get("is_ace2") and _RM_CAPPED.get():
+            _RM_CAPPED.set(False)
+            dmg = int(dmg * (1.0 + REMILIA_CAP_BONUS))
+            notes.append(f"🔺 **[Ace 2] [#12] Remilia** ({c['username']}): sát thương chuẩn đã chạm trần ➜ chuyển thành **+5% sát thương**!")
+        if _lt_is(ac):
+            st = c.setdefault("t3_state", {}).setdefault("letty", {})
+            if not st.get("used") and _lt_roll(ac, LETTY_CHANCE):
+                st["used"] = 1
+                dmg = int(dmg * LETTY_MULT)
+                _LT_NH.set({"turns": LETTY_NOHEAL_TURNS, "max": int(B["max_hp"])})
+                if not B.get("gif"):
+                    B["gif"] = _LT_IMG
+                notes.append(f"❄️ **[Ace 2] [#32] Letty** ({c['username']}) tung **Flower Wither Away** (25%)! ×1.5 sát thương ({dmg:,} DMG), Boss **không thể hồi phục {LETTY_NOHEAL_TURNS} turn**!")
+    except Exception as e:
+        print(f"[LT] lỗi jt_attack: {e}", flush=True)
+    return dmg
+
+# đếm lùi 1 lần / hiệp
+_LT_PREV_AFTER_BOSS = t7_raid_after_boss
+def t7_raid_after_boss(active, boss_log) -> str:
+    res = _LT_PREV_AFTER_BOSS(active, boss_log)
+    try:
+        st = _LT_NH.get()
+        if st is not None and st["turns"] > 0:
+            st["turns"] -= 1
+    except Exception:
+        pass
+    return res
+
+# ---------------------------- 7. BATTLE / PVP (card vs card) ----------------------------
+def _lt_set_gif(gif):
+    try:
+        if not gif or not globals().get("_FA_FRAME_OK"):
+            return
+        f = _sys._getframe(1)
+        hops = 0
+        while f is not None and f.f_code.co_name in ("_lt_set_gif", "eq_fenrir_post") and hops < 12:
+            f = f.f_back
+            hops += 1
+        try:
+            if f is not None and "turn_image" in f.f_locals and not f.f_locals["turn_image"]:
+                _fa_frame_write(f, {"turn_image": gif})
+        finally:
+            del f
+    except Exception as e:
+        print(f"[LT] lỗi set gif: {e}", flush=True)
+
+_LT_PREV_FENRIR_POST = eq_fenrir_post
+def eq_fenrir_post(att, tgt, tgt_mark, logs):
+    _LT_PREV_FENRIR_POST(att, tgt, tgt_mark, logs)
+    try:
+        if (_lt_is(att) and not att.get("lt_used") and tgt_mark is not None
+                and tgt.get("current_hp", 0) > 0 and tgt_mark - tgt["current_hp"] > 0
+                and _lt_roll(att, LETTY_CHANCE)):
+            att["lt_used"] = True
+            extra = int(att.get("power", 0) * (LETTY_MULT - 1.0))
+            tgt["current_hp"] = max(0, tgt["current_hp"] - extra)
+            tgt["lt_nh"] = LETTY_NOHEAL_TURNS
+            tgt["lt_fresh"] = True
+            tgt["lt_floor"] = None
+            logs.append(f"❄️ **[Ace 2] [#32] Letty** tung **Flower Wither Away** (25%)! ×1.5 sát thương: thêm **{extra:,} DMG** lên **{tgt.get('name', 'mục tiêu')}** và khiến nó **không thể hồi phục trong {LETTY_NOHEAL_TURNS} turn**! *(1 lần/trận)*")
+            _lt_set_gif(_LT_IMG)
+    except Exception as e:
+        print(f"[LT] lỗi duel letty: {e}", flush=True)
+
+_LT_PREV_GAIA_POST = eq_gaia_post
+def eq_gaia_post(card, mark, incoming, base_power, logs):
+    nh = card.get("lt_nh", 0)
+    if nh <= 0:
+        return _LT_PREV_GAIA_POST(card, mark, incoming, base_power, logs)
+    try:
+        fresh = card.pop("lt_fresh", False)
+        fl = card.get("lt_floor")
+        if (not fresh) and fl is not None and mark is not None and mark > fl:
+            undo = mark - fl                           # máu hồi trước khi vào hiệp -> bị hủy
+            card["current_hp"] = max(0, card["current_hp"] - undo)
+            logs.append(f"❄️ **[Flower Wither Away]** **{card.get('name', 'Mục tiêu')}** không thể hồi phục (hủy **{undo:,} HP** hồi trong hiệp)!")
+        h1 = card["current_hp"]
+        ret = _LT_PREV_GAIA_POST(card, mark, incoming, base_power, logs)
+        if card["current_hp"] > h1:                    # Giáp Gaia / hoàn máu sau đòn cũng bị chặn
+            card["current_hp"] = h1
+        card["lt_floor"] = card["current_hp"]
+        card["lt_nh"] = nh - 1
+        return ret
+    except Exception as e:
+        print(f"[LT] lỗi chặn hồi duel: {e}", flush=True)
+        return _LT_PREV_GAIA_POST(card, mark, incoming, base_power, logs)
+
+# ---------------------------- 8. STORY ----------------------------
+def _lt_story_fix(pc, card_dmg, guard, gif, logs, fr):
+    """Sửa lỗi Stage 1-2 (Rumia/Cirno): Seiki Ace 1/Ace 2 (Fantasy Seal) và Mahoraga Ace 1 trước đây không có kỹ năng."""
+    loc = fr.f_locals
+    rounds = loc.get("rounds", 0)
+    cid = str(pc.get("cid")).lower()
+    if cid == "t1" and pc.get("is_ace2"):
+        p_t1 = loc.get("p_t1")
+        if isinstance(p_t1, dict) and p_t1.get("seiki_seal_used") and not pc.get("lt_seal_seen"):
+            pc["lt_seal_seen"] = True
+            guard = True
+            gif = gif or T1_SEAL_GIF
+            logs.append("🛡️ **[Ace 2] [#t1] Seiki** - **Fantasy Seal** (50%)! MIỄN TOÀN BỘ SÁT THƯƠNG hiệp này!")
+    elif cid in ("t1", "t2") and not pc.get("is_ace2"):
+        flags = loc.get("story_flags")
+        if isinstance(flags, dict):
+            card_dmg, seal, g = story_t1_t2_skills(pc, rounds, flags, card_dmg, logs)
+            if seal:
+                guard = True
+            gif = gif or g
+    return card_dmg, guard, gif
+
+_LT_PREV_STORY = t7_story_apply
+def t7_story_apply(pc, card_dmg, guard, boss_max_hp, boss_power, logs, team=None, boss_hp=None):
+    card_dmg, guard, stun, gif = _LT_PREV_STORY(pc, card_dmg, guard, boss_max_hp, boss_power, logs, team, boss_hp)
+    try:
+        if _lt_is(pc) and not pc.get("lt_used") and _lt_roll(pc, LETTY_CHANCE):
+            pc["lt_used"] = True
+            card_dmg = int(card_dmg * LETTY_MULT)
+            gif = gif or _LT_IMG
+            logs.append(f"❄️ **[Ace 2] [#32] Letty** tung **Flower Wither Away** (25%)! ×1.5 sát thương giáng **{card_dmg:,} DMG**!")
+        fr = _sys._getframe(1)
+        try:
+            if fr.f_code.co_name in ("run_story_rumia_battle", "run_story_cirno_battle"):
+                card_dmg, guard, gif = _lt_story_fix(pc, card_dmg, guard, gif, logs, fr)
+        finally:
+            del fr
+    except Exception as e:
+        print(f"[LT] lỗi story: {e}", flush=True)
+    return card_dmg, guard, stun, gif
+
+# ---------------------------- 9. BÓNG KHÁI NIỆM + RESET PHASE ----------------------------
+_LT_PREV_ERASE = apply_bong_khai_niem_card
+def apply_bong_khai_niem_card(target_card: dict):
+    if target_card.get("cid") == 32 and target_card.get("is_ace2") and not target_card.get("erased_skill"):
+        target_card["erased_skill"] = "letty_flower"
+        target_card["erased_skill_name"] = "Flower Wither Away"
+        return f"🌑 **[Bóng Khái Niệm]** Đã xóa kỹ năng duy nhất **[Flower Wither Away]** của **{target_card['name']}**! *(Tối đa mất 1 chiêu)*"
+    return _LT_PREV_ERASE(target_card)
+
+_LT_PREV_RESET = reset_sakuya3_phase
+def reset_sakuya3_phase(c: dict):
+    _LT_PREV_RESET(c)
+    try:
+        _LT_NH.set(None)
+        _RM_CAPPED.set(False)
+        for card in c.get("team_cards", []):
+            for k in ("lt_used", "lt_nh", "lt_floor", "lt_fresh"):
+                card.pop(k, None)
+    except Exception:
+        pass
+# ===================== HẾT KHỐI LETTY / REMILIA / FIX STORY =====================
 
 import sys
 
