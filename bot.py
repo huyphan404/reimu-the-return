@@ -34402,23 +34402,6 @@ async def handle_story_t7(ctx_or_interaction):
     )
     e.set_thumbnail(url=CARDS_DATA[32]["image"])
     await _s3_send(ctx_or_interaction, embed=e)
-
-
-# ==============================================================================
-# NỐI VÀO HỆ THỐNG: Extra Stage xong → /story chuyển sang Touhou 7
-# ==============================================================================
-_T7_PREV_EXTRA = handle_story_extra
-async def handle_story_extra(ctx_or_interaction):
-    user   = (ctx_or_interaction.user
-              if isinstance(ctx_or_interaction, discord.Interaction)
-              else ctx_or_interaction.author)
-    player = get_player(user.id, user.display_name)
-    st     = player.get("story", {}) or {}
-    if st.get("EX_completed") and st.get("EX_choice") != "hesitate":
-        await handle_story_t7(ctx_or_interaction)
-        return
-    await _T7_PREV_EXTRA(ctx_or_interaction)
-
 # ===================== HẾT  KHỐI TOUHOU 7 - STAGE 1 =====================
 #   (chú ý có 2 khoảng trắng trước "KHỐI" – tìm cả dòng đó)
 #
@@ -35271,7 +35254,7 @@ async def handle_story_t7(ctx_or_interaction):
 # ==============================================================================
 # NỐI VÀO HỆ THỐNG: Extra Stage xong → /story chuyển sang Touhou 7
 # ==============================================================================
-_T7_PREV_EXTRA = handle_story_extra
+_handle_story_extra_base = handle_story_extra
 async def handle_story_extra(ctx_or_interaction):
     user   = (ctx_or_interaction.user
               if isinstance(ctx_or_interaction, discord.Interaction)
@@ -35281,7 +35264,7 @@ async def handle_story_extra(ctx_or_interaction):
     if st.get("EX_completed") and st.get("EX_choice") != "hesitate":
         await handle_story_t7(ctx_or_interaction)
         return
-    await _T7_PREV_EXTRA(ctx_or_interaction)
+    await _handle_story_extra_base(ctx_or_interaction)
 
 # ===================== HẾT  KHỐI TOUHOU 7 - STAGE 1 =====================
 
