@@ -33629,7 +33629,6 @@ def _t7_fix(line: str) -> str:
     return s.replace("§§A§§", "#27] Hong Meiling").replace("§§B§§", "#27 Hong Meiling")
 
 
-_T7_PREV_DQ = update_daily_quest_progress
 def update_daily_quest_progress(player: dict, quest_type: str, amount: int = 1) -> list:
     try:
         if quest_type == "battle":
@@ -33640,7 +33639,7 @@ def update_daily_quest_progress(player: dict, quest_type: str, amount: int = 1) 
                                             st.get("T7_battles_done", 0) + amount)
     except Exception as e:
         print(f"[T7] lỗi đếm battle: {e}", flush=True)
-    return _T7_PREV_DQ(player, quest_type, amount)
+    return _EX_PREV_DQ(player, quest_type, amount)
 
 
 # ==============================================================================
@@ -34497,18 +34496,6 @@ def _t7_fix(line: str) -> str:
 
 
 # ---- Đếm số trận /battle cho nhiệm vụ Touhou 7 ----
-_T7_PREV_DQ = update_daily_quest_progress
-def update_daily_quest_progress(player: dict, quest_type: str, amount: int = 1) -> list:
-    try:
-        if quest_type == "battle":
-            st = player.get("story") or {}
-            if (st.get("EX_completed") and st.get("T7_intro_seen")
-                    and not st.get("T7_quest_claimed")):
-                st["T7_battles_done"] = min(T7_REQ_BATTLES,
-                                            st.get("T7_battles_done", 0) + amount)
-    except Exception as e:
-        print(f"[T7] lỗi đếm battle: {e}", flush=True)
-    return _T7_PREV_DQ(player, quest_type, amount)
 
 
 # ==============================================================================
