@@ -32450,7 +32450,9 @@ def update_daily_quest_progress(player: dict, quest_type: str, amount: int = 1) 
     try:
         if quest_type == "loot":
             st = player.get("story") or {}
-            if (st.get("S6_completed") and st.get("EX_intro_seen") and not st.get("EX_choice")
+            if (st.get("S6_completed") and st.get("EX_intro_seen")
+                    and st.get("EX_choice") in (None, False, "", "open")
+                    and not st.get("EX_completed")
                     and st.get("EX_loot_done", 0) < EX_REQ_LOOT):
                 st["EX_loot_done"] = min(EX_REQ_LOOT, st.get("EX_loot_done", 0) + amount)
     except Exception as e:
