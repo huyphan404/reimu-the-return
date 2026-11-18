@@ -30894,6 +30894,7 @@ S5_KNIVES_CHANCE = 0.25        # Knives Throw: x1.5 sát thương, KHÔNG giới
 S5_TIMESTOP_CHANCE = 0.40      # Time Stop: stun người chơi, KHÔNG giới hạn số lần
 S5_TIMESTOP_TURNS = 2          # số hiệp người chơi bị đứng hình
 S5_TIMESTOP_COOLDOWN = True    # True: ngay hiệp Time Stop vừa hết, Boss chưa được tung lại (tránh khóa chết)
+S5_TIMESTOP_REST = 1           # số hiệp Sakuya PHẢI nghỉ (không roll Time Stop) sau khi Time Stop kết thúc, chống Time Stop liền kề
 S5_DODGE_ROUNDS = 3            # số lần né liên tiếp cần thành công
 
 try:
@@ -31075,7 +31076,7 @@ async def run_story_sakuya_battle(channel_or_interaction, user, player):
     msg = await _s3_send(channel_or_interaction, embed=embed_init)
     await asyncio.sleep(2.0)
 
-    p_idx, rounds, stop_left = 0, 0, 0
+    p_idx, rounds, stop_left, ts_rest = 0, 0, 0, 0
     while B["hp"] > 0 and p_idx < len(player_cards) and rounds < 40:
         rounds += 1
         pc = player_cards[p_idx]
@@ -31123,6 +31124,10 @@ async def run_story_sakuya_battle(channel_or_interaction, user, player):
                 logs.append(f"⏱️ **[Time Stop]** **{pc['name']}** bị **ĐỨNG HÌNH**, không thể ra đòn! (Còn {stop_left} hiệp)")
             if stop_left == 0 and S5_TIMESTOP_COOLDOWN:
                 no_cast = True
+                ts_rest = S5_TIMESTOP_REST   # bắt đầu thời gian nghỉ bắt buộc
+        elif ts_rest > 0:
+            ts_rest -= 1
+            no_cast = True                   # hiệp nghỉ: không được roll Time Stop
 
         # --- lượt đánh của người chơi ---
         if B["hp"] > 0 and pc["current_hp"] > 0 and not player_stopped:
