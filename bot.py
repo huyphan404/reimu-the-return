@@ -20,8 +20,8 @@
 #    - [#09] Flandre Scarlet (30 thẻ): Ripples of 495 Years — 25% xóa 50% HP đối thủ (Battle/PvP)
 #      hoặc 30% HP Boss (Raid Phase 1 & 2), kích hoạt 1 lần/trận, kèm GIF kỹ năng trực tiếp!
 #    - Buff Marisa Ace 2 [#20]: Master Spark tăng sát thương từ ×1.5 lên ×2.5!
-#    - [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 ⭐⭐): Cleave (+2% Max HP mục tiêu mọi đòn) • Medicine Sign (35% hồi 40% máu) •
-#      Fantasy Seal (40% ở Ace 1 / buff lên 50% ở Ace 2: Miễn toàn bộ sát thương) • Bóng Khái Niệm (40%: 15% Max HP + xóa kỹ năng đối phương)!
+#    - [#t1] Seiki Đệ Nhất Pháp Sư (Ace 2 ⭐⭐): Cleave (+2% Max HP mục tiêu mọi đòn) • Technobabble (25% ×1.75/×2.0 nếu <50% HP, 2 lần/trận) •
+#      Lore Bloat (25%: 15% Max HP + bleed 3%/lượt 3 turn, stun 1 turn nếu limit cap raid) • Bóng Khái Niệm (20%: ×1.5 DMG + 10% Max HP + xóa kỹ năng)!
 # ==============================================================================
 
 # UPDATE 2026-09-22: THEM [#10] KOISHI KOMEIJI (Rank S - 600 ATK / 6,060 HP) - ID CU 10-26 DAY LEN 11-27, TU DONG DI TRU DU LIEU NGUOI CHOI
@@ -295,11 +295,14 @@ CARDS_DATA = {
         "hp": 7000,
         "image": "https://media.discordapp.net/attachments/1543072032034521228/1550428671284879470/content.png?ex=6aae4cb8&is=6aacfb38&hm=17b71e9140ae62c544872acbbfd654f97eaff639a2f40c400047e7cb786ec3a4&=&format=webp&quality=lossless&width=512&height=456",
         "skills": {
-            "fantasy_seal": {
-                "name": "Fantasy Seal",
-                "chance": 0.40,
-                "desc": "40% miễn thương 1 lần trong trận",
-                "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/e7/fe/JOKpsPyd.gif"
+            "technobabble": {
+                "name": "Technobabble",
+                "chance": 0.25,
+                "max_uses": 2,
+                "multiplier": 1.75,
+                "half_hp_multiplier": 2.0,
+                "desc": "25% (2 lần/trận) gây 1.75x sát thương; nếu mục tiêu dưới 50% máu thì gây 2x sát thương",
+                "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/ce/f6/90sF3oyd.gif"
             },
             "master_spark": {
                 "name": "Master Spark",
@@ -308,11 +311,15 @@ CARDS_DATA = {
                 "desc": "30% gây 1.5x sát thương 1 lần trong trận",
                 "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/f4/32/3xCGLkOw.gif"
             },
-            "medicine_sign": {
-                "name": "Medicine Sign",
-                "chance": 0.20,
-                "desc": "20% hồi phục cho bản thân 1 lần trong trận",
-                "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/8d/12/mwVdJaFQsefrsAuNS.gif"
+            "lore_bloat": {
+                "name": "Lore Bloat",
+                "chance": 0.25,
+                "max_uses": 1,
+                "direct_pct": 0.15,
+                "bleed_pct": 0.03,
+                "bleed_turns": 3,
+                "desc": "25% (1 lần/trận) khiến mục tiêu mất 15% máu tối đa và chảy máu 3% máu tối đa/lượt trong 3 turn; trong raid nếu dính limit cap chuyển thành stun 1 turn",
+                "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/c1/4e/pKP9dGjrIC3CG3R2M.gif"
             }
         }
     },
@@ -435,9 +442,12 @@ CARDS_DATA["T4"] = CARDS_DATA["t4"]
 CARDS_DATA["t4"] = CARDS_DATA["t4"]
 
 T1_SKILL_CONFIGS = CARDS_DATA["t1"]["skills"]
-T1_SEAL_GIF = T1_SKILL_CONFIGS["fantasy_seal"]["gif"]
+T1_TECHNOBABBLE_GIF = "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/ce/f6/90sF3oyd.gif"
+T1_LOREBLOAT_GIF    = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/c1/4e/pKP9dGjrIC3CG3R2M.gif"
 T1_SPARK_GIF = T1_SKILL_CONFIGS["master_spark"]["gif"]
-T1_HEAL_GIF = T1_SKILL_CONFIGS["medicine_sign"]["gif"]
+# (T1_SEAL_GIF và T1_HEAL_GIF đã được thay thế bởi 2 biến trên)
+T1_SEAL_GIF = T1_TECHNOBABBLE_GIF   # alias tạm để không lỗi các chỗ còn tham chiếu T1_SEAL_GIF
+T1_HEAL_GIF = T1_LOREBLOAT_GIF      # alias tạm tương tự
 T2_PASSIVE_GIF = CARDS_DATA["t2"]["passive"]["gif"]
 T2_THOAI_MA_GIF = CARDS_DATA["t2"]["skills"]["thoai_ma_kiem"]["gif"]
 T3_BLOOD_GIF = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/2f/38/H1AP9mdI3CzGLVUrFBF.gif"
@@ -1184,18 +1194,28 @@ def kasen_restore_guard(active_combatants):
 T1_ACE2_CONFIG = {
     "required_ace2": [19, 15, 18],   # [#21] Marisa, [#17] reimu, [#20] Sakuya phải đạt Ace 2
     "required_shards": 10,           # Chi phí: 10 Mảnh Seiki
-    "cleave_pct": 0.02,              # Clave (thụ động 100%): đánh thường +2% Máu Tối Đa mục tiêu
+    "cleave_pct": 0.02,              # Cleave (thụ động 100%): đánh thường +2% Máu Tối Đa mục tiêu
     "gif_cleave": "https://static2.klipy.com/ii/9ed0121ed465c12e1f3dda331ed33f0e/9b/b3/mOb3k5Ux7HWC.gif",
-    "medicine_sign": {
-        "chance": 0.35, "heal_pct": 0.40,  # 35% kích hoạt, hồi 40% Máu tối đa bản thân, 1 lần/trận
-        "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/8d/12/mwVdJaFQsefrsAuNS.gif"
+    # --- ACE 2 SKILL 1: TECHNOBABBLE (thay thế Fantasy Seal) ---
+    "technobabble": {
+        "chance": 0.25,              # 25% kích hoạt, 2 lần/trận
+        "max_uses": 2,
+        "multiplier": 1.75,          # Sát thương gốc ×1.75
+        "half_hp_multiplier": 2.0,   # ×2.0 nếu mục tiêu dưới 50% máu
+        "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/ce/f6/90sF3oyd.gif"
     },
-    "fantasy_seal": {
-        "chance": 0.50,                # 50% kích hoạt 1 lần/trận: Miễn toàn bộ sát thương (buff lên 50% ở dạng Ace 2)
-        "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/e7/fe/JOKpsPyd.gif"
+    # --- ACE 2 SKILL 2: LORE BLOAT (thay thế Medicine Sign) ---
+    "lore_bloat": {
+        "chance": 0.25,              # 25% kích hoạt, 1 lần/trận
+        "max_uses": 1,
+        "direct_pct": 0.15,          # Gây ngay 15% máu tối đa đối phương
+        "bleed_pct": 0.03,           # Chảy máu 3% máu tối đa/lượt
+        "bleed_turns": 3,            # Kéo dài 3 turn
+        "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/c1/4e/pKP9dGjrIC3CG3R2M.gif"
     },
+    # --- ACE 2 SKILL 3: BÓNG KHÁI NIỆM (giữ nguyên) ---
     "bong_khai_niem": {
-        "chance": 0.20, "multiplier": 1.5, "dmg_pct": 0.10,  # 20% kích hoạt 1 lần/trận: 1.75x sát thương + 10% Máu Tối Đa + xóa kỹ năng đối phương
+        "chance": 0.20, "multiplier": 1.5, "dmg_pct": 0.10,
         "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/38/ec/4v5klqIf3v2WuSLgB.gif"
     }
 }
@@ -1210,11 +1230,11 @@ EVOL_CONFIG["t1"] = {
     "required_pulls": 0,
     "required_shards": 10,
     "evol_gif": "https://static2.klipy.com/ii/2f34308bfc69e8c858753b83566e3ab4/00/52/j3kSrYrla8BSqcCal.gif",
-    "skill_name": "Tứ Đại Tuyệt Kỹ Thức Tỉnh (Cleave • Medicine Sign • Fantasy Seal • Bóng Khái Niệm)",
+    "skill_name": "Tứ Đại Tuyệt Kỹ Thức Tỉnh (Cleave • Technobabble • Lore Bloat • Bóng Khái Niệm)",
     "skill_desc": (
         "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường gây thêm **2% Máu Tối Đa** của mục tiêu! "
-        "💚 **Medicine Sign (35%):** Hồi phục **40% Máu Tối Đa** cho bản thân, 1 lần/trận. "
-        "🛡️ **Fantasy Seal (50%):** Dựng kết giới phong ấn, **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp (đã buff lên 50% ở dạng Ace 2), 1 lần/trận. "
+        "⚡ **Technobabble (25%, 2 lần/trận):** Đòn nghịch khái niệm gây **×1.75 Sát Thương** (×2.0 nếu mục tiêu dưới 50% máu)! "
+        "📖 **Lore Bloat (25%, 1 lần/trận):** Nhồi phản khái niệm vào đối phương, gây **15% Máu Tối Đa** ngay lập tức + **chảy máu 3% Máu Tối Đa/lượt trong 3 turn**; trong Raid nếu dính limit cap chuyển thành **Stun 1 turn**! "
         "🌑 **Bóng Khái Niệm (20%):** Gây **×1.5 Sát Thương** kèm **10% Máu Tối Đa** mục tiêu và **lập tức xóa kỹ năng của đối phương**, 1 lần/trận."
     ),
     "bonus_power": 300,
@@ -1317,8 +1337,8 @@ CHARACTER_DETAILS = {
     28: {"title": "Thỏ Rừng May Mắn", "skill_name": "Vận May Thần Tài", "skill_desc": "Thủ lĩnh thỏ rừng Inaba tinh nghịch, ban phát vận may cực lớn cho bản thân và đồng đội (150 ATK / 1,500 HP)."},
     "t1": {
         "title": "Dị Tà Đệ Nhất Pháp Sư (Nhóm T-Đặc Biệt)",
-        "skill_name": "Tam Đại Tuyệt Kỹ (Fantasy Seal • Master Spark • Medicine Sign)",
-        "skill_desc": "Thẻ bài thần thoại nhóm T. Bản thường: Fantasy Seal (40% miễn thương), Master Spark (30% ×1.5), Medicine Sign (20% hồi phục). [Ace 2 ⭐⭐ - Kỹ năng thay đổi]: 🪓 Cleave (thụ động 100%: mọi đòn đánh +2% Máu Tối Đa mục tiêu) • 💚 Medicine Sign (35% hồi 40% Máu, 1 lần/trận) • 🛡️ Fantasy Seal (50% miễn toàn bộ sát thương 1 hiệp, buff lên 50% ở dạng Ace 2, 1 lần/trận) • 🌑 Bóng Khái Niệm (20%: 1.75x sát thương + 10% Máu Tối Đa + xóa kỹ năng đối phương, 1 lần/trận)."
+        "skill_name": "Tam Đại Tuyệt Kỹ (Technobabble • Master Spark • Lore Bloat)",
+        "skill_desc": "Thẻ bài thần thoại nhóm T. Bản thường: Technobabble (25% ×1.75/×2.0 nếu <50% máu, 2 lần/trận), Master Spark (30% ×1.5), Lore Bloat (25% 15% máu + chảy máu 3%/lượt 3 turn, 1 lần/trận). [Ace 2 ⭐⭐ - Kỹ năng thay đổi]: 🪓 Cleave (thụ động 100%: mọi đòn đánh +2% Máu Tối Đa mục tiêu) • ⚡ Technobabble (25% ×1.75/×2.0, 2 lần/trận) • 📖 Lore Bloat (25% 15% máu + chảy máu 3%/lượt 3 turn + stun raid, 1 lần/trận) • 🌑 Bóng Khái Niệm (20%: 1.5x sát thương + 10% Máu Tối Đa + xóa kỹ năng đối phương, 1 lần/trận)."
     },
     "t2": {
         "title": "Bát Ách Kiếm Thần Tướng (Nhóm T-Đặc Biệt)",
@@ -2176,9 +2196,9 @@ def apply_bong_khai_niem_card(target_card: dict):
         pool = [("yukari_station", "Trip To The Old Station"), ("yukari_lastword", "⸮⸮⸮ : Last Word !"), ("yukari_gap", "Invisible Gap")]
     elif cid_str == "t1":
         if is_ace:
-            pool = [("t1_cleave", "Cleave"), ("t1_seal", "Fantasy Seal"), ("t1_bong", "Bóng Khái Niệm"), ("t1_med", "Medicine Sign")]
+            pool = [("t1_cleave", "Cleave"), ("t1_tech", "Technobabble"), ("t1_bong", "Bóng Khái Niệm"), ("t1_lore", "Lore Bloat")]
         else:
-            pool = [("t1_seal", "Fantasy Seal"), ("t1_spark", "Master Spark"), ("t1_med", "Medicine Sign")]
+            pool = [("t1_tech", "Technobabble"), ("t1_spark", "Master Spark"), ("t1_lore", "Lore Bloat")]
     elif cid_str == "t2":
         pool = [("t2_adapt", "The True Adapt"), ("t2_kiem", "Thoái Ma Kiếm")]
     elif cid_str == "t3":
@@ -2232,17 +2252,20 @@ def apply_bong_khai_niem_card(target_card: dict):
     return f"🌑 **[Bóng Khái Niệm]** Đã xóa ngẫu nhiên 1 kỹ năng duy nhất **[{name}]** của **{target_card['name']}**! *(Tối đa mất 1 chiêu)*"
 
 
-def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=False):
+def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=False, target_current_hp=None):
     """Kỹ năng Ace 2 ⭐⭐ [#t1] Seiki - dùng chung Raid / Battle / PvP.
-    t1_flags: dict lưu cờ (seal_used / bong_used / med_used / used_turn).
-    Quy tắc: Cleave thụ động 100% mọi đòn đánh; tối đa 1 chiêu/lượt; mỗi chiêu 1 lần/trận.
-    ĐẶC BIỆT: Chiêu Fantasy Seal được buff tỷ lệ kích hoạt lên 50% ở dạng Ace 2 (Miễn toàn bộ sát thương 1 hiệp)!"""
+    t1_flags: dict lưu cờ (tech_uses / bong_used / lore_used / used_turn).
+    Quy tắc: Cleave thụ động 100% mọi đòn đánh; tối đa 1 chiêu/lượt.
+    - Technobabble (25%, 2 lần/trận): ×1.75 DMG, nếu <50% máu thì ×2.0
+    - Lore Bloat (25%, 1 lần/trận): 15% Max HP + bleed 3%/turn 3 turn; raid → stun 1 turn nếu limit cap
+    - Bóng Khái Niệm (20%, 1 lần/trận): ×1.5 DMG + 10% Max HP + xóa skill"""
     out = {"bonus": 0, "direct": 0, "heal": 0, "invul": False, "instant_kill": False, "boss_half_hp": False,
-           "disable": False, "logs": [], "gif": None, "multiplier": 1.0}
+           "disable": False, "logs": [], "gif": None, "multiplier": 1.0,
+           "bleed": False, "bleed_pct": 0.0, "bleed_turns": 0, "stun": False}
 
     erased = ac.get("erased_skill")
 
-    # 🪓 CLEAVE - Nội tại thụ động 100%: đánh thường +2% Máu Tối Đa mục tiêu (nếu không bị xóa bởi Bóng Khái Niệm)
+    # 🪓 CLEAVE - Nội tại thụ động 100%
     if erased != "t1_cleave":
         out["bonus"] = int(target_max_hp * T1_ACE2_CONFIG["cleave_pct"])
         out["logs"].append(
@@ -2254,47 +2277,74 @@ def t1_ace2_attack(t1_flags, ac, round_no, target_max_hp, target_desc, is_boss=F
         return out
 
     roll = random.random()
-    seal_cfg = T1_ACE2_CONFIG.get("fantasy_seal", {"chance": 0.50, "gif": T1_SEAL_GIF})
-    seal_chance = seal_cfg["chance"]
-    bong_chance = T1_ACE2_CONFIG["bong_khai_niem"]["chance"]
-    med_chance = T1_ACE2_CONFIG["medicine_sign"]["chance"]
-    _seal_ok = erased != "t1_seal" and not t1_flags.get("seal_used") and not t1_flags.get("seiki_seal_used")
-    _bong_ok = erased != "t1_bong" and not t1_flags.get("bong_used")
-    _med_ok = erased != "t1_med" and not t1_flags.get("med_used") and ac.get("current_hp", 1) < ac.get("max_hp", ac.get("hp", 1))
-    _seal_hi = seal_chance if _seal_ok else 0.0
-    _bong_hi = _seal_hi + (bong_chance if _bong_ok else 0.0)
-    _med_hi = _bong_hi + (med_chance if _med_ok else 0.0)
+    tech_cfg  = T1_ACE2_CONFIG["technobabble"]
+    lore_cfg  = T1_ACE2_CONFIG["lore_bloat"]
+    bong_cfg  = T1_ACE2_CONFIG["bong_khai_niem"]
 
-    if _seal_ok and roll < _seal_hi:
-        t1_flags["seal_used"] = True
-        t1_flags["seiki_seal_used"] = True
+    tech_uses = t1_flags.get("tech_uses", 0)
+    _tech_ok  = erased != "t1_tech" and tech_uses < tech_cfg["max_uses"]
+    _lore_ok  = erased != "t1_lore" and not t1_flags.get("lore_used")
+    _bong_ok  = erased != "t1_bong" and not t1_flags.get("bong_used")
+
+    _tech_hi = tech_cfg["chance"] if _tech_ok else 0.0
+    _bong_hi = _tech_hi + (bong_cfg["chance"] if _bong_ok else 0.0)
+    _lore_hi = _bong_hi + (lore_cfg["chance"] if _lore_ok else 0.0)
+
+    if _tech_ok and roll < _tech_hi:
+        # --- TECHNOBABBLE ---
+        t1_flags["tech_uses"] = tech_uses + 1
         t1_flags["used_turn"] = round_no
-        out["invul"] = True
-        out["gif"] = seal_cfg.get("gif", T1_SEAL_GIF)
+        # Kiểm tra máu mục tiêu
+        cur_hp = target_current_hp if target_current_hp is not None else target_max_hp
+        below_half = cur_hp < target_max_hp * 0.5
+        mult = tech_cfg["half_hp_multiplier"] if below_half else tech_cfg["multiplier"]
+        out["multiplier"] = mult
+        out["gif"] = tech_cfg["gif"]
+        hp_note = " *(Mục tiêu dưới 50% máu — sát thương tăng gấp đôi!)*" if below_half else ""
         out["logs"].append(
-            f"🛡️ **[Ace 2] [#t1] Seiki** kích hoạt **FANTASY SEAL** (50%)! "
-            f"Vận khởi kết giới phong ấn tuyệt đối — **MIỄN TOÀN BỘ SÁT THƯƠNG** trong hiệp này!"
+            f"⚡ **[Ace 2] [#t1] Seiki** kích hoạt **TECHNOBABBLE** (25%)! "
+            f"Đòn nghịch khái niệm cường hóa **×{mult} Sát Thương**!{hp_note} "
+            f"*(Lần {t1_flags['tech_uses']}/2)*"
         )
+
     elif _bong_ok and roll < _bong_hi:
+        # --- BÓNG KHÁI NIỆM ---
         t1_flags["bong_used"] = True
         t1_flags["used_turn"] = round_no
-        out["multiplier"] = T1_ACE2_CONFIG["bong_khai_niem"].get("multiplier", 1.5)
-        out["direct"] = int(target_max_hp * T1_ACE2_CONFIG["bong_khai_niem"]["dmg_pct"])
+        out["multiplier"] = bong_cfg.get("multiplier", 1.5)
+        out["direct"] = int(target_max_hp * bong_cfg["dmg_pct"])
         out["disable"] = True
-        out["gif"] = T1_ACE2_CONFIG["bong_khai_niem"]["gif"]
+        out["gif"] = bong_cfg["gif"]
         out["logs"].append(
             f"🌑 **[Ace 2] [#t1] Seiki** kích hoạt **BÓNG KHÁI NIỆM** (20%)! "
             f"Cường hóa **×{out['multiplier']} Sát Thương** kèm **{out['direct']:,} DMG** (10% Máu Tối Đa {target_desc}) và **XÓA NGẪU NHIÊN 1 KỸ NĂNG của đối phương (Tối đa 1 chiêu)**!"
         )
-    elif _med_ok and roll < _med_hi:
-        t1_flags["med_used"] = True
+
+    elif _lore_ok and roll < _lore_hi:
+        # --- LORE BLOAT ---
+        t1_flags["lore_used"] = True
         t1_flags["used_turn"] = round_no
-        out["heal"] = int(ac.get("max_hp", ac.get("hp", 1)) * T1_ACE2_CONFIG["medicine_sign"]["heal_pct"])
-        out["gif"] = T1_ACE2_CONFIG["medicine_sign"]["gif"]
-        out["logs"].append(
-            f"💚 **[Ace 2] [#t1] Seiki** kích hoạt **MEDICINE SIGN** (35%)! "
-            f"Hồi phục **+{out['heal']:,} HP** (40% Máu Tối Đa bản thân)!"
-        )
+        direct_dmg = int(target_max_hp * lore_cfg["direct_pct"])
+        out["direct"] = direct_dmg
+        out["bleed"] = True
+        out["bleed_pct"] = lore_cfg["bleed_pct"]
+        out["bleed_turns"] = lore_cfg["bleed_turns"]
+        out["gif"] = lore_cfg["gif"]
+        # Stun trong raid nếu limit cap (is_boss=True → thực hiện stun thay bleed)
+        if is_boss:
+            out["stun"] = True
+            out["logs"].append(
+                f"📖 **[Ace 2] [#t1] Seiki** kích hoạt **LORE BLOAT** (25%)! "
+                f"Nhồi phản khái niệm vào Boss — Boss mất **{direct_dmg:,} DMG** (15% Máu Tối Đa) + "
+                f"**chảy máu {int(lore_cfg['bleed_pct']*100)}% Máu Tối Đa/lượt trong {lore_cfg['bleed_turns']} turn**! "
+                f"*(Dính limit cap trong Raid → **STUN 1 TURN**!)*"
+            )
+        else:
+            out["logs"].append(
+                f"📖 **[Ace 2] [#t1] Seiki** kích hoạt **LORE BLOAT** (25%)! "
+                f"Nhồi phản khái niệm — mục tiêu mất **{direct_dmg:,} DMG** (15% Máu Tối Đa) + "
+                f"**chảy máu {int(lore_cfg['bleed_pct']*100)}% Máu Tối Đa/lượt trong {lore_cfg['bleed_turns']} turn**!"
+            )
 
     return out
     
@@ -2496,23 +2546,29 @@ def tick_wonder_guard(active_combatants):
                     ac["current_hp"] = min(ac["max_hp"], ac["current_hp"] + int(lost * 0.15))
 
 def story_t1_t2_skills(pc, round_no, flags, card_dmg, turn_logs):
-    """Skill Seiki Ace 1 (#t1) và Mahoraga (#t2) trong Story Mode. Trả về (card_dmg, seal, gif)."""
-    seal, gif = False, None
-    cid = str(pc["cid"]).lower()
-    if cid == "t1" and not pc.get("is_ace2"):
-        roll = random.random()
-        if not flags["spark"] and roll < 0.30:
-            flags["spark"] = True; flags["turn"] = round_no
-            card_dmg = int(card_dmg * 1.5); gif = T1_SPARK_GIF
-            turn_logs.append(f"🌟 **[Nhóm T] [#t1] Seiki** tung **Master Spark** (30%)! ×1.5 sát thương ({card_dmg:,} DMG)!")
-        elif not flags["heal"] and pc["current_hp"] < pc["max_hp"] and 0.30 <= roll < 0.50:
-            flags["heal"] = True; flags["turn"] = round_no
-            hv = int(pc["max_hp"] * 0.30)
-            pc["current_hp"] = min(pc["max_hp"], pc["current_hp"] + hv); gif = T1_HEAL_GIF
-            turn_logs.append(f"💚 **[Nhóm T] [#t1] Seiki** thi triển **Medicine Sign** (20%)! Hồi **+{hv:,} HP**!")
-        if flags["turn"] != round_no and not flags["seal"] and random.random() < 0.40:
-            flags["seal"] = True; flags["turn"] = round_no; seal = True; gif = gif or T1_SEAL_GIF
-            turn_logs.append("🛡️ **[Nhóm T] [#t1] Seiki** kích hoạt **Fantasy Seal** (40%)! MIỄN TOÀN BỘ SÁT THƯƠNG!")
+    # Ace 1 T1 - Technobabble / Master Spark / Lore Bloat
+    t1_tech_uses = c.get("t1_a1_tech_uses", 0)
+    _roll_a1 = random.random()
+    if t1_tech_uses < 2 and _roll_a1 < 0.25 and not c.get("t1_a1_tech_blocked"):
+        c["t1_a1_tech_uses"] = t1_tech_uses + 1
+        # kiểm tra máu mục tiêu để xác định hệ số
+        _t_cur = boss_hp if is_boss else target_card.get("current_hp", target_max_hp)
+        _t_max = boss_max_hp if is_boss else target_max_hp
+        _mult_a1 = 2.0 if _t_cur < _t_max * 0.5 else 1.75
+        card_dmg = int(card_dmg * _mult_a1)
+        gif = T1_TECHNOBABBLE_GIF
+        skill_log = f"⚡ **[#t1] Seiki** kích hoạt **TECHNOBABBLE** (25%)! Đòn nghịch khái niệm **×{_mult_a1} Sát Thương**! *(Lần {c['t1_a1_tech_uses']}/2)*"
+    elif _roll_a1 < (0.25 + 0.30) and not c.get("t1_a1_spark_used"):
+        c["t1_a1_spark_used"] = True
+        card_dmg = int(card_dmg * 1.5)
+        gif = T1_SPARK_GIF
+        skill_log = "✨ **[#t1] Seiki** kích hoạt **Master Spark** (30%)! Gây **×1.5 Sát Thương**!"
+    elif not c.get("t1_a1_lore_used") and _roll_a1 < (0.25 + 0.30 + 0.25):
+        c["t1_a1_lore_used"] = True
+        _lore_direct = int(target_max_hp * 0.15)
+        # apply bleed to target
+        gif = T1_LOREBLOAT_GIF
+        skill_log = f"📖 **[#t1] Seiki** kích hoạt **LORE BLOAT** (25%)! Mục tiêu mất **{_lore_direct:,} DMG** (15% Máu Tối Đa) + chảy máu 3%/lượt 3 turn!"
     elif cid == "t2":
         flags["maho"] += 1
         hv = int(pc["max_hp"] * 0.05)
@@ -3045,7 +3101,7 @@ async def spawn_boss_raid(channel, author=None, boss_type=None, admin=True):
         )
         embed.add_field(
             name="🎁 Phần Thưởng Thanh Tẩy Boss:",
-            value="• **Phase 1:** 10% nhận **10 Vé**, 40% nhận **5 Vé**, 50% nhận **3 Vé**! (+100 XP)\n• **Phase 2 (Thức Tỉnh):** 10% nhận **30 Vé**, 40% nhận **20 Vé**, 50% nhận **10 Vé**! 🔮 **5%** rơi **+1 Mảnh Seiki** | 🌪️ **5%** rơi **+1 Kisami Shard** | 🪭 **2.5%** rơi **+1 Quạt Giấy**! (+150 XP)\n• 🔮 Mỗi Phase đều có **2.5%** rơi **+1 Mảnh Seiki** (10 mảnh = 1 thẻ [T] #t1 Seiki - dùng `/t translate`)!\n• Nhận thêm điểm danh nhiệm vụ diệt Boss!",
+            value="• **Phase 1:** 10% nhận **10 Vé**, 40% nhận **5 Vé**, 50% nhận **3 Vé**! (+100 XP)\n• **Phase 2 (Thức Tỉnh):** 10% nhận **30 Vé**, 40% nhận **20 Vé**, 50% nhận **10 Vé**! 🔮 **3%** rơi **+1 Mảnh Seiki** | 🌪️ **5%** rơi **+1 Kisami Shard** | 🪭 **2.5%** rơi **+1 Quạt Giấy**! (+150 XP)\n• 🔮 Mỗi Phase đều có **2.5%** rơi **+1 Mảnh Seiki** (10 mảnh = 1 thẻ [T] #t1 Seiki - dùng `/t translate`)!\n• Nhận thêm điểm danh nhiệm vụ diệt Boss!",
         )
         embed.add_field(
             name="⏱️ Thời Gian Chuẩn Bị (2 Phút):",
@@ -3397,13 +3453,12 @@ async def execute_raid(channel, raid_data):
             "flandre_used": False,
             "reisen_used": False,
             "cirno_freeze_used": False,
-            "seiki_seal_used": False,
             "seiki_spark_used": False,
-            "seiki_heal_used": False,
             "seiki_used_turn": -1,
-            "seal_used": False,
+            "seiki_seal_used": False,   # giữ lại để không lỗi logic Ace 1 cũ
+            "tech_uses": 0,             # Technobabble: đếm số lần dùng (tối đa 2)
+            "lore_used": False,         # Lore Bloat: 1 lần/trận
             "bong_used": False,
-            "med_used": False,
             "death_round": None
         })
 
@@ -4496,11 +4551,21 @@ async def execute_raid(channel, raid_data):
             if random.random() < 0.05:
                 p_shards["mahoraga"] = p_shards.get("mahoraga", 0) + 1
                 items_won.append(f"🔱 **+1 Mảnh Mahoraga** (5% Siêu Hiếm! Kho: {p_shards['mahoraga']} mảnh)")
-        else:
-            if random.random() < 0.025:
+        elif boss_type == "seiki":
+            # Phase 1 Seiki Dị Hình: 2% drop Seiki Shard
+            if random.random() < 0.02:
                 p_shards["seiki"] = p_shards.get("seiki", 0) + 1
                 cur_shards = p_shards["seiki"]
-                shard_notice = f"🔮 **+1 Mảnh Seiki** (2.5% Siêu Hiếm! Kho: {cur_shards}/10)"
+                shard_notice = f"🔮 **+1 Mảnh Seiki** (2% Siêu Hiếm! Kho: {cur_shards}/10)"
+                if cur_shards >= 10:
+                    shard_notice += " ✨ *(Đã đủ 10 mảnh! Dùng `/t translate`)*"
+                items_won.append(shard_notice)
+        else:
+            # Các boss khác (Reimu, v.v.): 1.5%
+            if random.random() < 0.015:
+                p_shards["seiki"] = p_shards.get("seiki", 0) + 1
+                cur_shards = p_shards["seiki"]
+                shard_notice = f"🔮 **+1 Mảnh Seiki** (1.5% Siêu Hiếm! Kho: {cur_shards}/10)"
                 if cur_shards >= 10:
                     shard_notice += " ✨ *(Đã đủ 10 mảnh! Dùng `/t translate`)*"
                 items_won.append(shard_notice)
@@ -5124,11 +5189,11 @@ async def execute_raid(channel, raid_data):
                     d_str = "💎 **+10 Vé** (50%)"
 
                 items_won = [d_str]
-                if random.random() < 0.05:
+                if random.random() < 0.03:
                     p_shards = p.setdefault("shards", {})
                     p_shards["seiki"] = p_shards.get("seiki", 0) + 1
                     cur_shards = p_shards["seiki"]
-                    shard_notice = f"🔮 **+1 Mảnh Seiki** (5% Siêu Hiếm! Kho: {cur_shards}/10)"
+                    shard_notice = f"🔮 **+1 Mảnh Seiki** (3% Siêu Hiếm! Kho: {cur_shards}/10)"
                     if cur_shards >= 10:
                         shard_notice += " ✨ *(Đã đủ 10 mảnh! Dùng `/t translate`)*"
                     items_won.append(shard_notice)
@@ -5170,7 +5235,7 @@ async def execute_raid(channel, raid_data):
         )
         final_embed.set_thumbnail(url=p2_cfg["image"] if p2_defeated else boss_cfg["image"])
         p1_summary = [f"🎁 **{r['username']}**: +{r['total_pulls']:.0f} Vé Pull ({r['items'][0]}) + 100 XP" + (f"\n   └ {r['items'][1]}" if len(r['items']) > 1 else "") for r in p1_rewards_data.values()]
-        final_embed.add_field(name="📦 Phần Thưởng Phase 1 (10% 10 vé, 40% 5 vé, 50% 3 vé, 2.5% Mảnh Seiki):", value="\n".join(p1_summary), inline=False)
+        final_embed.add_field(name="📦 Phần Thưởng Phase 1 (10% 10 vé, 40% 5 vé, 50% 3 vé, 2% Mảnh Seiki):", value="\n".join(p1_summary), inline=False)
 
         if p2_defeated:
             p2_summary = []
@@ -5178,7 +5243,7 @@ async def execute_raid(channel, raid_data):
                 lvl_up = f" 🌟 **LÊN CẤP {r['new_level']}!**" if r['new_level'] > r['old_level'] else ""
                 shard_line = f"\n   └ {r['items'][1]}" if len(r['items']) > 1 else ""
                 p2_summary.append(f"🏆 **{r['username']}**: Nhận **+{r['total_pulls']:.0f} Vé Pull** ({r['items'][0]}) + 150 XP!{lvl_up}{shard_line}\n   └ *Tổng vé hiện có: {r['total_tickets']:.2f} vé*")
-            final_embed.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (10% 30 vé, 40% 20 vé, 50% 10 vé, 5% Mảnh Seiki, 2,5% Quạt giấy,5% mảnh kisami):", value="\n".join(p2_summary), inline=False)
+            final_embed.add_field(name="💎 Phần Thưởng Siêu Cấp Phase 2 (10% 30 vé, 40% 20 vé, 50% 10 vé, 3% Mảnh Seiki, 2.5% Quạt giấy, 5% mảnh kisami):", value="\n".join(p2_summary), inline=False)
         else:
             final_embed.add_field(name="⚠️ Kết Quả Phase 2:", value=f"Boss Phase 2 còn {p2_hp:,} HP! Toàn bộ quà Phase 1 vẫn được bảo lưu trọn vẹn.", inline=False)
 
@@ -5218,9 +5283,9 @@ async def execute_raid(channel, raid_data):
         c["seiki_spark_used"] = False
         c["seiki_heal_used"] = False
         c["seiki_used_turn"] = -1; c["used_turn"] = -1; c["seiki_invul_turn"] = -1; c["t4_invul_turn"] = -1
-        c["seal_used"] = False
+        c["tech_uses"] = 0
+        c["lore_used"] = False
         c["bong_used"] = False
-        c["med_used"] = False
         c["t3_state"] = {}
         c["t4_state"] = {}
         c["t4_state"] = {}
