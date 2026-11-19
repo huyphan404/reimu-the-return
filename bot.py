@@ -10331,9 +10331,9 @@ class CharacterCheckView(discord.ui.View):
 
         sk = card["skills"]
         skills_text = (
-            f"1️⃣ **{sk['fantasy_seal']['name']}** — {sk['fantasy_seal']['desc']}\n"
+            f"1️⃣ **{sk['technobabble']['name']}** — {sk['technobabble']['desc']}\n"
             f"2️⃣ **{sk['master_spark']['name']}** — {sk['master_spark']['desc']}\n"
-            f"3️⃣ **{sk['medicine_sign']['name']}** — {sk['medicine_sign']['desc']}"
+            f"3️⃣ **{sk['lore_bloat']['name']}** — {sk['lore_bloat']['desc']}"
         )
         embed.add_field(name="🔮 TAM ĐẠI TUYỆT KỸ (BẢN CHUẨN):", value=skills_text, inline=False)
 
@@ -10342,8 +10342,8 @@ class CharacterCheckView(discord.ui.View):
                 name="🌟 TRẠNG THÁI ACE 2 ⭐⭐ - BỘ KỸ NĂNG THỨC TỈNH:",
                 value=(
                     "🪓 **Cleave (Nội Tại - 100%):** Mọi đòn đánh thường +**2% Máu Tối Đa** mục tiêu!\n"
-                    "💚 **Medicine Sign (35%):** Hồi **40% Máu Tối Đa** bản thân, 1 lần/trận.\n"
-                    "🛡️ **Fantasy Seal (50%):** **MIỄN TOÀN BỘ SÁT THƯƠNG** trong 1 hiệp, 1 lần/trận.\n"
+                    "⚡ **Technobabble (25%, 2 lần/trận):** Đòn nghịch khái niệm **×1.75 Sát Thương** (×2.0 nếu mục tiêu dưới 50% máu)!\n"
+                    "📖 **Lore Bloat (25%, 1 lần/trận):** Nhồi phản khái niệm — mục tiêu mất **15% Máu Tối Đa** + **chảy máu 3%/lượt × 3 turn**; Raid → **Stun 1 turn**!\n"
                     "🌑 **Bóng Khái Niệm (20%):** Gây **×1.5 Sát Thương** + **10% Máu Tối Đa** + **xóa kỹ năng đối phương**, 1 lần/trận."
                 ),
                 inline=False
