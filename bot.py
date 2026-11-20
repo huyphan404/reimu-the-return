@@ -3620,11 +3620,7 @@ async def execute_raid(channel, raid_data):
                 if cap_burn_msg:
                     boss_molten_log += f"\n{cap_burn_msg}"
                     
-    # --- [ALLY ESDEATH] Nhận freeze mới từ hiệp trước ---
-         _new_es_frz = raid_data.pop("esdeath_ally_freeze_new", 0)
-         if _new_es_frz > 0:
-             esdeath_ally_freeze_turns = max(esdeath_ally_freeze_turns, _new_es_frz)
-        boss_stunned = False
+        boss_stunned = False; esdeath_ally_freeze_turns = max(esdeath_ally_freeze_turns, raid_data.pop("esdeath_ally_freeze_new", 0))
         sakuya_stun_notif = None
         marisa_spark_notif = None
         flandre_notif = None
@@ -11050,7 +11046,7 @@ async def handle_battle(ctx_or_interaction):
         p_t4_save_invul = False    
         
         p_t4_save_invul = False
-        o_fate_locked_now = False
+        o_fate_locked_now = False; _es_chk = lambda c, s: (c.__setitem__("esdeath_stun_turns", c["esdeath_stun_turns"] - 1) or turn_actions.append(f"❄️ **[Đồng minh Esdeath - Mahapadma]** **{c['name']}** bị đóng băng không-thời gian — mất lượt tấn công!") or True) if c.get("esdeath_stun_turns", 0) > 0 else ((c.__setitem__("esdeath_freeze_turns", c["esdeath_freeze_turns"] - 1) or ((turn_actions.append(f"🧊 **[Đồng minh Esdeath - Weissschnabel]** **{c['name']}** bị băng đóng (40%) — mất lượt tấn công!") or True) if (not s and random.random() < 0.40) else s)) if c.get("esdeath_freeze_turns", 0) > 0 else s); stunned_oc = _es_chk(oc, stunned_oc); stunned_pc = _es_chk(pc, stunned_pc)
         if o_fate_lock_turns > 0:
             o_fate_locked_now = True
             o_fate_lock_turns -= 1
@@ -11060,26 +11056,6 @@ async def handle_battle(ctx_or_interaction):
             if random.random() < 0.40:
                 stunned_oc = True
                 turn_actions.append(f"❄️ **[Ice spear - #t4 Fateria]** **{oc['name']}** bị giáo băng cầm chân (40%), không thể tấn công trong lượt này!")
-    # --- [ALLY ESDEATH] kiểm tra stun/freeze trong Battle ---
-        if oc.get("esdeath_stun_turns", 0) > 0:
-            oc["esdeath_stun_turns"] -= 1
-            stunned_oc = True
-            turn_actions.append(f"❄️ **[Đồng minh Esdeath - Mahapadma]** **{oc['name']}** bị đóng băng không-thời gian — mất lượt tấn công!")
-        elif oc.get("esdeath_freeze_turns", 0) > 0:
-            oc["esdeath_freeze_turns"] -= 1
-            if not stunned_oc and random.random() < 0.40:
-                stunned_oc = True
-                turn_actions.append(f"🧊 **[Đồng minh Esdeath - Weissschnabel]** **{oc['name']}** bị băng đóng (40%) — mất lượt tấn công!")
-        if pc.get("esdeath_stun_turns", 0) > 0:
-            pc["esdeath_stun_turns"] -= 1
-            stunned_pc = True
-            turn_actions.append(f"❄️ **[Đồng minh Esdeath - Mahapadma]** **{pc['name']}** bị đóng băng không-thời gian — mất lượt tấn công!")
-        elif pc.get("esdeath_freeze_turns", 0) > 0:
-            pc["esdeath_freeze_turns"] -= 1
-            if not stunned_pc and random.random() < 0.40:
-                stunned_pc = True
-                turn_actions.append(f"🧊 **[Đồng minh Esdeath - Weissschnabel]** **{pc['name']}** bị băng đóng (40%) — mất lượt tấn công!")
-
         if str(pc["cid"]).lower() == "t4":
             _t4 = t4_combat_turn(p_t4_state, pc, f"**{oc['name']}**", heal_mult=1.0, enemy_fate_loop_turns=o_fate_lock_turns)
             curr_pc_power = int(curr_pc_power * _t4["multiplier"])
@@ -33563,33 +33539,7 @@ def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
                     f"×1.5 sát thương ({card_dmg:,} DMG) và Boss **không thể hồi phục trong {LETTY_NOHEAL_TURNS} turn**!")
     except Exception as e:
         print(f"[LT] lỗi raid_attack: {e}", flush=True)
-    # --- [ALLY ESDEATH] Mahapadma stun boss ---
-    try:
-        al = ac.get("ally_ref")
-        if al and al.get("id") == "s3":
-            if ac.pop("esdeath_stun", False) and not boss_stunned:
-                boss_stunned = True
-                if not turn_image:
-                    turn_image = ALLY_GIF_MAHA
-                notif = (notif + "\n" if notif else "") + (
-                    f"❄️ **[Đồng minh Esdeath]** ({c['username']}) **Mahapadma** đóng băng không-thời gian! "
-                    f"Boss bị **STUN** mất lượt hoàn toàn!"
-                )
-            # --- [ALLY ESDEATH] Weissschnabel freeze (ghi vào boss_local) ---
-            freeze_added = ac.pop("esdeath_freeze_turns", 0)
-            if freeze_added > 0:
-                # Dùng notif để báo, biến freeze xử lý ở execute_raid bên ngoài
-                notif = (notif + "\n" if notif else "") + (
-                    f"🧊 **[Đồng minh Esdeath]** ({c['username']}) **Weissschnabel** đóng băng boss! "
-                    f"Boss có **40% mất lượt trong {freeze_added} hiệp**!"
-                )
-# Lưu freeze vào raid_data để hàm execute_raid đọc
-                _rd = L.get("raid_data") if isinstance(L, dict) else None
-                if isinstance(_rd, dict):
-                    _rd["esdeath_ally_freeze_new"] = _rd.get("esdeath_ally_freeze_new", 0) + freeze_added
-    except Exception as e:
-        print(f"[ALLY ESDEATH] lỗi raid stun: {e}", flush=True)
-    return card_dmg, boss_stunned, turn_image, notif
+    _al_es = ac.get("ally_ref"); _es_ok = bool(_al_es and _al_es.get("id") == "s3"); _es_st = bool(_es_ok and ac.pop("esdeath_stun", False) and not boss_stunned); boss_stunned = True if _es_st else boss_stunned; turn_image = ALLY_GIF_MAHA if (_es_st and not turn_image) else turn_image; notif = ((notif + "\n" if notif else "") + f"❄️ **[Đồng minh Esdeath]** ({c['username']}) **Mahapadma** đóng băng không-thời gian! Boss bị **STUN** mất lượt hoàn toàn!") if _es_st else notif; _es_fz = ac.pop("esdeath_freeze_turns", 0) if _es_ok else 0; notif = ((notif + "\n" if notif else "") + f"🧊 **[Đồng minh Esdeath]** ({c['username']}) **Weissschnabel** đóng băng boss! Boss có **40% mất lượt trong {_es_fz} hiệp**!") if _es_fz > 0 else notif; _rd_es = L.get("raid_data") if isinstance(L, dict) else None; (_rd_es.__setitem__("esdeath_ally_freeze_new", _rd_es.get("esdeath_ally_freeze_new", 0) + _es_fz) if (_es_fz > 0 and isinstance(_rd_es, dict)) else None); return card_dmg, boss_stunned, turn_image, notif
 
 # ---------------------------- 6. RAID DẠNG B (Jotaro, Han Seiki, Sukuna, Giorno, Kenjaku, Fateria P2) ----------------------------
 _LT_PREV_JT_ATTACK = t7_jt_attack
