@@ -3621,9 +3621,9 @@ async def execute_raid(channel, raid_data):
                     boss_molten_log += f"\n{cap_burn_msg}"
                     
         # --- [ALLY ESDEATH] Nhận freeze mới từ hiệp trước ---
-        if locals().get("esdeath_ally_freeze_new", 0) > 0:
-            esdeath_ally_freeze_turns = max(esdeath_ally_freeze_turns, locals()["esdeath_ally_freeze_new"])
-            locals().pop("esdeath_ally_freeze_new", None)  # reset
+             _new_es_frz = raid_data.pop("esdeath_ally_freeze_new", 0)
+             if _new_es_frz > 0:
+                 esdeath_ally_freeze_turns = max(esdeath_ally_freeze_turns, _new_es_frz)
         boss_stunned = False
         sakuya_stun_notif = None
         marisa_spark_notif = None
@@ -3690,17 +3690,6 @@ async def execute_raid(channel, raid_data):
         ice_spear_blocked_logs = []
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
-            # --- [ALLY ESDEATH] kiểm tra stun/freeze kẻ địch ---
-            if tgt_card.get("esdeath_stun_turns", 0) > 0:
-                tgt_card["esdeath_stun_turns"] -= 1
-                logs.append(f"❄️ **{tgt_card['name']}** đang bị đóng băng bởi Esdeath — mất lượt tấn công!")
-                # skip toàn bộ đòn đánh của kẻ địch turn này
-                # (đặt biến skip tương đương logic hiện tại của code bạn)
-            if tgt_card.get("esdeath_freeze_turns", 0) > 0:
-                tgt_card["esdeath_freeze_turns"] -= 1
-                if random.random() < 0.40:
-                    logs.append(f"🧊 **{tgt_card['name']}** bị băng đóng (40%) — mất lượt tấn công!")
-                    # skip đòn đánh
             if ice_spear_active_this_turn and random.random() < 0.40:
                 ice_spear_blocked_logs.append(f"❄️ **[Ice spear]** **{ac['name']}** ({c['username']}) bị giáo băng cầm chân (40%), không thể tấn công trong lượt này!")
                 continue
@@ -11071,6 +11060,25 @@ async def handle_battle(ctx_or_interaction):
             if random.random() < 0.40:
                 stunned_oc = True
                 turn_actions.append(f"❄️ **[Ice spear - #t4 Fateria]** **{oc['name']}** bị giáo băng cầm chân (40%), không thể tấn công trong lượt này!")
+    # --- [ALLY ESDEATH] kiểm tra stun/freeze trong Battle ---
+         if oc.get("esdeath_stun_turns", 0) > 0:
+             oc["esdeath_stun_turns"] -= 1
+             stunned_oc = True
+             turn_actions.append(f"❄️ **[Đồng minh Esdeath - Mahapadma]** **{oc['name']}** bị đóng băng không-thời gian — mất lượt tấn công!")
+         elif oc.get("esdeath_freeze_turns", 0) > 0:
+             oc["esdeath_freeze_turns"] -= 1
+             if not stunned_oc and random.random() < 0.40:
+                 stunned_oc = True
+                 turn_actions.append(f"🧊 **[Đồng minh Esdeath - Weissschnabel]** **{oc['name']}** bị băng đóng (40%) — mất lượt tấn công!")
+         if pc.get("esdeath_stun_turns", 0) > 0:
+             pc["esdeath_stun_turns"] -= 1
+             stunned_pc = True
+             turn_actions.append(f"❄️ **[Đồng minh Esdeath - Mahapadma]** **{pc['name']}** bị đóng băng không-thời gian — mất lượt tấn công!")
+         elif pc.get("esdeath_freeze_turns", 0) > 0:
+             pc["esdeath_freeze_turns"] -= 1
+             if not stunned_pc and random.random() < 0.40:
+                 stunned_pc = True
+                 turn_actions.append(f"🧊 **[Đồng minh Esdeath - Weissschnabel]** **{pc['name']}** bị băng đóng (40%) — mất lượt tấn công!")
 
         if str(pc["cid"]).lower() == "t4":
             _t4 = t4_combat_turn(p_t4_state, pc, f"**{oc['name']}**", heal_mult=1.0, enemy_fate_loop_turns=o_fate_lock_turns)
@@ -33567,8 +33575,6 @@ def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
                     f"❄️ **[Đồng minh Esdeath]** ({c['username']}) **Mahapadma** đóng băng không-thời gian! "
                     f"Boss bị **STUN** mất lượt hoàn toàn!"
                 )
-    except Exception as e:
-        print(f"[ALLY ESDEATH] lỗi raid stun: {e}", flush=True)
             # --- [ALLY ESDEATH] Weissschnabel freeze (ghi vào boss_local) ---
             freeze_added = ac.pop("esdeath_freeze_turns", 0)
             if freeze_added > 0:
