@@ -3517,6 +3517,7 @@ async def execute_raid(channel, raid_data):
     max_rounds = 50
     boss_mind_turns = 0
     boss_freeze_debuff_turns = 0
+    esdeath_ally_freeze_turns = 0   # [ALLY ESDEATH] Weissschnabel freeze
     boss_molten_ground_turns = 0
     mahoraga_adapt_red = 0.0
     fateria_fate_loop_turns = 0
@@ -3618,7 +3619,11 @@ async def execute_raid(channel, raid_data):
                     boss_molten_log = f"🌋 **[Mặt Đất Nung Chảy]** Mặt đất vẫn sôi trào nhưng sát thương chuẩn đã bị triệt tiêu (0 DMG)! (Còn {boss_molten_ground_turns} lượt)"
                 if cap_burn_msg:
                     boss_molten_log += f"\n{cap_burn_msg}"
-
+                    
+        # --- [ALLY ESDEATH] Nhận freeze mới từ hiệp trước ---
+        if locals().get("esdeath_ally_freeze_new", 0) > 0:
+            esdeath_ally_freeze_turns = max(esdeath_ally_freeze_turns, locals()["esdeath_ally_freeze_new"])
+            locals().pop("esdeath_ally_freeze_new", None)  # reset
         boss_stunned = False
         sakuya_stun_notif = None
         marisa_spark_notif = None
@@ -3650,6 +3655,15 @@ async def execute_raid(channel, raid_data):
             if not player_skills_locked and random.random() < 0.45:
                 boss_stunned = True
                 cirno_freeze_log = f"❄️ **[Perfect Freeze]** Boss bị đóng băng cứng đờ (45%), không thể hành động trong hiệp này! (Còn {boss_freeze_debuff_turns} lượt duy trì)"
+        # --- [ALLY ESDEATH] Weissschnabel freeze (40% mất lượt) ---
+        if esdeath_ally_freeze_turns > 0 and not boss_stunned:
+            esdeath_ally_freeze_turns -= 1
+            if not player_skills_locked and random.random() < 0.40:
+                boss_stunned = True
+                cirno_freeze_log = (cirno_freeze_log + "\n" if cirno_freeze_log else "") + (
+                    f"🧊 **[Đồng minh Esdeath - Weissschnabel]** Băng công kích đóng cứng Boss (40%)! "
+                    f"Boss mất lượt! (Còn {esdeath_ally_freeze_turns} lượt)"
+                )
 
         seiki_invul = False
         seiki_action = "normal"
@@ -3676,6 +3690,17 @@ async def execute_raid(channel, raid_data):
         ice_spear_blocked_logs = []
         for c in active_combatants:
             ac = c["team_cards"][c["current_card_index"]]
+            # --- [ALLY ESDEATH] kiểm tra stun/freeze kẻ địch ---
+            if tgt_card.get("esdeath_stun_turns", 0) > 0:
+                tgt_card["esdeath_stun_turns"] -= 1
+                logs.append(f"❄️ **{tgt_card['name']}** đang bị đóng băng bởi Esdeath — mất lượt tấn công!")
+                # skip toàn bộ đòn đánh của kẻ địch turn này
+                # (đặt biến skip tương đương logic hiện tại của code bạn)
+            if tgt_card.get("esdeath_freeze_turns", 0) > 0:
+                tgt_card["esdeath_freeze_turns"] -= 1
+                if random.random() < 0.40:
+                    logs.append(f"🧊 **{tgt_card['name']}** bị băng đóng (40%) — mất lượt tấn công!")
+                    # skip đòn đánh
             if ice_spear_active_this_turn and random.random() < 0.40:
                 ice_spear_blocked_logs.append(f"❄️ **[Ice spear]** **{ac['name']}** ({c['username']}) bị giáo băng cầm chân (40%), không thể tấn công trong lượt này!")
                 continue
@@ -22657,6 +22682,9 @@ ALLY_GIF_ARROWS = "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619
 ALLY_GIF_HEAL = "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/67/15/0nATdv4F.gif"
 ALLY_GIF_EMPEROR = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/75/cc/QuLBLFnIXYCXo.gif"
 ALLY_GIF_SAW = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/0a/b4/1Vq05XNMAljq0Xe5Xv.gif"
+ALLY_GIF_ESDEATH = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/6c/1a/lMOj6HXcgnZkGxRLWiXb.gif"
+ALLY_GIF_WEISS   = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/68/8f/YGsKtEcFtCj6mxaUrjU.gif"
+ALLY_GIF_MAHA    = "https://static2.klipy.com/ii/4e7bea9f7a3371424e6c16ebc93252fe/8e/ed/za0IFYti4NLU355A.gif"
 
 ALLY_DATA = {
     "s1": {
@@ -22677,8 +22705,17 @@ ALLY_DATA = {
             "🪚 **Chainsaw (25%, tối đa 2 lần):** cưa địch **×1.2 sát thương** + chảy máu **1% máu tối đa/turn trong 2 lượt** (cộng dồn tối đa 4%)."
         ),
     },
+    "s3": {
+        "id": "s3", "name": "Esdeath", "role": "sp", "role_tag": "[Sp] Hậu phương",
+        "emoji": "🧊", "color": 0x60A5FA, "gif": ALLY_GIF_ESDEATH, "base_atk": 140, "base_hp": 0,
+        "role_desc": "Đứng hậu phương, không nhận buff máu, không bị đánh. Rút lui khi cả 3 lá của bạn tử trận.",
+        "skills": (
+            "🧊 **Weissschnabel (25%, tối đa 2 lần):** Những loạt băng công kích gây **×1.5 sát thương** và khiến đối tượng bị đóng băng — **40% không đánh trả trong 2 lượt**.\n"
+            "❄️ **Mahapadma (25%, tối đa 1 lần):** Đóng băng không-thời gian khiến kẻ địch bị **stun 1 turn** (mất lượt hoàn toàn)."
+        ),
+    },
 }
-ALLY_ORDER = ["s1", "s2"]
+ALLY_ORDER = ["s1", "s2", "s3"]
 
 ITEMS_DATABASE["crystal"] = {
     "id": "crystal", "name": "Crystal 💎", "usable": False, "tradeable": True,
@@ -22688,7 +22725,8 @@ ITEMS_DATABASE["crystal"] = {
 
 # ---------------------------- LÕI ĐỒNG MINH ----------------------------
 def _al_new_state():
-    return {"arrows": 0, "heal": 0, "emperor": 0, "saw": 0, "shield": 0, "shield_turns": 0, "bleed": []}
+    return {"arrows": 0, "heal": 0, "emperor": 0, "saw": 0, "shield": 0, "shield_turns": 0, "bleed": [],
+            "weiss": 0, "maha": 0, "freeze_turns": 0, "freeze_chance": 0.0}
 
 def ally_reset(al):
     al["hp"] = al["max_hp"]
@@ -22731,10 +22769,19 @@ def ally_turn(al, front, tmax, tname, logs, cap_fn=None):
         mx = (front.get("max_hp") or front.get("hp") or 1) if front else 1
         opts = []
         if role == "sp":
-            if st["arrows"] < 2:
-                opts.append(("arrows", 0.30))
-            if not st["heal"] and front and 0 < front.get("current_hp", 0) < mx:
-                opts.append(("heal", 0.25))
+            aid_id = al.get("id", "")
+            if aid_id == "s3":
+                # Esdeath: Weissschnabel (25%, tối đa 2 lần) + Mahapadma (25%, tối đa 1 lần)
+                if st["weiss"] < 2:
+                    opts.append(("weiss", 0.25))
+                if not st["maha"]:
+                    opts.append(("maha", 0.25))
+            else:
+                # Leaf (s1): Light Arrows + Healing wish
+                if st["arrows"] < 2:
+                    opts.append(("arrows", 0.30))
+                if not st["heal"] and front and 0 < front.get("current_hp", 0) < mx:
+                    opts.append(("heal", 0.25))
         else:
             if not st["emperor"]:
                 opts.append(("emperor", 0.30))
@@ -22762,6 +22809,27 @@ def ally_turn(al, front, tmax, tname, logs, cap_fn=None):
                 st["shield_turns"] = 2
                 gif = ALLY_GIF_EMPEROR
                 logs.append(f"🛡️ {nm} hô **For the Emperor!** Khiên ảo **{st['shield']:,} HP** trong 2 turn")
+            elif key == "weiss":
+                st["weiss"] += 1
+                base = int(atk * 1.5)
+                # Đóng băng: 40% không đánh trả trong 2 lượt (lưu vào front card)
+                if front is not None and _al_rand.random() < 0.40:
+                    front["esdeath_freeze_turns"] = front.get("esdeath_freeze_turns", 0) + 2
+                    logs.append(
+                        f"🧊 {nm} tung **Weissschnabel**! ×1.5 = **{base:,} DMG** + ❄️ Đóng băng "
+                        f"(**40% không đánh trả 2 lượt** — đã kích hoạt!) ({st['weiss']}/2)"
+                    )
+                else:
+                    logs.append(f"🧊 {nm} tung **Weissschnabel**! ×1.5 = **{base:,} DMG** + ❄️ Đóng băng ({st['weiss']}/2)")
+                gif = ALLY_GIF_WEISS
+            elif key == "maha":
+                st["maha"] = 1
+                base = atk
+                gif = ALLY_GIF_MAHA
+                # Stun: lưu flag vào front card để engine trận đấu xử lý
+                if front is not None:
+                    front["esdeath_stun"] = True
+                logs.append(f"❄️ {nm} kích hoạt **Mahapadma**! Đóng băng không-thời gian — kẻ địch **STUN 1 TURN** (mất lượt hoàn toàn)!")
             else:
                 st["saw"] += 1
                 base = int(atk * 1.2)
@@ -22920,6 +22988,23 @@ def eq_fenrir_post(att, tgt, tgt_mark, logs):
             mx = tgt.get("max_hp") or tgt.get("hp") or 1
             d, g = ally_turn(al, att, mx, f"**{tgt['name']}**", logs)
             tgt["current_hp"] -= d
+            # --- [ALLY ESDEATH] xử lý stun/freeze lên kẻ địch trong battle/pvp ---
+            if al.get("id") == "s3":
+                # Mahapadma stun: đánh dấu kẻ địch bị stun 1 turn
+                if att.pop("esdeath_stun", False):
+                    tgt["esdeath_stun_turns"] = tgt.get("esdeath_stun_turns", 0) + 1
+                    logs.append(
+                        f"❄️ **[Đồng minh Esdeath - Mahapadma]** Đóng băng không-thời gian! "
+                        f"**{tgt['name']}** bị **STUN 1 turn** (mất lượt tấn công)!"
+                    )
+                # Weissschnabel freeze: 40% mất lượt 2 hiệp
+                freeze_add = att.pop("esdeath_freeze_turns", 0)
+                if freeze_add > 0:
+                    tgt["esdeath_freeze_turns"] = tgt.get("esdeath_freeze_turns", 0) + freeze_add
+                    logs.append(
+                        f"🧊 **[Đồng minh Esdeath - Weissschnabel]** Băng đóng! "
+                        f"**{tgt['name']}** có **40% mất lượt trong {freeze_add} turn**!"
+                    )
             # đẩy GIF skill của đồng minh vào biến turn_image của trận đang chạy
             if g and globals().get("_FA_FRAME_OK"):
                 fr = _fa_sys._getframe(1)
@@ -24592,6 +24677,7 @@ async def handle_allies_pull(ctx_or_interaction, so_luong: int = 1):
 _TR_ALLY_ALIASES = {
     "s1": "s1", "leaf": "s1", "marysue": "s1", "mary": "s1", "leafmarysue": "s1",
     "s2": "s2", "marine": "s2", "spacemarine": "s2",
+    "s3": "s3", "esdeath": "s3", "esdeaths": "s3",
 }
 
 def _tr_ally_id(query):
@@ -33469,6 +33555,30 @@ def t7_raid_attack(c, ac, card_dmg, boss_stunned, turn_image, notif, active, L):
                     f"×1.5 sát thương ({card_dmg:,} DMG) và Boss **không thể hồi phục trong {LETTY_NOHEAL_TURNS} turn**!")
     except Exception as e:
         print(f"[LT] lỗi raid_attack: {e}", flush=True)
+    # --- [ALLY ESDEATH] Mahapadma stun boss ---
+    try:
+        al = ac.get("ally_ref")
+        if al and al.get("id") == "s3":
+            if ac.pop("esdeath_stun", False) and not boss_stunned:
+                boss_stunned = True
+                if not turn_image:
+                    turn_image = ALLY_GIF_MAHA
+                notif = (notif + "\n" if notif else "") + (
+                    f"❄️ **[Đồng minh Esdeath]** ({c['username']}) **Mahapadma** đóng băng không-thời gian! "
+                    f"Boss bị **STUN** mất lượt hoàn toàn!"
+                )
+    except Exception as e:
+        print(f"[ALLY ESDEATH] lỗi raid stun: {e}", flush=True)
+            # --- [ALLY ESDEATH] Weissschnabel freeze (ghi vào boss_local) ---
+            freeze_added = ac.pop("esdeath_freeze_turns", 0)
+            if freeze_added > 0:
+                # Dùng notif để báo, biến freeze xử lý ở execute_raid bên ngoài
+                notif = (notif + "\n" if notif else "") + (
+                    f"🧊 **[Đồng minh Esdeath]** ({c['username']}) **Weissschnabel** đóng băng boss! "
+                    f"Boss có **40% mất lượt trong {freeze_added} hiệp**!"
+                )
+                # Lưu freeze vào dict L để hàm execute_raid đọc
+                L["esdeath_ally_freeze_new"] = L.get("esdeath_ally_freeze_new", 0) + freeze_added
     return card_dmg, boss_stunned, turn_image, notif
 
 # ---------------------------- 6. RAID DẠNG B (Jotaro, Han Seiki, Sukuna, Giorno, Kenjaku, Fateria P2) ----------------------------
