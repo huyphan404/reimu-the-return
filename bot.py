@@ -779,6 +779,14 @@ ITEMS_DATABASE = {
         "desc": "Bảo vật quạt giấy cảnh giới của Yukari Yakumo, dùng để tiến hóa [#04] Yukari lên Ace 2 ⭐⭐."
     }
 }
+# ===== RƯƠNG BÍ ẨN (Drop 1% từ Han Seiki Prime Phase 2) =====
+ITEMS_DATABASE["ruong_bi_an"] = {
+    "id": "ruong_bi_an",
+    "name": "Rương Bí Ẩn 📦",
+    "usable": True,
+    "tradeable": True,
+    "desc": "Rương bí ẩn cực hiếm rơi từ Han Seiki the Prime One Phase 2 (1% drop). Hiện đang bị khoá, chưa thể mở!"
+}      
 ITEMS_DATABASE["dia_ky_uc_jotaro"] = {
     "id": "dia_ky_uc_jotaro",
     "name": "Đĩa Ký Ức Jotaro 💿",
@@ -1468,7 +1476,8 @@ def get_default_player(user_id, username):
             "thanh_loi": 0,
             "keo_halloween": 0,
             "ruong_halloween_e": 0,
-            "quat_giay": 0
+            "quat_giay": 0,
+            "ruong_bi_an": 0
         },
         "event_progress": {
             "battle": 0,
@@ -15000,7 +15009,7 @@ async def handle_item_use(ctx_or_interaction, item_id: str):
     if clean_id in EQUIPMENT_DB:
         await handle_equip_item(ctx_or_interaction, player, clean_id)
         return
-    if clean_id in ["ruong", "ruong_halloween", "ruong_halloween_e", "chest"]:
+    if clean_id in ["ruong_halloween", "ruong_halloween_e", "chest_halloween"]:
         clean_id = "ruong_halloween_e"
     if clean_id in ["potion", "magical", "magic_potion", "thuoc"]:
         clean_id = "magical_potion"
@@ -15018,7 +15027,34 @@ async def handle_item_use(ctx_or_interaction, item_id: str):
         else:
             await ctx_or_interaction.send(msg)
         return
-
+    # ===== RƯƠNG BÍ ẨN — Vật phẩm hiện khoá chưa dùng được =====
+    if clean_id in ("ruong_bi_an", "ruongbian", "ruong_bi", "ruong_secret", "chest", "ruong", "bianus"):
+        clean_id = "ruong_bi_an"
+        cnt_rb = p_items.get("ruong_bi_an", 0)
+        if cnt_rb <= 0:
+            msg = "❌ Bạn không có **Rương Bí Ẩn** trong kho đồ!"
+            if isinstance(ctx_or_interaction, discord.Interaction):
+                await ctx_or_interaction.response.send_message(msg, ephemeral=True)
+            else:
+                await ctx_or_interaction.send(msg)
+            return
+        # Rương vẫn còn trong kho, KHÔNG trừ — chỉ thông báo khoá
+        embed_rb = discord.Embed(
+            title="📦 RƯƠNG BÍ ẨN — ĐÃ BỊ KHOÁ",
+            description=(
+                "🔒 **Vật phẩm hiện khoá chưa dùng được.**\n\n"
+                f"Bạn đang sở hữu **{cnt_rb}x Rương Bí Ẩn 📦** trong kho đồ.\n"
+                "Rương này sẽ được mở khoá trong tương lai. Hãy giữ lại!\n\n"
+                "💡 *Bạn có thể `/item trade` để chuyển rương cho người khác.*"
+            ),
+            color=0x6B7280
+        )
+        embed_rb.set_footer(text="📦 Rương Bí Ẩn — Drop 1% từ Han Seiki the Prime One Phase 2")
+        if isinstance(ctx_or_interaction, discord.Interaction):
+            await ctx_or_interaction.response.send_message(embed=embed_rb)
+        else:
+            await ctx_or_interaction.send(embed=embed_rb)
+        return
     if clean_id == "ruong_halloween_e":
         p_items[clean_id] -= 1
         roll = random.random()
@@ -15075,13 +15111,14 @@ async def handle_item_trade(ctx_or_interaction, user: discord.Member, vat_pham: 
     clean_vp = vat_pham.strip().lower()
     if clean_vp in ["thanhloi", "thanh_loi", "core"]: clean_vp = "thanh_loi"
     elif clean_vp in ["keo", "candy", "keo_halloween"]: clean_vp = "keo_halloween"
-    elif clean_vp in ["ruong", "ruong_halloween", "ruong_halloween_e"]: clean_vp = "ruong_halloween_e"
+    elif clean_vp in ["ruong_halloween", "ruong_halloween_e", "chest_halloween"]: clean_vp = "ruong_halloween_e"
+    elif clean_vp in ["ruong_bi_an", "ruongbian", "ruong_bi", "ruong_secret", "bianus", "ruong", "chest"]: clean_vp = "ruong_bi_an"
     elif clean_vp in ["quat", "quatgiay", "quat_giay"]: clean_vp = "quat_giay"
     elif clean_vp in ["jotaro", "dia", "dia_ky_uc_jotaro"]: clean_vp = "dia_ky_uc_jotaro"
     else: clean_vp = EQUIP_ALIASES.get(clean_vp, clean_vp)   # fenrir/nanh -> nanh_fenrir, gaia/giap -> giap_gaia
 
     if clean_vp not in ITEMS_DATABASE:
-        msg = f"❌ Mã vật phẩm `{vat_pham}` không tồn tại! (Hợp lệ: `thanh_loi`, `keo_halloween`, `ruong_halloween_e`, `quat_giay`, `dia_ky_uc_jotaro`, `nanh_fenrir`, `giap_gaia`)."
+        msg = f"❌ Mã vật phẩm `{vat_pham}` không tồn tại! (Hợp lệ: `thanh_loi`, `keo_halloween`, `ruong_halloween_e`, `ruong_bi_an`, `quat_giay`, `dia_ky_uc_jotaro`, `nanh_fenrir`, `giap_gaia`)."
         if isinstance(ctx_or_interaction, discord.Interaction): await ctx_or_interaction.response.send_message(msg, ephemeral=True)
         else: await ctx_or_interaction.send(msg)
         return
@@ -29904,6 +29941,32 @@ PRIME_BOSS_PHASE2_CONFIG = _ScaledBossCfg({
     "hp": 420000,
     "power": 55000,
 })
+# Skills Phase 2 riêng: giống Ace 2 Seiki card, không giới hạn số lần, DMG chia đều
+PRIME_P2_SKILLS = {
+    "technobabble": {
+        "name": "Technobabble",
+        "chance": 0.25,
+        "multiplier": 1.75,
+        "half_hp_multiplier": 2.0,
+        "gif": "https://static2.klipy.com/ii/c3a19a0b747a76e98651f2b9a3cca5ff/ce/f6/90sF3oyd.gif"
+    },
+    "lore_bloat": {
+        "name": "Lore Bloat",
+        "chance": 0.25,
+        "direct_pct": 0.15,
+        "bleed_pct": 0.03,
+        "bleed_turns": 3,
+        "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/c1/4e/pKP9dGjrIC3CG3R2M.gif"
+    },
+    "bong_khai_niem": {
+        "name": "Bóng Khái Niệm",
+        "chance": 0.20,
+        "multiplier": 1.5,
+        "dmg_pct": 0.10,
+        "gif": "https://static2.klipy.com/ii/4493325008d34b7bf8cd6813cd5c1619/38/ec/4v5klqIf3v2WuSLgB.gif"
+    },
+    # Nhị Phân Vô Cực giữ nguyên từ base skills (xử lý riêng trong combat loop)
+}
 PRIME_P2_XP_MULT = 6.0
 
 try:
@@ -29940,6 +30003,11 @@ def _pr_reward(p, phase, raid_data=None):
                  ("seiki", 0.15, "🔮", "Mảnh Seiki", 10), ("fateria", 0.15, "⏳", "Fateria Shard", 20),
                  ("kizuna", 0.15, "🩸", "Mảnh Kizuna", 15)]
         xp_mult = PRIME_P2_XP_MULT
+        # 1% drop Rương Bí Ẩn
+        if random.random() < 0.01:
+            p.setdefault("items", {})
+            p["items"]["ruong_bi_an"] = p["items"].get("ruong_bi_an", 0) + 1
+            got.append("📦 **+1 Rương Bí Ẩn** (1% Drop Siêu Hiếm! 🎊)")
     for key, rate, emo, label, goal in rates:
         if random.random() < rate:
             sh[key] = sh.get(key, 0) + 1
@@ -29961,7 +30029,12 @@ def _pr_reward(p, phase, raid_data=None):
 async def _pr_run_phase(channel, battle_msg, combatants, phase, all_turns):
     base = PRIME_BOSS_CONFIG
     cfg = base if phase == 1 else PRIME_BOSS_PHASE2_CONFIG
-    sk = base["skills"]                          # kỹ năng giữ nguyên ở cả 2 phase
+    sk = base["skills"]          # Phase 1: giữ nguyên skills gốc
+    sk2 = PRIME_P2_SKILLS        # Phase 2: skills mới (Ace 2 Seiki card)
+    # bleed state cho Lore Bloat Phase 2
+    if phase == 2:
+        for c in combatants:
+            c.setdefault("prime_p2_bleed", {})
     max_hp = cfg["hp"] + boss_eq_hp("han_seiki")
     power = cfg["power"] + boss_eq_atk("han_seiki")
     color = 0xFACC15 if phase == 1 else 0xB45309
@@ -30043,16 +30116,38 @@ async def _pr_run_phase(channel, battle_msg, combatants, phase, all_turns):
                 if not B["locked_now"]:
                     roll = random.random()
                     acc = 0.0
-                    for key in ("phan_chuyen", "gan_ghep", "nhi_phan"):
-                        if B["erased"] == key:
-                            continue
-                        acc += sk[key]["chance"]
-                        if roll < acc:
-                            chosen = key
-                            break
+                    chosen = None
+
+                    if phase == 2:
+                        # =====================================================
+                        # PHASE 2: Skills mới (Ace 2 Seiki card, không giới hạn)
+                        # Nhị Phân Vô Cực vẫn giữ từ sk gốc
+                        # =====================================================
+                        for key in ("technobabble", "lore_bloat", "bong_khai_niem"):
+                            if B["erased"] == key:
+                                continue
+                            acc += sk2[key]["chance"]
+                            if roll < acc:
+                                chosen = key
+                                break
+                        # Nếu chưa chọn skill mới, roll thêm cho Nhị Phân
+                        if chosen is None:
+                            if B["erased"] != "nhi_phan" and roll < acc + sk["nhi_phan"]["chance"]:
+                                chosen = "nhi_phan"
+                    else:
+                        # Phase 1: giữ nguyên skills gốc
+                        for key in ("phan_chuyen", "gan_ghep", "nhi_phan"):
+                            if B["erased"] == key:
+                                continue
+                            acc += sk[key]["chance"]
+                            if roll < acc:
+                                chosen = key
+                                break
                 else:
                     action_log = "⛓️ **[Fate loop]** Kỹ năng của Han Seiki đang bị khóa, chỉ có thể đánh thường!\n"
+                    chosen = None
 
+                # =================== PHASE 1 SKILLS (giữ nguyên) ===================
                 if chosen == "phan_chuyen":
                     B["gif"] = sk["phan_chuyen"]["gif"]
                     total = int(power * sk["phan_chuyen"]["multiplier"])
@@ -30066,6 +30161,8 @@ async def _pr_run_phase(channel, battle_msg, combatants, phase, all_turns):
                     old = B["hp"]
                     B["hp"] = min(max_hp, B["hp"] + heal)
                     action_log += f"🧩 **[KỸ NĂNG] Han Seiki** thi triển **Gán ghép (15%)**! Tập hợp các khái niệm tự chữa trị **+{B['hp'] - old:,} HP** (20% máu tối đa)!"
+
+                # =================== NHỊPHÂN (cả 2 phase) ===================
                 elif chosen == "nhi_phan":
                     B["gif"] = sk["nhi_phan"]["gif"]
                     tc = random.choice(active)
@@ -30074,14 +30171,87 @@ async def _pr_run_phase(channel, battle_msg, combatants, phase, all_turns):
                     forced_kills.append(tac)
                     action_log += (f"♾️ **[KỸ NĂNG TỐI THƯỢNG] Han Seiki** tung **Nhị Phân Vô Cực khái niệm (15%)**! "
                                    f"**{tac['name']}** ({tc['username']}) bị **HẠ GỤC TỨC THÌ**, bỏ qua mọi kỹ năng phòng thủ!")
+
+                # =================== PHASE 2 SKILLS MỚI ===================
+                elif chosen == "technobabble":
+                    avg_hp_pct = sum(
+                        c["team_cards"][c["current_card_index"]]["current_hp"] /
+                        max(1, c["team_cards"][c["current_card_index"]]["max_hp"])
+                        for c in active
+                    ) / max(1, n)
+                    mult_tb = sk2["technobabble"]["half_hp_multiplier"] if avg_hp_pct < 0.50 else sk2["technobabble"]["multiplier"]
+                    total_tb = int(power * mult_tb)
+                    each_tb = max(100, total_tb // n)
+                    B["gif"] = sk2["technobabble"]["gif"]
+                    action_log += (
+                        f"⚡ **[KỸ NĂNG] Han Seiki Phase 2** tung **Technobabble (25%)**! "
+                        f"Đòn nghịch khái niệm ×{mult_tb} giáng **{total_tb:,} DMG**, chia đều **{each_tb:,} DMG** lên {n} thẻ"
+                        + (" *(Team HP < 50% → ×2.0!)*" if avg_hp_pct < 0.50 else "") + "!"
+                    )
+                    for c in active:
+                        _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each_tb, B, hit_logs, rounds)
+
+                elif chosen == "lore_bloat":
+                    B["gif"] = sk2["lore_bloat"]["gif"]
+                    action_log += (
+                        f"📖 **[KỸ NĂNG] Han Seiki Phase 2** phát động **Lore Bloat (25%)**! "
+                        f"Nhồi phản khái niệm vào **TẤT CẢ {n} lá bài**, gây **15% HP Tối Đa** ngay lập tức + **chảy máu 3% HP/lượt × 3 turn**!"
+                    )
+                    for c in active:
+                        ac_lb = c["team_cards"][c["current_card_index"]]
+                        direct_lb = int(ac_lb["max_hp"] * sk2["lore_bloat"]["direct_pct"])
+                        ac_lb["current_hp"] -= direct_lb
+                        # Lưu bleed
+                        c.setdefault("prime_p2_bleed", {})
+                        bk = id(ac_lb)
+                        c["prime_p2_bleed"][bk] = {
+                            "turns": sk2["lore_bloat"]["bleed_turns"],
+                            "pct": sk2["lore_bloat"]["bleed_pct"],
+                            "ac_ref": ac_lb
+                        }
+                        hit_logs.append(f"• 🩸 **{ac_lb['name']}** ({c['username']}) nhận **{direct_lb:,} DMG** + **chảy máu 3 lượt**!")
+
+                elif chosen == "bong_khai_niem":
+                    total_bng = int(power * sk2["bong_khai_niem"]["multiplier"])
+                    each_bng = max(100, total_bng // n)
+                    B["gif"] = sk2["bong_khai_niem"]["gif"]
+                    action_log += (
+                        f"🌑 **[KỸ NĂNG] Han Seiki Phase 2** khai triển **Bóng Khái Niệm (20%)**! "
+                        f"×1.5 sát thương tổng **{total_bng:,} DMG** chia đều **{each_bng:,} DMG** + **10% HP Tối Đa** + **XÓA KỸ NĂNG** lên {n} lá bài!"
+                    )
+                    for c in active:
+                        ac_bng = c["team_cards"][c["current_card_index"]]
+                        hp_bonus_bng = int(ac_bng["max_hp"] * sk2["bong_khai_niem"]["dmg_pct"])
+                        total_hit_bng = each_bng + hp_bonus_bng
+                        ac_bng["current_hp"] -= total_hit_bng
+                        erase_msg_bng = apply_bong_khai_niem_card(ac_bng)
+                        hit_logs.append(f"• 🌑 **{ac_bng['name']}** ({c['username']}) nhận **{total_hit_bng:,} DMG** + bị **xóa kỹ năng**! {erase_msg_bng}")
+
                 else:
+                    # Đánh thường (cả 2 phase)
                     each = max(100, power // n)
                     action_log += f"⚔️ Han Seiki đánh thường tổng **{power:,} DMG**, chia đều **{each:,} DMG** lên {n} thẻ tiền tuyến!"
                     for c in active:
                         _jt_boss_hit(c, c["team_cards"][c["current_card_index"]], each, B, hit_logs, rounds, normal=True)
         if hit_logs:
             action_log += "\n" + "\n".join(hit_logs)
-
+        # --- Tick Lore Bloat bleed (Seiki Prime Phase 2) ---
+        if phase == 2:
+            for _c in active:
+                _bd = _c.get("prime_p2_bleed", {})
+                _exp = []
+                for _bk, _bdata in _bd.items():
+                    _ac_b = _bdata.get("ac_ref")
+                    if _ac_b is None or _ac_b["current_hp"] <= 0:
+                        _exp.append(_bk); continue
+                    _bh = int(_ac_b["max_hp"] * _bdata["pct"])
+                    _ac_b["current_hp"] -= _bh
+                    _bdata["turns"] -= 1
+                    action_log += f"\n🩸 **[Lore Bloat Bleed]** {_ac_b['name']} ({_c['username']}) chảy máu **{_bh:,} DMG** (Còn {_bdata['turns']} lượt)!"
+                    if _bdata["turns"] <= 0:
+                        _exp.append(_bk)
+                for _ek in _exp:
+                    _bd.pop(_ek, None)
         action_log += t7_raid_after_boss(active, action_log)
         kasen_restore_guard(active)
         tick_wonder_guard(active)
@@ -30203,8 +30373,12 @@ async def _pr2_execute_prime_raid(channel, raid_data):
         title="🚨 HAN SEIKI THE PRIME ONE THỨC TỈNH! (PHASE 2)",
         description=(
             "⚖️ *\"Công lý thật sự... giờ mới bắt đầu.\"*\n\n"
-            f"❤️ **Máu:** **`{p2_hp_max:,} HP`** | ⚔️ **Sát thương:** **`{p2_atk:,} DMG`** (chia đều)\n"
-            "🔄 Kỹ năng giữ nguyên, nhưng sát thương tăng theo chỉ số mới!\n\n"
+            f"❤️ **Máu:** **`{p2_hp_max:,} HP`** | ⚔️ **Sát thương:** **`{p2_atk:,} DMG`** (chia đều)\n\n"
+            "⚡ **Technobabble (25%):** ×1.75 sát thương (×2.0 nếu team HP < 50%), chia đều, **không giới hạn lần**!\n"
+            "📖 **Lore Bloat (25%):** 15% HP tối đa tức thì + chảy máu 3%/lượt × 3 turn, **không giới hạn**!\n"
+            "🌑 **Bóng Khái Niệm (20%):** ×1.5 + 10% HP tối đa + xóa kỹ năng, **không giới hạn**!\n"
+            "♾️ **Nhị Phân Vô Cực (15%):** Hạ gục tức thì 1 thẻ bài, **giữ nguyên**!\n\n"
+            "📦 **Drop đặc biệt:** 1% cơ hội rơi **Rương Bí Ẩn** (mỗi người)!\n\n"
             "✨ **PHÉP MÀU THANH TẨY:** Toàn bộ thẻ bài của dũng giả được **hồi sinh và hồi 100% sinh lực**!"
         ),
         color=0xB45309
