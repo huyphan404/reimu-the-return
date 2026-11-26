@@ -31970,9 +31970,9 @@ class RaceBetView(discord.ui.View):
                 order.extend(crossed)
                 emb = discord.Embed(title=f"🏇 ĐANG ĐUA... (lượt {tick})", description=header + _race_lines(field, pos, speed, pick), color=0x3B82F6)
                 try:
-                    await interaction.edit_original_response(embed=emb)
-                except Exception:
-                    pass
+                    await interaction.message.edit(embed=emb)
+                except Exception as e:
+                    print(f"[RACE] lỗi cập nhật lượt {tick}: {type(e).__name__}: {e}", flush=True)
                 await asyncio.sleep(RACE_TICK_DELAY)
 
             rest = sorted([r for r in field if r not in order], key=lambda x: pos[x], reverse=True)
@@ -32016,8 +32016,9 @@ class RaceBetView(discord.ui.View):
             sr = _gamble_stat(p2, "race")
             fin.set_footer(text=f"Race: {sr['wins']}/{sr['games']} thắng • Lãi/lỗ tổng {sr['profit']:+,} xu")
             try:
-                await interaction.edit_original_response(embed=fin)
-            except Exception:
+                await interaction.message.edit(embed=fin)
+            except Exception as e:
+                print(f"[RACE] lỗi sửa tin kết quả: {type(e).__name__}: {e}", flush=True)
                 await interaction.channel.send(embed=fin)
         except Exception as e:
             print(f"[RACE] lỗi trận đua, hoàn cược: {e}", flush=True)
